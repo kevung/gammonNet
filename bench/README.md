@@ -1,7 +1,18 @@
 # bench/
 
-Les bancs de mesure. **Vide pour l'instant** — le premier est T05 (banc de débit), puis T21
-(banc de débit navigateur).
+Les bancs de mesure. | Banc | Objet |
+|---|---|
+| `bench_oracle.py` | Débit de l'oracle GNU Backgammon (T03) |
+
+À venir : T05 (banc de débit complet), T21 (banc de débit navigateur).
+
+## Le piège que tout banc doit éviter ici
+
+`gnubg_nn` **met les évaluations en cache**. Chronométrer une boucle sur une position répétée
+gonfle le chiffre d'un facteur **1 315** au 1-ply. Et des positions consécutives d'une même
+partie partagent leurs sous-arbres : elles se répondent l'une l'autre par le cache. Tout banc
+doit donc mesurer sur des positions **distinctes et non apparentées** — une par partie — avec
+une **tranche disjointe par profondeur**. Détail dans `docs/mesures/2026-08-03-T03-oracle.md`.
 
 ## La règle qui gouverne ce répertoire
 
