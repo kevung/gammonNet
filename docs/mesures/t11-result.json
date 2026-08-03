@@ -1,0 +1,17 @@
+{
+  "measured_ppg": 0.040045,
+  "ci95": [
+    0.037665,
+    0.042465
+  ],
+  "win_rate": 0.517243,
+  "games": 1000000,
+  "pairs": 500000,
+  "seed": 20260803,
+  "ply": 0,
+  "mode": "cubeless-money",
+  "stalled_pairs": 0,
+  "elapsed_seconds": 5162.684464419999,
+  "published_cubeful_ppg": 0.0673,
+  "published_author_ppg": 0.0578
+}

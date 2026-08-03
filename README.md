@@ -43,6 +43,17 @@ c'est normal : on construit l'instrument avant d'avoir quoi que ce soit à mesur
 | **T03** — Oracle GNU Backgammon | ✅ [rapport](docs/mesures/2026-08-03-T03-oracle.md) |
 | **T04** — Harnais de round-robin | ✅ [rapport](docs/mesures/2026-08-03-T04-round-robin.md) |
 | **T05** — Banc de débit | ✅ [rapport](docs/mesures/2026-08-03-T05-debits.md) |
+| **T10** — Charger et exécuter le modèle | ✅ [rapport](docs/mesures/2026-08-03-T10-inference.md) |
+| **T11** — Round-robin de vérification | ✅ [rapport](docs/mesures/2026-08-03-T11-verification.md) |
+| **T20** — Build WebAssembly | ✅ [rapport](docs/mesures/2026-08-03-T20-wasm.md) |
+| **T21** — Banc de débit navigateur | ⏳ partiel — [rapport](docs/mesures/2026-08-03-T21-debit-navigateur.md) |
+
+**La force mesurée, dans cet environnement** : le modèle de référence bat GNU Backgammon de
+**+0,0400 ppg [+0,0377 ; +0,0425]** sur un million de parties en 0-ply money sans videau. Ce
+n'est **pas** le +0,0578 publié par l'auteur — et le harnais du dépôt de référence, exécuté
+inchangé sur cette machine, donne +0,0351 [+0,0291 ; +0,0410], c'est-à-dire le nôtre. L'écart
+est donc en amont des deux harnais, vraisemblablement dans la version de l'oracle. Voir le
+[rapport de T11](docs/mesures/2026-08-03-T11-verification.md).
 
 ### Démarrer
 

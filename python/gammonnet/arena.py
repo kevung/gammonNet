@@ -400,8 +400,40 @@ def bootstrap_ci(
     if not samples:
         return (float("nan"), float("nan"))
 
-    rng = random.Random(seed)
     n = len(samples)
+
+    # Resampling n values `resamples` times is O(resamples x n) — five billion
+    # steps for a million-game run, and all of it single-threaded after the
+    # workers have gone home. It was measured doing exactly that.
+    #
+    # A duplicate pair can only score a handful of distinct values (-6..+6 in
+    # half-points), so group them and draw the COUNTS from a multinomial
+    # instead. Drawing which sample lands in the resample n times and drawing
+    # how many of each value land are the same distribution; this one costs
+    # O(resamples x distinct), which is a few hundred thousand steps.
+    counts: dict[float, int] = {}
+    for value in samples:
+        counts[value] = counts.get(value, 0) + 1
+
+    values = sorted(counts)
+    weights = [counts[v] / n for v in values]
+
+    try:
+        import numpy as np
+
+        generator = np.random.default_rng(seed)
+        drawn = generator.multinomial(n, weights, size=resamples)
+        means = np.sort(drawn @ np.array(values) / n)
+        tail = (1.0 - level) / 2.0
+        return (float(means[int(tail * resamples)]),
+                float(means[int((1.0 - tail) * resamples) - 1]))
+    except ImportError:
+        pass
+
+    # Sans numpy : le tirage naïf, correct et lent. Il reste praticable sur les
+    # petits volumes des tests, et un round-robin d'un million de parties a de
+    # toute façon numpy sous la main.
+    rng = random.Random(seed)
     means = []
     for _ in range(resamples):
         total = 0.0

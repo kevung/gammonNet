@@ -1,0 +1,20 @@
+
+  200000 games completed in 395.0s (506 games/sec, 30 workers)
+
+============================================================
+RESULTS
+============================================================
+Model1: 102397 wins (51.2%)
+Model2: 97603 wins (48.8%)
+
+Model1 win rate 95% CI: [51.0%, 51.4%]
+p-value: 0.0000
+Verdict: Model1 is significantly stronger (p<0.05)
+
+Cubeless money equity (Model1): +0.0351 pts/game (+35.1 mEq/game)
+  95% CI (bootstrap): [+29.1, +41.0] mEq/game (±6.0)
+  Equity p-value (bootstrap): 0.0000
+  Equity verdict: Model1 significantly stronger (p<0.05)
+  Median equity:   +1000.0 mEq/game  [+1000.0, +1000.0]  p=0.0000
+  Trimmed mean (1%): +36.6 mEq/game  [+30.5, +42.6]  p=0.0000
+============================================================
