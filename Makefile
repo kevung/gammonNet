@@ -4,6 +4,7 @@
 #
 #   make setup   installe l'environnement Python et récupère les sources tierces
 #   make build   compile la bibliothèque d'inférence (cible native)
+#   make corpus  régénère le corpus figé de positions (déterministe)
 #   make test    joue la suite de tests
 #   make bench   joue le banc de débit
 #   make env     consigne la machine et la chaîne d'outils d'une mesure
@@ -17,7 +18,7 @@ PYTHON_SYS ?= python3.12
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build test bench env clean help
+.PHONY: all setup venv vendor build corpus test bench env clean help
 
 all: help
 
@@ -41,13 +42,35 @@ env:
 
 # ── Compilation ──────────────────────────────────────────────────────
 
-build:
-	@echo "rien à compiler pour l'instant (T01 introduira src/)"
+CC ?= gcc
+BUILD := build
+LIBRARY := $(BUILD)/libgammonnet.so
+
+# Nos sources sont tenues au silence complet du compilateur.
+CFLAGS ?= -O2 -std=c11 -Wall -Wextra -fPIC
+# Les sources vendorées ne sont pas les nôtres à corriger : on les compile sans
+# -Wextra plutôt que de les modifier, ce qui compliquerait chaque mise à jour du
+# commit épinglé.
+VENDOR_CFLAGS ?= -O2 -std=c11 -Wall -fPIC
+
+INCLUDES := -Isrc -I$(REFERENCE)/c_engine
+
+build: $(LIBRARY)
+
+$(LIBRARY): src/gn_rules_reference.c src/gn_rules.h $(REFERENCE)/c_engine/bg_engine.c
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -c src/gn_rules_reference.c -o $(BUILD)/gn_rules_reference.o
+	$(CC) $(VENDOR_CFLAGS) $(INCLUDES) -c $(REFERENCE)/c_engine/bg_engine.c -o $(BUILD)/bg_engine.o
+	$(CC) -shared -o $@ $(BUILD)/gn_rules_reference.o $(BUILD)/bg_engine.o
+	@echo "→ $@"
+
+corpus:
+	$(PYTHON) tools/build_corpus_t01.py
 
 # ── Mesure ───────────────────────────────────────────────────────────
 
-test:
-	$(PYTHON) -m pytest tests/ -v
+test: build
+	$(PYTHON) -m pytest tests/ -q
 
 bench:
 	@echo "banc de débit : T05"
