@@ -22,7 +22,15 @@
  * run in opposite directions across the physical board.
  */
 
-static const char BASE64[64] =
+/*
+ * Sized 65 rather than 64 so the string literal keeps its terminating NUL.
+ * Declared [64] the initialiser exactly fills the array and the NUL is dropped,
+ * which GCC 15 and later report (-Wunterminated-string-initialization). Only
+ * the first 64 bytes are ever read, so the truncation was harmless — but this
+ * repository holds its own sources to compiler silence, and the warning is
+ * invisible on a machine with an older compiler.
+ */
+static const char BASE64[65] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static int base64_value(char c)

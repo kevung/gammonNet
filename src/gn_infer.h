@@ -1,0 +1,165 @@
+/*
+ * gn_infer.h -- network inference: a position in, five probabilities out.
+ *
+ * THE DISTRIBUTION IS THE OUTPUT. THE EQUITY IS A CONVENIENCE.
+ *
+ * That inversion is the whole point of this header. The reference engine's
+ * `nn_forward` returns a cubeless money equity and fills the five
+ * probabilities only if asked. Match play needs the opposite: the match
+ * equity table converts a *distribution* into match winning chances, and a
+ * scalar money equity has already thrown away what it needs. `PLAN.md` calls
+ * this out as the trap of T10, so the interface is shaped to make the trap
+ * unreachable — `gn_evaluate` cannot return an equity, only probabilities.
+ *
+ * The five outputs, in the order the reference engine establishes:
+ *
+ *   probs[0]  P(the on-roll player wins at all)
+ *   probs[1]  P(wins a gammon or better)
+ *   probs[2]  P(wins a backgammon)
+ *   probs[3]  P(loses a gammon or better)
+ *   probs[4]  P(loses a backgammon)
+ *
+ * They are NESTED, not exclusive: probs[1] counts backgammons too. The order
+ * is not taken on trust from a comment. It is forced by the equity formula at
+ * `vendor/backgammon-ai-engine/c_inference/nn_eval.c:217`,
+ *
+ *     E = 2*p0 + p1 + p2 - p3 - p4 - 1
+ *
+ * which is the algebraic consequence of that reading and of no other:
+ *
+ *     1*(p0-p1) + 2*(p1-p2) + 3*p2          winning single, gammon, backgammon
+ *   - 1*((1-p0)-p3) - 2*(p3-p4) - 3*p4      losing the same three ways
+ *   = 2*p0 + p1 + p2 - p3 - p4 - 1
+ *
+ * Permute the five and the identity breaks. `model.py:284` agrees in prose
+ * ("canonical order: P(win), P(wg), P(wbg), P(lg), P(lbg)"), but the algebra
+ * is what makes it checkable.
+ *
+ * A network handed an input it has never seen returns five perfectly
+ * plausible numbers and says nothing about it. Every entry point here refuses
+ * rather than approximates.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#ifndef GN_INFER_H
+#define GN_INFER_H
+
+#include "gn_encoding.h"
+#include "gn_rules.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define GN_NUM_OUTPUTS 5
+
+#define GN_P_WIN       0
+#define GN_P_WIN_G     1
+#define GN_P_WIN_BG    2
+#define GN_P_LOSE_G    3
+#define GN_P_LOSE_BG   4
+
+/* Opaque: the backend is deliberately invisible here. T22 will decide which
+ * inference engine we ship, and that decision must not reach this header. */
+typedef struct GnNetwork GnNetwork;
+
+/*
+ * Load a network from a flat `.bin` file (magic "BGNN").
+ *
+ * Returns NULL if the file is missing, malformed, or declares something this
+ * build cannot evaluate — a refusal, never a fallback. In particular a model
+ * whose output mode is not prob5 is refused: it emits an aggregated money
+ * equity, which is unusable in match play, and silently so.
+ */
+GnNetwork *gn_network_load(const char *path);
+
+void gn_network_free(GnNetwork *net);
+
+/* Number of input features the network expects. Must equal GN_NUM_FEATURES
+ * for any model this project uses; checked at load time. */
+int gn_network_input_size(const GnNetwork *net);
+
+/*
+ * Evaluate a position. Encodes it, runs the network, writes the five
+ * probabilities.
+ *
+ * Returns 0 on success, -1 if the position is not structurally valid. There is
+ * no third outcome and no default vector: an input the network has never seen
+ * is refused here rather than answered plausibly.
+ */
+int gn_evaluate(const GnNetwork *net, const GnPosition *pos,
+                float probs[GN_NUM_OUTPUTS]);
+
+/*
+ * Evaluate a feature vector that the caller has already encoded.
+ *
+ * The path the search will use, once it holds its own encoded positions. It
+ * skips validation of the board because there is no board to validate — the
+ * caller owns that responsibility, and `gn_evaluate` is the safe door.
+ */
+int gn_evaluate_features(const GnNetwork *net, const float *features,
+                         float probs[GN_NUM_OUTPUTS]);
+
+/*
+ * Cubeless money equity, in points, from a distribution.
+ *
+ * Offered because it is genuinely useful for money play and for comparing
+ * against engines that print it. It is a projection of the distribution, so it
+ * loses information: never feed it to the match equity table.
+ */
+float gn_money_equity(const float probs[GN_NUM_OUTPUTS]);
+
+/*
+ * Whether a distribution satisfies the nested-event inequalities:
+ *
+ *   probs[1] <= probs[0]        a gammon is a win
+ *   probs[2] <= probs[1]        a backgammon is a gammon
+ *   probs[3] <= 1 - probs[0]    a gammon loss is a loss
+ *   probs[4] <= probs[3]
+ *
+ * Returns 1 if they hold, 0 otherwise. The five outputs come from five
+ * independent sigmoids, so nothing in the network guarantees them; the
+ * reference engine clamps them, and this is how we check the clamp actually
+ * ran. A distribution that violates these is not a distribution.
+ */
+int gn_probs_are_nested(const float probs[GN_NUM_OUTPUTS]);
+
+#define GN_NUM_EXCLUSIVE 6
+
+#define GN_E_WIN_SINGLE   0
+#define GN_E_WIN_G        1
+#define GN_E_WIN_BG       2
+#define GN_E_LOSE_SINGLE  3
+#define GN_E_LOSE_G       4
+#define GN_E_LOSE_BG      5
+
+/*
+ * Turn the nested probabilities into the six MUTUALLY EXCLUSIVE outcomes:
+ * winning a single game, a gammon, a backgammon, and losing the same three.
+ *
+ * Every consumer that converts an evaluation into an equity needs this
+ * decomposition, and every one of them would otherwise write the same four
+ * subtractions. Writing them once, here, is not a convenience -- it is where a
+ * real trap is disarmed.
+ *
+ * The trap: nesting is enforced in float32, which is the arithmetic the
+ * network and the reference engine use. In float32 a P(win) of 1.5e-10 makes
+ * `1.0f - P(win)` exactly 1.0f, so P(lose gammon) = 1.0 satisfies the
+ * inequality and nothing is clamped -- correctly. Widen the same five numbers
+ * to double and the margin reappears: `(1 - P(win)) - P(lose gammon)` comes out
+ * at -1.5e-10. A NEGATIVE PROBABILITY, arriving in a match equity table, with
+ * nothing to show for it. Observed on a real position of the T10 corpus, not
+ * imagined.
+ *
+ * So this function subtracts in double and floors each outcome at zero. The
+ * six sum to 1 to within float32 rounding; they are never negative.
+ */
+void gn_probs_exclusive(const float probs[GN_NUM_OUTPUTS],
+                        double out[GN_NUM_EXCLUSIVE]);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GN_INFER_H */
