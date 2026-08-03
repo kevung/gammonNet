@@ -57,11 +57,20 @@ INCLUDES := -Isrc -I$(REFERENCE)/c_engine
 
 build: $(LIBRARY)
 
-$(LIBRARY): src/gn_rules_reference.c src/gn_rules.h $(REFERENCE)/c_engine/bg_engine.c
+SOURCES := src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c
+HEADERS := src/gn_rules.h src/gn_encoding.h src/gn_position_id.h
+OBJECTS := $(patsubst src/%.c,$(BUILD)/%.o,$(SOURCES))
+
+$(BUILD)/%.o: src/%.c $(HEADERS)
 	@mkdir -p $(BUILD)
-	$(CC) $(CFLAGS) $(INCLUDES) -c src/gn_rules_reference.c -o $(BUILD)/gn_rules_reference.o
-	$(CC) $(VENDOR_CFLAGS) $(INCLUDES) -c $(REFERENCE)/c_engine/bg_engine.c -o $(BUILD)/bg_engine.o
-	$(CC) -shared -o $@ $(BUILD)/gn_rules_reference.o $(BUILD)/bg_engine.o
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD)/bg_engine.o: $(REFERENCE)/c_engine/bg_engine.c
+	@mkdir -p $(BUILD)
+	$(CC) $(VENDOR_CFLAGS) $(INCLUDES) -c $< -o $@
+
+$(LIBRARY): $(OBJECTS) $(BUILD)/bg_engine.o
+	$(CC) -shared -o $@ $^ -lm
 	@echo "→ $@"
 
 corpus:
