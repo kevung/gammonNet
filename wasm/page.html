@@ -1,0 +1,107 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>gammonNet — vérification et banc</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, monospace; margin: 2rem; max-width: 46rem; }
+  pre { white-space: pre-wrap; }
+  .ok { color: #0a0 } .ko { color: #c00 }
+</style>
+<h1>gammonNet</h1>
+<pre id="out">chargement…</pre>
+
+<script type="module">
+  // La page est pilotée par la query string, parce qu'un même artefact doit
+  // servir au contrôle de chargement (T20) et au banc de débit (T21) : deux
+  // pages divergeraient, et l'on mesurerait autre chose que ce qu'on vérifie.
+  const params = new URLSearchParams(location.search);
+  const build = params.get("build") === "simd" ? "simd" : "scalar";
+  const mode = params.get("mode") || "parity";
+  const reps = Number(params.get("reps") || 5);
+
+  const out = document.getElementById("out");
+  const log = (line) => { out.textContent += "\n" + line; };
+
+  async function report(payload) {
+    // Le résultat remonte par le réseau plutôt que par la console : c'est le
+    // seul canal qui marche à l'identique sur tout navigateur sans passer par
+    // un protocole d'automatisation propre à chacun.
+    try {
+      await fetch("/report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch (e) { /* le harnais a déjà pu partir */ }
+  }
+
+  try {
+    const { Evaluator } = await import("/wasm/gammonnet.mjs");
+    const file = build === "simd" ? "gammonnet-simd.mjs" : "gammonnet.mjs";
+    const { default: factory } = await import(`/build/wasm/${file}`);
+
+    const t0 = performance.now();
+    const modelBytes = new Uint8Array(
+      await (await fetch("/models/cubeless_prob5_512_512_256_128.bin")).arrayBuffer(),
+    );
+    const evaluator = await Evaluator.create(factory, modelBytes);
+    const loadMs = performance.now() - t0;
+
+    out.textContent = `build ${build} · SIMD ${evaluator.hasSimd}`;
+    log(`chargement modèle + module : ${loadMs.toFixed(1)} ms`);
+
+    // Le repère figé, produit par le natif.
+    const raw = await (await fetch("/build/reference.bin")).arrayBuffer();
+    const view = new DataView(raw);
+    const count = view.getInt32(4, true);
+    const numFeatures = view.getInt32(8, true);
+    const numOutputs = view.getInt32(12, true);
+    const features = new Float32Array(raw, 16, count * numFeatures);
+    const expected = new Float32Array(
+      raw, 16 + count * numFeatures * 4, count * numOutputs,
+    );
+
+    const got = evaluator.evaluateBatch(features, count);
+    let worst = 0;
+    for (let i = 0; i < got.length; i++) {
+      worst = Math.max(worst, Math.abs(got[i] - expected[i]));
+    }
+    const parityOk = worst < 1e-6;
+    log(`parité contre le natif : max|Δ| = ${worst.toExponential(3)} ` +
+        (parityOk ? "✅" : "❌"));
+    out.className = parityOk ? "ok" : "ko";
+
+    const payload = {
+      mode, build, simd: evaluator.hasSimd,
+      userAgent: navigator.userAgent,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      loadMs, positions: count, worstDelta: worst, parityOk,
+    };
+
+    if (mode === "bench") {
+      // Un tour à blanc avant de chronométrer : le JIT et le premier passage
+      // sur la mémoire du tas ne sont pas ce qu'on mesure.
+      evaluator.evaluateBatch(features, count);
+
+      const samples = [];
+      for (let r = 0; r < reps; r++) {
+        const start = performance.now();
+        evaluator.evaluateBatch(features, count);
+        samples.push(performance.now() - start);
+      }
+      samples.sort((a, b) => a - b);
+      const median = samples[Math.floor(samples.length / 2)];
+      payload.samplesMs = samples;
+      payload.medianMs = median;
+      payload.evalsPerSecond = (count / median) * 1000;
+      payload.msPerEval = median / count;
+      log(`débit : ${payload.evalsPerSecond.toFixed(0)} évaluations/s ` +
+          `(${payload.msPerEval.toFixed(5)} ms/éval, médiane de ${reps})`);
+    }
+
+    await report(payload);
+  } catch (error) {
+    out.className = "ko";
+    log("❌ " + (error && error.stack ? error.stack : String(error)));
+    await report({ error: String(error && error.stack ? error.stack : error) });
+  }
+</script>
