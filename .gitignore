@@ -1,4 +1,5 @@
 build/
+vendor/
 models/*.pt
 models/*.bin
 !models/README.md
@@ -10,3 +11,4 @@ venv/
 *.so
 *.wasm
 node_modules/
+.pytest_cache/

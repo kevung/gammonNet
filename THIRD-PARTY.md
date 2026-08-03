@@ -11,13 +11,22 @@ effectivement utilisé**. Tenu à jour à chaque ajout de dépendance.
 
 | Brique | Auteur | Licence | Ce qui est utilisé | Source |
 |---|---|---|---|---|
-| *(aucune pour l'instant — le dépôt n'a pas encore de code)* | | | | |
+| *(aucune pour l'instant — le dépôt ne produit pas encore d'artefact)* | | | | |
+
+## Présent dans l'arbre de travail (`vendor/`, non distribué en l'état)
+
+`vendor/` est gitignoré. Ce qui est **versionné** est le commit épinglé dans
+`tools/fetch_vendor.py`, afin qu'une mesure puisse toujours être rattachée à l'arbre amont
+exact qui l'a produite.
+
+| Brique | Auteur | Licence | Commit épinglé | Ce qui en est utilisé |
+|---|---|---|---|---|
+| [`backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine) | Alexander Strehl | MIT — vérifiée par lecture du fichier `LICENSE` (« Copyright (c) 2026 alexstrehl »), pas par confiance dans le nom du dépôt | `b2750df` | Aujourd'hui : le moteur de règles C (`c_engine/bg_engine.c`) et les poids `cubeless_prob5_512_512_256_128.pt` comme référence de mesure. À terme embarqués dans l'artefact : les poids, et le moteur d'inférence C (`c_inference/nn_eval.c`) |
 
 ## Prévu
 
 | Brique | Auteur | Licence | Ce qui serait utilisé | Source |
 |---|---|---|---|---|
-| `backgammon-ai-engine` | Alexander Strehl | MIT | Poids du réseau `cubeless_prob5_512_512_256_128`, moteur de règles C, moteur d'inférence C, encodage des entrées | <https://github.com/alexstrehl/backgammon-ai-engine> |
 | `hedgehog-public` | Eran Lambooij | MIT | **Le code seulement** — évaluateur NNUE, recherche expectiminimax, SIMD Highway. **Les réseaux de neurones de ce projet ne sont pas utilisés** : ils portent une clause non commerciale | <https://gitlab.com/eranlambooij/hedgehog-public> |
 | Table d'équité de match Kazaross-XG2 | Neil Kazaross | Attribution | La table 25×25 pré-Crawford et post-Crawford | Diffusée par GNU Backgammon ; précédent MIT dans [blunderDB](https://github.com/kevung/blunderDB) |
 | Modèle de Zadeh | N. Zadeh, *Management Science* 23, 986 (1977) | Publication académique | Repli au-delà de 25 points | — |
