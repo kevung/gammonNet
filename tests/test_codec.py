@@ -20,7 +20,16 @@ from gammonnet import BLACK, NUM_POINTS, WHITE, Position
 from gammonnet import codec
 from gammonnet import gnubg_board as gb
 
-gnubg_nn = pytest.importorskip("gnubg_nn", reason="gnubg-nn absent — lancer `make venv`")
+@pytest.fixture(scope="module")
+def gnubg_nn():
+    """L'oracle, exigé par le seul test qui s'y confronte.
+
+    Il était importé au niveau du module, ce qui sautait les dix-sept tests du
+    fichier pour en protéger un. Sur une machine sans oracle — celle de la piste
+    navigateur, cf. `PLAN.md`, § *Répartition entre machines* — la vérification
+    la plus critique du projet passait alors au vert sans rien vérifier.
+    """
+    return pytest.importorskip("gnubg_nn", reason="gnubg-nn absent — lancer `make venv`")
 
 ROOT = Path(__file__).resolve().parent.parent
 REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
@@ -261,7 +270,7 @@ def test_mirroring_is_an_involution():
 # ── Les identifiants ─────────────────────────────────────────────────
 
 
-def test_position_id_matches_gnubg_exactly():
+def test_position_id_matches_gnubg_exactly(gnubg_nn):
     """Le Position ID est vérifié contre une implémentation **indépendante**.
 
     GNU Backgammon est ici un instrument de mesure : on compare notre sortie à la

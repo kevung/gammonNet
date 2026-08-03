@@ -108,9 +108,27 @@ def collect() -> dict:
         "torch_cuda": cuda_version,
         "numpy": numpy_version,
         "gcc": _run(["gcc", "--version"]),
-        "emcc": _run(["emcc", "--version"]),
+        "emcc": _emcc_version(),
         "gnubg_nn": _gnubg_nn_version(),
     }
+
+
+# Emscripten n'est pas toujours dans le PATH : le paquet Arch l'installe sous
+# /usr/lib/emscripten sans lien dans /usr/bin. Le signaler « absent » alors
+# qu'il est présent ferait consigner à une mesure une configuration fausse.
+EMCC_CANDIDATES = (
+    "emcc",
+    "/usr/lib/emscripten/emcc",
+    "/usr/share/emscripten/emcc",
+)
+
+
+def _emcc_version() -> str | None:
+    for candidate in EMCC_CANDIDATES:
+        found = _run([candidate, "--version"])
+        if found:
+            return found
+    return None
 
 
 def _gnubg_nn_version() -> str | None:
