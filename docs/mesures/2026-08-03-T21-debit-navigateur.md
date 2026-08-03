@@ -268,6 +268,22 @@ Emscripten 6.0.5-git, Node 26.5.1, Chromium 150.0.7871.186, Firefox 153.0.1.
 Reproductible : `make bench-infer` (natif) puis
 `node wasm/harness.mjs --browser <chromium|firefox> --mode bench --build <scalar|simd>`.
 
+## ⚠️ Correction — la projection par décision de ce rapport était fausse
+
+**T30 a mesuré ce que ce rapport supposait, et le compte était décalé d'un cran de profondeur.**
+
+La formule employée ici — `8 × 21 × 20 ≈ 3 360` évaluations pour une décision 2-ply filtrée —
+décrit en réalité un **1-ply**. Mesuré depuis : une décision **1-ply** coûte **7 475** évaluations,
+et le 2-ply le plus serré (filtre 1/1) en coûte **12 951**. Les configurations de filtre moins
+agressives montent à **211 941**.
+
+Ce qui suit dans ce rapport reste valide : **les coûts par évaluation et la pénalité WebAssembly
+sont des mesures directes**, indépendantes du compte d'évaluations. C'est leur multiplication par
+un nombre supposé qui était fausse.
+
+Le détail, les comptes réels et les trois autres corrections sont dans
+[T30](2026-08-03-T30-recherche.md).
+
 ## Verdict
 
 **Sur desktop et sur l'Android mesuré, le 2-ply tient.** Les deux inconnues qui pesaient sur la
