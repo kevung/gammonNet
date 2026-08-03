@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from gammonnet import BLACK, WHITE, Position
+from gammonnet import BLACK, NUM_POINTS, WHITE, Position
 from gammonnet import gnubg_board as gb
 from gammonnet.rules import MAX_PLAYS
 
@@ -294,3 +294,57 @@ def test_every_resulting_position_is_valid_and_switches_turn(identifier, positio
             assert play.result.turn != position.turn, (
                 f"{identifier} {d1}-{d2} : le trait n'a pas changé"
             )
+
+
+# ── L'ordre des dés ──────────────────────────────────────────────────
+
+
+ALL_ORDERED_ROLLS = [(d1, d2) for d1 in range(1, 7) for d2 in range(1, 7)]
+
+
+@pytest.mark.parametrize("identifier,position", [(i, p) for i, _, p in CORPUS_ENTRIES])
+def test_dice_order_does_not_change_the_answer(identifier, position):
+    """`legal_plays(6, 1)` doit rendre exactement `legal_plays(1, 6)`.
+
+    Ce test manquait, et son absence a coûté un vrai bug. Le corpus de T01
+    n'énumérait que les jets `d1 ≤ d2` : la moitié de l'espace n'était pas
+    testée, et le moteur amont s'y comportait différemment.
+
+    La cause est une déduplication par position résultante qui entre en
+    conflit avec la règle « jouer le maximum de dés ». Sur un pion unique au
+    six-point, sortir avec un 6 et jouer 1 puis sortir vident le plateau de la
+    même façon ; la déduplication garde le premier vu, et si c'est le coup à un
+    seul dé, le filtre le rejette ensuite — la position rend alors **aucun coup
+    légal**. `gn_legal_plays` ordonne donc les dés avant d'appeler le backend.
+    """
+    for d1, d2 in ALL_ORDERED_ROLLS:
+        forward = position.legal_plays(d1, d2)
+        backward = position.legal_plays(d2, d1)
+
+        assert {gb.key(p.result) for p in forward} == {gb.key(p.result) for p in backward}, (
+            f"{identifier} : {d1}-{d2} et {d2}-{d1} ne rendent pas les mêmes coups"
+        )
+
+
+def test_the_bearoff_shape_that_exposed_the_order_bug():
+    """Le cas précis : un pion au six-point, un 6 et un petit dé.
+
+    GNU Backgammon rend un coup — jouer le petit dé puis sortir — dans les deux
+    ordres. Sans l'ordonnancement, le moteur amont en rendait zéro pour (6, n)
+    et un pour (n, 6).
+    """
+    points = [0] * NUM_POINTS
+    points[5] = 1
+    points[23] = -15
+    position = Position(tuple(points), (0, 0), (14, 0), WHITE)
+    assert position.is_valid()
+
+    for small in (1, 2, 3, 4, 5):
+        forward = position.legal_plays(6, small)
+        backward = position.legal_plays(small, 6)
+        reference = gnubg_nn.moves(gb.to_gnubg(position), 6, small, 0)
+
+        assert len(forward) == len(backward) == len(reference) == 1, (
+            f"6-{small} : nous {len(forward)}/{len(backward)}, gnubg {len(reference)}"
+        )
+        assert forward[0].result.is_over(), "le pion doit être sorti"

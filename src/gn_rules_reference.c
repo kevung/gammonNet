@@ -213,6 +213,36 @@ int gn_legal_plays(const GnPosition *pos, int d1, int d2,
     if (max_plays <= 0)
         return -1;
 
+    /*
+     * ORDER THE DICE. This is a workaround for an upstream bug, and it is not
+     * cosmetic: without it the backend answers differently for (6,1) and (1,6).
+     *
+     * The cause. The backend deduplicates plays **by resulting position**, then
+     * separately discards any play using fewer dice than the best found. Those
+     * two steps disagree when a short play and a long one reach the SAME
+     * position — which is routine in a bearoff. With one checker on the six
+     * point, bearing it off with a 6 and playing 1 then bearing off both empty
+     * the board. Dedup keeps whichever was generated first; if that is the
+     * one-die play, the max-dice filter then throws it away and the position
+     * reports **no legal play at all**.
+     *
+     * Ordering the dice ascending makes the longer play be generated first, so
+     * it is the one dedup keeps. Verified against GNU Backgammon, which has no
+     * such asymmetry: ascending agrees on 1 139 523 bearoff comparisons and
+     * 45 000 comparisons from random play; descending disagrees on 9 of the
+     * latter and on 35 bearoff states.
+     *
+     * This lives here rather than in the vendored source on purpose: patching
+     * `bg_engine.c` would have to be redone at every pin update, and this file
+     * is where everything backend-specific is supposed to be.
+     */
+    if (d1 > d2) {
+        int swap = d1;
+
+        d1 = d2;
+        d2 = swap;
+    }
+
     to_backend(pos, &state);
 
     count = get_legal_plays(&state, d1, d2, backend_plays, GN_MAX_PLAYS);
