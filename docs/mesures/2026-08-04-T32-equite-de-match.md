@@ -8,6 +8,21 @@
 > match ne fait rien planter : il fait prendre un videau qu'il fallait passer, une fois sur mille,
 > et personne ne le voit jamais.
 
+## ⚠️ Chiffres rejoués après le correctif des règles *(2026-08-04)*
+
+Le correctif de `mochy` sur l'ordre des dés (`505b22e`) a fait diverger les corpus à graine fixe
+— voir la note en tête du [rapport T30](2026-08-03-T30-recherche.md). Les mesures du branchement
+de la table dans la recherche ont été rejouées :
+
+| | avant | après |
+|---|---|---|
+| 2-away/2-away contre money | 44/755 — 5,8 % | **29/789 — 3,7 %** |
+| 25-away/25-away contre money | 3/755 — 0,4 % | **2/789 — 0,3 %** |
+
+**La paire de contrôles garde tout son sens** : la table change les décisions là où elle doit, et
+ne les change pas là où elle ne doit pas. Les valeurs de la table elle-même, elles, ne dépendent
+d'aucun corpus et n'ont pas bougé.
+
 ## Ce qui a été construit
 
 | | |
