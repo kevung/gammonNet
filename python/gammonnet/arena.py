@@ -43,10 +43,22 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from .rules import BLACK, NUM_POINTS, WHITE, Play, Position
+from .rules import BLACK, NUM_POINTS, WHITE, Move, Play, Position
 
 #: Points a single cubeless game can be worth.
 NORMAL, GAMMON, BACKGAMMON = 1, 2, 3
+
+
+def _f32(left: float, op: str, right: float) -> float:
+    """One arithmetic step, rounded to float32 — the engine's precision.
+
+    Used to reproduce `gn_money_equity` term for term in Python. See
+    `NetworkEngine.choose_via_python` for why the width matters.
+    """
+    import struct
+
+    value = left + right if op == "+" else (left - right if op == "-" else left * right)
+    return struct.unpack("f", struct.pack("f", value))[0]
 
 
 # ── Engines ──────────────────────────────────────────────────────────
@@ -92,6 +104,120 @@ class FirstPlayEngine:
     def choose(self, position: Position, d1: int, d2: int, rng: random.Random) -> Play | None:
         plays = position.legal_plays(d1, d2)
         return plays[0] if plays else None
+
+
+@dataclass
+class NetworkEngine:
+    """gammonNet's own network, choosing at 0-ply.
+
+    For each legal play, the resulting position is evaluated and the play that
+    leaves the **opponent** worst off is taken.
+
+    The sign is the whole subtlety. `play.result` has already handed the turn
+    over, so the network's five probabilities describe the OPPONENT's chances,
+    not ours. Our equity is the negative of theirs — which is why this minimises
+    where a careless reading would maximise. Getting it backwards produces an
+    engine that plays deliberately badly and never says so; the round-robin
+    would just report a large negative number that looks like a weak model.
+
+    The whole decision runs in C (`gn_best_play_0ply`). T05 measured the Python
+    binding at a factor of about ten, because it builds an object per legal
+    play — roughly eighteen per decision — and a round-robin at the volume
+    `BRIEF.md` §5 asks for cannot pay that. `choose_via_python` keeps the
+    readable path, and a test holds the two to the same choices: the fast one is
+    only worth trusting while they agree.
+    """
+
+    model: str = "models/cubeless_prob5_512_512_256_128.bin"
+    name: str = "gammonnet-0ply"
+    _network: object = field(default=None, repr=False, compare=False)
+
+    def _load(self):
+        if self._network is None:
+            from pathlib import Path
+
+            from .infer import Network
+
+            path = Path(self.model)
+            if not path.is_absolute():
+                path = Path(__file__).resolve().parent.parent.parent / self.model
+            self._network = Network.load(path)
+        return self._network
+
+    def choose(self, position: Position, d1: int, d2: int, rng: random.Random) -> Play | None:
+        import ctypes
+
+        from .rules import _CPlay, _CPosition, _LIB
+
+        network = self._load()
+
+        if not getattr(_LIB.gn_best_play_0ply, "argtypes", None):
+            _LIB.gn_best_play_0ply.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(_CPosition),
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.POINTER(_CPlay),
+            ]
+            _LIB.gn_best_play_0ply.restype = ctypes.c_int
+
+        chosen = _CPlay()
+        status = _LIB.gn_best_play_0ply(
+            ctypes.c_void_p(network._handle),
+            ctypes.byref(position._to_c()),
+            d1,
+            d2,
+            ctypes.byref(chosen),
+        )
+        if status < 0:
+            raise ValueError(f"gn_best_play_0ply a refusé {position!r} avec {d1}-{d2}")
+        if status == 0:
+            return None
+
+        moves = tuple(
+            Move(chosen.moves[m].from_, chosen.moves[m].to) for m in range(chosen.num_moves)
+        )
+        return Play(moves=moves, result=Position._from_c(chosen.result))
+
+    def choose_via_python(
+        self, position: Position, d1: int, d2: int, rng: random.Random
+    ) -> Play | None:
+        """The same choice, spelled out. Slow, readable, and the fast path's check.
+
+        The equity is accumulated in **float32, in the engine's order of
+        operations**, and that is not pedantry. `Evaluation.money_equity`
+        computes in float64, which separates plays the engine considers tied:
+        in a settled gammon position four different plays came out at exactly
+        `1.999999523163` in float32 while float64 spread them over 1.2e-07 —
+        quantisation noise, not a preference. Ranking on the wider type makes
+        the readable path disagree with the engine on which of several equally
+        good moves to play, and the disagreement says nothing about either.
+
+        A reference implementation should model the arithmetic the engine
+        actually performs, not an idealised one.
+        """
+        plays = position.legal_plays(d1, d2)
+        if not plays:
+            return None
+
+        network = self._load()
+        best, best_equity = None, None
+        for play in plays:
+            if play.result.is_over():
+                # A finished game has no continuation to estimate; score the
+                # stake exactly. Seen from the opponent, hence the minus.
+                equity = -float(game_value(play.result, position.turn))
+            else:
+                w, wg, wbg, lg, lbg = network.evaluate(play.result).as_tuple()
+                # gn_money_equity, term for term: 2w + wg + wbg - lg - lbg - 1
+                equity = _f32(2.0, "*", w)
+                for value, op in ((wg, "+"), (wbg, "+"), (lg, "-"), (lbg, "-"), (1.0, "-")):
+                    equity = _f32(equity, op, value)
+
+            if best_equity is None or equity < best_equity:
+                best, best_equity = play, equity
+
+        return best
 
 
 @dataclass
