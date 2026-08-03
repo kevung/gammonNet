@@ -74,6 +74,23 @@ CFLAGS ?= -O2 -std=c11 -Wall -Wextra -fPIC
 # commit épinglé.
 VENDOR_CFLAGS ?= -O2 -std=c11 -Wall -fPIC
 
+# Passe avant native en réassociation sûre — OPT-IN, `make build NATIVE_FP=1`.
+#
+# T21 a mesuré ×4,1 sur la passe avant en autorisant GCC à réassocier les sommes
+# (13 143 contre 3 218 éval/s), et a retenu ce sous-ensemble de drapeaux pour le
+# build WebAssembly. Mesuré ici en natif : 11 171 contre 2 930 éval/s, ×3,8.
+#
+# Ce n'est PAS le défaut, et c'est délibéré : T20 chiffre sa parité
+# WebAssembly <-> natif contre le natif par défaut. Changer ce défaut
+# déplacerait silencieusement la référence d'une mesure déjà publiée par
+# l'autre piste. À trancher entre les deux pistes, pas d'un côté seulement.
+#
+# T11 a été mesuré AVEC ce drapeau ; son rapport le dit.
+ifeq ($(NATIVE_FP),1)
+VENDOR_CFLAGS := -O3 -std=c11 -Wall -fPIC -fassociative-math -fno-signed-zeros \
+                 -fno-trapping-math -fno-math-errno
+endif
+
 INCLUDES := -Isrc -I$(REFERENCE)/c_engine -I$(REFERENCE)/c_inference
 
 build: $(LIBRARY)
