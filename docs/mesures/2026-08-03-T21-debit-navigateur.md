@@ -142,28 +142,46 @@ page de banc publiée en statique (<https://kevung.github.io/gammonNet/>) a perm
 **sans réseau local ni câble** : le téléphone n'atteint pas la machine de mesure, il atteint
 internet.
 
-| | éval/s | ms/éval | Écart au repère natif |
-|---|---|---|---|
-| Firefox 153 **desktop** | 10 204 | 0,0980 | 4,77e-7 ✅ |
-| **Firefox 152, Android 14, 8 cœurs** | **3 604** | **0,2775** | **4,77e-7 ✅** |
+| | éval/s | ms/éval | Écart au repère natif | Pénalité |
+|---|---|---|---|---|
+| Firefox 153 **desktop** | 10 204 | 0,0980 | 4,77e-7 ✅ | — |
+| **Firefox 153, Android 16, 8 cœurs** | **4 819** | 0,2075 | **4,77e-7 ✅** | **×2,12** |
+| **Firefox 152, Android 14, 8 cœurs** | **3 604** | 0,2775 | **4,77e-7 ✅** | **×2,83** |
 
-> ### La pénalité mobile est de **×2,83**.
+> ### La pénalité mobile est de **×2,12 à ×2,83**, sur deux appareils.
 > Le seuil publié était : *« il faudrait une pénalité de ×13 pour qu'un match dépasse cinq
-> minutes »*. **Mesuré ×2,83 — la prédiction est confirmée, avec une marge de 4,6.**
+> minutes »*. **Mesuré ×2,12 à ×2,83 — la prédiction est confirmée, avec une marge de 4,6 à 6,1.**
 
-Le point le plus important n'est pas le débit, c'est la seconde colonne : **l'écart au repère natif
-est le même sur le téléphone que sur le bureau**, `4,77e-7`. Le moteur ne dérive pas en changeant
-d'architecture. C'était le vrai risque, et il est écarté par la mesure et non par l'espoir.
+L'écart entre les deux téléphones est de ×1,34 : **la dispersion entre appareils est plus faible
+que la marge au seuil**. Il faudrait un appareil cinq fois plus lent que le plus lent des deux
+pour que le 2-ply cesse de tenir.
 
-**Projection sur cet appareil** *(mêmes hypothèses de recherche que plus haut, donc toujours pas
-une mesure)* : une décision 2-ply filtrée à **932 ms**, un match de 7 points à **~70 s sur
-4 workers**.
+### Le résultat qui n'est pas le débit
 
-**Un signal à ne pas perdre** : les sept répétitions s'étalent de **79 à 118 ms**, un facteur 1,5,
-là où le desktop varie de quelques pour cent. C'est la signature d'un ajustement de fréquence ou
-d'un échauffement. Sur une analyse longue, **il faut compter sur le haut de la fourchette**, pas
-sur le meilleur passage — la médiane retenue (111 ms) est du bon côté, mais un match complet est
-un travail soutenu, pas une rafale.
+La colonne de droite porte **exactement le même nombre** sur les trois plateformes — x86-64 sous
+Linux, Android 14, Android 16 — soit trois architectures de processeur différentes. Le moteur ne
+dérive pas en changeant de machine.
+
+Ce n'est pas un hasard : WebAssembly impose la sémantique IEEE-754 stricte, là où du code natif
+s'autoriserait des largeurs de registre ou des contractions différentes d'une cible à l'autre. Le
+savoir et le constater sur trois appareils sont deux choses ; c'est constaté.
+
+**La conséquence dépasse la vérification.** Une analyse produite sur téléphone est *identique* à
+celle produite sur ordinateur — pas « à peu près », au bit près. Pour un projet dont la raison
+d'être est de produire des chiffres qu'on cite et qu'on peut reproduire, c'est une propriété à
+garantir explicitement plutôt qu'à découvrir.
+
+**Projections sur ces appareils** *(mêmes hypothèses de recherche que plus haut, donc toujours pas
+une mesure)* : une décision 2-ply filtrée à **697 ms** (Android 16) et **932 ms** (Android 14),
+un match de 7 points à **~52 s** et **~70 s** sur 4 workers.
+
+**Un signal à ne pas perdre** : les répétitions s'étalent de 79 à 118 ms sur le premier appareil
+(facteur 1,5) et de **58 à 95 ms** sur le second (facteur **1,64**), là où le desktop varie de
+quelques pour cent. C'est la signature d'un ajustement de fréquence ou d'un échauffement, et elle
+**s'aggrave avec la performance de crête**. Sur le second appareil, retenir le meilleur passage
+plutôt que la médiane ferait annoncer 6 900 éval/s au lieu de 4 819 — soit 43 % de trop. La
+médiane est le bon choix, et sur une analyse soutenue c'est même le haut de la fourchette qu'il
+faudrait retenir : un match complet est un travail continu, pas une rafale.
 
 ## Le lot, mesuré — ×2,21, exact au bit près
 
@@ -222,8 +240,10 @@ n'existent.*
   bien.
 - **Rien sur iOS.** Voir T20. Le mobile mesuré est un Android sous Firefox ; **la plateforme
   WebKit reste entièrement non couverte**, et c'est celle où les limites mordent le plus.
-- **Un seul appareil mobile, un seul navigateur.** Un ×2,83 mesuré une fois n'est pas une loi :
-  un téléphone d'entrée de gamme ou plus ancien ferait moins bien.
+- **Deux appareils mobiles, un seul moteur de navigateur.** Les deux tournent sous Firefox, donc
+  sous Gecko. **Blink sur mobile** — Chrome sur Android — n'est pas couvert, et c'est le
+  complément le moins cher qui reste : la même page, dans un autre navigateur, sur les mêmes
+  appareils. Un téléphone d'entrée de gamme ou plus ancien reste également non représenté.
 - **Rien sur les Web Workers** — T23. Le « /4 workers » ci-dessus suppose une mise à l'échelle
   linéaire, qui n'est pas vérifiée.
 
