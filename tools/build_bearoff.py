@@ -100,15 +100,31 @@ def enumerate_states() -> list[tuple[int, ...]]:
     return states
 
 
+def _finish_early_key(distributions, state, empty):
+    """Une clé qui ordonne « finit le plus tôt » en premier.
+
+    Les probabilités cumulées, négatives pour que `min` prenne la meilleure.
+    L'état vide est déjà fini : rien ne le bat.
+    """
+    if state == empty:
+        return (-2.0,)
+    cumulative = []
+    running = 0.0
+    for p in distributions[state]:
+        running += p
+        cumulative.append(-running)
+    return tuple(cumulative)
+
+
 def solve() -> dict[tuple[int, ...], list[float]]:
     """The distribution of rolls-to-finish for every state."""
     states = enumerate_states()
     print(f"{len(states)} états, résolus par pips croissants", flush=True)
 
     empty = (0,) * HOME_POINTS
-    # L'état vide est déjà fini : il n'a pas de distribution sur « encore N
-    # jets ». La liste vide dit cela, et le décalage plus bas s'en accommode.
-    distributions: dict[tuple[int, ...], list[float]] = {empty: [1.0]}
+    # L'état vide est déjà fini. Sa distribution sur « encore N jets » est vide,
+    # et non `[1.0]` : ce serait dire « un jet de plus », ce qui est faux.
+    distributions: dict[tuple[int, ...], list[float]] = {empty: []}
     expected: dict[tuple[int, ...], float] = {empty: 0.0}
 
     started = time.perf_counter()
@@ -122,30 +138,50 @@ def solve() -> dict[tuple[int, ...], list[float]]:
         # comparable à la référence.
         chosen: list[tuple[int, tuple[int, ...]]] = []
         for d1, d2, weight in ROLLS:
-            best = None
-            best_expected = None
-            for candidate in successors(state, d1, d2):
-                value = expected[candidate]
-                if best_expected is None or value < best_expected:
-                    best, best_expected = candidate, value
+            options = successors(state, d1, d2)
+            floor = min(expected[c] for c in options)
+
+            # Minimiser l'espérance ne désigne PAS un successeur unique : deux
+            # coups peuvent partager la même moyenne et se distribuer
+            # autrement. Il faut donc une seconde clé, sans quoi la table
+            # dépend de l'ordre dans lequel le générateur a produit les coups —
+            # ce qui n'est pas un calcul exact mais un accident reproductible.
+            #
+            # Départage par dominance stochastique : à espérance égale, le
+            # successeur le plus susceptible de finir tôt. C'est le seul
+            # départage qui ne demande pas d'information supplémentaire.
+            best = min(
+                (c for c in options if expected[c] <= floor + 1e-12),
+                key=lambda c: _finish_early_key(distributions, c, empty),
+            )
             chosen.append((weight, best))
 
         expected[state] = 1.0 + sum(w * expected[s] for w, s in chosen) / 36.0
 
-        longest = max(len(distributions[s]) for _, s in chosen)
+        # `D[s][i]` est la probabilité que `s` demande EXACTEMENT `i + 1` jets.
+        #
+        # Le décalage se fait successeur par successeur, et pas sur la
+        # distribution entière. Atteindre l'état vide veut dire « exactement un
+        # jet » — donc `D[s][0]` — tandis qu'un successeur non vide qui demande
+        # `j + 1` jets en fait `j + 2` pour `s`, donc `D[s][j + 1]`.
+        #
+        # Décaler globalement mélange les deux cas. C'est ce qu'ont fait mes
+        # deux premières tentatives, l'une donnant « zéro jet » pour un état
+        # plein, l'autre « un jet » pour cinq pions sur l'as. La table de
+        # référence a rendu les deux erreurs immédiatement visibles.
+        longest = max(
+            (len(distributions[s]) for _, s in chosen if s != empty), default=0
+        )
         merged = [0.0] * (longest + 1)
         for weight, successor in chosen:
             share = weight / 36.0
-            for k, p in enumerate(distributions[successor]):
-                merged[k + 1] += share * p
+            if successor == empty:
+                merged[0] += share
+            else:
+                for j, p in enumerate(distributions[successor]):
+                    merged[j + 1] += share * p
 
-        # `merged[0]` est la probabilité de finir en zéro jet, structurellement
-        # nulle pour un état non vide. On la retire pour que l'indice 0 désigne
-        # « exactement un jet », qui est la convention de la table de référence.
-        # Sans cela les deux tables décrivent la même chose et ne se comparent
-        # pas — c'est exactement ce qui s'est produit à la première tentative,
-        # avec un max|Δ| de 1,0 sur l'état le plus simple qui soit.
-        distributions[state] = merged[1:]
+        distributions[state] = merged
 
         if done % 5000 == 0 and done:
             rate = done / (time.perf_counter() - started)
@@ -207,10 +243,37 @@ def check(distributions: dict[tuple[int, ...], list[float]]) -> int:
             if delta > worst:
                 worst, worst_id = delta, identifier
 
+    if worst_id is not None:
+        ours = distributions[mapping[worst_id]]
+        theirs = list(gnubg_nn.bearoff_probabilities(worst_id))
+        print(f"\nÉtat le plus divergent : id {worst_id} {mapping[worst_id]}")
+        print(f"  nous  : {[round(x, 6) for x in ours[:8]]} (len {len(ours)}, somme {sum(ours):.6f})")
+        print(f"  gnubg : {[round(x, 6) for x in theirs[:8]]} (len {len(theirs)}, somme {sum(theirs):.6f})")
+        em = sum((i + 1) * p for i, p in enumerate(ours))
+        et = sum((i + 1) * p for i, p in enumerate(theirs))
+        print(f"  espérance : nous {em:.6f}  gnubg {et:.6f}  écart {em - et:+.6f}")
+
     print(f"\nVérification croisée contre la table de GNU Backgammon")
     print(f"  {len(mapping)} états comparés")
-    print(f"  max|Δ| = {worst:.3e}" + (f" (id {worst_id}, {mapping[worst_id]})" if worst_id else ""))
-    print(f"  longueurs utiles divergentes : {mismatched_length}")
+    print(f"  max|Δ| sur les probabilités = {worst:.3e}" + (f" (id {worst_id})" if worst_id else ""))
+
+    # L'espérance du nombre de jets est ce que la table sert réellement à
+    # calculer : c'est elle qu'il faut comparer, pas seulement le pire écart
+    # ponctuel d'une distribution.
+    means = []
+    for identifier, state in mapping.items():
+        ours = distributions[state]
+        theirs = list(gnubg_nn.bearoff_probabilities(identifier))
+        means.append(
+            sum((i + 1) * p for i, p in enumerate(ours))
+            - sum((i + 1) * p for i, p in enumerate(theirs))
+        )
+    worst_mean = max(abs(m) for m in means)
+    lower = sum(1 for m in means if m < -1e-12)
+    higher = sum(1 for m in means if m > 1e-12)
+    print(f"  max|Δ| sur l'espérance de jets = {worst_mean:.3e}")
+    print(f"  états où NOTRE espérance est plus basse : {lower}")
+    print(f"  états où elle est plus haute            : {higher}")
 
     if worst < 1e-9:
         print("  → identiques. Deux implémentations correctes d'un calcul exact.")
