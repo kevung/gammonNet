@@ -41,7 +41,7 @@ on construit l'instrument avant d'avoir quoi que ce soit à mesurer.
 | **T01** — Position et coups légaux | ✅ [rapport](docs/mesures/2026-08-03-T01-regles.md) |
 | **T02** — Codec ↔ 196 caractéristiques ⚠️ *goulot* | ✅ [rapport](docs/mesures/2026-08-03-T02-codec.md) |
 | **T03** — Oracle GNU Backgammon | ✅ [rapport](docs/mesures/2026-08-03-T03-oracle.md) |
-| **T04** — Harnais de round-robin | à faire |
+| **T04** — Harnais de round-robin | ✅ [rapport](docs/mesures/2026-08-03-T04-round-robin.md) |
 | **T05** — Banc de débit | à faire |
 
 ### Démarrer
