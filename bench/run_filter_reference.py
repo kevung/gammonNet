@@ -129,6 +129,8 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--probe", action="store_true",
                         help="chronométrer quelques décisions et s'arrêter")
+    parser.add_argument("--start", type=int, default=0,
+                        help="reprendre à cette décision (le fichier est complété, pas écrasé)")
     parser.add_argument("--out", default="docs/mesures/t31-reference-2ply.jsonl")
     args = parser.parse_args()
 
@@ -141,6 +143,12 @@ def main() -> int:
         (i, codec.position_id(p), p.turn, d1, d2)
         for i, (p, d1, d2) in enumerate(points)
     ]
+    # Reprendre plutôt que refaire. Les points de décision dérivent de la
+    # graine et de l'indice, donc la décision numéro `i` est la même à toutes
+    # les exécutions : couper le calcul ne perd rien, il suffit de repartir de
+    # là. C'est ce qui rend une coupure décidable sur des données plutôt que
+    # redoutée comme un gaspillage.
+    payloads = payloads[args.start:]
 
     if args.probe:
         print("Sonde : coût d'une décision 2-ply NON FILTRÉE, un processus")
@@ -170,13 +178,13 @@ def main() -> int:
     out_path = ROOT / args.out
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    done = 0
-    with out_path.open("w") as handle, ProcessPoolExecutor(max_workers=args.workers) as pool:
+    done = args.start
+    with out_path.open("a" if args.start else "w") as handle, ProcessPoolExecutor(max_workers=args.workers) as pool:
         for result in pool.map(evaluate_one, payloads, chunksize=1):
             handle.write(json.dumps(result, sort_keys=True) + "\n")
             handle.flush()
             done += 1
-            if done % 50 == 0:
+            if done % 25 == 0:
                 rate = done / (time.perf_counter() - started)
                 remaining = (count - done) / rate / 60
                 print(f"  {done}/{count} — {rate * 60:.1f} décisions/min, "
