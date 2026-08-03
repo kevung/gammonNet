@@ -69,6 +69,14 @@ perte-backgammon — indispensables au match play (§6). Les variantes `cubeful_
 
 ### 3.2 Le moteur d'inférence — `hedgehog-public`
 
+> **Tranché en T22 le 2026-08-03 : son code n'est pas embarqué.** Le gain qu'on en attendait est
+> plafonné à 19 % — la part de la couche d'entrée dans les MACs de ce réseau, seule chose que
+> l'accumulation NNUE optimise — et le mode dense la désactive de toute façon. Les ×9 de débit
+> obtenus l'ont été dans le code existant, sur des causes indépendantes du moteur. Motif complet
+> dans [ADR-0001](docs/adr/0001-moteur-inference.md). **Ce qui suit garde sa valeur documentaire**
+> : c'est l'analyse qui a conduit à la décision, et le chemin d'intégration reste ouvert si elle
+> devait être révisée.
+
 <https://gitlab.com/eranlambooij/hedgehog-public> — **licence MIT** (fichier `LICENSE`).
 
 Contient : chargeur de modèle OGXF, forward NNUE avec accumulation incrémentale, routage

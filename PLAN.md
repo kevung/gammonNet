@@ -301,8 +301,16 @@ de l'artefact, effort d'intégration, dette.
 **Livrable** — une note de décision **chiffrée**, versionnée dans le dépôt.
 
 **Critères d'acceptation**
-- Les deux candidats sont réellement mesurés, pas seulement discutés.
+- ~~Les deux candidats sont réellement mesurés, pas seulement discutés.~~ **Amendé le
+  2026-08-03** : le second candidat n'a pas été construit. Son gain est **plafonné par
+  arithmétique** — l'accumulation NNUE n'optimise que la couche d'entrée, soit 19 % des
+  528 389 MACs de ce réseau, et le mode dense la désactive de toute façon. Les ×9 obtenus l'ont
+  été dans le code existant, sur des causes indépendantes du moteur. Motif et conséquences dans
+  [ADR-0001](docs/adr/0001-moteur-inference.md).
 - La note dit ce qui a été mesuré et ce qui a été estimé.
+
+**Décidé** — le moteur retenu est le C du dépôt de référence, isolé derrière `src/gn_infer.h`.
+Voir [ADR-0001](docs/adr/0001-moteur-inference.md).
 
 ## T23 — Ordonnancement Web Worker
 
