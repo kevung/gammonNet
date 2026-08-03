@@ -130,8 +130,13 @@ model: $(MODEL)
 $(MODEL):
 	$(PYTHON) tools/export_model.py
 
-corpus:
+corpus: corpus-t01 corpus-t12
+
+corpus-t01:
 	$(PYTHON) tools/build_corpus_t01.py
+
+corpus-t12:
+	$(PYTHON) tools/build_corpus_t12.py
 
 # ── WebAssembly ──────────────────────────────────────────────────────
 #
