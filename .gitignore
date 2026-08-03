@@ -1,4 +1,5 @@
 build/
+vendor
 vendor/
 models/*.pt
 models/*.bin
