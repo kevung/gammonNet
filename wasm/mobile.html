@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gammonNet — banc mobile</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    font: 16px/1.55 system-ui, sans-serif;
+    margin: 0; padding: 1.25rem;
+    max-width: 40rem; margin-inline: auto;
+  }
+  h1 { font-size: 1.3rem; margin: 0 0 .25rem; }
+  p.lede { margin: 0 0 1.5rem; opacity: .75; font-size: .9rem; }
+  button {
+    font: inherit; font-weight: 600;
+    width: 100%; padding: 1rem; margin-bottom: 1rem;
+    border: 0; border-radius: .6rem;
+    background: #2563eb; color: #fff;
+  }
+  button[disabled] { opacity: .5; }
+  button.secondary { background: #64748b; }
+  #status { margin: 0 0 1rem; font-size: .9rem; opacity: .8; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+  th, td { text-align: left; padding: .45rem .3rem; border-bottom: 1px solid #8883; }
+  th { font-weight: 600; width: 55%; }
+  td { font-variant-numeric: tabular-nums; }
+  .headline { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .verdict { padding: .9rem; border-radius: .6rem; margin-bottom: 1rem; font-weight: 600; }
+  .ok { background: #16a34a22; } .warn { background: #ea580c22; } .ko { background: #dc262622; }
+  pre {
+    white-space: pre-wrap; word-break: break-all;
+    font-size: .75rem; padding: .75rem;
+    background: #8881; border-radius: .5rem;
+  }
+  footer { font-size: .75rem; opacity: .6; margin-top: 2rem; }
+</style>
+
+<h1>gammonNet — banc mobile</h1>
+<p class="lede">
+  Mesure le débit d'évaluation du réseau sur <em>cet</em> appareil. Environ 2,5 Mio à
+  télécharger. Rien n'est envoyé nulle part : le résultat s'affiche ici.
+</p>
+
+<button id="run">Lancer la mesure</button>
+<p id="status">Prêt.</p>
+
+<div id="results" hidden>
+  <div id="verdict" class="verdict"></div>
+  <table>
+    <tr><th>Évaluations par seconde</th><td class="headline" id="eps">—</td></tr>
+    <tr><th>Coût d'une évaluation</th><td id="mpe">—</td></tr>
+    <tr><th>Écart au repère natif</th><td id="delta">—</td></tr>
+    <tr><th>SIMD</th><td id="simd">—</td></tr>
+    <tr><th>Cœurs annoncés</th><td id="cores">—</td></tr>
+    <tr><th>Décision 2-ply filtrée <em>(projection)</em></th><td id="ply2">—</td></tr>
+    <tr><th>Match de 7 points, 4 workers <em>(projection)</em></th><td id="match">—</td></tr>
+  </table>
+  <button class="secondary" id="copy">Copier le résultat</button>
+  <pre id="raw"></pre>
+</div>
+
+<footer>
+  Réseau <code>cubeless_prob5_512_512_256_128</code> — Copyright (c) 2026 alexstrehl, licence MIT.
+  Moteur gammonNet — Copyright (c) 2026 Kévin Unger, licence MIT.
+  Aucun réseau HedgeHog ni poids GNU Backgammon n'entre dans cet artefact.
+</footer>
+
+<script type="module">
+  // Le banc de bureau renvoie son résultat par POST à un harnais local. Ici il
+  // n'y a pas de harnais : le téléphone n'atteint pas la machine de mesure, il
+  // atteint internet. Le résultat s'affiche donc, et se copie.
+  const REPETITIONS = 7;
+
+  // Constantes de projection. Ce ne sont PAS des mesures — la recherche (T30)
+  // n'existe pas encore. Voir docs/mesures/2026-08-03-T21-debit-navigateur.md.
+  const MOVES_PER_DECISION = 20;   // coups légaux moyens
+  const FILTERED_MOVES = 8;        // après filtrage (T31)
+  const ROLLS = 21;                // jets distincts de l'adversaire
+  const DECISIONS_PER_MATCH = 300; // match de 7 points
+  const WORKERS = 4;
+
+  const $ = (id) => document.getElementById(id);
+  const status = (text) => { $("status").textContent = text; };
+
+  async function start() {
+    $("run").disabled = true;
+    try {
+      await measure();
+    } catch (error) {
+      status("❌ " + (error?.stack || error));
+      $("run").disabled = false;
+    }
+  }
+
+  $("run").addEventListener("click", start);
+
+  // `?auto=1` démarre sans clic. Sur un téléphone on clique ; c'est pour que la
+  // page reste vérifiable en headless — une page de mesure qu'on ne peut pas
+  // tester automatiquement finit par être publiée cassée.
+  if (new URLSearchParams(location.search).get("auto") === "1") start();
+
+  async function measure() {
+    status("chargement du moteur…");
+    const { Evaluator } = await import("./gammonnet.mjs");
+
+    // Le build SIMD, parce que c'est celui qui serait servi : sans lui la
+    // réassociation n'a rien à vectoriser et le débit s'effondre d'un facteur 4.
+    const { default: factory } = await import("./gammonnet-simd.mjs");
+
+    status("téléchargement du modèle (2 Mio)…");
+    const modelBytes = new Uint8Array(
+      await (await fetch("./model.bin")).arrayBuffer(),
+    );
+    const evaluator = await Evaluator.create(factory, modelBytes);
+
+    status("téléchargement du repère…");
+    const raw = await (await fetch("./reference.bin")).arrayBuffer();
+    const view = new DataView(raw);
+    const count = view.getInt32(4, true);
+    const numFeatures = view.getInt32(8, true);
+    const numOutputs = view.getInt32(12, true);
+    const features = new Float32Array(raw, 16, count * numFeatures);
+    const expected = new Float32Array(
+      raw, 16 + count * numFeatures * 4, count * numOutputs,
+    );
+
+    // La justesse d'abord. Un débit mesuré sur un moteur qui répond faux ne
+    // vaut rien, et sur mobile c'est le seul contrôle qu'on aura.
+    status("vérification…");
+    const got = evaluator.evaluateBatch(features, count);
+    let worst = 0;
+    for (let i = 0; i < got.length; i++) {
+      worst = Math.max(worst, Math.abs(got[i] - expected[i]));
+    }
+
+    status("mesure en cours…");
+    evaluator.evaluateBatch(features, count); // tour à blanc
+    const samples = [];
+    for (let r = 0; r < REPETITIONS; r++) {
+      const start = performance.now();
+      evaluator.evaluateBatch(features, count);
+      samples.push(performance.now() - start);
+      // Rendre la main entre les répétitions : sur mobile, monopoliser le fil
+      // principal invite le système à intervenir, et l'on mesurerait ça.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    samples.sort((a, b) => a - b);
+    const median = samples[Math.floor(samples.length / 2)];
+
+    // Une horloge qui n'a pas avancé ne rend pas un débit infini : elle ne rend
+    // rien. Un navigateur piloté avec un budget de temps virtuel, ou dont la
+    // minuterie est bridée pour raisons de sécurité, produit ici des zéros — et
+    // une page qui en tirerait « le 2-ply tient » serait précisément le mode de
+    // défaillance silencieux que ce projet refuse.
+    if (!(median > 0) || !Number.isFinite(median)) {
+      throw new Error(
+        "l'horloge n'a pas avancé pendant la mesure (médiane = " + median +
+        " ms). Aucun débit ne peut en être tiré. Si la page est pilotée " +
+        "automatiquement, retirer le budget de temps virtuel.",
+      );
+    }
+
+    const evalsPerSecond = (count / median) * 1000;
+    const msPerEval = median / count;
+    const ply2Ms = FILTERED_MOVES * ROLLS * MOVES_PER_DECISION * msPerEval;
+    const matchS = (ply2Ms * DECISIONS_PER_MATCH) / WORKERS / 1000;
+
+    const payload = {
+      appareil: navigator.userAgent,
+      coeurs: navigator.hardwareConcurrency ?? null,
+      simd: evaluator.hasSimd,
+      positions: count,
+      repetitions: REPETITIONS,
+      medianeMs: Number(median.toFixed(3)),
+      echantillonsMs: samples.map((s) => Number(s.toFixed(3))),
+      evaluationsParSeconde: Math.round(evalsPerSecond),
+      msParEvaluation: Number(msPerEval.toFixed(5)),
+      ecartAuRepereNatif: worst,
+      pariteOk: worst < 1e-6,
+      projectionDecision2plyMs: Math.round(ply2Ms),
+      projectionMatch7ptsSecondes: Math.round(matchS),
+    };
+
+    $("eps").textContent = payload.evaluationsParSeconde.toLocaleString("fr-FR");
+    $("mpe").textContent = msPerEval.toFixed(4) + " ms";
+    $("delta").textContent =
+      worst.toExponential(2) + (payload.pariteOk ? "  ✅" : "  ❌ hors tolérance");
+    $("simd").textContent = evaluator.hasSimd ? "actif" : "absent";
+    $("cores").textContent = payload.coeurs ?? "inconnu";
+    $("ply2").textContent = Math.round(ply2Ms) + " ms";
+    $("match").textContent = Math.round(matchS) + " s";
+
+    // Le seuil que le rapport T21 a publié d'avance : un match qui dépasse
+    // cinq minutes sort de l'usage interactif.
+    const verdict = $("verdict");
+    if (!payload.pariteOk) {
+      verdict.className = "verdict ko";
+      verdict.textContent =
+        "❌ Le moteur ne répond pas comme le natif sur cet appareil. Le débit " +
+        "ci-dessous ne veut rien dire tant que ce point n'est pas élucidé.";
+    } else if (matchS <= 120) {
+      verdict.className = "verdict ok";
+      verdict.textContent =
+        `✅ Le 2-ply tient sur cet appareil : ~${Math.round(matchS)} s par match ` +
+        `de 7 points sur 4 workers (projection).`;
+    } else if (matchS <= 300) {
+      verdict.className = "verdict warn";
+      verdict.textContent =
+        `⚠️ Le 2-ply passe, mais lentement : ~${Math.round(matchS / 60)} min par ` +
+        `match (projection). Une barre de progression devient obligatoire.`;
+    } else {
+      verdict.className = "verdict ko";
+      verdict.textContent =
+        `❌ Le 2-ply ne tient pas en interactif ici : ~${Math.round(matchS / 60)} min ` +
+        `par match (projection). La cible du projet doit être révisée pour mobile.`;
+    }
+
+    $("raw").textContent = JSON.stringify(payload, null, 2);
+
+    // Au mieux : si un harnais local écoute, il récupère le résultat. Sur une
+    // page statique publiée, personne n'écoute et l'échec est sans conséquence.
+    // C'est ce qui rend la page vérifiable automatiquement avant publication.
+    fetch("/report", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
+    $("results").hidden = false;
+    status("terminé.");
+    $("run").disabled = false;
+
+    $("copy").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText($("raw").textContent);
+        $("copy").textContent = "copié ✅";
+      } catch {
+        $("copy").textContent = "sélectionnez le texte ci-dessous";
+      }
+    });
+  }
+</script>
+</html>
