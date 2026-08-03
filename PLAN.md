@@ -53,6 +53,7 @@ de GPU. La séparation n'est pas une commodité d'organisation, elle est matéri
 | T02, T03, T04 | **`mochy`** | L'instrument de mesure ; T03 et T04 veulent les 32 fils |
 | **T10** | **bureau** | **Déplacée.** Toute la piste B en dépend directement ; la refaire des deux côtés serait du gaspillage |
 | T20, T21, T30, T31 | **bureau** | Descente anticipée vers le verdict navigateur |
+| T22, T23 | **bureau** | Suite naturelle de la phase 2 : le choix du moteur (T22) se tranche **sur mesure**, donc là où l'on mesure |
 | T11, T12 | **`mochy`** | Reprend après T10 ; c'est le seul très gros calcul |
 | T33 (volet **coût**) | bureau | Générer le bearoff et **mesurer ses octets** — entrée du budget navigateur |
 
