@@ -1,0 +1,12 @@
+build/
+models/*.pt
+models/*.bin
+!models/README.md
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.o
+*.so
+*.wasm
+node_modules/
