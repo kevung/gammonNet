@@ -74,6 +74,44 @@ une même tâche a une moitié bon marché et une moitié coûteuse.
 
 Le livrable reste unique et la fiche aussi ; c'est l'exécution qui se répartit.
 
+### File d'attente de `mochy` *(au 2026-08-04)*
+
+> **Agent qui exécute la roadmap sur `mochy` : prendre dans cet ordre.**
+
+| | Tâche | Pourquoi maintenant |
+|---|---|---|
+| **1** | **T33** — tables de fin de partie | **Ne dépend de rien** : ni du filtre, ni de l'équité de match, ni du modèle. Son critère est une **vérification croisée** — deux implémentations correctes d'un calcul exact produisent des fichiers identiques. Travail long, parfaitement isolé |
+| **2** | **T31, la moitié coûteuse** — référence 2-ply **non filtrée** | ~1 812 000 évaluations par décision, soit **~5,1 s** sur 32 fils. Le bureau écrit le harnais et le corpus ; `mochy` produit la référence |
+| **3** | **T12** — corpus de non-régression | Peu coûteux, indépendant, à glisser entre les deux |
+
+**Ne pas prendre T35.** Elle est la **somme** de T31, T32, T33 et T34 — son périmètre dit
+« configuration complète ». Lancée avant, elle mesurerait un filtre arbitraire, sans équité de
+match et sans bearoff, et **produirait un chiffre que chacune des quatre viendrait invalider**.
+Dans un projet qui ne cite que des mesures, un chiffre obsolète est pire que pas de chiffre : on
+le retrouve cité six mois plus tard.
+
+#### Dimensionner la référence de T31 plutôt que la fixer
+
+Le critère de T31 demande « ≥ 100 000 décisions ». À 5,1 s la décision, cela ferait **six jours de
+`mochy` pour la seule référence**.
+
+C'est probablement sur-spécifié, du même genre que le million de T35. Si le taux de désaccord est
+de l'ordre de 5 %, **2 000 décisions en produisent une centaine**, soit un intervalle de ±1 % sur
+le taux — de quoi distinguer 3 % de 10 % sans hésitation.
+
+**Faire 2 000 décisions d'abord, mesurer la variance observée, puis dimensionner.** Fixer un
+nombre à l'avance dans un sens ou dans l'autre serait deviner.
+
+#### Une répétition avant T35, quand son tour viendra
+
+Avant d'engager les ~2,3 jours de T35, faire tourner le pipeline complet sur **2 000 parties**.
+Non pour un chiffre de force — il n'en sortirait rien de citable — mais pour **mesurer le débit
+réel** et **attraper les défauts d'échelle du harnais avant qu'ils ne coûtent deux jours**.
+
+Ce n'est pas théorique : T11 a trouvé exactement cela, un bootstrap en
+`O(rééchantillonnages × n)` qui laissait la machine au repos quarante minutes en affichant
+« calcul en cours ». Le trouver sur 2 000 parties coûte trois heures ; sur 100 000, quarante-huit.
+
 ### Pourquoi T20/T21 remontent avant T11
 
 Le critère de T21 — *« le 2-ply tient-il dans le navigateur ? »* — est **la mesure qui peut
