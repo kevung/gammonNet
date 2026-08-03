@@ -44,6 +44,7 @@ c'est normal : on construit l'instrument avant d'avoir quoi que ce soit à mesur
 | **T04** — Harnais de round-robin | ✅ [rapport](docs/mesures/2026-08-03-T04-round-robin.md) |
 | **T05** — Banc de débit | ✅ [rapport](docs/mesures/2026-08-03-T05-debits.md) |
 | **T10** — Charger et exécuter le modèle | ✅ [rapport](docs/mesures/2026-08-03-T10-inference.md) |
+| **T12** — Corpus de non-régression | ✅ [rapport](docs/mesures/2026-08-04-T12-non-regression.md) |
 | **T11** — Round-robin de vérification | ✅ [rapport](docs/mesures/2026-08-03-T11-verification.md) |
 | **T20** — Build WebAssembly | ✅ [rapport](docs/mesures/2026-08-03-T20-wasm.md) |
 | **T21** — Banc de débit navigateur | ⏳ partiel — [rapport](docs/mesures/2026-08-03-T21-debit-navigateur.md) |
