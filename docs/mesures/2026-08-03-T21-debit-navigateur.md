@@ -1,12 +1,20 @@
 # T21 — Banc de débit navigateur : le volet évaluation
 
-**Date** : 2026-08-03 · **Machine** : bureau (piste B) · **Branche** : `t21-bench`
+**Date** : 2026-08-03 · **Machine** : bureau (piste B) + un Android réel · **Branches** :
+`t21-bench`, `t21-verdict`
 
 > **Rapport partiel.** T21 demande un verdict sur le **coût d'une décision**, qui suppose une
 > recherche — T30, pas encore écrite. Ce document établit le coût d'une **évaluation**, qui en est
 > l'atome, et la **pénalité WebAssembly**, qui était l'inconnue centrale du projet. Les coûts par
 > décision cités plus bas sont des **projections à partir d'un nombre d'évaluations**, jamais des
 > mesures, et sont marqués comme tels.
+>
+> **Deux ajouts du même jour**, après la première rédaction :
+> - Le volet mobile, annoncé plus bas comme impossible faute d'appareil, a été **mesuré sur un
+>   Android réel**. Le seuil réfutable que ce rapport publiait d'avance a été **confronté et
+>   confirmé**. Voir *Le mobile, mesuré*.
+> - Le traitement par lot, cité comme « hypothèse à mesurer », a été **mesuré** : ×2,21, exact au
+>   bit près. Voir *Le lot, mesuré*.
 
 ## Le chiffre que le projet attendait
 
@@ -127,13 +135,95 @@ Une porte est ouverte pour le faire sans câble ni réseau local : publier la pa
 statique et l'ouvrir sur le téléphone via sa propre connexion. Le téléphone n'a pas besoin
 d'atteindre le PC, seulement internet.
 
+## Le mobile, mesuré — le seuil est confronté et confirmé
+
+La section précédente publiait un seuil réfutable faute d'appareil. Un Android a été trouvé, et la
+page de banc publiée en statique (<https://kevung.github.io/gammonNet/>) a permis de le mesurer
+**sans réseau local ni câble** : le téléphone n'atteint pas la machine de mesure, il atteint
+internet.
+
+| | éval/s | ms/éval | Écart au repère natif |
+|---|---|---|---|
+| Firefox 153 **desktop** | 10 204 | 0,0980 | 4,77e-7 ✅ |
+| **Firefox 152, Android 14, 8 cœurs** | **3 604** | **0,2775** | **4,77e-7 ✅** |
+
+> ### La pénalité mobile est de **×2,83**.
+> Le seuil publié était : *« il faudrait une pénalité de ×13 pour qu'un match dépasse cinq
+> minutes »*. **Mesuré ×2,83 — la prédiction est confirmée, avec une marge de 4,6.**
+
+Le point le plus important n'est pas le débit, c'est la seconde colonne : **l'écart au repère natif
+est le même sur le téléphone que sur le bureau**, `4,77e-7`. Le moteur ne dérive pas en changeant
+d'architecture. C'était le vrai risque, et il est écarté par la mesure et non par l'espoir.
+
+**Projection sur cet appareil** *(mêmes hypothèses de recherche que plus haut, donc toujours pas
+une mesure)* : une décision 2-ply filtrée à **932 ms**, un match de 7 points à **~70 s sur
+4 workers**.
+
+**Un signal à ne pas perdre** : les sept répétitions s'étalent de **79 à 118 ms**, un facteur 1,5,
+là où le desktop varie de quelques pour cent. C'est la signature d'un ajustement de fréquence ou
+d'un échauffement. Sur une analyse longue, **il faut compter sur le haut de la fourchette**, pas
+sur le meilleur passage — la médiane retenue (111 ms) est du bon côté, mais un match complet est
+un travail soutenu, pas une rafale.
+
+## Le lot, mesuré — ×2,21, exact au bit près
+
+Le rapport citait le lot comme « hypothèse à mesurer, pas un acquis ». Mesuré par
+`bench/bench_batch.c`, à drapeaux identiques :
+
+| Lot | éval/s | vs ligne de base | Écart au repère |
+|---|---|---|---|
+| **1** *(ligne de base réelle)* | **13 550** | — | — |
+| 8 | 9 208 | 0,68× | `0` |
+| 16 | 17 872 | 1,32× | `0` |
+| **32** | **29 942** | **×2,21** | **`0`** |
+
+**L'hypothèse de la bande passante était la bonne.** On relisait 2,0 Mio de poids par évaluation,
+soit ~27,6 Gio/s de trafic ; on les relit maintenant une fois pour trente-deux.
+
+**Et c'est gratuit en justesse** : en conservant l'ordre de sommation de chaque sortie, le
+résultat est **identique au bit près**, vérifié sur les 2 000 positions du repère. Ce n'est pas
+une tolérance, c'est une égalité.
+
+Deux mises en garde :
+
+- **Le banc affiche en interne un « ×24,89 » qu'il ne faut pas citer.** Son lot = 1 traverse le
+  code générique avec transposition, un épouvantail à 1 203 éval/s. Comparé au vrai chemin
+  optimisé, le gain est **×2,21**.
+- **Le lot de 8 est plus lent que la ligne de base.** Le surcoût de transposition n'est amorti
+  qu'à partir de 16. Or une recherche a naturellement ~20 coups frères : on est au bon endroit,
+  mais **sans marge**. Un filtre de coups agressif (T31) réduirait la largeur et pourrait annuler
+  le bénéfice — les deux optimisations se disputent la même ressource, et T30/T31 devront les
+  arbitrer ensemble plutôt que séparément.
+
+### Ce qui reste, et ce qui est écarté
+
+| Levier | Gain | Justesse |
+|---|---|---|
+| **Lot** | **×2,21 mesuré** | **exact au bit près** |
+| Dévirtualiser l'activation — 1 408 appels indirects par évaluation | quelques % *(non mesuré)* | exact |
+| Parcimonie de l'entrée, accumulation incrémentale | **plafonné à 19 %** | exact |
+| Quantification int8 | ×4 sur le trafic ; le modèle passerait de 2,0 Mio à ~530 Kio | **concession — écartée** |
+
+Le plafond de 19 % mérite d'être souligné parce qu'il contredit un réflexe : **l'accumulation
+incrémentale de HedgeHog ne rapporterait au mieux que 19 % sur ce réseau**, puisque c'est tout ce
+que pèse la couche d'entrée dans les 528 389 MACs. Copier leur architecture pour la vitesse serait
+un contresens ici — ce qui rejoint la correction apportée au `BRIEF.md` §3.2.
+
+**Cumul plausible** : ×4,1 acquis par la réassociation, ×2,2 par le lot, soit **×9 depuis le point
+de départ**. Sur l'Android mesuré, cela donnerait ~7 900 éval/s, une décision 2-ply vers 420 ms, un
+match vers **32 s sur 4 workers**. *Projection d'une projection : ni la recherche ni les workers
+n'existent.*
+
 ## Réserves
 
 - **Mesures headless.** Le contrôle croisé en mode fenêtré reste à faire.
 - **Une seule machine**, sur secteur, sans contrôle de la gouvernance de fréquence. Un Ryzen 7 PRO
   6850U est un processeur portable : un desktop de bureau ferait mieux, un vieux portable moins
   bien.
-- **Rien sur iOS.** Voir T20.
+- **Rien sur iOS.** Voir T20. Le mobile mesuré est un Android sous Firefox ; **la plateforme
+  WebKit reste entièrement non couverte**, et c'est celle où les limites mordent le plus.
+- **Un seul appareil mobile, un seul navigateur.** Un ×2,83 mesuré une fois n'est pas une loi :
+  un téléphone d'entrée de gamme ou plus ancien ferait moins bien.
 - **Rien sur les Web Workers** — T23. Le « /4 workers » ci-dessus suppose une mise à l'échelle
   linéaire, qui n'est pas vérifiée.
 
@@ -147,9 +237,8 @@ La question du moteur d'inférence se pose maintenant sur des chiffres :
   structurelle, mais pas toute.
 - **Le lot n'est pas exploité.** `gnw_evaluate_batch` boucle sur des évaluations unitaires. Or une
   recherche évalue naturellement ~20 coups frères d'un coup : les traiter comme une seule
-  multiplication matricielle relirait les 2 Mio de poids une fois au lieu de vingt. **Hypothèse à
-  mesurer**, pas un acquis — mais c'est le levier le plus prometteur, et il est gratuit en
-  précision.
+  multiplication matricielle relirait les 2 Mio de poids une fois au lieu de vingt.
+  **→ Mesuré depuis : ×2,21, exact au bit près. Voir *Le lot, mesuré*.**
 
 ## Configuration
 
@@ -159,4 +248,14 @@ Emscripten 6.0.5-git, Node 26.5.1, Chromium 150.0.7871.186, Firefox 153.0.1.
 Reproductible : `make bench-infer` (natif) puis
 `node wasm/harness.mjs --browser <chromium|firefox> --mode bench --build <scalar|simd>`.
 
-Suite : **T30**, la recherche — sans laquelle le verdict de T21 reste partiel.
+## Verdict
+
+**Sur desktop et sur l'Android mesuré, le 2-ply tient.** Les deux inconnues qui pesaient sur la
+cible du projet sont chiffrées : pénalité WebAssembly **×1,18 à ×1,29**, pénalité mobile
+**×2,83** — l'une et l'autre bien en deçà de ce qui était redouté.
+
+Ce verdict porte sur le **coût d'une évaluation**, mesuré, et sur un **coût de décision projeté**
+à partir d'un nombre d'évaluations supposé. Il devient définitif quand T30 remplace cette
+supposition par un compte réel. Il ne dit rien d'iOS.
+
+Suite : **T30**, la recherche.
