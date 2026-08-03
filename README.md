@@ -38,7 +38,7 @@ on construit l'instrument avant d'avoir quoi que ce soit à mesurer.
 | Tâche | État |
 |---|---|
 | **T00** — Amorçage du dépôt et de l'environnement | ✅ [rapport](docs/mesures/2026-08-03-T00-socle.md) |
-| **T01** — Position et coups légaux | à faire |
+| **T01** — Position et coups légaux | ✅ [rapport](docs/mesures/2026-08-03-T01-regles.md) |
 | **T02** — Codec ↔ 196 caractéristiques ⚠️ *goulot* | à faire |
 | **T03** — Oracle GNU Backgammon | à faire |
 | **T04** — Harnais de round-robin | à faire |
@@ -48,6 +48,7 @@ on construit l'instrument avant d'avoir quoi que ce soit à mesurer.
 
 ```bash
 make setup     # environnement Python, sources tierces épinglées, moteur C compilé
+make build     # compile build/libgammonnet.so (cible native)
 make env       # consigne la machine et la chaîne d'outils — toute mesure les cite
 make test
 ```

@@ -21,7 +21,13 @@ exact qui l'a produite.
 
 | Brique | Auteur | Licence | Commit épinglé | Ce qui en est utilisé |
 |---|---|---|---|---|
-| [`backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine) | Alexander Strehl | MIT — vérifiée par lecture du fichier `LICENSE` (« Copyright (c) 2026 alexstrehl »), pas par confiance dans le nom du dépôt | `b2750df` | Aujourd'hui : le moteur de règles C (`c_engine/bg_engine.c`) et les poids `cubeless_prob5_512_512_256_128.pt` comme référence de mesure. À terme embarqués dans l'artefact : les poids, et le moteur d'inférence C (`c_inference/nn_eval.c`) |
+| [`backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine) | Alexander Strehl | MIT — vérifiée par lecture du fichier `LICENSE` (« Copyright (c) 2026 alexstrehl »), pas par confiance dans le nom du dépôt | `b2750df` | **`c_engine/bg_engine.c`, compilé dans `build/libgammonnet.so`** — le moteur de règles, derrière notre `src/gn_rules.h`. Également : les poids `cubeless_prob5_512_512_256_128.pt` comme référence de mesure. À terme dans l'artefact distribué : les poids, et le moteur d'inférence C (`c_inference/nn_eval.c`) |
+
+> **`bg_engine.c` est déjà lié dans notre bibliothèque native.** Dès que celle-ci sera
+> distribuée — et un module WebAssembly servi à un navigateur **est** une distribution — la
+> notice MIT d'Alexander Strehl devra accompagner l'artefact, et pas seulement ce fichier.
+> C'est une condition de livraison de T50, notée ici pour qu'elle ne se découvre pas à ce
+> moment-là.
 
 ## Prévu
 
