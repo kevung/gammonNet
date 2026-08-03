@@ -102,6 +102,50 @@ le taux — de quoi distinguer 3 % de 10 % sans hésitation.
 **Faire 2 000 décisions d'abord, mesurer la variance observée, puis dimensionner.** Fixer un
 nombre à l'avance dans un sens ou dans l'autre serait deviner.
 
+### La référence finale est **GNU Backgammon lui-même**, pas `gnubg-nn` *(2026-08-04)*
+
+> **Décision de projet.** Les mesures qui engagent une conclusion de force en **match** ou sur le
+> **videau** se font contre **GNU Backgammon**, pas contre `gnubg-nn`.
+
+**Le motif est une mesure, faite en T32.** L'oracle `gnubg-nn` 1.1.0a9 n'utilise pas la même table
+d'équité de match que nous :
+
+| | |
+|---|---|
+| `gnubg-nn` contre Kazaross-XG2 | **`max\|Δ\| = 2,679e-02`** sur 625 entrées |
+| Pire écart | 8-away contre 15-away : oracle `+0,562000`, Kazaross `+0,588794` |
+
+Une décision de videau se joue sur des marges bien inférieures à 0,027 d'équité. Comparer nos
+décisions à celles de `gnubg-nn` mesurerait donc surtout **l'écart entre les tables**, pas entre
+les modèles — un confondant qui aurait pollué T34 et la moitié match de T35 sans jamais se
+signaler.
+
+**GNU Backgammon n'a pas ce problème** : il charge **Kazaross-XG2 par défaut**, c'est-à-dire notre
+table, vérifiée entrée par entrée à `max|Δ| = 0`. La comparaison porte alors sur ce qu'on veut
+comparer.
+
+**Il est scriptable**, ce qui rend l'automatisation possible :
+
+```bash
+printf 'show matchequitytable\nquit\n' | gnubg --tty --quiet --no-rc
+```
+
+Version présente sur la machine de bureau : **1.08.003 (2026-02-24)**.
+
+**Trois tâches sont concernées :**
+
+- **T34** — le taux d'accord sur les décisions de videau n'a de sens que contre un moteur qui
+  partage la table.
+- **T35** — la moitié **match** du round-robin. La moitié money reste comparable à `gnubg-nn`,
+  qui ne consulte aucune table en money.
+- **T11** — et c'est un bénéfice inattendu : le rapport de T11 citait *« rejouer contre GNU
+  Backgammon lui-même plutôt que contre `gnubg-nn`, qui en est un fork ancien »* comme l'une des
+  trois façons de trancher son écart inexpliqué. **C'est le même travail.** L'outillage construit
+  pour T34 donnera à T11 son test décisif.
+
+`gnubg-nn` reste utile là où il excelle : rapide, appelable en processus, sans table à consulter —
+donc parfait pour les gros volumes en **money**.
+
 #### Une répétition avant T35, quand son tour viendra
 
 Avant d'engager les ~2,3 jours de T35, faire tourner le pipeline complet sur **2 000 parties**.
