@@ -55,10 +55,24 @@ de GPU. La séparation n'est pas une commodité d'organisation, elle est matéri
 | T20, T21, T30, T31 | **bureau** | Descente anticipée vers le verdict navigateur |
 | T22, T23 | **bureau** | Suite naturelle de la phase 2 : le choix du moteur (T22) se tranche **sur mesure**, donc là où l'on mesure |
 | T11, T12 | **`mochy`** | Reprend après T10 ; c'est le seul très gros calcul |
+| **T32** | **bureau** | **Déplacée le 2026-08-04.** Son critère est de l'antisymétrie et de la monotonie, pas du volume. Et elle est consommée par la **recherche**, qui vit ici : la laisser sur l'autre machine imposerait un aller-retour pour le piège du niveau intermédiaire |
+| T34, T35 | **`mochy`** | Besoin de l'oracle et du volume |
 | T33 (volet **coût**) | bureau | Générer le bearoff et **mesurer ses octets** — entrée du budget navigateur |
 
 **Point de rendez-vous** : `mochy` s'arrête après **T04** et attend que **T10** soit livrée par la
-piste B avant d'attaquer **T11**. C'est la seule dépendance croisée.
+piste B avant d'attaquer **T11**. *(Levé le 2026-08-03 ; T11 est livrée.)*
+
+### Certaines tâches ne s'attribuent pas — elles se coupent
+
+À partir de T31, la règle « le calcul lourd va sur `mochy` » ne suit plus le découpage en fiches :
+une même tâche a une moitié bon marché et une moitié coûteuse.
+
+| Tâche | Bureau | `mochy` |
+|---|---|---|
+| **T31** | écrit le harnais et le corpus, valide sur une poignée de positions | **génère la référence 2-ply non filtrée** — ~1,8 M évaluations par décision |
+| **T33** | mesure les octets, entrée du budget navigateur | **génère les tables de fin de partie** |
+
+Le livrable reste unique et la fiche aussi ; c'est l'exécution qui se répartit.
 
 ### Pourquoi T20/T21 remontent avant T11
 
@@ -411,7 +425,20 @@ match (formules de Janowski, ou modèle dead-cube pondéré).
 
 **Périmètre** — Configuration complète (réseau + recherche 2-ply filtrée + équité de match +
 tables de fin de partie) contre GNU Backgammon à profondeur équivalente, en money et en match,
-≥ 1 M parties par paire.
+~~≥ 1 M parties par paire~~ **≥ 100 000 parties par paire — amendé le 2026-08-04**.
+
+> **Le million était sur-spécifié pour la question posée, et infaisable.** T30 a mesuré le coût
+> réel : 12 951 évaluations par décision en 2-ply filtré 1/1. Un million de parties représente
+> donc `12 951 × ~55 décisions × 10⁶ ≈ 7,1 × 10¹¹` évaluations, soit **~23 jours sur `mochy`**
+> (32 fils à 11 171 éval/s), ou ~10 jours avec le traitement par lot.
+>
+> Le million vient du `BRIEF.md` §5, qui vise à séparer des moteurs distants de 0,005 à 0,07 ppg.
+> Or **T11 a établi que l'écart à mesurer ici vaut +0,0400 ppg**, avec ±0,0024 à un million de
+> parties. À **100 000 parties**, l'intervalle s'élargit à ~±0,0076 — **cinq fois plus petit que
+> l'effet à détecter**, pour **~2,3 jours** de calcul.
+>
+> Si le résultat tombait *dans* l'intervalle plutôt que loin de zéro, le volume devrait être
+> augmenté : l'amendement borne le coût, il ne dispense pas de conclure.
 
 **Critères d'acceptation**
 - Le résultat est publié dans le dépôt avec protocole, volume, graine et intervalle de confiance.

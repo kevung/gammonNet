@@ -284,6 +284,17 @@ un nombre supposé qui était fausse.
 Le détail, les comptes réels et les trois autres corrections sont dans
 [T30](2026-08-03-T30-recherche.md).
 
+## ⚠️ Correction — les durées de match sont à majorer de ~21 %
+
+Ce rapport divise ses durées de match par **quatre workers**, en supposant la mise à l'échelle
+linéaire. **T23 l'a mesurée : elle vaut ×3,1 à ×3,45 à quatre workers, et plafonne à ~×3,8.**
+
+La cause est la contention de bande passante — sans `SharedArrayBuffer`, indisponible sur un
+hébergement statique, chaque worker détient sa propre copie des 2,0 Mio de poids. Détail dans
+[T23](2026-08-04-T23-workers.md).
+
+**Les conclusions tiennent, avec 20 % de marge en moins.**
+
 ## Verdict
 
 **Sur desktop et sur l'Android mesuré, le 2-ply tient.** Les deux inconnues qui pesaient sur la

@@ -1,0 +1,136 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>gammonNet — banc de Web Workers (T23)</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, monospace; margin: 2rem; max-width: 52rem; }
+  pre { white-space: pre-wrap; }
+</style>
+<h1>T23 — mise à l'échelle des Web Workers</h1>
+<pre id="out">…</pre>
+
+<script type="module">
+  // Trois choses à établir, et une seule compte vraiment :
+  //   1. le débit croît-il avec le nombre de workers, et jusqu'où ;
+  //   2. le fil principal reste-t-il réactif — aucune tâche > 50 ms ;
+  //   3. l'annulation libère-t-elle réellement les workers.
+  //
+  // La première décide du sort de toutes les durées de match citées dans T21
+  // et T30, qui divisent par quatre en supposant la linéarité.
+  const params = new URLSearchParams(location.search);
+  const build = params.get("build") === "scalar" ? "gammonnet" : "gammonnet-simd";
+  const counts = (params.get("workers") || "1,2,4,8").split(",").map(Number);
+
+  const out = document.getElementById("out");
+  const log = (line) => { out.textContent += line + "\n"; };
+
+  async function report(payload) {
+    try {
+      await fetch("/report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch { /* page statique : personne n'écoute */ }
+  }
+
+  try {
+    const { EvaluatorPool } = await import("/wasm/pool.mjs");
+
+    const modelBytes = new Uint8Array(
+      await (await fetch("/models/cubeless_prob5_512_512_256_128.bin")).arrayBuffer(),
+    );
+    const raw = await (await fetch("/build/reference.bin")).arrayBuffer();
+    const view = new DataView(raw);
+    const count = view.getInt32(4, true);
+    const numFeatures = view.getInt32(8, true);
+    const numOutputs = view.getInt32(12, true);
+    const features = new Float32Array(raw, 16, count * numFeatures);
+    const expected = new Float32Array(
+      raw, 16 + count * numFeatures * 4, count * numOutputs,
+    );
+
+    const factoryUrl = `/build/wasm/${build}.mjs`;
+    const workerUrl = "/wasm/worker.mjs";
+
+    const payload = {
+      test: "workers",
+      userAgent: navigator.userAgent,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      positions: count,
+      scaling: [],
+    };
+
+    out.textContent = `build ${build} · ${navigator.hardwareConcurrency} cœurs annoncés\n`;
+    log(`corpus ${count} positions\n`);
+    log("workers   ms      éval/s      gain   parité   tâche max fil principal");
+
+    let single = null;
+    for (const workers of counts) {
+      const pool = await EvaluatorPool.create(workers, workerUrl, factoryUrl, modelBytes);
+
+      // Sonde de réactivité : une minuterie qui devrait se déclencher toutes
+      // les 10 ms. Tout écart au-delà de 50 ms est une tâche longue sur le fil
+      // principal, c'est-à-dire une interface qui se fige.
+      let worstGap = 0;
+      let last = performance.now();
+      const probe = setInterval(() => {
+        const now = performance.now();
+        worstGap = Math.max(worstGap, now - last - 10);
+        last = now;
+      }, 10);
+
+      await pool.analyze(features, count, numFeatures).done; // tour à blanc
+
+      const start = performance.now();
+      const outputs = await pool.analyze(features, count, numFeatures).done;
+      const elapsed = performance.now() - start;
+      clearInterval(probe);
+
+      let worst = 0;
+      for (let i = 0; i < outputs.length; i++) {
+        worst = Math.max(worst, Math.abs(outputs[i] - expected[i]));
+      }
+
+      const rate = (count / elapsed) * 1000;
+      if (single === null) single = rate;
+
+      payload.scaling.push({
+        workers, ms: Number(elapsed.toFixed(1)),
+        evalsPerSecond: Math.round(rate),
+        speedup: Number((rate / single).toFixed(2)),
+        worstDelta: worst,
+        mainThreadWorstGapMs: Number(worstGap.toFixed(1)),
+      });
+
+      log(`${String(workers).padEnd(9)} ${elapsed.toFixed(0).padStart(5)} ` +
+          `${Math.round(rate).toString().padStart(10)} ` +
+          `${(rate / single).toFixed(2).padStart(8)}× ` +
+          `${worst.toExponential(1).padStart(9)} ` +
+          `${worstGap.toFixed(1).padStart(10)} ms`);
+
+      pool.destroy();
+    }
+
+    // L'annulation : lancer, interrompre, et vérifier que le pool répond `null`
+    // plutôt que de terminer son travail dans le vide.
+    const pool = await EvaluatorPool.create(4, workerUrl, factoryUrl, modelBytes);
+    const job = pool.analyze(features, count, numFeatures, { chunk: 32 });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    job.cancel();
+    const cancelledResult = await job.done;
+    payload.cancellationHonoured = cancelledResult === null;
+    log(`\nannulation honorée : ${payload.cancellationHonoured ? "oui ✅" : "non ❌"}`);
+
+    // Et le pool reste utilisable après une annulation : un pool qu'il faudrait
+    // recréer serait une fuite déguisée en fonctionnalité.
+    const after = await pool.analyze(features, count, numFeatures).done;
+    payload.usableAfterCancel = after !== null && after.length === count * numOutputs;
+    log(`réutilisable après annulation : ${payload.usableAfterCancel ? "oui ✅" : "non ❌"}`);
+    pool.destroy();
+
+    await report(payload);
+  } catch (error) {
+    log("❌ " + (error?.stack || error));
+    await report({ error: String(error?.stack || error) });
+  }
+</script>

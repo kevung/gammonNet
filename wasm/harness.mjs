@@ -61,7 +61,7 @@ const server = createServer(async (request, response) => {
   // La query est retirée AVANT de reconnaître la racine : `/?mode=bench` n'est
   // pas `/`, et la page se serait servi un 404 à elle-même.
   const requested = request.url.split("?")[0];
-  const path = requested === "/" ? "/wasm/page.html" : requested;
+  const path = requested === "/" ? (args.get("page") || "/wasm/page.html") : requested;
   // Le serveur ne sert que l'arbre du dépôt : une traversée par `..` ne doit
   // pas transformer un banc de mesure en lecteur de système de fichiers.
   const resolved = normalize(join(ROOT, decodeURIComponent(path)));
