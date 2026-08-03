@@ -37,7 +37,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench env clean help
+.PHONY: all setup venv vendor build model corpus test bench bench-infer env clean help
 
 all: help
 
@@ -114,6 +114,78 @@ $(MODEL):
 corpus:
 	$(PYTHON) tools/build_corpus_t01.py
 
+# ── WebAssembly ──────────────────────────────────────────────────────
+#
+# Emscripten n'est pas toujours dans le PATH : le paquet Arch l'installe sous
+# /usr/lib/emscripten sans lien dans /usr/bin. On le cherche avant de renoncer.
+EMCC ?= $(firstword $(shell command -v emcc) /usr/lib/emscripten/emcc)
+
+WASM_DIR := wasm
+WASM_BUILD := $(BUILD)/wasm
+
+WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
+                src/gn_rules_reference.c src/gn_encoding.c \
+                src/gn_position_id.c src/gn_infer_reference.c \
+                $(REFERENCE)/c_engine/bg_engine.c \
+                $(REFERENCE)/c_inference/nn_eval.c
+
+# -O3 et non -O2 : c'est un artefact livré à un navigateur, pas un binaire de
+# développement, et T21 doit mesurer ce qui serait réellement servi.
+#
+# MODULARIZE + EXPORT_ES6 : un module ES, chargeable en page, en Web Worker et
+# sous Node. Le même artefact sert donc au test de parité et au banc, ce qui
+# évite de mesurer un binaire et d'en vérifier un autre.
+#
+# --pre-js notice.js : la notice MIT vit dans l'artefact lui-même. Un module
+# servi à un navigateur est une copie distribuée — BRIEF.md §7.
+# Réassociation flottante : ×3,9 sur le débit navigateur, mesuré en T21.
+#
+# `forward_raw` de nn_eval.c accumule dans une seule variable. L'addition
+# flottante n'étant pas associative, le compilateur n'a le droit ni de dérouler
+# ni de vectoriser cette boucle : un MAC toutes les ~4 cycles. Lever
+# l'interdiction fait passer Chromium de 2 872 à 11 136 évaluations/s.
+#
+# **Pas `-ffast-math`.** Celui-ci ajoute `-ffinite-math-only`, c'est-à-dire la
+# promesse qu'aucun infini n'apparaîtra — or la sigmoïde `1/(1+expf(-x))`
+# déborde vers l'infini par conception sur les positions saturées, et il y en a
+# dans le corpus. Le sous-ensemble ci-dessous rend 98,7 % du gain sans faire
+# cette promesse (13 143 contre 13 314 éval/s en natif).
+#
+# Prix payé, mesuré : la parité WebAssembly <-> natif n'est plus au bit près
+# mais à 4,77e-7 — sous le seuil de 1e-6 de T20. L'ordre des sommes change,
+# le résultat pratiquement pas.
+FP_RELAXED ?= -fassociative-math -fno-signed-zeros -fno-trapping-math -fno-math-errno
+
+WASM_EXTRA ?= $(FP_RELAXED)
+WASM_FLAGS := -O3 -std=c11 $(WASM_EXTRA) $(INCLUDES) \
+  -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node \
+  -sALLOW_MEMORY_GROWTH=1 \
+  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPF32,HEAPU8 \
+  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd \
+  --pre-js $(WASM_DIR)/notice.js
+
+.PHONY: wasm wasm-simd wasm-scalar wasm-parity
+
+wasm: wasm-scalar wasm-simd
+
+wasm-scalar: $(WASM_BUILD)/gammonnet.mjs
+wasm-simd: $(WASM_BUILD)/gammonnet-simd.mjs
+
+$(WASM_BUILD)/gammonnet.mjs: $(WASM_SOURCES) $(HEADERS) $(WASM_DIR)/notice.js
+	@mkdir -p $(WASM_BUILD)
+	$(EMCC) $(WASM_FLAGS) $(WASM_SOURCES) -o $@
+	@stat -c '→ scalaire : %s octets  %n' $(WASM_BUILD)/gammonnet.wasm
+
+$(WASM_BUILD)/gammonnet-simd.mjs: $(WASM_SOURCES) $(HEADERS) $(WASM_DIR)/notice.js
+	@mkdir -p $(WASM_BUILD)
+	$(EMCC) $(WASM_FLAGS) -msimd128 $(WASM_SOURCES) -o $@
+	@stat -c '→ SIMD     : %s octets  %n' $(WASM_BUILD)/gammonnet-simd.wasm
+
+# Parité WebAssembly <-> natif, sur le repère figé produit par le côté natif.
+wasm-parity: wasm $(MODEL)
+	$(PYTHON) tools/dump_reference.py
+	node $(WASM_DIR)/parity.mjs
+
 # ── Mesure ───────────────────────────────────────────────────────────
 
 test: build
@@ -121,6 +193,20 @@ test: build
 
 bench: build
 	$(PYTHON) bench/bench_throughput.py
+
+# Le débit d'évaluation du réseau, en C — la ligne de base à laquelle T21
+# compare le navigateur. En C et non via ctypes : T05 a mesuré la liaison
+# Python à un facteur dix, et une pénalité WebAssembly calculée contre une
+# base enveloppée de Python mesurerait ctypes, pas le navigateur.
+BENCH_INFER := $(BUILD)/bench_infer
+
+$(BENCH_INFER): bench/bench_infer.c $(OBJECTS) $(VENDOR_OBJECTS)
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ -lm
+
+bench-infer: build $(BENCH_INFER) $(MODEL)
+	$(PYTHON) tools/dump_reference.py
+	$(BENCH_INFER) $(MODEL) $(BUILD)/reference.bin
 
 clean:
 	rm -rf build/
