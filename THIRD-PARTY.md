@@ -33,10 +33,23 @@ exact qui l'a produite.
 
 | Brique | Auteur | Licence | Ce qui serait utilisé | Source |
 |---|---|---|---|---|
-| `hedgehog-public` | Eran Lambooij | MIT — vérifiée par lecture du fichier `LICENSE` (« Copyright (c) 2026 Eran Lambooij ») | **Le code seulement**, et seulement s'il est retenu en T22 — recherche expectiminimax, formules de Janowski. Son évaluateur NNUE est **inapplicable** au modèle dense retenu (cf. `BRIEF.md` §3.2). **Les réseaux de neurones de ce projet ne sont pas utilisés** : ils portent une clause non commerciale | <https://gitlab.com/eranlambooij/hedgehog-public> |
-| Highway (SIMD) | Google | **Apache-2.0 OU BSD-3-Clause**, au choix — **pas MIT**. Côté Apache-2.0 : fichier `NOTICE` et marquage des fichiers modifiés | Vectorisation portable, y compris WASM SIMD. Vendoré sous `hwy/` dans `hedgehog-public`, mais disponible en direct — à prendre à la source plutôt que par transitivité | <https://github.com/google/highway> |
 | Table d'équité de match Kazaross-XG2 | Neil Kazaross | Attribution | La table 25×25 pré-Crawford et post-Crawford | Diffusée par GNU Backgammon ; précédent MIT dans [blunderDB](https://github.com/kevung/blunderDB) |
 | Modèle de Zadeh | N. Zadeh, *Management Science* 23, 986 (1977) | Publication académique | Repli au-delà de 25 points | — |
+
+## Consulté, non embarqué
+
+Ces briques ne sont **pas** distribuées avec nos artefacts. Elles figurent ici parce qu'elles ont
+pesé sur la conception, et qu'une dette intellectuelle se cite même quand aucune ligne n'est
+reprise.
+
+| Brique | Auteur | Licence | Ce qu'on lui doit |
+|---|---|---|---|
+| [`hedgehog-public`](https://gitlab.com/eranlambooij/hedgehog-public) | Eran Lambooij | MIT — vérifiée par lecture du fichier `LICENSE` | **Aucun code embarqué** (décision T22, [ADR-0001](docs/adr/0001-moteur-inference.md)). Leur **benchmark public** est l'étalon que T11 confronte, et leur principe *« refused, not approximated »* est devenu la règle n° 2 de `CLAUDE.md` |
+| Highway (SIMD) | Google | Apache-2.0 **ou** BSD-3-Clause | **Non utilisé.** Il n'arrivait que par transitivité via `hedgehog-public`. S'il devenait nécessaire, il sera pris à la source comme dépendance nommée, avec ses obligations propres — fichier `NOTICE` et marquage des fichiers modifiés |
+
+> **Les réseaux de neurones de HedgeHog ne sont pas utilisés** : ils portent une clause non
+> commerciale, incompatible avec l'engagement de licence de ce dépôt. Leur **code** est MIT. Les
+> deux n'ont pas la même licence, et la distinction doit rester visible partout.
 
 ## Outillage (non distribué)
 

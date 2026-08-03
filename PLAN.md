@@ -74,20 +74,17 @@ par la machine d'entraînement (`BRIEF.md` §4). La faire tôt est du dérisquag
 Deux critères sont amendés faute de **matériel**, pas faute d'exigence. Les manques sont
 **nommés dans les rapports**, jamais comblés par extrapolation.
 
-- **T20 — Safari.** Safari n'existe pas sous Linux, et il n'y a pas de Mac. T20 se clôt sur
-  **Chrome et Firefox**, le manque Safari étant consigné. Ce n'est pas un détail : **sur iOS, tous
-  les navigateurs sont WebKit** — « Safari » désigne donc toute la plateforme iOS, et c'est là que
-  les limites (plafond mémoire WASM, Workers, SIMD) mordent le plus.
-- **T21 — le volet mobile.** Aucun téléphone disponible. Plutôt que de fabriquer une extrapolation
-  — interdit par la règle n° 3 — T21 rend un **verdict desktop mesuré assorti d'un seuil
-  falsifiable** :
+- **T20 — Safari.** ~~Amendé faute de Mac.~~ **Retiré le 2026-08-03** : deux iPhone ont permis de
+  mesurer WebKit directement, et le critère est satisfait en entier. Le motif de l'amendement était
+  d'ailleurs faux — on redoutait iOS comme la plateforme la plus contrainte, la mesure en fait
+  **la plus rapide des sept** testées.
+- **T21 — le volet mobile.** ~~Ouvert faute d'appareil, avec un seuil falsifiable publié à sa
+  place.~~ **Refermé le 2026-08-03** : quatre appareils mesurés via une page statique publiée, le
+  téléphone atteignant internet plutôt que la machine de mesure. Le seuil réfutable — il aurait
+  fallu une pénalité de ×13 — est confirmé avec une marge de 3,6 à 13.
 
-  > Le 2-ply coûte **X ms/décision** (mesuré) ; un match de 7 points, **Y s**. Il cesse de tenir
-  > au-delà d'une pénalité mobile de **×N**. Ce facteur N est le chiffre qu'un vrai téléphone
-  > viendra confirmer ou infirmer.
-
-  Le volet mobile de T21 **reste ouvert** jusqu'à ce qu'un appareil existe. Un throttling CPU de
-  DevTools peut donner un ordre de grandeur, **étiqueté proxy, jamais mesure**.
+  **La méthode mérite d'être retenue** : publier une prédiction réfutable plutôt qu'une
+  extrapolation a permis de trancher dès qu'un appareil est apparu, sans rien réécrire.
 
 ---
 
@@ -271,9 +268,9 @@ qui échoue si l'encodage, le chargement ou les poids changent.
 
 **Critères d'acceptation**
 - Sur le corpus de T12, les sorties WebAssembly et natives coïncident à `max|Δ| < 1e-6`.
-- Le module se charge sur Chrome, Firefox et Safari (versions supportant WASM SIMD). **Amendé** —
-  pas de Mac disponible : clôture sur Chrome et Firefox, manque Safari consigné. Voir *Répartition
-  entre machines*.
+- Le module se charge sur Chrome, Firefox et Safari (versions supportant WASM SIMD). **Satisfait
+  en entier** : Chromium 150, Firefox 153, et Safari 26.5 sur iOS 18.7. L'amendement pris faute de
+  Mac a été **retiré** — un iPhone a permis de mesurer WebKit directement.
 - La taille du `.wasm` et celle du modèle sont mesurées et consignées.
 
 ## T21 — Banc de débit navigateur
@@ -289,8 +286,9 @@ et ≥ 1 mobile réel (pas un émulateur), avec et sans SIMD, en fil principal e
 - Le **budget d'un match complet en 2-ply** est déduit de la mesure, pour 1 et pour 4 workers.
 - **Verdict explicite** : le 2-ply tient-il dans le navigateur, oui ou non, sur mobile compris ?
   Si non, la cible du projet doit être révisée — c'est un résultat légitime, pas un échec.
-  **Amendé** — aucun téléphone disponible : verdict **desktop mesuré** + **seuil de pénalité
-  mobile ×N** falsifiable ; le volet mobile **reste ouvert**. Voir *Répartition entre machines*.
+  **Mesuré sur quatre appareils** : la pénalité mobile va de **×0,95** (iPhone iOS 18.7, plus
+  rapide que le desktop) à **×3,66** (Chrome sur Android). Le seuil réfutable publié — ×13 — est
+  confirmé avec une large marge. L'amendement pris faute d'appareil a été **retiré**.
 
 ## T22 — Décision du moteur d'inférence
 
@@ -303,8 +301,16 @@ de l'artefact, effort d'intégration, dette.
 **Livrable** — une note de décision **chiffrée**, versionnée dans le dépôt.
 
 **Critères d'acceptation**
-- Les deux candidats sont réellement mesurés, pas seulement discutés.
+- ~~Les deux candidats sont réellement mesurés, pas seulement discutés.~~ **Amendé le
+  2026-08-03** : le second candidat n'a pas été construit. Son gain est **plafonné par
+  arithmétique** — l'accumulation NNUE n'optimise que la couche d'entrée, soit 19 % des
+  528 389 MACs de ce réseau, et le mode dense la désactive de toute façon. Les ×9 obtenus l'ont
+  été dans le code existant, sur des causes indépendantes du moteur. Motif et conséquences dans
+  [ADR-0001](docs/adr/0001-moteur-inference.md).
 - La note dit ce qui a été mesuré et ce qui a été estimé.
+
+**Décidé** — le moteur retenu est le C du dépôt de référence, isolé derrière `src/gn_infer.h`.
+Voir [ADR-0001](docs/adr/0001-moteur-inference.md).
 
 ## T23 — Ordonnancement Web Worker
 
