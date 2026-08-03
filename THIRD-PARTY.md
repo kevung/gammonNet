@@ -27,7 +27,8 @@ exact qui l'a produite.
 
 | Brique | Auteur | Licence | Ce qui serait utilisé | Source |
 |---|---|---|---|---|
-| `hedgehog-public` | Eran Lambooij | MIT | **Le code seulement** — évaluateur NNUE, recherche expectiminimax, SIMD Highway. **Les réseaux de neurones de ce projet ne sont pas utilisés** : ils portent une clause non commerciale | <https://gitlab.com/eranlambooij/hedgehog-public> |
+| `hedgehog-public` | Eran Lambooij | MIT — vérifiée par lecture du fichier `LICENSE` (« Copyright (c) 2026 Eran Lambooij ») | **Le code seulement**, et seulement s'il est retenu en T22 — recherche expectiminimax, formules de Janowski. Son évaluateur NNUE est **inapplicable** au modèle dense retenu (cf. `BRIEF.md` §3.2). **Les réseaux de neurones de ce projet ne sont pas utilisés** : ils portent une clause non commerciale | <https://gitlab.com/eranlambooij/hedgehog-public> |
+| Highway (SIMD) | Google | **Apache-2.0 OU BSD-3-Clause**, au choix — **pas MIT**. Côté Apache-2.0 : fichier `NOTICE` et marquage des fichiers modifiés | Vectorisation portable, y compris WASM SIMD. Vendoré sous `hwy/` dans `hedgehog-public`, mais disponible en direct — à prendre à la source plutôt que par transitivité | <https://github.com/google/highway> |
 | Table d'équité de match Kazaross-XG2 | Neil Kazaross | Attribution | La table 25×25 pré-Crawford et post-Crawford | Diffusée par GNU Backgammon ; précédent MIT dans [blunderDB](https://github.com/kevung/blunderDB) |
 | Modèle de Zadeh | N. Zadeh, *Management Science* 23, 986 (1977) | Publication académique | Repli au-delà de 25 points | — |
 

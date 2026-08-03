@@ -80,11 +80,64 @@ Ne contient **pas** : code d'entraînement, recherche de production (Star1/Star2
 de coups, table de transposition), bases de fin de partie (stubs), packaging WebAssembly de
 l'évaluateur, et **les fichiers de modèles**.
 
-**Piège majeur, à connaître avant tout essai d'intégration** : le build public **refuse
-délibérément** les modèles utilisant un layout d'entrée dense — *« A model whose `FEAT` chunk
-declares `DENSE_FLOAT` is refused here »*. Le modèle de §3.1 utilise l'encodage dense de
-Tesauro. **On ne peut donc pas simplement combiner « moteur HedgeHog + modèle Strehl »** sans
-implémenter ce layout.
+#### Le refus `DENSE_FLOAT` — ce qu'il est réellement
+
+Le build public **refuse délibérément** les modèles déclarant un layout d'entrée dense —
+*« A model whose `FEAT` chunk declares `DENSE_FLOAT` is refused here »* — et le modèle de §3.1
+utilise l'encodage dense de Tesauro. Mais **ce refus est un contrôle de nom au chargement, pas
+une passe avant absente.** Lecture du dépôt à `src/nn/nn_features.cpp:986` :
+
+> *« A model whose FEAT chunk declares `EncodingType::DENSE_FLOAT` carries an input layout this
+> engine **has no extractor for**, so `nn_load_ensemble_ogxf` refuses it outright rather than
+> letting it run on a zero vector. »*
+
+Ce qui manque est l'**extracteur** — la fonction position → vecteur de flottants — et non le
+calcul dense. Trois faits l'établissent :
+
+1. L'énumération `DenseFeatureLayout` (`src/nn/nn_format.hpp`) **nomme notre encodage** :
+   `DENSE_TESAURO_196 = 0`.
+2. `nn_dense_layout_supported()` accepte un cas : `CUSTOM`, commenté *« the caller supplies the
+   vector itself, which is still a coherent thing to load »*.
+3. `nn_forward_dense(nn, dense_input, outputs)` (`src/nn/nn_eval.hpp`) **existe et est compilé** —
+   ce n'est pas un stub. Il prend un vecteur fourni par l'appelant.
+
+Le chemin d'intégration est donc : convertir les poids en OGXF avec `FEAT` déclarant le layout
+`CUSTOM`, écrire notre propre extracteur — **c'est T02, à écrire de toute façon** — et appeler
+`nn_forward_dense`. **Réserve : ceci est une lecture d'en-têtes, pas un build.** Que ce chemin se
+compose proprement avec leur recherche reste à établir par compilation ; c'est le travail de T22.
+
+**Mais l'intégration ne rapporte pas ce qu'on croit.** `DenseFeatureLayout` documente son propre
+prix : `DENSE_FLOAT = 4 // Dense float input vector (**NNUE disabled**)`. L'accumulation
+incrémentale — l'argument de vitesse principal de ce moteur — est structurellement inapplicable à
+un modèle dense. Et l'arithmétique dit que le gain était de toute façon plafonné : sur les
+~527 000 MACs du réseau (196×512 + 512×512 + 512×256 + 256×128 + 128×5, cohérent avec les 528k
+paramètres annoncés), la couche d'entrée que NNUE optimise n'en représente que **19 %**. Aux
+échecs le rapport est inverse, la couche d'entrée y écrasant tout le reste — d'où le gain
+spectaculaire là-bas, et son absence ici. *Comptage d'architecture, pas mesure de débit :
+hypothèse à trancher en T22.*
+
+#### Ce que HedgeHog ne fait pas gagner
+
+Le README annonce *« This is the same evaluator HedgeHog compiles to WebAssembly and runs in your
+browser »* — vrai du **cœur d'évaluation**, faux du reste. Les trois briques qu'on serait tenté
+de lui déléguer sont précisément celles qu'il ne contient pas :
+
+| Attendu | Réalité du dépôt public |
+|---|---|
+| Une librairie navigateur prête | *« WASM packaging of the evaluator (**only the OGXM library is WASM-packaged here**) »* — `wasm/` ne contient que le format de match |
+| Un 2-ply rapide | Recherche annoncée *« **Community** expectiminimax »* ; le **filtrage de coups** est dans la liste des absents, or c'est lui qui rend le 2-ply praticable. Les 245 ms/décision de §6 viennent de leur build **de production**, filtre actif — ils ne décrivent pas ce dépôt |
+| Le bearoff | Stubs. *« This is a real accuracy limit, not a formality »* — ils ont exactement le trou qu'on veut combler |
+
+Packaging WebAssembly, filtre de coups, tables de fin de partie et extracteur T02 sont à écrire
+**dans les deux scénarios**. Ce que T22 arbitre n'est donc pas « emprunter ou écrire », mais
+**quel corps de code accueille ce travail**.
+
+Dernier point de licence : **Highway est en double licence Apache-2.0 / BSD-3-Clause**, pas MIT.
+Permissif, donc compatible, mais avec ses obligations propres — fichier `NOTICE` et marquage des
+fichiers modifiés côté Apache-2.0.
+
+**Piège de périmètre** : la bibliothèque OGXM est un format de **match**. `CLAUDE.md` range
+l'import de matchs « ailleurs ». Ne pas la faire entrer par la porte d'une dépendance.
 
 ### 3.3 Les artefacts d'origine GNU Backgammon qui restent utilisables
 
@@ -370,8 +423,13 @@ réentraînement de zéro. Une quantification donne « X quantifié », pas « Y
 
 ## 9. Pièges connus
 
-- **Le refus `DENSE_FLOAT` de HedgeHog** (§3.2) — vérifier la compatibilité modèle/moteur avant
-  d'investir dans une intégration.
+- **Le refus `DENSE_FLOAT` de HedgeHog** (§3.2) — le mur est plus mince qu'il n'y paraît (un
+  contrôle de nom, contournable par le layout `CUSTOM`), mais **l'intégration ne rapporte pas la
+  vitesse espérée** : le mode dense désactive NNUE, et NNUE ne portait que 19 % du calcul de ce
+  réseau. Ne pas investir dans cette intégration pour de mauvaises raisons.
+- **Confondre `hedgehog-public` et le produit HedgeHog** (§3.2) — le dépôt MIT est le cœur
+  d'évaluation **dépouillé** du packaging navigateur, du filtrage de coups et des tables de fin
+  de partie. Les chiffres de débit publiés décrivent le produit, pas le dépôt.
 - **Le trou des fins de partie** — un réseau seul est mesurablement plus faible qu'une table
   exacte en course et en bearoff profond. Ne pas conclure sur la force globale à partir d'un
   corpus qui en contient beaucoup ; les positions de contact sont la comparaison honnête.
