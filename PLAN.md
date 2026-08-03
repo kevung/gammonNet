@@ -29,6 +29,67 @@ enthousiasme.
 
 ---
 
+## Répartition entre machines — deux pistes *(à partir du 2026-08-03)*
+
+> **Si vous êtes un agent qui exécute la roadmap : cette section vous concerne, lisez-la avant de
+> prendre la tâche suivante.**
+
+Le travail est réparti sur deux machines aux profils **complémentaires**, pas concurrents.
+
+| | `mochy` — **piste A** | machine de bureau — **piste B** |
+|---|---|---|
+| Profil | Threadripper 16 c / 32 f, 94 Gio, 2 × RTX 4090, RHEL 8, **GCC 8.5** | 16 cœurs, 4 Gio libres, pas de GPU, **GCC 16.1**, Firefox 153, Node 26 |
+| Vocation | Gros volumes : oracle, round-robins, entraînement | Navigateur : Emscripten, WASM, bancs de débit client |
+| Réseau | — | Sortie internet, **pas de LAN** |
+
+**La piste navigateur ne peut pas tourner sur `mochy`** — aucun navigateur, et une chaîne C++17
+ancienne. **La piste calcul ne peut pas tourner sur la machine de bureau** — 4 Gio libres et pas
+de GPU. La séparation n'est pas une commodité d'organisation, elle est matérielle.
+
+### Qui prend quoi
+
+| Tâche | Machine | Note |
+|---|---|---|
+| T02, T03, T04 | **`mochy`** | L'instrument de mesure ; T03 et T04 veulent les 32 fils |
+| **T10** | **bureau** | **Déplacée.** Toute la piste B en dépend directement ; la refaire des deux côtés serait du gaspillage |
+| T20, T21, T30, T31 | **bureau** | Descente anticipée vers le verdict navigateur |
+| T11, T12 | **`mochy`** | Reprend après T10 ; c'est le seul très gros calcul |
+| T33 (volet **coût**) | bureau | Générer le bearoff et **mesurer ses octets** — entrée du budget navigateur |
+
+**Point de rendez-vous** : `mochy` s'arrête après **T04** et attend que **T10** soit livrée par la
+piste B avant d'attaquer **T11**. C'est la seule dépendance croisée.
+
+### Pourquoi T20/T21 remontent avant T11
+
+Le critère de T21 — *« le 2-ply tient-il dans le navigateur ? »* — est **la mesure qui peut
+invalider la cible du projet**. Or elle dépend de la **forme** du réseau
+(`196 → 512 → 512 → 256 → 128 → 5`), pas de la **valeur** de ses poids. Elle est donc disponible
+dès maintenant, et **ses chiffres survivent au verdict de T11** : si la phase 4 s'ouvre, on
+réentraîne dans la même enveloppe de taille, puisque celle-ci est bornée par le navigateur et non
+par la machine d'entraînement (`BRIEF.md` §4). La faire tôt est du dérisquage.
+
+### Amendements aux critères d'acceptation, et ce qui les motive
+
+Deux critères sont amendés faute de **matériel**, pas faute d'exigence. Les manques sont
+**nommés dans les rapports**, jamais comblés par extrapolation.
+
+- **T20 — Safari.** Safari n'existe pas sous Linux, et il n'y a pas de Mac. T20 se clôt sur
+  **Chrome et Firefox**, le manque Safari étant consigné. Ce n'est pas un détail : **sur iOS, tous
+  les navigateurs sont WebKit** — « Safari » désigne donc toute la plateforme iOS, et c'est là que
+  les limites (plafond mémoire WASM, Workers, SIMD) mordent le plus.
+- **T21 — le volet mobile.** Aucun téléphone disponible. Plutôt que de fabriquer une extrapolation
+  — interdit par la règle n° 3 — T21 rend un **verdict desktop mesuré assorti d'un seuil
+  falsifiable** :
+
+  > Le 2-ply coûte **X ms/décision** (mesuré) ; un match de 7 points, **Y s**. Il cesse de tenir
+  > au-delà d'une pénalité mobile de **×N**. Ce facteur N est le chiffre qu'un vrai téléphone
+  > viendra confirmer ou infirmer.
+
+  Le volet mobile de T21 **reste ouvert** jusqu'à ce qu'un appareil existe. Un throttling CPU de
+  DevTools peut donner un ordre de grandeur, **étiqueté proxy, jamais mesure**.
+
+---
+
 # Phase 0 — Socle & instrument de mesure
 
 > Objectif de phase : disposer d'un **instrument** avant d'avoir quoi que ce soit à mesurer.
@@ -209,7 +270,9 @@ qui échoue si l'encodage, le chargement ou les poids changent.
 
 **Critères d'acceptation**
 - Sur le corpus de T12, les sorties WebAssembly et natives coïncident à `max|Δ| < 1e-6`.
-- Le module se charge sur Chrome, Firefox et Safari (versions supportant WASM SIMD).
+- Le module se charge sur Chrome, Firefox et Safari (versions supportant WASM SIMD). **Amendé** —
+  pas de Mac disponible : clôture sur Chrome et Firefox, manque Safari consigné. Voir *Répartition
+  entre machines*.
 - La taille du `.wasm` et celle du modèle sont mesurées et consignées.
 
 ## T21 — Banc de débit navigateur
@@ -225,6 +288,8 @@ et ≥ 1 mobile réel (pas un émulateur), avec et sans SIMD, en fil principal e
 - Le **budget d'un match complet en 2-ply** est déduit de la mesure, pour 1 et pour 4 workers.
 - **Verdict explicite** : le 2-ply tient-il dans le navigateur, oui ou non, sur mobile compris ?
   Si non, la cible du projet doit être révisée — c'est un résultat légitime, pas un échec.
+  **Amendé** — aucun téléphone disponible : verdict **desktop mesuré** + **seuil de pénalité
+  mobile ×N** falsifiable ; le volet mobile **reste ouvert**. Voir *Répartition entre machines*.
 
 ## T22 — Décision du moteur d'inférence
 
