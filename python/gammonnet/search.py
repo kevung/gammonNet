@@ -17,6 +17,7 @@ import ctypes
 from dataclasses import dataclass
 
 from .infer import NUM_OUTPUTS, Evaluation, Network
+from .met import MatchState, _CMatchState
 from .rules import _LIB, Move, Play, Position, _CPlay, _CPosition
 
 MAX_PLY = 3
@@ -32,7 +33,12 @@ ROLLS = tuple(
 
 
 class _CSearchConfig(ctypes.Structure):
-    _fields_ = [("ply", ctypes.c_int), ("filter", ctypes.c_int * (MAX_PLY + 1))]
+    _fields_ = [
+        ("ply", ctypes.c_int),
+        ("filter", ctypes.c_int * (MAX_PLY + 1)),
+        ("use_match", ctypes.c_int),
+        ("match", _CMatchState),
+    ]
 
 
 class _CCandidate(ctypes.Structure):
@@ -89,23 +95,48 @@ class Candidate:
 
 @dataclass(frozen=True)
 class SearchConfig:
-    """Profondeur et filtrage.
+    """Profondeur, filtrage, et éventuellement le score du match.
 
     `filter[d]` est le nombre de candidats qui survivent à la profondeur `d` ;
     0 signifie aucun filtrage. C'est le mécanisme de T31, et ce qu'il coûte en
     qualité doit être **mesuré** — un filtre qui « ne change rien » n'a pas été
     mesuré.
+
+    `use_match` fait valuer chaque nœud par la table d'équité de match plutôt
+    qu'en money cubeless. Le score porté par `match` est celui du joueur au
+    trait **à la racine** ; la recherche le bascule en descendant.
     """
 
     ply: int = 0
     filter: tuple[int, ...] = ()
+    use_match: bool = False
+    match: MatchState | None = None
 
     def _to_c(self) -> _CSearchConfig:
         c = _CSearchConfig()
         c.ply = self.ply
         for depth, keep in enumerate(self.filter[: MAX_PLY + 1]):
             c.filter[depth] = keep
+        if self.use_match:
+            if self.match is None:
+                raise ValueError("use_match sans score de match")
+            c.use_match = 1
+            c.match = self.match._to_c()
         return c
+
+
+def match_config(ply: int, state: MatchState) -> SearchConfig:
+    """Une configuration valuée par la table, ou **refusée**.
+
+    Si le score n'est pas représentable — au-delà de 25 points, un videau qui
+    n'est pas une puissance de deux — la configuration rendue a `use_match`
+    faux et `ply` remis à zéro. Une recherche qui serait tranquillement
+    retombée en money à un score qu'elle ne sait pas représenter serait fausse
+    en match, et muette.
+    """
+    if not state.is_valid:
+        return SearchConfig(ply=0)
+    return SearchConfig(ply=ply, use_match=True, match=state)
 
 
 def evaluations() -> int:
