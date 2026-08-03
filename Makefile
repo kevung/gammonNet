@@ -81,8 +81,8 @@ corpus:
 test: build
 	$(PYTHON) -m pytest tests/ -q
 
-bench:
-	@echo "banc de débit : T05"
+bench: build
+	$(PYTHON) bench/bench_throughput.py
 
 clean:
 	rm -rf build/

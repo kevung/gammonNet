@@ -4,8 +4,9 @@ Les bancs de mesure. | Banc | Objet |
 |---|---|
 | `bench_oracle.py` | Débit de l'oracle GNU Backgammon (T03) |
 | `run_round_robin.py` | Matrice de force entre moteurs, avec IC 95 % bootstrap (T04) |
+| `bench_throughput.py` | Les débits réels : règles, codec, oracle, self-play, mémoire (T05) |
 
-À venir : T05 (banc de débit complet), T21 (banc de débit navigateur).
+À venir : T21 (banc de débit navigateur, piste bureau).
 
 ## Le piège que tout banc doit éviter ici
 

@@ -32,8 +32,8 @@ C'est le pari de ce dépôt : le 2-ply appartient au navigateur.
 
 ## État
 
-**Phase 0 — le socle est en place.** Aucune force n'est encore produite, et c'est normal :
-on construit l'instrument avant d'avoir quoi que ce soit à mesurer.
+**Phase 0 terminée — l'instrument est en place.** Aucune force n'est encore produite, et
+c'est normal : on construit l'instrument avant d'avoir quoi que ce soit à mesurer.
 
 | Tâche | État |
 |---|---|
@@ -42,7 +42,7 @@ on construit l'instrument avant d'avoir quoi que ce soit à mesurer.
 | **T02** — Codec ↔ 196 caractéristiques ⚠️ *goulot* | ✅ [rapport](docs/mesures/2026-08-03-T02-codec.md) |
 | **T03** — Oracle GNU Backgammon | ✅ [rapport](docs/mesures/2026-08-03-T03-oracle.md) |
 | **T04** — Harnais de round-robin | ✅ [rapport](docs/mesures/2026-08-03-T04-round-robin.md) |
-| **T05** — Banc de débit | à faire |
+| **T05** — Banc de débit | ✅ [rapport](docs/mesures/2026-08-03-T05-debits.md) |
 
 ### Démarrer
 
