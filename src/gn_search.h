@@ -23,15 +23,29 @@
  * Dice weights are 1/36 for a double and 2/36 otherwise. They sum to exactly
  * 1 -- 6 * (1/36) + 15 * (2/36) -- and a test checks it rather than trusting it.
  *
- * WHAT THIS IS NOT
+ * MATCH PLAY, AND THE SUBTLETY THAT IS INVISIBLE IN MONEY
  *
- * Cubeless, money only. The match-play subtlety `PLAN.md` warns about -- at an
- * intermediate level the opponent maximises MATCH equity, not cubeless equity --
- * is deliberately absent, because the match equity table (T32) does not exist
- * yet. That absence is invisible in money play, which is precisely why it is
- * written here rather than left to be discovered: a 2-ply search that maximises
- * cubeless equity at intermediate nodes is WRONG in a match, and no money test
- * will ever say so.
+ * `PLAN.md` warns that at an intermediate level the opponent maximises MATCH
+ * equity, not cubeless equity. At 4-away/2-away a gammonish move is not worth
+ * what it is worth in money, and an engine that ignores this plays the wrong
+ * move with complete confidence. **No money test will ever say so.**
+ *
+ * Set `use_match` and the search values every node through the match equity
+ * table instead. Two things make that work:
+ *
+ *   1. Values are MATCH EQUITIES, `2 * MWC - 1`, not raw winning chances. On
+ *      that scale the opponent's value is still the NEGATION, exactly as in
+ *      money, so every negation in this file stays correct. Working in raw MWC
+ *      would mean replacing each negation with `1 - x`, and missing one is the
+ *      kind of error that produces plausible numbers.
+ *
+ *   2. The match state is SWAPPED at every ply. If the root player is at
+ *      2-away against 4-away, the opponent one ply down is at 4-away against
+ *      2-away. A state that failed to swap would optimise the wrong player's
+ *      score -- again, plausibly.
+ *
+ * The cube is still absent: the search is cubeless, and `state.cube` merely
+ * scales the stakes. Doubling decisions are T34.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -40,6 +54,7 @@
 #define GN_SEARCH_H
 
 #include "gn_infer.h"
+#include "gn_met.h"
 #include "gn_rules.h"
 
 #ifdef __cplusplus
@@ -69,11 +84,25 @@ typedef struct {
      * assumed -- a filter that "changes nothing" has not been measured.
      */
     int filter[GN_MAX_PLY + 1];
+
+    /* Non-zero to value nodes through the match equity table rather than as
+     * cubeless money. See the note above. */
+    int use_match;
+
+    /* The match state as seen by the player to move AT THE ROOT. The search
+     * swaps it as it descends; the caller never has to. */
+    GnMatchState match;
 } GnSearchConfig;
 
-/* Depth `ply`, no filtering. The honest baseline every filter is measured
- * against. */
+/* Depth `ply`, no filtering, cubeless money. The honest baseline every filter
+ * is measured against. */
 GnSearchConfig gn_search_config(int ply);
+
+/* The same, valued through the match equity table. Returns a configuration
+ * with `ply` clamped to 0 if `state` is not evaluable -- a search that silently
+ * fell back to money at an unrepresentable score would be the exact failure
+ * this module exists to avoid. Check `use_match` on the result. */
+GnSearchConfig gn_search_config_match(int ply, const GnMatchState *state);
 
 typedef struct {
     GnPlay play;

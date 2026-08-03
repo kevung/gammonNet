@@ -64,6 +64,89 @@ GnSearchConfig gn_search_config(int ply)
     return config;
 }
 
+GnSearchConfig gn_search_config_match(int ply, const GnMatchState *state)
+{
+    GnSearchConfig config = gn_search_config(ply);
+    if (state == NULL || !gn_match_state_is_valid(state)) {
+        /* Refused, not degraded. Falling back to money here would produce a
+         * search that is wrong in a match and says nothing about it. */
+        config.ply = 0;
+        return config;
+    }
+    config.use_match = 1;
+    config.match = *state;
+    return config;
+}
+
+/* The same position, seen from the other side of the table. */
+static GnMatchState swap_sides(GnMatchState state)
+{
+    const int mine = state.away_on_roll;
+    state.away_on_roll = state.away_opponent;
+    state.away_opponent = mine;
+    return state;
+}
+
+/*
+ * Turn a distribution into a value, from the point of view of the player whose
+ * `state` this is.
+ *
+ * Money equity or match equity, on the SAME scale: both are 0 for an even
+ * position and negate between sides. That is what lets one recursion serve
+ * both, and why the match path works in `2 * MWC - 1` rather than raw winning
+ * chances.
+ *
+ * Takes probabilities rather than a position on purpose: the caller has often
+ * already paid for the evaluation, and re-running it here would double the cost
+ * of the single dominant operation in this file.
+ */
+static double value_from_probs(const float probs[GN_NUM_OUTPUTS],
+                               const GnSearchConfig *config, GnMatchState state,
+                               int *failed)
+{
+    if (!config->use_match) {
+        return (double)gn_money_equity(probs);
+    }
+    const double equity = gn_match_equity(&state, probs);
+    if (equity <= -2.0) {
+        if (failed) *failed = 1;
+        return 0.0;
+    }
+    return equity;
+}
+
+/* The value of a leaf: evaluate once, then convert. */
+static double leaf_value(const GnNetwork *net, const GnPosition *pos,
+                         const GnSearchConfig *config, GnMatchState state,
+                         int *failed)
+{
+    float probs[GN_NUM_OUTPUTS];
+    if (gn_evaluate(net, pos, probs) != 0) {
+        if (failed) *failed = 1;
+        return 0.0;
+    }
+    g_evaluations++;
+    return value_from_probs(probs, config, state, failed);
+}
+
+/* The value of a finished game, from the point of view of `pos->turn` -- who
+ * is the loser. Computed, never evaluated. */
+static double terminal_value(const GnPosition *pos, const GnSearchConfig *config,
+                             GnMatchState state)
+{
+    if (!config->use_match) {
+        return gn_terminal_equity(pos);
+    }
+    const int winner = gn_position_winner(pos);
+    const int stake = gn_game_value(pos, winner);
+    if (stake < 0) {
+        return 0.0;
+    }
+    /* `pos->turn` names the loser, so the player to move never wins here. */
+    const double mwc = gn_met_after(&state, stake * state.cube, 0);
+    return (mwc < 0.0) ? 0.0 : 2.0 * mwc - 1.0;
+}
+
 double gn_terminal_equity(const GnPosition *pos)
 {
     if (pos == NULL || !gn_position_is_over(pos)) {
@@ -89,7 +172,8 @@ double gn_terminal_equity(const GnPosition *pos)
 
 /* Equity of `pos` from `pos->turn`'s point of view, dice not yet rolled. */
 static double position_equity(const GnNetwork *net, const GnPosition *pos,
-                              const GnSearchConfig *config, int depth);
+                              const GnSearchConfig *config, int depth,
+                              GnMatchState state);
 
 static int compare_candidates(const void *a, const void *b)
 {
@@ -111,7 +195,7 @@ static int compare_candidates(const void *a, const void *b)
  */
 static int rank_plays(const GnNetwork *net, const GnPosition *pos,
                       int d1, int d2, const GnSearchConfig *config, int depth,
-                      GnCandidate *out, int max_out)
+                      GnMatchState state, GnCandidate *out, int max_out)
 {
     if (net == NULL || pos == NULL || out == NULL || max_out <= 0) {
         return -1;
@@ -135,20 +219,33 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
         out[i].play = plays[i];
 
         const GnPosition *result = &plays[i].result;
+        /* The result has handed the turn over, so everything about it is seen
+         * from the opponent's side -- including the score. */
+        const GnMatchState theirs = swap_sides(state);
+
         if (gn_position_is_over(result)) {
             /* Computed, never evaluated -- see gn_terminal_equity. */
             memset(out[i].probs, 0, sizeof(out[i].probs));
-            out[i].equity = -gn_terminal_equity(result);
+            out[i].equity = -terminal_value(result, config, theirs);
             continue;
         }
 
+        /* Evaluated ONCE. `probs` keeps the raw distribution -- it describes
+         * the position, not the score -- and only `equity` is score-aware. */
         if (gn_evaluate(net, result, out[i].probs) != 0) {
             free(plays);
             return -1;
         }
         g_evaluations++;
-        /* The negation: the network answered for the opponent. */
-        out[i].equity = -(double)gn_money_equity(out[i].probs);
+
+        int failed = 0;
+        const double value = value_from_probs(out[i].probs, config, theirs, &failed);
+        if (failed) {
+            free(plays);
+            return -1;
+        }
+        /* The negation: the answer was the opponent's. */
+        out[i].equity = -value;
     }
     free(plays);
 
@@ -180,7 +277,8 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
          * other entry point was right -- and only the ranking gave it away, by
          * never once differing from 0-ply over 114 decisions.
          */
-        out[i].equity = -position_equity(net, result, config, depth);
+        out[i].equity = -position_equity(net, result, config, depth,
+                                         swap_sides(state));
     }
 
     /* Re-rank: the deep pass is allowed to disagree with the shallow one, and
@@ -190,19 +288,15 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
 }
 
 static double position_equity(const GnNetwork *net, const GnPosition *pos,
-                              const GnSearchConfig *config, int depth)
+                              const GnSearchConfig *config, int depth,
+                              GnMatchState state)
 {
     if (gn_position_is_over(pos)) {
-        return gn_terminal_equity(pos);
+        return terminal_value(pos, config, state);
     }
 
     if (depth <= 0) {
-        float probs[GN_NUM_OUTPUTS];
-        if (gn_evaluate(net, pos, probs) != 0) {
-            return 0.0;
-        }
-        g_evaluations++;
-        return (double)gn_money_equity(probs);
+        return leaf_value(net, pos, config, state, NULL);
     }
 
     build_rolls();
@@ -215,7 +309,8 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
     double total = 0.0;
     for (int r = 0; r < GN_NUM_ROLLS; r++) {
         const int count = rank_plays(net, pos, g_rolls[r].d1, g_rolls[r].d2,
-                                     config, depth - 1, candidates, MAX_PLAYS);
+                                     config, depth - 1, state,
+                                     candidates, MAX_PLAYS);
 
         double best;
         if (count > 0) {
@@ -228,7 +323,8 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
              */
             GnPosition passed = *pos;
             gn_position_swap_turn(&passed);
-            best = -position_equity(net, &passed, config, depth - 1);
+            best = -position_equity(net, &passed, config, depth - 1,
+                                    swap_sides(state));
         }
         total += g_rolls[r].weight * best;
     }
@@ -244,7 +340,8 @@ int gn_search_plays(const GnNetwork *net, const GnPosition *pos, int d1, int d2,
     if (config == NULL) {
         return -1;
     }
-    return rank_plays(net, pos, d1, d2, config, config->ply, out, max_out);
+    return rank_plays(net, pos, d1, d2, config, config->ply, config->match,
+                      out, max_out);
 }
 
 int gn_best_play(const GnNetwork *net, const GnPosition *pos, int d1, int d2,
@@ -269,5 +366,5 @@ double gn_search_equity(const GnNetwork *net, const GnPosition *pos,
     if (net == NULL || pos == NULL || config == NULL) {
         return 0.0;
     }
-    return position_equity(net, pos, config, config->ply);
+    return position_equity(net, pos, config, config->ply, config->match);
 }
