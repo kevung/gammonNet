@@ -1,4 +1,9 @@
 build/
+# `vendor/` ET `vendor` sans slash : la forme avec slash n'ignore qu'un
+# RÉPERTOIRE. Un lien symbolique du même nom passe au travers, et un `git add -A`
+# le commite — c'est arrivé le 2026-08-03, et le lien, valide sur la machine qui
+# l'a créé, pointait sur lui-même sur l'autre, écrasant le vrai répertoire.
+vendor
 vendor/
 models/*.pt
 models/*.bin
