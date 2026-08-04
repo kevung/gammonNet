@@ -89,6 +89,18 @@ def main() -> int:
 
     path = ROOT / args.reference
     rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+    # La profondeur fait partie de la référence. Une référence produite à
+    # une autre profondeur que celle qu'on analyse ne mesure pas un filtre :
+    # elle mesure un changement de profondeur, en silence.
+    plies = {row.get('ply') for row in rows}
+    if plies - {None} not in ({2}, set()):
+        print(f'référence à une profondeur inattendue : {plies}',
+              file=sys.stderr)
+        return 1
+    if plies == {None}:
+        print('référence sans profondeur déclarée — antérieure au champ '
+              '`ply`, supposée 2-ply')
     if not rows:
         raise SystemExit(f"{path} est vide")
 
