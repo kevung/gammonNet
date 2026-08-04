@@ -99,28 +99,36 @@ def main() -> int:
           f"{'perte moyenne':>14s} {'perte/décision':>15s}")
 
     with Network.load(MODEL) as net:
+        # Positions décodées une fois pour toutes.
+        boards = [(codec.position_from_id(r["position_id"], r["turn"]), *r["dice"])
+                  for r in decisions]
+
         for label, state in SCORES:
+            unfiltered = configs(state, 1)[0]
+
+            # LA VÉRITÉ NE DÉPEND PAS DE LA TAILLE DU FILTRE. La calculer dans
+            # la boucle des gardes la referait trois fois pour le même
+            # résultat — c'est ce que faisait la première version, et cela
+            # triplait le coût de la partie la plus chère.
+            truths = []
+            for position, d1, d2 in boards:
+                ranked = search_plays(net, position, d1, d2, unfiltered)
+                truths.append(ranked if len(ranked) >= 2 else None)
+
             for keep in KEEPS:
-                unfiltered, filtered = configs(state, keep)
+                filtered = configs(state, keep)[1]
 
                 disagreements = 0
                 losses: list[float] = []
                 counted = 0
 
-                for record in decisions:
-                    position = codec.position_from_id(record["position_id"],
-                                                      record["turn"])
-                    d1, d2 = record["dice"]
-
-                    truth = search_plays(net, position, d1, d2, unfiltered)
-                    if len(truth) < 2:
+                for (position, d1, d2), truth in zip(boards, truths):
+                    if truth is None:
                         continue
                     counted += 1
 
                     chosen = search_plays(net, position, d1, d2, filtered)
-                    if not chosen:
-                        continue
-                    if chosen[0].result == truth[0].result:
+                    if not chosen or chosen[0].result == truth[0].result:
                         continue
 
                     disagreements += 1
@@ -133,7 +141,8 @@ def main() -> int:
                 rate = disagreements / counted if counted else 0.0
                 mean = statistics.fmean(losses) if losses else 0.0
                 print(f"{label:>18s} {keep:>6d} "
-                      f"{rate * 100:10.2f}% {mean:14.5f} {rate * mean:15.6f}")
+                      f"{rate * 100:10.2f}% {mean:14.5f} {rate * mean:15.6f}",
+                      flush=True)
 
     print("\nLa perte est en équité de match (2·MWC − 1) pour les lignes de score,")
     print("et en points pour la ligne money. Les deux échelles ne se comparent")
