@@ -119,6 +119,58 @@ export class Evaluator {
     }
   }
 
+  /**
+   * Décider d'un coup, recherche complète comprise.
+   *
+   * C'est ce que T21 n'avait pas pu chronométrer : son verdict multipliait un
+   * débit d'évaluations mesuré par un nombre d'évaluations projeté. Ici la
+   * décision entière est faite, génération des coups et parcours de l'arbre
+   * inclus.
+   *
+   * @param {string} positionId  identifiant de position (codec T02)
+   * @param {number} turn        0 pour Blanc, 1 pour Noir
+   * @param {number} d1, d2      les dés
+   * @param {object} options     ply, filterTop, filterInner, match
+   * @returns {{equity: number, resultId: string, evaluations: number}}
+   */
+  bestPlay(positionId, turn, d1, d2, {
+    ply = 0, filterTop = 0, filterInner = 0, match = null,
+  } = {}) {
+    const m = this.#module;
+    // 16 octets pour l'identifiant (14 caractères plus le NUL), 4 pour le
+    // compteur. Alloués et libérés ici : les garder entre appels ferait entrer
+    // une allocation dans la mesure, ce que le chemin par lot évite déjà.
+    const idPtr = m._malloc(16);
+    const countPtr = m._malloc(4);
+    try {
+      const equity = m.ccall(
+        "gnw_best_play", "number",
+        ["string", "number", "number", "number", "number", "number", "number",
+         "number", "number", "number", "number", "number", "number", "number"],
+        [positionId, turn, d1, d2, ply, filterTop, filterInner,
+         match ? 1 : 0,
+         match ? match.awayOnRoll : 0,
+         match ? match.awayOpponent : 0,
+         match ? (match.cube ?? 1) : 1,
+         match ? (match.crawford ? 1 : 0) : 0,
+         idPtr, countPtr],
+      );
+      if (equity <= -99.0) {
+        // Refusé : position illisible, aucun coup légal, ou score hors table.
+        // Pas de repli silencieux.
+        return null;
+      }
+      return {
+        equity,
+        resultId: m.UTF8ToString(idPtr),
+        evaluations: m.HEAP32[countPtr >> 2],
+      };
+    } finally {
+      m._free(idPtr);
+      m._free(countPtr);
+    }
+  }
+
   destroy() {
     const m = this.#module;
     m._gnw_free_model();
