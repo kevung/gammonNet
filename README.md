@@ -1,104 +1,91 @@
 # gammonNet
 
-**Un évaluateur de positions de backgammon qui tourne dans le navigateur.**
+Un évaluateur de positions de backgammon, pour le navigateur et pour le natif.
 
-Un réseau de neurones, une recherche expectiminimax, une table d'équité de match et des tables
-exactes de fin de partie, compilés pour deux cibles : **WebAssembly** (analyse à 2-ply sur
-l'appareil de la personne) et **natif** (profondeurs supérieures et rollouts).
+Un réseau de neurones, une recherche expectiminimax, une table d'équité de match et des tables de
+fin de partie. Deux cibles : WebAssembly (2-ply sur l'appareil) et natif (profondeurs supérieures
+et rollouts).
 
-Tout ce qui est distribué est sous **licence permissive**, sans clause d'usage — un module
-WebAssembly servi à un navigateur est une **distribution**, ce qui exclut d'emblée toute brique
-sous copyleft fort ou sous clause non commerciale.
+Tout ce qui est distribué est sous licence permissive, sans clause d'usage. Un module WebAssembly
+servi à un navigateur est une distribution, ce qui exclut les briques sous copyleft fort ou sous
+clause non commerciale.
 
-## Ce que ce dépôt apporte
+## Ce qui est réutilisé, ce qui est écrit ici
 
-Les **poids du réseau ne sont pas de nous** : ils viennent de
+Les poids du réseau viennent de
 [`alexstrehl/backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine) (MIT),
-entraîné en self-play. La force brute du réseau lui revient.
-
-> **Un modèle n'est pas un moteur, et un moteur n'est pas un artefact distribuable.**
-> Ce dépôt produit les deux derniers.
+entraîné en self-play.
 
 | Brique | Origine | Statut |
 |---|---|---|
-| Poids du réseau, moteur de règles, lecteur `.bin` | Strehl, MIT | **réutilisés**, isolés derrière nos interfaces |
-| Table d'équité de match **Kazaross-XG2** | œuvre de **Neil Kazaross** | **réutilisée**, vérifiée contre le rendu que GNU Backgammon charge |
-| **Codec position ↔ 196 caractéristiques** | — | **neuf** — le pont n'existait nulle part |
-| **Recherche expectiminimax 0→3 ply, filtrage de coups** | *idée* documentée par le manuel de GNU Backgammon ; aucun code repris | **neuf** |
-| **Équité de match dans la recherche** | *architecture* de GNU Backgammon : réseau cubeless, conversion après | **neuf** |
-| **Portage WebAssembly, pool de Web Workers** | — | **neuf** |
-| **×9 de débit sur la passe avant** | — | **neuf**, exact au bit près |
+| Poids du réseau, moteur de règles, lecteur `.bin` | Strehl, MIT | réutilisés, isolés derrière une interface |
+| Table d'équité de match Kazaross-XG2 | Neil Kazaross | réutilisée, vérifiée contre le rendu de GNU Backgammon |
+| Codec position ↔ 196 caractéristiques | — | écrit ici |
+| Recherche expectiminimax 0→3 ply, filtrage de coups | idée documentée par le manuel de GNU Backgammon ; aucun code repris | écrit ici |
+| Équité de match dans la recherche | architecture de GNU Backgammon : réseau cubeless, conversion après | écrit ici |
+| Portage WebAssembly, pool de Web Workers | — | écrit ici |
+| ×9 de débit sur la passe avant, exact au bit près | — | écrit ici |
 
-**Ce que cela change concrètement.** Sans le codec, ce modèle n'évalue que des positions issues de
-son propre moteur de self-play ; avec, il évalue **une position qu'on lui donne**. Sans la
-recherche, il joue en 0-ply — et le 1-ply change déjà le coup choisi **une fois sur treize**. Sans
-l'équité de match, il ne joue qu'en money, le réseau étant *cubeless* et **aveugle au score**.
+Le codec permet d'évaluer une position fournie de l'extérieur (XGID, Position ID) ; sans lui, le
+modèle ne traite que les positions de son propre moteur de self-play. La recherche fait passer du
+0-ply à des profondeurs supérieures : le 1-ply change le coup choisi dans 7,6 % des décisions
+mesurées. L'équité de match est nécessaire pour jouer ailleurs qu'en money, le réseau étant
+cubeless et aveugle au score.
 
-Les mesures elles-mêmes sont un produit : la force publiée du modèle s'est révélée **non
-reproductible**, un **bug de règles** a été trouvé dans le moteur amont, et une **probabilité
-négative** dans le dénestage naïf des cinq sorties.
+### Annoncé et mesuré
 
-### Annoncé, et mesuré ici
-
-Ce dépôt distingue partout ce qu'il **mesure** de ce qu'il **suppose**. Les écarts étaient
-importants.
-
-| | annoncé | **mesuré ici** |
+| | annoncé | mesuré ici |
 |---|---|---|
-| Force du modèle contre GNU Backgammon, 0-ply money | +0,0578 ppg *(auteur)* | **+0,0400 [+0,0377 ; +0,0425]** sur 10⁶ parties |
-| Pénalité WebAssembly | ×1,5 à ×2,5 *(hypothèse)* | **×1,18 à ×1,29** |
-| Coût d'une décision 2-ply | 245 ms *(extrapolé)* | **1 394 ms**, filtre 1/1 |
-| Match de 7 points dans le navigateur | 30 à 60 s | **~2 min** sur 3,3 workers *(mise à l'échelle mesurée)* |
-| PR du modèle, 0-ply → 2-ply | 1,06 → 0,22 *(auteur)* | **non vérifié** — c'est l'objet de T35 |
+| Force du modèle contre GNU Backgammon, 0-ply money | +0,0578 ppg (auteur) | +0,0400 [+0,0377 ; +0,0425], 10⁶ parties |
+| Pénalité WebAssembly | ×1,5 à ×2,5 (hypothèse) | ×1,18 à ×1,29 |
+| Coût d'une décision 2-ply | 245 ms (extrapolé) | 1 394 ms, filtre 1/1 |
+| Match de 7 points dans le navigateur | 30 à 60 s | ~2 min, 3,3 workers |
+| PR du modèle, 0-ply → 2-ply | 1,06 → 0,22 (auteur) | non vérifié — objet de T35 |
 
-**Le chiffre publié n'est pas reproductible, et l'écart est expliqué.** Le harnais du dépôt de
-référence, exécuté inchangé ici, donne +0,0351 — c'est-à-dire le nôtre. L'hypothèse d'un oracle
-différent a été **testée et réfutée**. Notre harnais est exclu, notre chaîne est exclue, l'oracle
-est exclu. La base de comparaison de ce projet est donc **+0,0400 dans cet environnement**.
+Le +0,0578 n'a pas été reproduit. Le harnais du dépôt de référence, exécuté inchangé ici, donne
++0,0351, soit le même résultat que le nôtre. L'hypothèse d'un oracle différent a été testée et
+réfutée. La base de comparaison de ce dépôt est donc +0,0400 dans cet environnement.
 
-**La dernière ligne est le contrepoids honnête** : la force de la configuration complète n'est pas
-encore mesurée. Tant que T35 n'est pas faite, la valeur ajoutée en *force* est argumentée, pas
-démontrée — et ce dépôt a pour règle de ne pas affirmer une force sans mesure.
+La force de la configuration complète — recherche, équité de match, tables de fin de partie —
+n'est pas mesurée. C'est l'objet de T35.
 
-## Pourquoi le navigateur
+## Coût dans le navigateur
 
-Mesuré sur le moteur de ce dépôt, dans un navigateur, sur la position d'ouverture :
+Position d'ouverture, Chromium :
 
 | Profondeur | Évaluations réseau | Coût d'une décision |
 |---|---|---|
 | 0-ply | 16 | 1,7 ms |
 | 1-ply | 7 475 | 797 ms |
-| **2-ply, filtre 1/1** | **12 951** | **1 394 ms** |
+| 2-ply, filtre 1/1 | 12 951 | 1 394 ms |
 
-Un match de 7 points représente **environ deux minutes** de calcul — par match, et par personne qui
-l'analyse. Prohibitif à centraliser, **gratuit** sur l'appareil de celui qui regarde son propre
-match. Vérifié sur sept plateformes : Chromium, Firefox, deux Android et deux iPhone
+Un match de 7 points représente environ deux minutes de calcul sur 3,3 workers. Mesuré sur sept
+plateformes : Chromium, Firefox, deux Android, deux iPhone
 ([détail](docs/mesures/2026-08-04-decision-navigateur.md)).
 
-Sur ces sept plateformes — trois moteurs de navigateur, deux jeux d'instructions — l'écart au
-repère natif vaut `4,77e-07`, **le même partout** : une analyse produite sur un téléphone est
-identique, **au bit près**, à celle produite sur un ordinateur.
+Sur ces sept plateformes, l'écart au repère natif vaut `4,77e-07` dans tous les cas. Une analyse
+produite sur téléphone donne le même résultat que sur ordinateur.
 
 ## État
 
-**Phases 0, 1 et 2 terminées. La phase 3 est engagée.**
+Phases 0, 1 et 2 terminées. Phase 3 en cours.
 
 | | Tâches | État |
 |---|---|---|
-| **0** — Socle & instrument | T00 · T01 · T02 · T03 · T04 · T05 | ✅ |
-| **1** — Reproduire | T10 · T11 · T12 | ✅ |
-| **2** — Navigateur | T20 · T21 · T22 · T23 | ✅ |
-| **3** — Profondeur & exactitude | T30 · T31 · T32 ✅ · T33 ⏳ · T34 · T35 | en cours |
-| **4** — Modèle propre au projet | — | **fermée délibérément** |
-| **5** — Publication | T50 | à venir |
+| 0 — Socle & instrument | T00 · T01 · T02 · T03 · T04 · T05 | ✅ |
+| 1 — Reproduire | T10 · T11 · T12 | ✅ |
+| 2 — Navigateur | T20 · T21 · T22 · T23 | ✅ |
+| 3 — Profondeur & exactitude | T30 · T31 · T32 ✅ · T33 ⏳ · T34 · T35 | en cours |
+| 4 — Modèle propre au projet | — | fermée |
+| 5 — Publication | T50 | à venir |
 
-Chaque tâche porte un rapport dans [`docs/mesures/`](docs/mesures/), et chaque rapport distingue le
-**mesuré** de l'**estimé**.
+Chaque tâche porte un rapport dans [`docs/mesures/`](docs/mesures/), qui distingue le mesuré de
+l'estimé.
 
-**La phase 4 reste fermée.** Son critère — *« si la phase 1 échoue à confirmer la force
-annoncée »* — est atteint à la lettre, et écarté : il visait *« si le modèle n'est pas assez
-bon »*, or le modèle est bon. Ce qui a échoué est la reproduction d'un **chiffre publié**, pas la
-valeur du réseau. La condition de réouverture reste T35.
+La phase 4 devait s'ouvrir si la phase 1 échouait à confirmer la force annoncée. Le critère est
+atteint à la lettre, puisque le chiffre publié n'a pas été reproduit. Elle reste fermée : le
+critère visait le cas où le modèle serait insuffisant, ce qui n'est pas le cas. Condition de
+réouverture : T35.
 
 ## Démarrer
 
@@ -111,32 +98,31 @@ make test
 
 Python ≥ 3.10 et un compilateur C. Emscripten pour la cible navigateur.
 
-## Le cadrage
+## Documents
 
-| Document | Contenu |
+| | |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | Les règles de travail — frontière, contraintes non négociables |
-| [`BRIEF.md`](BRIEF.md) | Le contexte — sources, licences, chaîne technique, protocole |
-| [`PLAN.md`](PLAN.md) | Le plan d'exécution — 5 phases, 21 fiches |
-| [`THIRD-PARTY.md`](THIRD-PARTY.md) | L'inventaire des briques et de leurs licences |
-| [`docs/adr/`](docs/adr/) | Les décisions d'architecture et leurs motifs |
+| [`CLAUDE.md`](CLAUDE.md) | Règles de travail — frontière, contraintes, conventions |
+| [`BRIEF.md`](BRIEF.md) | Contexte — sources, licences, chaîne technique, protocole |
+| [`PLAN.md`](PLAN.md) | Plan d'exécution — 5 phases, 21 fiches |
+| [`THIRD-PARTY.md`](THIRD-PARTY.md) | Inventaire des briques et de leurs licences |
+| [`docs/adr/`](docs/adr/) | Décisions d'architecture |
 
-**Objectif mesurable** : atteindre un niveau équivalent ou supérieur à GNU Backgammon et à eXtreme
-Gammon, et le **justifier par une mesure reproductible** dont chaque source est traçable.
+Objectif : atteindre un niveau équivalent ou supérieur à GNU Backgammon et à eXtreme Gammon, et le
+justifier par une mesure reproductible dont chaque source est traçable.
 
 ## Crédits
 
-- **Réseau et moteur de règles** — [Alexander Strehl](https://github.com/alexstrehl/backgammon-ai-engine), MIT.
-- **Table d'équité de match Kazaross-XG2** — Neil Kazaross ; transcription croisée avec
+- Réseau et moteur de règles — [Alexander Strehl](https://github.com/alexstrehl/backgammon-ai-engine), MIT.
+- Table d'équité de match Kazaross-XG2 — Neil Kazaross ; transcription croisée avec
   [blunderDB](https://github.com/kevung/blunderDB), MIT.
-- **GNU Backgammon** — oracle de mesure, et référence de la table d'équité. Jamais une source de
-  code ni de poids.
-- **[HedgeHog](https://hedgehog-bg.com/)** — leur principe *« refused, not approximated »* est
-  devenu la règle n° 2 de ce dépôt, et leurs chiffres publiés ont servi d'hypothèses de départ,
-  depuis remplacées par nos mesures. **Ni leur code ni leurs réseaux ne sont utilisés** — voir
-  [ADR-0001](docs/adr/0001-moteur-inference.md).
+- GNU Backgammon — oracle de mesure et référence de la table d'équité. Pas une source de code ni
+  de poids.
+- [HedgeHog](https://hedgehog-bg.com/) — leur principe « refused, not approximated » est repris
+  comme règle de travail, et leurs chiffres publiés ont servi d'hypothèses initiales. Ni leur code
+  ni leurs réseaux ne sont utilisés ([ADR-0001](docs/adr/0001-moteur-inference.md)).
 
-Inventaire complet et licences : [`THIRD-PARTY.md`](THIRD-PARTY.md).
+Licences : [`THIRD-PARTY.md`](THIRD-PARTY.md).
 
 ## Licence
 
