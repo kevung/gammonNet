@@ -93,6 +93,14 @@ def decision_points(count: int, seed: int = SEED) -> list[tuple[Position, int, i
     return out
 
 
+# La profondeur de la référence. Elle est enregistrée dans CHAQUE ligne du
+# fichier, et non seulement dans son nom : comparer une recherche filtrée à
+# 2-ply contre une référence produite à 1-ply ne mesure pas un filtre, cela
+# mesure un changement de profondeur — et rien dans les chiffres ne le dirait.
+# Le nom du fichier peut être recopié, renommé ou mal lu ; la donnée, non.
+REFERENCE_PLY = 2
+
+
 def evaluate_one(payload):
     """Une décision, en 2-ply non filtré. Renvoie le classement complet."""
     from gammonnet import search
@@ -100,7 +108,7 @@ def evaluate_one(payload):
     index, position_id, turn, d1, d2 = payload
     position = codec.position_from_id(position_id, turn)
 
-    config = search.SearchConfig(ply=2, filter=())
+    config = search.SearchConfig(ply=REFERENCE_PLY, filter=())
 
     search.reset_evaluations()
     start = time.perf_counter()
@@ -113,6 +121,7 @@ def evaluate_one(payload):
         "position_id": position_id,
         "turn": turn,
         "dice": [d1, d2],
+        "ply": REFERENCE_PLY,
         "ranking": [
             {"key": codec.position_id(c.play.result), "equity": c.equity}
             for c in candidates
