@@ -10,7 +10,7 @@
 
 ## ⚠️ Chiffres rejoués après le correctif des règles *(2026-08-04)*
 
-Le correctif de `mochy` sur l'ordre des dés (`505b22e`) a fait diverger les corpus à graine fixe
+Le correctif de la machine de calcul sur l'ordre des dés (`505b22e`) a fait diverger les corpus à graine fixe
 — voir la note en tête du [rapport T30](2026-08-03-T30-recherche.md). Les mesures du branchement
 de la table dans la recherche ont été rejouées :
 

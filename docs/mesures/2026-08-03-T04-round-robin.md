@@ -1,6 +1,6 @@
 # T04 — Le harnais de round-robin
 
-**Date** : 2026-08-03 · **Machine** : `mochy` (voir [T00](2026-08-03-T00-socle.md)) ·
+**Date** : 2026-08-03 · **Machine** : la machine de calcul (voir [T00](2026-08-03-T00-socle.md)) ·
 **Branche** : `t04-roundrobin`
 
 > **Aucune force n'est mesurée ici.** On vérifie que **l'instrument est droit**. Un harnais faux

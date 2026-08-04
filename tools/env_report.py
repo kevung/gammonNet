@@ -97,7 +97,10 @@ def collect() -> dict:
 
     return {
         "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "host": platform.node(),
+        # Le nom de la machine n'est PAS consigné. Les rapports de mesure sont
+        # publiés, et un nom d'hôte n'apporte rien à la reproductibilité : ce
+        # qui compte est la configuration, pas l'étiquette. `--host` le remet
+        # pour un usage local.
         "os": f"{platform.system()} {platform.release()}",
         "cpu": _cpu_model(),
         "cpu_threads": os.cpu_count(),
@@ -143,6 +146,9 @@ def _gnubg_nn_version() -> str | None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="emit JSON")
+    parser.add_argument("--host", action="store_true",
+                        help="inclure le nom de la machine — usage local, "
+                             "à ne pas coller dans un rapport publié")
     args = parser.parse_args()
 
     info = collect()

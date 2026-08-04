@@ -51,13 +51,13 @@ enthousiasme.
 
 Le travail est réparti sur deux machines aux profils **complémentaires**, pas concurrents.
 
-| | `mochy` — **piste A** | machine de bureau — **piste B** |
+| | la machine de calcul — **piste A** | machine de bureau — **piste B** |
 |---|---|---|
-| Profil | Threadripper 16 c / 32 f, 94 Gio, 2 × RTX 4090, RHEL 8, **GCC 8.5** | 16 cœurs, 4 Gio libres, pas de GPU, **GCC 16.1**, Firefox 153, Node 26 |
+| Profil | 16 cœurs / 32 fils, 94 Gio, 2 GPU CUDA, RHEL 8, **GCC 8.5** | 16 cœurs, 4 Gio libres, pas de GPU, **GCC 16.1**, Firefox 153, Node 26 |
 | Vocation | Gros volumes : oracle, round-robins, entraînement | Navigateur : Emscripten, WASM, bancs de débit client |
 | Réseau | — | Sortie internet, **pas de LAN** |
 
-**La piste navigateur ne peut pas tourner sur `mochy`** — aucun navigateur, et une chaîne C++17
+**La piste navigateur ne peut pas tourner sur la machine de calcul** — aucun navigateur, et une chaîne C++17
 ancienne. **La piste calcul ne peut pas tourner sur la machine de bureau** — 4 Gio libres et pas
 de GPU. La séparation n'est pas une commodité d'organisation, elle est matérielle.
 
@@ -65,38 +65,38 @@ de GPU. La séparation n'est pas une commodité d'organisation, elle est matéri
 
 | Tâche | Machine | Note |
 |---|---|---|
-| T02, T03, T04 | **`mochy`** | L'instrument de mesure ; T03 et T04 veulent les 32 fils |
+| T02, T03, T04 | **la machine de calcul** | L'instrument de mesure ; T03 et T04 veulent les 32 fils |
 | **T10** | **bureau** | **Déplacée.** Toute la piste B en dépend directement ; la refaire des deux côtés serait du gaspillage |
 | T20, T21, T30, T31 | **bureau** | Descente anticipée vers le verdict navigateur |
 | T22, T23 | **bureau** | Suite naturelle de la phase 2 : le choix du moteur (T22) se tranche **sur mesure**, donc là où l'on mesure |
-| T11, T12 | **`mochy`** | Reprend après T10 ; c'est le seul très gros calcul |
+| T11, T12 | **la machine de calcul** | Reprend après T10 ; c'est le seul très gros calcul |
 | **T32** | **bureau** | **Déplacée le 2026-08-04.** Son critère est de l'antisymétrie et de la monotonie, pas du volume. Et elle est consommée par la **recherche**, qui vit ici : la laisser sur l'autre machine imposerait un aller-retour pour le piège du niveau intermédiaire |
-| T34, T35 | **`mochy`** | Besoin de l'oracle et du volume |
+| T34, T35 | **la machine de calcul** | Besoin de l'oracle et du volume |
 | T33 (volet **coût**) | bureau | Générer le bearoff et **mesurer ses octets** — entrée du budget navigateur |
 
-**Point de rendez-vous** : `mochy` s'arrête après **T04** et attend que **T10** soit livrée par la
+**Point de rendez-vous** : la machine de calcul s'arrête après **T04** et attend que **T10** soit livrée par la
 piste B avant d'attaquer **T11**. *(Levé le 2026-08-03 ; T11 est livrée.)*
 
 ### Certaines tâches ne s'attribuent pas — elles se coupent
 
-À partir de T31, la règle « le calcul lourd va sur `mochy` » ne suit plus le découpage en fiches :
+À partir de T31, la règle « le calcul lourd va sur la machine de calcul » ne suit plus le découpage en fiches :
 une même tâche a une moitié bon marché et une moitié coûteuse.
 
-| Tâche | Bureau | `mochy` |
+| Tâche | Bureau | la machine de calcul |
 |---|---|---|
 | **T31** | écrit le harnais et le corpus, valide sur une poignée de positions | **génère la référence 2-ply non filtrée** — ~1,8 M évaluations par décision |
 | **T33** | mesure les octets, entrée du budget navigateur | **génère les tables de fin de partie** |
 
 Le livrable reste unique et la fiche aussi ; c'est l'exécution qui se répartit.
 
-### File d'attente de `mochy` *(au 2026-08-04)*
+### File d'attente de la machine de calcul *(au 2026-08-04)*
 
-> **Agent qui exécute la roadmap sur `mochy` : prendre dans cet ordre.**
+> **Agent qui exécute la roadmap sur la machine de calcul : prendre dans cet ordre.**
 
 | | Tâche | Pourquoi maintenant |
 |---|---|---|
 | **1** | **T33** — tables de fin de partie | **Ne dépend de rien** : ni du filtre, ni de l'équité de match, ni du modèle. Son critère est une **vérification croisée** — deux implémentations correctes d'un calcul exact produisent des fichiers identiques. Travail long, parfaitement isolé |
-| **2** | **T31, la moitié coûteuse** — référence 2-ply **non filtrée** | ~1 812 000 évaluations par décision, soit **~5,1 s** sur 32 fils. Le bureau écrit le harnais et le corpus ; `mochy` produit la référence |
+| **2** | **T31, la moitié coûteuse** — référence 2-ply **non filtrée** | ~1 812 000 évaluations par décision, soit **~5,1 s** sur 32 fils. Le bureau écrit le harnais et le corpus ; la machine de calcul produit la référence |
 | **3** | **T12** — corpus de non-régression | Peu coûteux, indépendant, à glisser entre les deux |
 
 **Ne pas prendre T35.** Elle est la **somme** de T31, T32, T33 et T34 — son périmètre dit
@@ -108,7 +108,7 @@ le retrouve cité six mois plus tard.
 #### Dimensionner la référence de T31 plutôt que la fixer
 
 Le critère de T31 demande « ≥ 100 000 décisions ». À 5,1 s la décision, cela ferait **six jours de
-`mochy` pour la seule référence**.
+la machine de calcul pour la seule référence**.
 
 C'est probablement sur-spécifié, du même genre que le million de T35. Si le taux de désaccord est
 de l'ordre de 5 %, **2 000 décisions en produisent une centaine**, soit un intervalle de ±1 % sur
@@ -526,7 +526,7 @@ tables de fin de partie) contre GNU Backgammon à profondeur équivalente, en mo
 
 > **Le million était sur-spécifié pour la question posée, et infaisable.** T30 a mesuré le coût
 > réel : 12 951 évaluations par décision en 2-ply filtré 1/1. Un million de parties représente
-> donc `12 951 × ~55 décisions × 10⁶ ≈ 7,1 × 10¹¹` évaluations, soit **~23 jours sur `mochy`**
+> donc `12 951 × ~55 décisions × 10⁶ ≈ 7,1 × 10¹¹` évaluations, soit **~23 jours sur la machine de calcul**
 > (32 fils à 11 171 éval/s), ou ~10 jours avec le traitement par lot.
 >
 > Le million vient du `BRIEF.md` §5, qui vise à séparer des moteurs distants de 0,005 à 0,07 ppg.

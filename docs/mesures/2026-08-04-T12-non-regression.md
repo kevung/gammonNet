@@ -1,6 +1,6 @@
 # T12 — Le corpus de non-régression
 
-**Date** : 2026-08-04 · **Machine** : `mochy` · **Branche** : `t12-regression`
+**Date** : 2026-08-04 · **Machine** : la machine de calcul · **Branche** : `t12-regression`
 
 > Ce corpus ne dit pas que le réseau a raison. Il dit qu'il n'a pas **changé**. Sans lui, une
 > dérive d'encodage, de chargeur ou de poids déplacerait mille mesures ultérieures d'un rien,

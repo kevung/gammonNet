@@ -54,8 +54,9 @@
     <tr><th>Écart au repère natif</th><td id="delta">—</td></tr>
     <tr><th>SIMD</th><td id="simd">—</td></tr>
     <tr><th>Cœurs annoncés</th><td id="cores">—</td></tr>
-    <tr><th>Décision 2-ply filtrée <em>(projection)</em></th><td id="ply2">—</td></tr>
-    <tr><th>Match de 7 points, 4 workers <em>(projection)</em></th><td id="match">—</td></tr>
+    <tr><th>Décision 2-ply filtrée <em>(mesurée)</em></th><td class="headline" id="ply2">—</td></tr>
+    <tr><th>Match de 7 points, 3,3 workers <em>(projeté de la mesure)</em></th><td id="match">—</td></tr>
+    <tr><th>Surcoût hors réseau</th><td id="overhead">—</td></tr>
   </table>
   <button class="secondary" id="copy">Copier le résultat</button>
   <pre id="raw"></pre>
@@ -164,7 +165,34 @@
 
     const evalsPerSecond = (count / median) * 1000;
     const msPerEval = median / count;
-    const ply2Ms = FILTERED_MOVES * ROLLS * MOVES_PER_DECISION * msPerEval;
+
+    // ── La décision réelle ───────────────────────────────────────────
+    status("mesure d'une décision 2-ply…");
+    const first = evaluator.bestPlay(
+      DECISION.positionId, DECISION.turn, DECISION.d1, DECISION.d2, DECISION);
+    if (first === null) throw new Error("décision refusée par le moteur");
+
+    const decisionAgrees =
+      first.resultId === DECISION.nativeResultId &&
+      first.evaluations === DECISION.nativeEvaluations &&
+      Math.abs(first.equity - DECISION.nativeEquity) < 1e-5;
+
+    const decisionSamples = [];
+    for (let r = 0; r < 3; r++) {
+      const began = performance.now();
+      evaluator.bestPlay(
+        DECISION.positionId, DECISION.turn, DECISION.d1, DECISION.d2, DECISION);
+      decisionSamples.push(performance.now() - began);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    decisionSamples.sort((a, b) => a - b);
+    const ply2Ms = decisionSamples[Math.floor(decisionSamples.length / 2)];
+    if (!(ply2Ms > 0)) throw new Error("l'horloge n'a pas avancé sur la décision");
+
+    // Le surcoût de tout ce qui n'est pas le réseau : génération des coups,
+    // encodage, parcours de l'arbre. Mesuré à ×1,20 sur desktop ; c'est
+    // précisément sa transposition au mobile qui était une hypothèse.
+    const overhead = (ply2Ms / first.evaluations) / msPerEval;
     const matchS = (ply2Ms * DECISIONS_PER_MATCH) / WORKERS / 1000;
 
     const payload = {
@@ -179,7 +207,10 @@
       msParEvaluation: Number(msPerEval.toFixed(5)),
       ecartAuRepereNatif: worst,
       pariteOk: worst < 1e-6,
-      projectionDecision2plyMs: Math.round(ply2Ms),
+      decision2plyMs: Number(ply2Ms.toFixed(1)),
+      decisionEvaluations: first.evaluations,
+      decisionAgreesWithNative: decisionAgrees,
+      surcoutHorsReseau: Number(overhead.toFixed(3)),
       projectionMatch7ptsSecondes: Math.round(matchS),
     };
 
@@ -189,13 +220,20 @@
       worst.toExponential(2) + (payload.pariteOk ? "  ✅" : "  ❌ hors tolérance");
     $("simd").textContent = evaluator.hasSimd ? "actif" : "absent";
     $("cores").textContent = payload.coeurs ?? "inconnu";
-    $("ply2").textContent = Math.round(ply2Ms) + " ms";
+    $("ply2").textContent = Math.round(ply2Ms) + " ms"
+      + (decisionAgrees ? "  ✅" : "  ❌ désaccord avec le natif");
     $("match").textContent = Math.round(matchS) + " s";
+    $("overhead").textContent = "×" + overhead.toFixed(2);
 
     // Le seuil que le rapport T21 a publié d'avance : un match qui dépasse
     // cinq minutes sort de l'usage interactif.
     const verdict = $("verdict");
-    if (!payload.pariteOk) {
+    if (!decisionAgrees) {
+      verdict.className = "verdict ko";
+      verdict.textContent =
+        "❌ La décision de cet appareil diffère de celle du natif. Le temps " +
+        "mesuré ne veut rien dire tant que ce point n'est pas élucidé.";
+    } else if (!payload.pariteOk) {
       verdict.className = "verdict ko";
       verdict.textContent =
         "❌ Le moteur ne répond pas comme le natif sur cet appareil. Le débit " +
@@ -204,17 +242,17 @@
       verdict.className = "verdict ok";
       verdict.textContent =
         `✅ Le 2-ply tient sur cet appareil : ~${Math.round(matchS)} s par match ` +
-        `de 7 points sur 4 workers (projection).`;
+        `de 7 points sur 3,3 workers.`;
     } else if (matchS <= 300) {
       verdict.className = "verdict warn";
       verdict.textContent =
         `⚠️ Le 2-ply passe, mais lentement : ~${Math.round(matchS / 60)} min par ` +
-        `match (projection). Une barre de progression devient obligatoire.`;
+        `match. Une barre de progression devient obligatoire.`;
     } else {
       verdict.className = "verdict ko";
       verdict.textContent =
         `❌ Le 2-ply ne tient pas en interactif ici : ~${Math.round(matchS / 60)} min ` +
-        `par match (projection). La cible du projet doit être révisée pour mobile.`;
+        `par match. La cible du projet doit être révisée pour mobile.`;
     }
 
     $("raw").textContent = JSON.stringify(payload, null, 2);
