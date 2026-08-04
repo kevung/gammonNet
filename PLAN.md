@@ -27,6 +27,21 @@ ultérieures. Lui consacrer le soin qu'on donnerait à un chiffrement.
 force annoncée du modèle de référence, ou si la phase 3 révèle un plafond. Ne pas l'engager par
 enthousiasme.
 
+> ### La phase 4 reste FERMÉE — décidé le 2026-08-04
+>
+> **Le critère est atteint à la lettre, et écarté délibérément.** T11 a établi que le +0,0578
+> publié n'est pas reproductible, et l'hypothèse de l'oracle a été testée puis **réfutée** : GNU
+> Backgammon et `gnubg-nn` jouent le même coup dans 99,64 % des cas. Notre harnais est exclu,
+> notre chaîne l'est aussi, l'oracle l'est aussi.
+>
+> Mais le critère visait *« si le modèle n'est pas assez bon »*, et **le modèle est bon** :
+> +0,0400 ppg [+0,0377 ; +0,0425] sur GNU Backgammon est un avantage large et mesuré. Ce qui a
+> échoué, c'est la reproduction d'un **chiffre publié**, pas la valeur du réseau.
+>
+> Ouvrir le plus gros chantier du projet sur une lecture littérale l'engagerait pour une raison
+> qui n'est pas la bonne. **La condition de réouverture reste T35** : si le round-robin complet
+> révèle un plafond, la question se reposera sur des données neuves.
+
 ---
 
 ## Répartition entre machines — deux pistes *(à partir du 2026-08-03)*

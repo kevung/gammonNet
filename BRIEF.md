@@ -69,7 +69,9 @@ perte-backgammon — indispensables au match play (§6). Les variantes `cubeful_
 
 ### 3.2 Le moteur d'inférence — `hedgehog-public`
 
-> **Tranché en T22 le 2026-08-03 : son code n'est pas embarqué.** Le gain qu'on en attendait est
+> **Tranché en T22 le 2026-08-03 : son code n'est pas embarqué.** Ce que ce dépôt doit
+> réellement à HedgeHog — sa discipline, et des hypothèses de départ depuis toutes remplacées par
+> nos mesures — est résumé dans le `README.md`, section *Approche*. Le gain qu'on en attendait est
 > plafonné à 19 % — la part de la couche d'entrée dans les MACs de ce réseau, seule chose que
 > l'accumulation NNUE optimise — et le mode dense la désactive de toute façon. Les ×9 de débit
 > obtenus l'ont été dans le code existant, sur des causes indépendantes du moteur. Motif complet
@@ -374,6 +376,23 @@ model.bin  (magic BGNN, float32 plat)
 
 ### Le budget navigateur
 
+> **⚠️ Cette section est celle du cadrage initial. Elle a été mesurée depuis, et les mesures
+> l'ont remplacée.** Elle est conservée parce qu'une hypothèse dépassée fait partie du dossier :
+> elle dit ce qu'on croyait, et de combien on se trompait.
+>
+> | | hypothèse de départ | **mesuré** |
+> |---|---|---|
+> | Pénalité WebAssembly | ×1,5 à ×2,5 | **×1,18 à ×1,29** |
+> | Décision 0-ply | ~0,1 ms | **1,7 ms** |
+> | Décision 2-ply | 245 ms | **1 394 ms** (filtre 1/1) |
+> | Match de 7 points | 30 à 60 s | **~2 min** sur 3,3 workers mesurés |
+>
+> L'écart sur le 0-ply s'explique : les chiffres de HedgeHog viennent d'un moteur **NNUE à
+> accumulation incrémentale** avec filtre de coups actif — ce n'est pas le même calcul. Le
+> détail : [T21](docs/mesures/2026-08-03-T21-debit-navigateur.md),
+> [T30](docs/mesures/2026-08-03-T30-recherche.md),
+> [la décision navigateur](docs/mesures/2026-08-04-decision-navigateur.md).
+
 Extrapolation à partir des débits publiés par HedgeHog (un cœur de Ryzen 5 3600, filtre de coups
 actif), avec une pénalité WebAssembly estimée entre ×1,5 et ×2,5 — **hypothèse, à mesurer en
 phase 2** :
@@ -388,6 +407,11 @@ phase 2** :
 Lecture : **le 2-ply passe dans le navigateur** avec une barre de progression ; **le 3-ply ne
 passe pas en interactif**. C'est ce qui fixe la cible du projet. Réserve : HedgeHog qualifie
 lui-même ses chiffres 3-ply de *« high-variance (few completed searches) »*.
+
+**La conclusion tient, les chiffres non.** Le 2-ply passe bien — mesuré à ~2 min par match de 7
+points, sur desktop comme sur iPhone — mais **seulement avec un filtre agressif**, ce que cette
+extrapolation ne laissait pas voir. Sans filtre, une décision 2-ply coûte ~3,8 millions
+d'évaluations.
 
 ## 7. Attribution — condition de livraison
 
