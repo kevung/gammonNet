@@ -157,3 +157,88 @@ int gnw_has_simd(void)
     return 0;
 #endif
 }
+
+/* ── Recherche ──────────────────────────────────────────────────────
+ *
+ * T21 a rendu son verdict en multipliant un débit d'évaluations MESURÉ par un
+ * nombre d'évaluations par décision SUPPOSÉ, puis mesuré par T30. Les deux
+ * moitiés sont solides, mais leur produit reste une projection : il suppose que
+ * rien d'autre ne coûte, ni la génération des coups, ni l'encodage, ni le
+ * parcours de l'arbre.
+ *
+ * Ces entrées exposent la recherche complète pour qu'une VRAIE décision soit
+ * chronométrée dans un VRAI navigateur. C'est la dernière projection du projet
+ * qui devient une mesure.
+ */
+
+#include "gn_met.h"
+#include "gn_position_id.h"
+#include "gn_search.h"
+
+/*
+ * Décider d'un coup, à partir d'un identifiant de position.
+ *
+ * L'identifiant plutôt que la structure : il traverse la frontière JavaScript
+ * sans que les deux côtés aient à s'accorder sur un agencement de champs, et
+ * c'est le codec de T02 -- déjà croisé avec GNU Backgammon -- qui le lit.
+ *
+ * `out_id` reçoit l'identifiant de la position résultante (au moins 16 octets).
+ * `out_evaluations` reçoit le nombre d'évaluations réseau consommées : c'est
+ * l'unité que T21 chronomètre, et l'avoir ici rend le coût d'une décision
+ * vérifiable plutôt que déduit.
+ *
+ * Renvoie l'équité du coup retenu -- du point de vue de celui qui le joue --
+ * ou -99.0 si la position est illisible, si aucun coup n'est légal, ou si le
+ * score demandé sort de la table. Refusé, jamais approximé.
+ */
+EMSCRIPTEN_KEEPALIVE
+double gnw_best_play(const char *position_id, int turn, int d1, int d2,
+                     int ply, int filter_top, int filter_inner,
+                     int use_match, int away_on_roll, int away_opponent,
+                     int cube, int crawford,
+                     char *out_id, int *out_evaluations)
+{
+    if (g_network == NULL || position_id == NULL) {
+        return -99.0;
+    }
+
+    GnPosition position;
+    if (gn_position_from_id(position_id, turn, &position) != 0) {
+        return -99.0;
+    }
+
+    GnSearchConfig config;
+    if (use_match) {
+        const GnMatchState state = {away_on_roll, away_opponent, cube, crawford};
+        config = gn_search_config_match(ply, &state);
+        if (!config.use_match) {
+            return -99.0;   /* score hors table : refusé, pas rabattu en money */
+        }
+    } else {
+        config = gn_search_config(ply);
+    }
+    if (filter_top > 0 && ply >= 1) {
+        config.filter[ply] = filter_top;
+    }
+    if (filter_inner > 0 && ply >= 2) {
+        config.filter[ply - 1] = filter_inner;
+    }
+
+    gn_search_reset_evaluations();
+
+    GnCandidate best;
+    if (gn_best_play(g_network, &position, d1, d2, &config, &best) != 0) {
+        if (out_evaluations) {
+            *out_evaluations = (int)gn_search_evaluations();
+        }
+        return -99.0;
+    }
+
+    if (out_id != NULL) {
+        gn_position_id(&best.play.result, out_id);
+    }
+    if (out_evaluations != NULL) {
+        *out_evaluations = (int)gn_search_evaluations();
+    }
+    return best.equity;
+}
