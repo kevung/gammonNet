@@ -48,6 +48,8 @@ c'est normal : on construit l'instrument avant d'avoir quoi que ce soit à mesur
 | **T11** — Round-robin de vérification | ✅ [rapport](docs/mesures/2026-08-03-T11-verification.md) |
 | **T20** — Build WebAssembly | ✅ [rapport](docs/mesures/2026-08-03-T20-wasm.md) |
 | **T21** — Banc de débit navigateur | ⏳ partiel — [rapport](docs/mesures/2026-08-03-T21-debit-navigateur.md) |
+| **T31** — Filtrage de coups | ⏳ moitié coûteuse livrée — [rapport](docs/mesures/2026-08-04-T31-filtre.md) |
+| **T33** — Tables de fin de partie | ⏳ partiel — [rapport](docs/mesures/2026-08-04-T33-bearoff.md) |
 
 **La force mesurée, dans cet environnement** : le modèle de référence bat GNU Backgammon de
 **+0,0400 ppg [+0,0377 ; +0,0425]** sur un million de parties en 0-ply money sans videau. Ce
