@@ -74,13 +74,22 @@
   // atteint internet. Le résultat s'affiche donc, et se copie.
   const REPETITIONS = 7;
 
-  // Constantes de projection. Ce ne sont PAS des mesures — la recherche (T30)
-  // n'existe pas encore. Voir docs/mesures/2026-08-03-T21-debit-navigateur.md.
-  const MOVES_PER_DECISION = 20;   // coups légaux moyens
-  const FILTERED_MOVES = 8;        // après filtrage (T31)
-  const ROLLS = 21;                // jets distincts de l'adversaire
-  const DECISIONS_PER_MATCH = 300; // match de 7 points
-  const WORKERS = 4;
+  // La recherche existe désormais et tourne dans ce module : la décision est
+  // MESURÉE, plus projetée. Ne restent projetés que le nombre de décisions d'un
+  // match et la mise à l'échelle des workers, elle-même mesurée en T23.
+  const DECISIONS_PER_MATCH = 300;  // match de 7 points
+  const WORKERS = 3.3;              // mise à l'échelle MESURÉE en T23, pas 4
+
+  // La position d'ouverture et son jet, avec ce que le natif en dit. L'accord
+  // est vérifié avant de chronométrer : un temps mesuré sur un moteur qui
+  // répond faux ne vaut rien.
+  const DECISION = {
+    positionId: "4HPwATDgc/ABMA", turn: 0, d1: 3, d2: 1,
+    ply: 2, filterTop: 1, filterInner: 1,
+    nativeResultId: "sGfwATDgc/ABMA",
+    nativeEvaluations: 12951,
+    nativeEquity: 0.166899,
+  };
 
   const $ = (id) => document.getElementById(id);
   const status = (text) => { $("status").textContent = text; };
@@ -90,7 +99,12 @@
     try {
       await measure();
     } catch (error) {
+      // Rapportée À L'ÉCRAN **et** au harnais. La version précédente ne faisait
+      // que l'afficher : une exécution automatisée expirait sans jamais savoir
+      // pourquoi, et c'est ainsi qu'un `DECISION is not defined` a coûté
+      // plusieurs diagnostics.
       status("❌ " + (error?.stack || error));
+      await report({ error: String(error?.stack || error) });
       $("run").disabled = false;
     }
   }

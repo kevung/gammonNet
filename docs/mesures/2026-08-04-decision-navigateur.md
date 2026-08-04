@@ -27,20 +27,31 @@ Le contrôle passe **avant** le chronomètre. Un débit mesuré sur un moteur qu
 rien, et c'est la troisième fois dans ce projet qu'un contrôle de justesse attrape ce qu'un
 chronomètre aurait laissé passer.
 
-## Le chiffre que T21 ne pouvait pas produire
+## Le surcoût hors réseau : ×1,00
 
-```
-ms par évaluation, à travers une décision complète : 0,1076   (Chromium)
-ms par évaluation, mesurée nue en T21              : 0,0898
-                                          surcoût  : ×1,20
-```
+> ### ⚠️ Correction du 2026-08-04
+>
+> Ce rapport annonçait d'abord un surcoût de **×1,20**, obtenu en divisant le coût par évaluation
+> à travers une décision (0,1076 ms) par celui mesuré nu en T21 (0,0898 ms). **Ces deux nombres
+> viennent de deux exécutions et de deux builds différents** : celui de T21 ne contenait pas la
+> recherche. Le comparer au nôtre mesurait la différence entre les deux binaires autant que le
+> surcoût.
 
-> **Génération des coups, encodage et parcours de l'arbre coûtent 20 %.** T21 les supposait
-> gratuits, faute de pouvoir faire autrement.
+Mesuré **dans une seule exécution**, banc nu et décision l'un après l'autre sur le même build :
 
-Vingt pour cent est modeste — le réseau reste l'écrasante majorité du travail, ce qui confirme
-après coup que l'optimiser était bien le bon combat. Mais ce n'est pas zéro, et cela n'aurait pas
-pu se déduire.
+| | ms par évaluation |
+|---|---|
+| Banc d'évaluations nues | 0,0918 |
+| À travers une décision 2-ply complète | 0,0919 |
+| **Surcoût** | **×1,001** |
+
+**La génération des coups, l'encodage et le parcours de l'arbre coûtent moins que le bruit de
+mesure.** Le coût d'une décision est le nombre d'évaluations multiplié par le coût unitaire, et
+rien d'autre — ce que T21 supposait, et qui se trouve vrai.
+
+Le build contenant la recherche est en revanche ~2 % plus lent en évaluation nue que celui de T21
+(10 899 contre 11 136 éval/s), ce qui est l'ordre de grandeur attendu pour un binaire deux fois
+plus gros.
 
 ## La chaîne des corrections, de bout en bout
 
@@ -48,24 +59,23 @@ Un match de 7 points (~300 décisions) en 2-ply filtré 1/1, sur desktop :
 
 | Estimation | Match | Ce qui a changé |
 |---|---|---|
-| T30 | 1,5 min | ÷4 workers **supposés** |
-| T23 | 1,8 min | ÷3,3 workers **mesurés** |
-| **Ici** | **2,1 min** | **décision réelle chronométrée** |
+| T30 | 1,5 min | ÷4 workers supposés |
+| T23 | 1,8 min | ÷3,3 workers mesurés |
+| **Ici** | **~1,8 min** | décision réelle chronométrée, surcoût mesuré à ×1,00 |
 
-Chaque étape a dégradé la précédente d'environ 20 %, et chacune l'a fait **par une mesure**. C'est
-le prix ordinaire de la substitution d'un chiffre supposé par un chiffre observé, et la conclusion
-n'en est pas altérée.
+Une seule des deux corrections envisagées a eu lieu : la mise à l'échelle des workers. Le surcoût
+hors réseau, qu'on croyait valoir 20 %, est nul.
 
 Sur les appareils mesurés en T21, en appliquant le surcoût de ×1,20 au coût par évaluation :
 
 | | 2-ply 1/1, par décision | Match de 7 pts, 3,3 workers | avec le lot ×2,2 |
 |---|---|---|---|
-| iPhone (0,085 → 0,102) | 1,32 s | **~2,0 min** | **~55 s** |
-| Chromium desktop | 1,39 s | ~2,1 min | ~57 s |
-| Android le plus lent (0,329 → 0,395) | 5,11 s | ~7,7 min | ~3,5 min |
+| iPhone (0,085 ms/éval) | 1,10 s | **~1,7 min** | **~45 s** |
+| Chromium desktop | 1,19 s | ~1,8 min | ~49 s |
+| Android le plus lent (0,329) | 4,26 s | ~6,5 min | ~2,9 min |
 
-**Le 2-ply tient**, et plus rien dans cette phrase ne repose sur une projection — sauf la
-transposition du surcoût de ×1,20, mesuré sur desktop, aux appareils mobiles.
+Le 2-ply tient. Les coûts par appareil restent transposés depuis le coût par évaluation mesuré en
+T21 ; la page publiée permet de les mesurer directement, ce qui reste à faire.
 
 ---
 
@@ -114,9 +124,9 @@ float16.
 
 ## Ce qui n'est pas mesuré ici
 
-- **Le surcoût de ×1,20 est mesuré sur desktop.** Sa transposition aux mobiles est une hypothèse ;
-  elle est plausible — c'est du calcul, pas de l'entrée-sortie — mais elle n'est pas vérifiée. La
-  page publiée permettrait de la vérifier.
+- **Le surcoût est mesuré sur desktop.** Il y est nul ; rien ne dit qu'il l'est sur mobile, où
+  l'allocation et le parcours mémoire peuvent peser autrement. La page publiée le mesure
+  désormais.
 - **Money seulement.** Le mode match est exposé par l'API WebAssembly mais n'a pas été chronométré ;
   il ajoute une consultation de table par nœud, négligeable devant une évaluation réseau, et cela
   aussi reste à confirmer plutôt qu'à affirmer.
