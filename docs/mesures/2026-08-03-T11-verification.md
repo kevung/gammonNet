@@ -74,6 +74,13 @@ C'est le résultat que la phase 1 cherchait, et il est doublement informatif :
 - **Ce qui ne l'est pas** — la force **publiée** du modèle n'est pas reproductible dans cet
   environnement, et cela ne dépend pas de nous.
 
+> **⚠ MISE À JOUR DU 2026-08-04 — l'hypothèse ci-dessous a été testée et elle est FAUSSE.**
+> GNU Backgammon 1.08.003 et `gnubg-nn` 1.1.0a9 choisissent le même coup sur **99,64 %** de
+> 2 000 décisions en 0-ply. Or T11 mesure elle-même qu'un désaccord de 2,5 % ne coûte que
+> +0,0010 ppg : 0,36 % ne peut pas produire 0,018. **L'oracle n'est pas la cause.** Voir
+> [le rapport de suite](2026-08-04-T11-oracles.md). La section qui suit est conservée telle
+> qu'elle a été écrite, parce qu'une hypothèse réfutée fait partie de la mesure.
+
 ### La cause probable, marquée comme hypothèse
 
 Le suspect le plus direct est **`gnubg-nn` lui-même**, l'oracle commun aux deux harnais. La

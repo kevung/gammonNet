@@ -1,0 +1,933 @@
+{
+  "ply": 2,
+  "positions": 2000,
+  "loaded_ok": 2000,
+  "agree": 1912,
+  "unmatched": [
+    {
+      "index": 10,
+      "position_id": "3w0AALg3ECA1AA",
+      "turn": 0,
+      "dice": [
+        4,
+        5
+      ],
+      "gnubg": "3w0AALg3ECA1AA"
+    },
+    {
+      "index": 147,
+      "position_id": "fwcAAHgvMRgEAA",
+      "turn": 1,
+      "dice": [
+        6,
+        3
+      ],
+      "gnubg": "fwcAAHgvMRgEAA"
+    },
+    {
+      "index": 246,
+      "position_id": "fwEAAP5akQQAAA",
+      "turn": 0,
+      "dice": [
+        3,
+        2
+      ],
+      "gnubg": "fwEAAP5akQQAAA"
+    },
+    {
+      "index": 248,
+      "position_id": "3wEAAPZVM0AAAA",
+      "turn": 0,
+      "dice": [
+        3,
+        6
+      ],
+      "gnubg": "3wEAAPZVM0AAAA"
+    },
+    {
+      "index": 268,
+      "position_id": "9w8AAHAXlIA8AA",
+      "turn": 0,
+      "dice": [
+        4,
+        1
+      ],
+      "gnubg": "9w8AAHAXlIA8AA"
+    },
+    {
+      "index": 300,
+      "position_id": "9wAAAD2vAwgBAA",
+      "turn": 1,
+      "dice": [
+        2,
+        5
+      ],
+      "gnubg": "9wAAAD2vAwgBAA"
+    },
+    {
+      "index": 337,
+      "position_id": "fwAAALWnAgwFAA",
+      "turn": 1,
+      "dice": [
+        2,
+        4
+      ],
+      "gnubg": "fwAAALWnAgwFAA"
+    },
+    {
+      "index": 404,
+      "position_id": "AQAAtCohMB4AAA",
+      "turn": 1,
+      "dice": [
+        3,
+        6
+      ],
+      "gnubg": "AQAAtCohMB4AAA"
+    },
+    {
+      "index": 546,
+      "position_id": "dwAAgH/vAAAAAA",
+      "turn": 1,
+      "dice": [
+        4,
+        1
+      ],
+      "gnubg": "dwAAgH/vAAAAAA"
+    },
+    {
+      "index": 594,
+      "position_id": "HwAAwPstEQAAAA",
+      "turn": 1,
+      "dice": [
+        1,
+        3
+      ],
+      "gnubg": "HwAAwPstEQAAAA"
+    },
+    {
+      "index": 657,
+      "position_id": "BwAA8O8DAAAAAA",
+      "turn": 1,
+      "dice": [
+        1,
+        3
+      ],
+      "gnubg": "BwAA8O8DAAAAAA"
+    },
+    {
+      "index": 696,
+      "position_id": "/w4AAPDFBYgZAA",
+      "turn": 0,
+      "dice": [
+        3,
+        1
+      ],
+      "gnubg": "/w4AAPDFBYgZAA"
+    },
+    {
+      "index": 699,
+      "position_id": "DwAA4FcMUGQAAA",
+      "turn": 1,
+      "dice": [
+        6,
+        5
+      ],
+      "gnubg": "DwAA4FcMUGQAAA"
+    },
+    {
+      "index": 722,
+      "position_id": "7w8AAHAjgMZ4AA",
+      "turn": 1,
+      "dice": [
+        3,
+        3
+      ],
+      "gnubg": "7w8AAHAjgMZ4AA"
+    },
+    {
+      "index": 729,
+      "position_id": "fwEAAHK8iVQAAA",
+      "turn": 1,
+      "dice": [
+        3,
+        1
+      ],
+      "gnubg": "fwEAAHK8iVQAAA"
+    },
+    {
+      "index": 783,
+      "position_id": "fwAAAM/5AIEBAA",
+      "turn": 0,
+      "dice": [
+        6,
+        6
+      ],
+      "gnubg": "fwAAAM/5AIEBAA"
+    },
+    {
+      "index": 843,
+      "position_id": "PwAAAPcRhcABAA",
+      "turn": 0,
+      "dice": [
+        3,
+        4
+      ],
+      "gnubg": "PwAAAPcRhcABAA"
+    },
+    {
+      "index": 859,
+      "position_id": "PwAAgOuujAAAAA",
+      "turn": 1,
+      "dice": [
+        5,
+        5
+      ],
+      "gnubg": "PwAAgOuujAAAAA"
+    },
+    {
+      "index": 877,
+      "position_id": "AwAA+N8ABgQAAA",
+      "turn": 0,
+      "dice": [
+        5,
+        2
+      ],
+      "gnubg": "AwAA+N8ABgQAAA"
+    },
+    {
+      "index": 902,
+      "position_id": "AQAA7AEAAAAAAA",
+      "turn": 0,
+      "dice": [
+        4,
+        1
+      ],
+      "gnubg": "AQAA7AEAAAAAAA"
+    },
+    {
+      "index": 1011,
+      "position_id": "AQAA/L0IAAAAAA",
+      "turn": 1,
+      "dice": [
+        1,
+        4
+      ],
+      "gnubg": "AQAA/L0IAAAAAA"
+    },
+    {
+      "index": 1062,
+      "position_id": "/wYAAAg9GOBOAA",
+      "turn": 1,
+      "dice": [
+        2,
+        5
+      ],
+      "gnubg": "/wYAAAg9GOBOAA"
+    },
+    {
+      "index": 1081,
+      "position_id": "/wMAADiuCXMAAA",
+      "turn": 0,
+      "dice": [
+        2,
+        1
+      ],
+      "gnubg": "/wMAADiuCXMAAA"
+    },
+    {
+      "index": 1101,
+      "position_id": "PwAAgH1pEwQAAA",
+      "turn": 1,
+      "dice": [
+        5,
+        5
+      ],
+      "gnubg": "PwAAgH1pEwQAAA"
+    },
+    {
+      "index": 1228,
+      "position_id": "AwAA2O8HAAAAAA",
+      "turn": 0,
+      "dice": [
+        2,
+        5
+      ],
+      "gnubg": "AwAA2O8HAAAAAA"
+    },
+    {
+      "index": 1258,
+      "position_id": "BwAA8H4PAAAAAA",
+      "turn": 1,
+      "dice": [
+        5,
+        2
+      ],
+      "gnubg": "BwAA8H4PAAAAAA"
+    },
+    {
+      "index": 1272,
+      "position_id": "AQAA7KBwchAAAA",
+      "turn": 1,
+      "dice": [
+        4,
+        5
+      ],
+      "gnubg": "AQAA7KBwchAAAA"
+    },
+    {
+      "index": 1317,
+      "position_id": "/gAAAO4zCIMCAA",
+      "turn": 1,
+      "dice": [
+        5,
+        3
+      ],
+      "gnubg": "/gAAAO4zCIMCAA"
+    },
+    {
+      "index": 1326,
+      "position_id": "/QAAAO8LhIwAAA",
+      "turn": 1,
+      "dice": [
+        5,
+        4
+      ],
+      "gnubg": "/QAAAO8LhIwAAA"
+    },
+    {
+      "index": 1356,
+      "position_id": "/wAAAO5PAQQFAA",
+      "turn": 0,
+      "dice": [
+        5,
+        5
+      ],
+      "gnubg": "/wAAAO5PAQQFAA"
+    },
+    {
+      "index": 1360,
+      "position_id": "vwAAALsbAZQCAA",
+      "turn": 1,
+      "dice": [
+        5,
+        3
+      ],
+      "gnubg": "vwAAALsbAZQCAA"
+    },
+    {
+      "index": 1365,
+      "position_id": "7wEAAN43JQQAAA",
+      "turn": 1,
+      "dice": [
+        6,
+        5
+      ],
+      "gnubg": "7wEAAN43JQQAAA"
+    },
+    {
+      "index": 1387,
+      "position_id": "PwAAgH4HBRYAAA",
+      "turn": 0,
+      "dice": [
+        4,
+        3
+      ],
+      "gnubg": "PwAAgH4HBRYAAA"
+    },
+    {
+      "index": 1433,
+      "position_id": "fwEAAP5ORBIAAA",
+      "turn": 1,
+      "dice": [
+        1,
+        6
+      ],
+      "gnubg": "fwEAAP5ORBIAAA"
+    },
+    {
+      "index": 1470,
+      "position_id": "AQAA/NZgCAIAAA",
+      "turn": 0,
+      "dice": [
+        4,
+        2
+      ],
+      "gnubg": "AQAA/NZgCAIAAA"
+    },
+    {
+      "index": 1595,
+      "position_id": "BwAA8Os1EAAAAA",
+      "turn": 1,
+      "dice": [
+        6,
+        2
+      ],
+      "gnubg": "BwAA8Os1EAAAAA"
+    },
+    {
+      "index": 1647,
+      "position_id": "DwAA4P4XABAAAA",
+      "turn": 1,
+      "dice": [
+        5,
+        2
+      ],
+      "gnubg": "DwAA4P4XABAAAA"
+    },
+    {
+      "index": 1675,
+      "position_id": "DwAAoD4eYRAAAA",
+      "turn": 1,
+      "dice": [
+        1,
+        2
+      ],
+      "gnubg": "DwAAoD4eYRAAAA"
+    },
+    {
+      "index": 1810,
+      "position_id": "7wsAAPiDAQw8AA",
+      "turn": 0,
+      "dice": [
+        3,
+        1
+      ],
+      "gnubg": "7wsAAPiDAQw8AA"
+    },
+    {
+      "index": 1824,
+      "position_id": "/wYAAHhPkAYYAA",
+      "turn": 0,
+      "dice": [
+        5,
+        1
+      ],
+      "gnubg": "/wYAAHhPkAYYAA"
+    },
+    {
+      "index": 1856,
+      "position_id": "HwAAwPstgQAAAA",
+      "turn": 1,
+      "dice": [
+        1,
+        3
+      ],
+      "gnubg": "HwAAwPstgQAAAA"
+    },
+    {
+      "index": 1872,
+      "position_id": "7wYAAMwxOMAcAA",
+      "turn": 1,
+      "dice": [
+        4,
+        4
+      ],
+      "gnubg": "7wYAAMwxOMAcAA"
+    },
+    {
+      "index": 1881,
+      "position_id": "/z4AAICbCqLgAQ",
+      "turn": 0,
+      "dice": [
+        3,
+        4
+      ],
+      "gnubg": "/z4AAICbCqLgAQ"
+    },
+    {
+      "index": 1884,
+      "position_id": "HwAAQEuDIjkEAA",
+      "turn": 0,
+      "dice": [
+        4,
+        6
+      ],
+      "gnubg": "HwAAQEuDIjkEAA"
+    },
+    {
+      "index": 1897,
+      "position_id": "GwAA4N5CoggAAA",
+      "turn": 0,
+      "dice": [
+        4,
+        4
+      ],
+      "gnubg": "GwAA4N5CoggAAA"
+    },
+    {
+      "index": 1976,
+      "position_id": "DwAA4G8HAsAAAA",
+      "turn": 0,
+      "dice": [
+        4,
+        6
+      ],
+      "gnubg": "DwAA4G8HAsAAAA"
+    }
+  ],
+  "compared": 1954,
+  "disagreements": [
+    {
+      "index": 36,
+      "position_id": "SMCZ0TLCMdAkVg",
+      "turn": 1,
+      "dice": [
+        4,
+        2
+      ],
+      "gnubg": "wjHQCS5IwJnRMg",
+      "gnubg_nn": "MCDBMBCECOEIMAJJNBDC"
+    },
+    {
+      "index": 83,
+      "position_id": "HL8hgEF5/EAhBA",
+      "turn": 1,
+      "dice": [
+        3,
+        3
+      ],
+      "gnubg": "8/iBIAQcvyGAQQ",
+      "gnubg_nn": "HJPMCBAEAEBMLPABMAGA"
+    },
+    {
+      "index": 135,
+      "position_id": "4GviERDIZ/ABMA",
+      "turn": 0,
+      "dice": [
+        1,
+        4
+      ],
+      "gnubg": "WE/wATDga+IREA",
+      "gnubg_nn": "MIOHOAABDAOAGLOCABEI"
+    },
+    {
+      "index": 140,
+      "position_id": "wYkMcFw2twUREA",
+      "turn": 1,
+      "dice": [
+        5,
+        5
+      ],
+      "gnubg": "du4GggDBiQxwXA",
+      "gnubg_nn": "OONMAFACBAMBIJAMHAFM"
+    },
+    {
+      "index": 198,
+      "position_id": "4h8QYgobCEGQXw",
+      "turn": 0,
+      "dice": [
+        1,
+        1
+      ],
+      "gnubg": "G4hASD/wDwgxRQ",
+      "gnubg_nn": "BLAIEBCIDPPAAPAIDBEF"
+    },
+    {
+      "index": 207,
+      "position_id": "wjMSWCU+qDCBJg",
+      "turn": 0,
+      "dice": [
+        2,
+        6
+      ],
+      "gnubg": "PqiwAiXCMwisUg",
+      "gnubg_nn": "LOEEDAIBCGMCDDBCJIGI"
+    },
+    {
+      "index": 259,
+      "position_id": "rw8KEgK9A4KwQg",
+      "turn": 1,
+      "dice": [
+        6,
+        5
+      ],
+      "gnubg": "vQOC4gKvDwIJQQ",
+      "gnubg_nn": "LNADAFLAAFKPAPAKACEB"
+    },
+    {
+      "index": 354,
+      "position_id": "/zkAABKkRFk6JA",
+      "turn": 0,
+      "dice": [
+        2,
+        6
+      ],
+      "gnubg": "SBOxdBj/OQAAEg",
+      "gnubg_nn": "EIIDLCPEBAPPDJAAAABC"
+    },
+    {
+      "index": 374,
+      "position_id": "cF+BISjEQAd4Uw",
+      "turn": 0,
+      "dice": [
+        3,
+        1
+      ],
+      "gnubg": "xMAGeCdwX4EhKA",
+      "gnubg_nn": "MEEAAHHBDDHAJPMABAFE"
+    },
+    {
+      "index": 379,
+      "position_id": "7wdhIATf0ARCBg",
+      "turn": 0,
+      "dice": [
+        4,
+        6
+      ],
+      "gnubg": "39AMBAbvB2EgBA",
+      "gnubg_nn": "NPMBAMEAAGOPAHGBCAAE"
+    },
+    {
+      "index": 417,
+      "position_id": "3LwYIQE3ABY4Lg",
+      "turn": 0,
+      "dice": [
+        5,
+        1
+      ],
+      "gnubg": "NwAVcizcPAxIYA",
+      "gnubg_nn": "DHBABCDICONMLMBIEAGA"
+    },
+    {
+      "index": 436,
+      "position_id": "2vyMEABK/0IGAA",
+      "turn": 0,
+      "dice": [
+        2,
+        4
+      ],
+      "gnubg": "Sv+SAQDa/IwQAA",
+      "gnubg_nn": "MKPOAFAGAANKPMIMBAAA"
+    },
+    {
+      "index": 437,
+      "position_id": "e3IQAyLuABqODA",
+      "turn": 0,
+      "dice": [
+        4,
+        4
+      ],
+      "gnubg": "7gJYHAl7coABaA",
+      "gnubg_nn": "OOAALGDIAIHLHCIAABFB"
+    },
+    {
+      "index": 562,
+      "position_id": "0hQEtyL2wUIgUg",
+      "turn": 1,
+      "dice": [
+        6,
+        2
+      ],
+      "gnubg": "9sFCUBRoBMGtaA",
+      "gnubg_nn": "PGMBECEICEGIACMBKNGI"
+    },
+    {
+      "index": 573,
+      "position_id": "MZdQkQngBBBzTw",
+      "turn": 0,
+      "dice": [
+        4,
+        5
+      ],
+      "gnubg": "4AQo5h4xF6jIRA",
+      "gnubg_nn": "OAAEFAMOBODBEHKIMIEE"
+    },
+    {
+      "index": 620,
+      "position_id": "X3IUSQAXAAAAAA",
+      "turn": 0,
+      "dice": [
+        1,
+        2
+      ],
+      "gnubg": "AwAA+JKjSAIAAA",
+      "gnubg_nn": "AHAAAAPACFEHJBAEAAAA"
+    },
+    {
+      "index": 664,
+      "position_id": "PqSMiBERIAbXPA",
+      "turn": 0,
+      "dice": [
+        3,
+        3
+      ],
+      "gnubg": "ESDmpDw+ICNiZA",
+      "gnubg_nn": "BBCANGKIDMDOIABBDBHC"
+    },
+    {
+      "index": 682,
+      "position_id": "P3cAAOCxGECMAw",
+      "turn": 1,
+      "dice": [
+        3,
+        4
+      ],
+      "gnubg": "j40A0hg/dwAAAA",
+      "gnubg_nn": "IPMFAAKGBIDPHHAAAAAA"
+    },
+    {
+      "index": 695,
+      "position_id": "hmGQnjDeD2DBAA",
+      "turn": 0,
+      "dice": [
+        1,
+        2
+      ],
+      "gnubg": "3g/gkACGYZCeMA",
+      "gnubg_nn": "NOAPMIMAAAIGGBEAEPFI"
+    },
+    {
+      "index": 740,
+      "position_id": "7+MwAQBveCRABg",
+      "turn": 1,
+      "dice": [
+        1,
+        3
+      ],
+      "gnubg": "b3QKQAbv4zABAA",
+      "gnubg_nn": "GPHICEAEAGOPODDAABAA"
+    },
+    {
+      "index": 755,
+      "position_id": "hsFZYgNtEBC0PA",
+      "turn": 1,
+      "dice": [
+        6,
+        2
+      ],
+      "gnubg": "bRAwWDyGwVliAw",
+      "gnubg_nn": "GNBADAKIDJIGMBFJGCAD"
+    },
+    {
+      "index": 782,
+      "position_id": "dh2MgGBbM8JAMA",
+      "turn": 0,
+      "dice": [
+        4,
+        3
+      ],
+      "gnubg": "WzOGQCJ2DkZAcA",
+      "gnubg_nn": "FLDDMCJACAHGAOEGEAHA"
+    },
+    {
+      "index": 960,
+      "position_id": "AcCAnzccfyoYAA",
+      "turn": 1,
+      "dice": [
+        6,
+        1
+      ],
+      "gnubg": "PP4UGAABwICfNw",
+      "gnubg_nn": "BMHPFGBAAAABMAIAJPDH"
+    },
+    {
+      "index": 964,
+      "position_id": "tznjAABfDpIABw",
+      "turn": 0,
+      "dice": [
+        3,
+        1
+      ],
+      "gnubg": "X05QAAe3OeMAAA",
+      "gnubg_nn": "FPAOCGAAAHLHDJODAAAA"
+    },
+    {
+      "index": 1001,
+      "position_id": "3rsAkAT7OwAAOA",
+      "turn": 1,
+      "dice": [
+        1,
+        6
+      ],
+      "gnubg": "+zcAIDDeuwCQBA",
+      "gnubg_nn": "PHDLAACADANOLLAAJAAE"
+    },
+    {
+      "index": 1042,
+      "position_id": "yAxyTAcWB6hkMg",
+      "turn": 1,
+      "dice": [
+        4,
+        2
+      ],
+      "gnubg": "FgdGZDLIDDimQw",
+      "gnubg_nn": "COAGKCGEDCMIAMDIKGED"
+    },
+    {
+      "index": 1190,
+      "position_id": "/xUgERAcMJ5GQg",
+      "turn": 0,
+      "dice": [
+        6,
+        6
+      ],
+      "gnubg": "3CA8xgT/FSABSA",
+      "gnubg_nn": "BMOIPBMAAEPPBFCAABEI"
+    },
+    {
+      "index": 1203,
+      "position_id": "PALChWMNCLeRAw",
+      "turn": 1,
+      "dice": [
+        4,
+        6
+      ],
+      "gnubg": "DRhtgwM8AuDCcQ",
+      "gnubg_nn": "ANBIHGCDADDMACMCIFGD"
+    },
+    {
+      "index": 1210,
+      "position_id": "v+8BAAB9AQAAAA",
+      "turn": 0,
+      "dice": [
+        3,
+        1
+      ],
+      "gnubg": "PgAAwO97AAAAAA",
+      "gnubg_nn": "HLAAAAIANPPHAAAAAAAA"
+    },
+    {
+      "index": 1253,
+      "position_id": "4ICfkQXgwZzACw",
+      "turn": 0,
+      "dice": [
+        3,
+        1
+      ],
+      "gnubg": "4ME5wAvggJ+RBQ",
+      "gnubg_nn": "MEMBJMKAALOAIAJPJBAF"
+    },
+    {
+      "index": 1474,
+      "position_id": "OZ7gBArFfkoGAA",
+      "turn": 0,
+      "dice": [
+        4,
+        5
+      ],
+      "gnubg": "xX42AQA5nuAECg",
+      "gnubg_nn": "GFPLEBAGAADJJOOAAEEE"
+    },
+    {
+      "index": 1481,
+      "position_id": "3wAAAN83BwAAAA",
+      "turn": 0,
+      "dice": [
+        2,
+        2
+      ],
+      "gnubg": "X3MAAPANAAAAAA",
+      "gnubg_nn": "LPOFAAAAOABLAAAAAAAA"
+    },
+    {
+      "index": 1516,
+      "position_id": "Wb4iAShUz8IJQA",
+      "turn": 0,
+      "dice": [
+        5,
+        5
+      ],
+      "gnubg": "tD2DAwJZviIBKA",
+      "gnubg_nn": "NJDKMBAJACFJLOCCABEI"
+    },
+    {
+      "index": 1563,
+      "position_id": "qOeRBwDgBT4SUg",
+      "turn": 0,
+      "dice": [
+        6,
+        1
+      ],
+      "gnubg": "4AU+JjCo55EHAA",
+      "gnubg_nn": "OAANDMBCDCKIOHJBAHAA"
+    },
+    {
+      "index": 1624,
+      "position_id": "kh/wESCS5+ABJA",
+      "turn": 0,
+      "dice": [
+        2,
+        2
+      ],
+      "gnubg": "MueSASSSH/ABUA",
+      "gnubg_nn": "DCOHMCABCBJCBPPAABFA"
+    },
+    {
+      "index": 1683,
+      "position_id": "/QGEJA2HQADtRw",
+      "turn": 0,
+      "dice": [
+        1,
+        3
+      ],
+      "gnubg": "h0BA6if+AEKSRg",
+      "gnubg_nn": "IHAIAAONCHPOAAECEIGD"
+    },
+    {
+      "index": 1687,
+      "position_id": "/+MAABEjQIJ9Gg",
+      "turn": 0,
+      "dice": [
+        4,
+        4
+      ],
+      "gnubg": "YwAG+xj/4wAAEQ",
+      "gnubg_nn": "GDAABKHMBKPPODAAAABB"
+    },
+    {
+      "index": 1720,
+      "position_id": "0OvCATCMZ+EBMA",
+      "turn": 1,
+      "dice": [
+        2,
+        1
+      ],
+      "gnubg": "TGfJATDQ68IBMA",
+      "gnubg_nn": "IMLHOAABDANAOLMCABDA"
+    },
+    {
+      "index": 1797,
+      "position_id": "HxGYVgQPQH5gDA",
+      "turn": 1,
+      "dice": [
+        2,
+        3
+      ],
+      "gnubg": "D4h8YAwfERgTYQ",
+      "gnubg_nn": "APKAHJGAAMBPBBBICLEC"
+    },
+    {
+      "index": 1980,
+      "position_id": "/wAAAO73iAAAAA",
+      "turn": 1,
+      "dice": [
+        2,
+        3
+      ],
+      "gnubg": "9z0GAIB/AAAAAA",
+      "gnubg_nn": "PHPLBAAAAAPPAAAAAAAA"
+    },
+    {
+      "index": 1981,
+      "position_id": "8oYE5DCuJDIkOA",
+      "turn": 0,
+      "dice": [
+        2,
+        5
+      ],
+      "gnubg": "rkwwDDjyhgTkMA",
+      "gnubg_nn": "KOAMLCAIDIPCIGAAHCFI"
+    },
+    {
+      "index": 1982,
+      "position_id": "7wEAAPrdBQIAAA",
+      "turn": 1,
+      "dice": [
+        3,
+        3
+      ],
+      "gnubg": "/boBAMB7AAAAAA",
+      "gnubg_nn": "PNLLADAAAAOPABAAAAAA"
+    }
+  ]
+}
