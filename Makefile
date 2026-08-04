@@ -16,12 +16,12 @@ PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 
 # Le Python système. Les distributions ne livrent pas toutes la même version :
-# `mochy` passe par le module AppStream python3.12 de RHEL 8, la machine de
+# la machine de calcul passe par le module AppStream python3.12 de RHEL 8, la machine de
 # bureau n'a que 3.13 et 3.14. Voir « Répartition entre machines » dans PLAN.md.
 PYTHON_SYS ?= python3.12
 
 # PyTorch : le paquet par défaut tire la build CUDA sur Linux, soit environ
-# 5 Gio de paquets `nvidia-*`. C'est ce qu'il faut sur `mochy` (2 x RTX 4090) et
+# 5 Gio de paquets `nvidia-*`. C'est ce qu'il faut sur la machine de calcul (2 GPU CUDA) et
 # c'est à éviter partout ailleurs. Sur une machine sans GPU :
 #
 #   make setup PYTHON_SYS=python3.13 TORCH_CPU=1 ORACLE=0

@@ -67,7 +67,7 @@ partie** sur ~25 décisions.
 ## Ce qui n'est pas mesuré
 
 - **1-ply, pas 2-ply.** Un 2-ply non filtré coûte ~3,8 M évaluations par décision ; 121 d'entre
-  elles sont un travail pour `mochy`, pas pour le bureau. La colonne money ci-dessus montre que
+  elles sont un travail pour la machine de calcul, pas pour le bureau. La colonne money ci-dessus montre que
   l'indicateur est fidèle, elle ne remplace pas la mesure.
 - **121 décisions.** Le `0,00 %` de la garde 5 n'est pas zéro : c'est *aucun désaccord observé sur
   121*, dont la borne haute de Wilson est d'environ **3,0 %**. Même remarque que dans le rapport de
@@ -91,5 +91,5 @@ essai. Et la première version recalculait la recherche non filtrée pour **chaq
 filtre**, alors qu'elle n'en dépend pas : un facteur 3 supplémentaire, gratuit.
 
 Les deux gaspillages étaient évitables avec des chiffres que le projet avait déjà mesurés. La
-leçon est celle que `mochy` applique en commençant par `--probe` : **mesurer le coût d'une
+leçon est celle que la machine de calcul applique en commençant par `--probe` : **mesurer le coût d'une
 décision avant d'en lancer deux mille.**

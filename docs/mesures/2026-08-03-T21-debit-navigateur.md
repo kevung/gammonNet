@@ -235,9 +235,8 @@ n'existent.*
 ## Réserves
 
 - **Mesures headless.** Le contrôle croisé en mode fenêtré reste à faire.
-- **Une seule machine**, sur secteur, sans contrôle de la gouvernance de fréquence. Un Ryzen 7 PRO
-  6850U est un processeur portable : un desktop de bureau ferait mieux, un vieux portable moins
-  bien.
+- **Une seule machine**, sur secteur, sans contrôle de la gouvernance de fréquence, et c'est un
+  **processeur portable** : une tour ferait mieux, une vieille machine moins bien.
 - **Rien sur iOS.** Voir T20. Le mobile mesuré est un Android sous Firefox ; **la plateforme
   WebKit reste entièrement non couverte**, et c'est celle où les limites mordent le plus.
 - **Deux appareils mobiles, un seul moteur de navigateur.** Les deux tournent sous Firefox, donc
@@ -262,7 +261,7 @@ La question du moteur d'inférence se pose maintenant sur des chiffres :
 
 ## Configuration
 
-AMD Ryzen 7 PRO 6850U (16 fils), 14,4 Gio, pas de GPU, Linux 7.1.5-arch1-2. GCC 16.1.1,
+processeur portable, 16 fils, ~14 Gio, pas de GPU, Linux 7.1.5-arch1-2. GCC 16.1.1,
 Emscripten 6.0.5-git, Node 26.5.1, Chromium 150.0.7871.186, Firefox 153.0.1.
 
 Reproductible : `make bench-infer` (natif) puis

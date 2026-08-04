@@ -24,7 +24,7 @@ tout le sujet.
 
 La profondeur retenue est **1-ply**, pas 2. Un 2-ply non filtré coûte ~3,8 M
 évaluations par décision — 121 d'entre elles représentent des heures sur cette
-machine, et c'est un travail pour `mochy`. Le 1-ply en coûte 7 475, soit une
+machine, et c'est un travail pour la machine de calcul. Le 1-ply en coûte 7 475, soit une
 minute pour tout le corpus, et il répond déjà à la question posée : **le
 pré-tri classe-t-il autrement quand le score entre en jeu ?** Le mécanisme du
 filtre est le même aux deux profondeurs.

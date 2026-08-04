@@ -1,6 +1,6 @@
 # T11 — Round-robin de vérification : l'écart, et son explication
 
-**Date** : 2026-08-03 · **Machine** : `mochy` · **Branche** : `main`
+**Date** : 2026-08-03 · **Machine** : la machine de calcul · **Branche** : `main`
 
 > **L'objectif de la phase 1 est la certitude, pas la force.** On ne gagne pas un point d'équité
 > ici ; on gagne le droit de croire les chiffres qu'on lira ensuite.
