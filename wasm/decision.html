@@ -1,0 +1,133 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>gammonNet — coût d'une vraie décision</title>
+<style>
+  body { font: 14px/1.55 ui-monospace, monospace; margin: 2rem; max-width: 54rem; }
+  pre { white-space: pre-wrap; }
+</style>
+<h1>Le coût d'une décision, mesuré</h1>
+<pre id="out">…</pre>
+
+<script type="module">
+  // T21 a rendu son verdict en multipliant un débit d'évaluations MESURÉ par un
+  // nombre d'évaluations par décision, d'abord supposé puis mesuré par T30. Les
+  // deux moitiés sont solides ; leur produit reste une projection, parce qu'il
+  // suppose que rien d'autre ne coûte — ni la génération des coups, ni
+  // l'encodage, ni le parcours de l'arbre.
+  //
+  // Cette page fait de vraies décisions et les chronomètre. C'est la dernière
+  // projection du projet qui devient une mesure.
+  const params = new URLSearchParams(location.search);
+  const build = params.get("build") === "scalar" ? "gammonnet" : "gammonnet-simd";
+
+  // Position de départ, jet 3-1, et ce que le natif en dit. L'accord est
+  // vérifié AVANT de chronométrer : un débit mesuré sur un moteur qui répond
+  // faux ne vaut rien.
+  const POSITION = { id: "4HPwATDgc/ABMA", turn: 0, d1: 3, d2: 1 };
+  const NATIVE = [
+    { ply: 0, filterTop: 0, filterInner: 0, equity: 0.165832, evaluations: 16,
+      resultId: "sGfwATDgc/ABMA", reps: 200 },
+    { ply: 1, filterTop: 0, filterInner: 0, equity: 0.164344, evaluations: 7475,
+      resultId: "sGfwATDgc/ABMA", reps: 5 },
+    { ply: 2, filterTop: 1, filterInner: 1, equity: 0.166899, evaluations: 12951,
+      resultId: "sGfwATDgc/ABMA", reps: 3 },
+  ];
+
+  const out = document.getElementById("out");
+  const log = (line) => { out.textContent += line + "\n"; };
+
+  async function report(payload) {
+    try {
+      await fetch("/report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch { /* page statique : personne n'écoute */ }
+  }
+
+  try {
+    const { Evaluator } = await import("/wasm/gammonnet.mjs");
+    const { default: factory } = await import(`/build/wasm/${build}.mjs`);
+    const modelBytes = new Uint8Array(
+      await (await fetch("/models/cubeless_prob5_512_512_256_128.bin")).arrayBuffer(),
+    );
+    const evaluator = await Evaluator.create(factory, modelBytes);
+
+    out.textContent = `build ${build} · SIMD ${evaluator.hasSimd}\n`;
+    log("profondeur   ms/décision      éval    accord natif");
+
+    const payload = {
+      test: "decision", build, simd: evaluator.hasSimd,
+      userAgent: navigator.userAgent,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      results: [],
+    };
+
+    for (const expected of NATIVE) {
+      const options = {
+        ply: expected.ply,
+        filterTop: expected.filterTop,
+        filterInner: expected.filterInner,
+      };
+
+      // L'accord d'abord.
+      const first = evaluator.bestPlay(
+        POSITION.id, POSITION.turn, POSITION.d1, POSITION.d2, options);
+      if (first === null) throw new Error(`décision refusée à ${expected.ply}-ply`);
+
+      const sameMove = first.resultId === expected.resultId;
+      const sameCount = first.evaluations === expected.evaluations;
+      const equityGap = Math.abs(first.equity - expected.equity);
+
+      // Puis le temps. Médiane, et un tour à blanc écarté.
+      const samples = [];
+      for (let r = 0; r < expected.reps + 1; r++) {
+        const start = performance.now();
+        evaluator.bestPlay(
+          POSITION.id, POSITION.turn, POSITION.d1, POSITION.d2, options);
+        if (r > 0) samples.push(performance.now() - start);
+      }
+      samples.sort((a, b) => a - b);
+      const median = samples[Math.floor(samples.length / 2)];
+
+      if (!(median > 0)) throw new Error("l'horloge n'a pas avancé");
+
+      const verdict = (sameMove && sameCount && equityGap < 1e-5) ? "✅"
+        : `❌ coup ${sameMove} · éval ${first.evaluations} · Δéq ${equityGap.toExponential(1)}`;
+
+      payload.results.push({
+        ply: expected.ply,
+        filter: `${expected.filterTop}/${expected.filterInner}`,
+        medianMs: Number(median.toFixed(3)),
+        evaluations: first.evaluations,
+        equity: first.equity,
+        sameMoveAsNative: sameMove,
+        sameEvaluationCount: sameCount,
+        equityGap,
+        // Ce que T21 aurait prédit : le compte d'évaluations multiplié par le
+        // coût unitaire mesuré. L'écart au temps réel est le sujet.
+        msPerEvaluation: median / first.evaluations,
+      });
+
+      const label = expected.ply === 2 ? "2-ply 1/1" : `${expected.ply}-ply`;
+      log(`${label.padEnd(12)} ${median.toFixed(2).padStart(11)} ` +
+          `${String(first.evaluations).padStart(9)}    ${verdict}`);
+    }
+
+    // Le chiffre qui tranche : le coût par évaluation vu à travers une vraie
+    // décision, comparé à celui que T21 a mesuré sur des évaluations nues.
+    const deep = payload.results[payload.results.length - 1];
+    payload.overheadRatio = deep.msPerEvaluation;
+    log(`\nms par évaluation, à travers une décision complète : ` +
+        `${deep.msPerEvaluation.toFixed(5)}`);
+    log(`T21 mesurait 0,0898 ms/évaluation sur des évaluations nues.`);
+    log(`Le rapport dit ce que coûtent la génération des coups et l'arbre.`);
+
+    evaluator.destroy();
+    await report(payload);
+  } catch (error) {
+    log("❌ " + (error?.stack || error));
+    await report({ error: String(error?.stack || error) });
+  }
+</script>
