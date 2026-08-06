@@ -172,7 +172,11 @@ class GnubgEngine:
       revient à un 3-ply, et le pilote de T36 ne terminait pas.
 
     Le même `filter` est donc appliqué ici, par la même règle : pré-tri au
-    0-ply, on garde les `filter[0]` meilleurs, on les évalue à `ply`.
+    0-ply, on garde les meilleurs, on les évalue à `ply`. L'indexation est celle
+    du C — la racine d'une recherche à `k` plies lit `filter[k]` — et elle vaut
+    d'être répétée : la lire comme `filter[0]` a coûté un pilote entier de T36,
+    où quatre configurations « filtrées » ont rendu 14 247 évaluations chacune,
+    à l'unité près, parce qu'aucune ne filtrait.
 
     ## `prune` — l'élagage interne de gnubg
 
@@ -188,8 +192,10 @@ class GnubgEngine:
     """
 
     ply: int = 0
-    #: Même sémantique que `SearchEngine.filter` : `filter[0]` candidats
-    #: survivent au pré-tri de la racine. Vide = aucun filtrage.
+    #: Même sémantique et même INDEXATION que `SearchConfig.filter` du C :
+    #: `filter[d]` est ce qui survit à un nœud de profondeur **restante** `d`.
+    #: La racine d'une recherche à `k` plies lit donc `filter[k]`, et
+    #: `filter[0]` n'est jamais lu. Vide = aucun filtrage.
     filter: tuple[int, ...] = ()
     prune: int | None = None
     name: str = field(default="")
@@ -227,7 +233,7 @@ class GnubgEngine:
         # Le pré-tri de la racine se fait au 0-ply, comme chez nous : c'est la
         # règle de T31, et l'appliquer des deux côtés est ce qui fait que
         # « 2-ply, garde 5 » désigne le même joueur des deux côtés.
-        keep = self.filter[0] if self.filter else 0
+        keep = self.filter[self.ply] if len(self.filter) > self.ply else 0
         if self.ply > 0 and keep and len(plays) > keep:
             shallow = self._evaluate_at(session, position, plays, 0)
             survivors = sorted(range(len(plays)),

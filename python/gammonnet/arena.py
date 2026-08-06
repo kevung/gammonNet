@@ -221,6 +221,60 @@ class NetworkEngine:
 
 
 @dataclass
+class SearchEngine:
+    """gammonNet at an arbitrary depth, through `gn_search`.
+
+    `NetworkEngine` above is the 0-ply special case, kept because it goes
+    straight to `gn_best_play_0ply` and skips the search machinery entirely.
+    This one is what T36 needs: the **same** model, decided at 1-ply and 2-ply,
+    so that the only thing changing between the three measurements is the depth.
+
+    WHY THE FILTER IS PART OF THE ENGINE'S IDENTITY. `name` carries it, and that
+    is deliberate. A 2-ply search that keeps five candidates and one that keeps
+    every legal play are not the same player, and T31 measured how much they can
+    differ. A round-robin whose rows do not say which one ran would be a matrix
+    of unnamed engines.
+
+    NOT LOADED AT CONSTRUCTION. The harness pickles engines out to worker
+    processes, and a loaded network is a ctypes handle into this process's
+    address space — it would either fail to pickle or, worse, travel as a
+    meaningless integer. Every worker loads its own copy on first use, exactly
+    as `NetworkEngine` does.
+    """
+
+    ply: int = 0
+    #: `filter[d]` candidates survive at depth d; empty means no filtering.
+    filter: tuple[int, ...] = ()
+    model: str = "models/cubeless_prob5_512_512_256_128.bin"
+    name: str = field(default="")
+    _network: object = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self):
+        if not self.name:
+            suffix = "-f" + "/".join(str(k) for k in self.filter) if self.filter else ""
+            self.name = f"gammonnet-{self.ply}ply{suffix}"
+
+    def _load(self):
+        if self._network is None:
+            from pathlib import Path
+
+            from .infer import Network
+
+            path = Path(self.model)
+            if not path.is_absolute():
+                path = Path(__file__).resolve().parent.parent.parent / self.model
+            self._network = Network.load(path)
+        return self._network
+
+    def choose(self, position: Position, d1: int, d2: int, rng: random.Random) -> Play | None:
+        from .search import SearchConfig, best_play
+
+        config = SearchConfig(ply=self.ply, filter=tuple(self.filter))
+        candidate = best_play(self._load(), position, d1, d2, config)
+        return candidate.play if candidate is not None else None
+
+
+@dataclass
 class OracleEngine:
     """GNU Backgammon at a chosen depth. An instrument, not a teacher."""
 
@@ -357,14 +411,29 @@ def play_game(
 # ── A duplicate pair of games ────────────────────────────────────────
 
 
-def play_duplicate(a: Engine, b: Engine, base_seed: int, index: int) -> tuple[int, bool]:
+def play_duplicate(
+    a: Engine, b: Engine, base_seed: int, index: int, dice_key: str | None = None
+) -> tuple[int, bool]:
     """Play one dice sequence twice, seats swapped. Returns A's net points.
 
     Both games draw from the same dice stream and the same per-SEAT randomness.
     Seat, not engine: that is what makes `A vs A` reproduce the identical game
     twice and total exactly zero.
+
+    `dice_key` OVERRIDES the pairing key, and exists for one purpose: making
+    **different matchups draw the same dice**. T36 measures the same model at
+    three depths against GNU Backgammon at three depths, and the quantity it
+    wants is the difference between the three — the slope, not the levels. Left
+    to the default the three matchups would have different engine names, hence
+    different keys, hence three independent dice draws, and the slope would
+    carry the variance of all three. Sharing the key pairs them, and the
+    difference is measured on the same games.
+
+    It is deliberately explicit rather than automatic: two matchups that share
+    dice are no longer independent, and any interval computed across them has to
+    know it.
     """
-    key = pair_key(a.name, b.name)
+    key = dice_key if dice_key is not None else pair_key(a.name, b.name)
     seed = derive_seed(base_seed, key, index)
 
     total = 0
