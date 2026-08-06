@@ -17,3 +17,7 @@ venv/
 *.wasm
 node_modules/
 .pytest_cache/
+# Les bases de fin de partie produites par GNU Backgammon : 2,8 Gio de calcul
+# exact, déposées le 2026-08-06. Un calcul reproductible n'est pas une source à
+# versionner — et GitHub refuserait de toute façon des fichiers de 1,6 Gio.
+gnu_bearoff_database/

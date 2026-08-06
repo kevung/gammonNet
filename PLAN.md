@@ -12,12 +12,14 @@
 Phase 0 — Socle & instrument       T00 T01 T02 T03 T04 T05      (aucune force produite)
 Phase 1 — Reproduire               T10 T11 T12                  (certitude, pas force)
 Phase 2 — Navigateur               T20 T21 T22 T23              (la frontière se chiffre)
-Phase 3 — Profondeur & exactitude  T30 T31 T32 T33 T34 T35      (la force arrive ici)
+Phase 3 — Profondeur & exactitude  T30 T31 T32 T33             (la recherche, les fins)
+                                   T36 T37 T38 T39 T34 T35     (le videau, puis le verdict)
 Phase 4 — Modèle propre au projet  T40 T41 T42                  ← CONDITIONNEL
 Phase 5 — Publication              T50
 ```
 
-**Chemin critique** : `T00 → T01 → T02 → T10 → T20 → T21 → T30 → T32 → T35 → T50`.
+**Chemin critique** :
+`T00 → T01 → T02 → T10 → T20 → T21 → T30 → T32 → T36 → T38 → T34 → T35 → T50`.
 
 Tout le reste peut se paralléliser autour. **T02 (le codec) est le goulot** : rien de mesurable
 n'existe avant lui, et une erreur à cet endroit invalide silencieusement toutes les mesures
@@ -41,6 +43,96 @@ enthousiasme.
 > Ouvrir le plus gros chantier du projet sur une lecture littérale l'engagerait pour une raison
 > qui n'est pas la bonne. **La condition de réouverture reste T35** : si le round-robin complet
 > révèle un plafond, la question se reposera sur des données neuves.
+
+---
+
+## Recadrage vers l'objectif — *le 2026-08-06*
+
+> **Question posée** : quel chemin pour un moteur d'évaluation **en match, avec videau**, au moins
+> aussi bon que GNU Backgammon ? Cette section y répond. Elle ne remplace rien de ce qui précède ;
+> elle ordonne ce qui reste.
+
+### Ce que le seul chiffre de force du projet dit — et ne dit pas
+
+L'unique mesure de force du dépôt est **+0,0400 ppg [+0,0377 ; +0,0425]** contre GNU Backgammon,
+sur 10⁶ parties (T11). Elle est solide. Elle est aussi mesurée en **0-ply, cubeless, money** —
+c'est-à-dire dans la configuration la plus éloignée de l'objectif.
+
+**Trois transports séparent ce chiffre de la cible**, et aucun n'est gratuit :
+
+| Transport | Ce qu'on en sait |
+|---|---|
+| 0-ply → 2-ply | L'auteur du modèle mesure lui-même un **rétrécissement** : +57,8 mEq/partie en 0-ply, +45,0 en 2-ply, avec son hypothèse que *« gnubg's base networks are more tuned for deep search than ours »*. Non vérifié ici |
+| cubeless → cubeful | Aucun code. `gn_search.h` : *« The cube is still absent »* |
+| money → match | La table est branchée dans la recherche (T32), mais aucune force n'a été mesurée en match |
+
+**Aucun des trois ne se déduit du chiffre de départ.** C'est la règle 3 de `CLAUDE.md` appliquée à
+la force plutôt qu'au débit : une conclusion se mesure, elle ne s'extrapole pas.
+
+### Les quatre paliers, et la règle qui les sépare
+
+> **Chaque palier se termine par une mesure qui autorise ou interdit le suivant.** Un palier dont
+> la mesure n'a pas été lue ne libère pas celui d'après.
+
+| | Palier | Fiches | Ce que sa mesure décide |
+|---|---|---|---|
+| **A** | **Diagnostic — avant de construire** | T36, T37 | Le réseau tient-il sous la profondeur, et sa distribution est-elle assez calibrée pour porter un videau ? |
+| **B** | **Exactitude en fin de partie** | T38 *(et le reste de T33)* | Ce que les tables exactes rapportent, et à quel prix dans l'artefact |
+| **C** | **Le videau** | T34, puis T39 si nécessaire | Est-on au niveau sur la décision de videau, arbitré autrement que par la ressemblance à gnubg ? |
+| **D** | **L'arbitre et le verdict** | T39, T35 | L'objectif est-il atteint, et sinon la phase 4 s'ouvre-t-elle ? |
+
+**Le palier A passe avant le palier C, et ce n'est pas de la prudence rituelle.** Les deux mesures
+de A sont bon marché et disponibles maintenant ; elles disent si le videau se construit sur un
+réseau qui tiendra. Construire C d'abord, c'est risquer de mesurer la qualité d'un modèle cubeful
+posé sur une distribution biaisée, et de conclure sur le mauvais maillon.
+
+### La difficulté que le plan doit regarder en face : *« mieux que »* ne se mesure pas par ressemblance
+
+Le critère actuel de T34 demande « le taux d'accord avec l'oracle ». **L'accord avec GNU Backgammon
+ne peut pas établir qu'on lui est supérieur** — au mieux qu'on lui ressemble, et un moteur qui
+ressemble parfaitement à gnubg est exactement aussi bon que gnubg, jamais meilleur. Sur les
+décisions où l'on diffère, il faut un **arbitre tiers**.
+
+D'où **T39**, promue de commodité à brique du chemin critique. Sa réserve est nommée d'avance :
+un rollout conduit par *notre* réseau nous favorise, un rollout gnubg les favorise. Les deux
+colonnes seront produites et publiées ; aucune ne sera présentée seule.
+
+### Ce que le dépôt du 2026-08-06 change
+
+Deux bases de fin de partie produites par GNU Backgammon ont été déposées dans le projet :
+
+| Fichier | En-tête | Portée |
+|---|---|---|
+| `gnubg_os13.bd` — 1,6 Gio | `gnubg-OS-13-15-1-1-0` | **Unilatérale**, 13 points, 15 pions |
+| `gnubg_ts6x11.bd` — 1,2 Gio | `gnubg-TS-06-11-1` | **Bilatérale**, 6 points, 11 pions — équités exactes, **cubeful** |
+
+`CLAUDE.md` les autorise sans réserve : *« tables de fin de partie, quelle que soit leur origine —
+calcul exact reproductible, pas une œuvre de création »*.
+
+**La bilatérale est la pièce qui manquait au videau en course.** Une décision de videau en fin de
+course se joue sur des marges où l'approximation du réseau est la plus grossière ; une table
+bilatérale y donne l'équité cubeful exacte, sans modèle intermédiaire.
+
+**Mais 2,8 Gio ne partent pas dans un navigateur.** Ces bases sont un actif **natif et de mesure**.
+Le trajet vers l'artefact distribué reste celui de T33 — notre propre table, calculée, tronquée à
+ce que le budget navigateur autorise. Les deux ne se remplacent pas : les bases gnubg deviennent
+**la référence contre laquelle notre table embarquée se mesure**.
+
+### Le protocole d'étude de GNU Backgammon
+
+`CLAUDE.md` autorise déjà « lire le code et le manuel » et « réimplémenter des idées documentées ».
+Le fondement est solide — la GPL régit la distribution, pas la lecture ; et le droit d'auteur
+protège l'expression, pas l'idée. Ce qui manquait est la **discipline qui rend la position
+défendable trois ans plus tard**, quand personne ne se souvient de ce qui a été lu.
+
+Elle est écrite dans [`docs/etudes/`](docs/etudes/), avec son registre. En un mot : trois niveaux
+— la littérature publiée d'abord, le manuel ensuite, le code source en dernier recours et sous
+protocole — et **aucune constante réglée à la main n'est jamais transcrite**.
+
+**Pour le videau en particulier, la recommandation est de ne pas lire la source du tout** : le
+modèle de Janowski et la dérivation des points de prise depuis la table d'équité de match sont
+publiés et suffisent. Garder la composante la plus délicate du projet entièrement traçable à de la
+littérature publique est un avantage net, et gratuit.
 
 ---
 
@@ -504,17 +596,125 @@ programmation dynamique. Chemin de repli sur le réseau quand la position sort d
   **mesuré** : c'est la valeur de cette tâche, et elle doit être connue.
 - Le PR mesuré sur des positions de course s'améliore de façon significative.
 
+## T36 — Diagnostic : ce que la profondeur fait à l'avantage
+
+> **Palier A.** Mesure bon marché, disponible immédiatement, et qui conditionne tout le reste.
+
+**Objectif** — savoir si l'avantage mesuré en 0-ply survit à la profondeur, **avant** de bâtir le
+videau dessus.
+
+**Périmètre** — Round-robin `modèle` × `GNU Backgammon` en money cubeless, **à profondeur égale
+des deux côtés**, pour 0-ply, 1-ply et 2-ply. Dés communs, graine fixe, IC 95 % bootstrap. Le
+volume est dimensionné pour distinguer l'érosion, pas pour publier une force : l'effet cherché est
+la **pente** entre trois points, pas la valeur absolue de chacun.
+
+**Exclut** — le videau, le match, toute conclusion sur l'objectif.
+
+**Critères d'acceptation**
+- Les trois points sont mesurés avec leur intervalle, et la pente est explicitement commentée.
+- Le rapport dit ce que la pente implique pour la suite : si l'avantage s'annule au 2-ply, le
+  chemin vers l'objectif passe par la phase 4 et non par le videau, et le plan doit le dire.
+- La comparaison est faite à réglage de GNU Backgammon **nommé** — la profondeur seule ne suffit
+  pas à définir un adversaire.
+
+## T37 — Diagnostic : la calibration de la distribution
+
+> **Palier A.** Une décision de videau vit sur `P(gammon)` bien plus qu'un choix de coup.
+
+**Objectif** — savoir si les cinq sorties du réseau sont assez calibrées pour porter une décision
+de videau, **avant** d'en construire une.
+
+**Périmètre** — Comparer la distribution `prob5` du réseau à une référence à faible biais, sur un
+corpus couvrant contact, course et bearoff : les tables exactes là où elles s'appliquent, des
+rollouts ailleurs. Regarder séparément `P(gain)`, `P(gammon)` et `P(backgammon)` des deux côtés :
+un réseau peut être excellent sur la première et biaisé sur les autres sans qu'aucune mesure
+faite jusqu'ici ne le voie.
+
+**Critères d'acceptation**
+- Le biais et la dispersion sont chiffrés **par composante**, pas globalement.
+- Le rapport dit si le biais observé suffit à déplacer une décision de videau, et de combien —
+  un biais de 1 % sur les gammons ne vaut pas la même chose selon le score.
+- Si un biais significatif est trouvé, il est consigné comme **entrée de la phase 4**, non corrigé
+  par un facteur ajusté à la main.
+
+## T38 — Bases de fin de partie GNU Backgammon : lecteur et branchement
+
+> **Palier B.** Fait suite à T33, dont le point dur — notre propre table, croisée — est acquis.
+
+**Objectif** — que l'évaluateur consulte une table exacte là où il en existe une, et qu'on sache
+ce que cela rapporte.
+
+**Périmètre** — Lecteur des deux formats déposés : `gnubg-OS` (unilatérale, distribution du nombre
+de jets) et `gnubg-TS` (bilatérale, équités exactes, **cubeful**). Branchement dans l'évaluateur
+avec **repli explicite** sur le réseau hors table. Mesure de l'écart réseau seul ↔ table exacte.
+
+> **Le repli est le piège de cette fiche.** Une position hors table qui reçoit silencieusement une
+> valeur de table voisine produit une équité plausible et fausse. La règle de `CLAUDE.md`
+> s'applique littéralement : **refusé, jamais approximé** — la table répond, ou elle dit qu'elle ne
+> sait pas, et alors c'est le réseau qui répond.
+
+**Exclut** — la troncature pour le navigateur, qui reste à T33 et se mesure contre ces bases.
+
+**Critères d'acceptation**
+- Le lecteur est **croisé contre notre propre table** de T33 sur le domaine commun (6 points,
+  ≤ 15 pions), avec l'écart chiffré. Deux lecteurs d'un calcul exact qui divergent signalent un
+  bug de lecture, pas un désaccord de calcul.
+- L'appartenance à la table est un **prédicat testé**, jamais une supposition : un corpus
+  contient des positions juste à l'intérieur et juste à l'extérieur du domaine, et le
+  comportement des deux est vérifié.
+- L'écart réseau seul ↔ table exacte est mesuré sur un corpus de course et de bearoff. **C'est la
+  valeur de cette tâche**, et elle n'est pas connue aujourd'hui.
+- Le coût d'accès est mesuré : ces fichiers font 2,8 Gio, et une consultation par nœud de
+  recherche n'a pas le même prix qu'une consultation par décision.
+
 ## T34 — Décision de videau
+
+> **Palier C.** C'est ici que se joue l'objectif.
 
 **Objectif** — doubler, prendre, passer.
 
 **Périmètre** — Modèle cubeful à partir de la distribution `prob5` et de la table d'équité de
-match (formules de Janowski, ou modèle dead-cube pondéré).
+match. Le point de départ est le modèle publié par **Rick Janowski** (*Take-Points in Money
+Games*, 1993) : interpolation entre videau mort et videau vivant, indexée par une efficacité de
+videau. En match, les points de prise se dérivent de la table d'équité, jamais d'une constante.
+
+**Les cas de bord du match sont au périmètre, pas en annexe** — Crawford, post-Crawford et le
+*free drop*, videau mort à ou au-delà du point de match, 2-away/2-away, plafonnement du videau par
+la longueur restante. Chacun est une source d'erreur silencieuse : aucun ne fait planter quoi que
+ce soit, tous font prendre un videau qu'il fallait passer.
+
+**Exclut** — la propagation du cubeful à travers la recherche, qui est T39 et reste conditionnelle.
 
 **Critères d'acceptation**
-- Sur un corpus de ≥ 5 000 décisions de videau, le taux d'accord avec l'oracle est mesuré, et les
-  désaccords sont classés par ampleur d'équité.
-- La fenêtre de double et le point de prise sont monotones (tests de propriété).
+- La fenêtre de double et le point de prise sont **monotones** (tests de propriété), et continus
+  aux frontières de la table.
+- Sur un corpus de ≥ 5 000 décisions de videau, le taux d'accord avec GNU Backgammon est mesuré,
+  et les désaccords sont classés par ampleur d'équité.
+- **Amendé le 2026-08-06 — le taux d'accord ne conclut pas.** Il mesure une ressemblance. Les
+  désaccords sont arbitrés par T39, et le rapport ne prononce aucun verdict de qualité avant.
+- L'efficacité de videau retenue est **mesurée sur nos propres données**, jamais reprise d'une
+  valeur publiée par un autre moteur.
+
+## T39 — Moteur de rollout : l'arbitre indépendant
+
+> **Palier D.** Promue au chemin critique le 2026-08-06 : sans elle, T34 et T35 ne peuvent
+> constater qu'une ressemblance.
+
+**Objectif** — pouvoir dire lequel de deux moteurs a raison quand ils diffèrent.
+
+**Périmètre** — Rollouts à variance réduite : dés communs entre les variantes comparées, rollouts
+**tronqués** puis évalués par le réseau, arrêt sur intervalle de confiance plutôt que sur un
+nombre de parties fixé. Rollouts cubeful et rollouts cubeless.
+
+**Exclut** — l'usage du rollout comme source d'entraînement, qui relève de la phase 4.
+
+**Critères d'acceptation**
+- **Contrôle de non-biais** : sur un corpus où la table exacte de T38 donne la réponse, le rollout
+  la retrouve dans son intervalle de confiance. Un arbitre qu'on n'a pas vérifié n'arbitre rien.
+- La variance obtenue avec dés communs est comparée à celle sans, et le gain est chiffré.
+- **La réserve est publiée avec chaque usage** : un rollout conduit par notre réseau nous favorise.
+  Tout arbitrage d'un désaccord avec GNU Backgammon produit **les deux colonnes**, la nôtre et la
+  leur, et aucune n'est présentée seule.
 
 ## T35 — Round-robin complet en 2-ply
 
@@ -541,6 +741,26 @@ tables de fin de partie) contre GNU Backgammon à profondeur équivalente, en mo
 - Le résultat est publié dans le dépôt avec protocole, volume, graine et intervalle de confiance.
 - **Verdict sur l'objectif** : « niveau équivalent ou supérieur à GNU Backgammon et eXtreme
   Gammon », confirmé ou infirmé, avec le chiffre. Si infirmé, la phase 4 s'ouvre.
+
+### Amendements du 2026-08-06 — ce que « en match, avec videau » impose de plus
+
+- **Le réglage de l'adversaire est nommé, pas sous-entendu.** « Aussi bon que GNU Backgammon » est
+  une phrase vide tant qu'on n'a pas dit à quel réglage. La référence est fixée explicitement
+  (profondeur pions, profondeur videau, filtres) et publiée avec le résultat.
+- **Trois métriques, parce qu'aucune ne suffit seule** :
+
+  | Métrique | Ce qu'elle apporte | Ce qu'elle coûte |
+  |---|---|---|
+  | **ppg cubeful money** | Bon marché, faible variance grâce aux dés communs, comparable à T11 | Ne dit rien du match |
+  | **MWC en match** | La métrique de l'objectif | Très bruitée — un match rend ±1 |
+  | **PR** | Le contrôle de T30 qui n'a jamais tourné | Demande un corpus de référence |
+
+- **Les scores de départ sont échantillonnés, pas fixés à 0–0.** Partir toujours du début d'un
+  match donne une couverture ridicule de l'espace des scores — or c'est là, et pas à 0–0, que le
+  videau se décide. L'échantillonnage est publié avec le protocole.
+- **La répétition sur 2 000 parties reste obligatoire** avant d'engager le volume, et vaut
+  désormais pour la configuration cubeful : c'est elle qui a le plus de chances de révéler un
+  défaut d'échelle du harnais.
 
 ---
 
