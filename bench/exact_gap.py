@@ -110,13 +110,25 @@ def measure(payload):
     Rien n'est partagé, donc rien n'a à être verrouillé — et le résultat ne
     dépend pas de la répartition, puisque chaque lot est déterministe.
     """
-    database, model, plies, with_gnubg, seed, count = payload
+    database, model, plies, with_gnubg, seed, count, progress = payload
 
     rng = random.Random(seed)
     table = TwoSidedBearoff(database)
     network = Network.load(model)
 
-    engines = {f"gammonnet-{p}ply": ("ours", p) for p in plies}
+    # LE FILTRE EST EXPLICITE, ET IL A COÛTÉ UNE HEURE DE MACHINE DE NE PAS
+    # L'ÊTRE. La première version lançait `SearchConfig(ply=2)` sans filtre :
+    # un 2-ply non filtré coûte des dizaines de secondes par décision, et le
+    # calcul dimensionné pour trente-cinq minutes en aurait pris dix heures.
+    #
+    # `filter[d]` est indexé par la profondeur RESTANTE : la racine d'une
+    # recherche à k plies lit `filter[k]`.
+    def configuration(ply):
+        if ply <= 1:
+            return SearchConfig(ply=ply)
+        return SearchConfig(ply=ply, filter=(0, 1, 5))
+
+    engines = {f"gammonnet-{p}ply": ("ours", configuration(p)) for p in plies}
     if with_gnubg:
         from gammonnet.gnubg_engine import GnubgEngine
         for p in plies:
@@ -139,8 +151,7 @@ def measure(payload):
 
         for name, (kind, handle) in engines.items():
             if kind == "ours":
-                ranked = search_plays(network, position, d1, d2,
-                                      SearchConfig(ply=handle))
+                ranked = search_plays(network, position, d1, d2, handle)
                 chosen = ranked[0].play if ranked else None
             else:
                 chosen = handle.choose(position, d1, d2, rng)
@@ -159,6 +170,14 @@ def measure(payload):
             if abs(top - value) < 1e-12:
                 agreed[name] += 1
 
+        # Une ligne par décision terminée. Retirée par erreur en parallélisant,
+        # et il a fallu deviner l'avancement d'un calcul de trente-cinq minutes
+        # pour s'apercevoir qu'elle manquait. `O_APPEND` sur une écriture courte
+        # est atomique : les processus n'ont rien à coordonner.
+        if progress:
+            with open(progress, "a") as fh:
+                fh.write("x\n")
+
     table.close()
     return losses, agreed, considered
 
@@ -175,6 +194,8 @@ def main() -> int:
     parser.add_argument("--database", default=str(DEFAULT_DATABASE))
     parser.add_argument("--with-gnubg", action="store_true",
                         help="mesurer aussi GNU Backgammon, à la même profondeur")
+    parser.add_argument("--progress", default="/tmp/t38-progress.log",
+                        help="fichier de suivi ; `wc -l` donne l'avancement")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -187,13 +208,15 @@ def main() -> int:
     print(f"T38 — équité perdue par décision, contre la table exacte "
           f"{points}x{chequers}")
     print(f"  {args.decisions} décisions, graine {args.seed}, "
-          f"{args.workers} processus\n", flush=True)
+          f"{args.workers} processus")
+    print(f"  suivi : {args.progress}\n", flush=True)
 
     workers = max(1, min(args.workers, args.decisions))
     share = [args.decisions // workers + (1 if i < args.decisions % workers else 0)
              for i in range(workers)]
     payloads = [
-        (args.database, model, plies, args.with_gnubg, args.seed + 1000 * i, n)
+        (args.database, model, plies, args.with_gnubg, args.seed + 1000 * i, n,
+         args.progress)
         for i, n in enumerate(share) if n
     ]
 

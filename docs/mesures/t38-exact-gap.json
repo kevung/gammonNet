@@ -1,0 +1,56 @@
+{
+  "task": "T38",
+  "seed": 20260806,
+  "decisions": 8000,
+  "database": "/home/kunger/dev/gammonNet-t38/gnu_bearoff_database/gnubg_ts6x11.bd",
+  "rows": [
+    {
+      "engine": "gammonnet-0ply",
+      "decisions": 8000,
+      "agreement": 0.944625,
+      "mean_loss": 0.00027733272297245727,
+      "mean_loss_when_wrong": 0.0050082658776064515,
+      "worst_loss": 0.04739452201113892
+    },
+    {
+      "engine": "gammonnet-1ply",
+      "decisions": 8000,
+      "agreement": 0.95325,
+      "mean_loss": 0.0002028229190508888,
+      "mean_loss_when_wrong": 0.0043384581615163375,
+      "worst_loss": 0.09192034790569925
+    },
+    {
+      "engine": "gammonnet-2ply",
+      "decisions": 8000,
+      "agreement": 0.979125,
+      "mean_loss": 3.802548256656743e-05,
+      "mean_loss_when_wrong": 0.001821580003188859,
+      "worst_loss": 0.021240558480201455
+    },
+    {
+      "engine": "gnubg-0ply",
+      "decisions": 8000,
+      "agreement": 0.997625,
+      "mean_loss": 1.0299839780270049e-06,
+      "mean_loss_when_wrong": 0.00043367746443242306,
+      "worst_loss": 0.002288853284504455
+    },
+    {
+      "engine": "gnubg-1ply",
+      "decisions": 8000,
+      "agreement": 0.99775,
+      "mean_loss": 9.15541313801782e-07,
+      "mean_loss_when_wrong": 0.0004069072505785698,
+      "worst_loss": 0.002288853284504455
+    },
+    {
+      "engine": "gnubg-2ply",
+      "decisions": 8000,
+      "agreement": 0.999625,
+      "mean_loss": 1.411459525444414e-07,
+      "mean_loss_when_wrong": 0.00037638920678517707,
+      "worst_loss": 0.0008850232700083893
+    }
+  ]
+}

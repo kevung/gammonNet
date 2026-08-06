@@ -101,9 +101,28 @@ consignée ici comme une question précise, pas comme une lecture d'exploration.
 | 2026-08-03 | Architecture « réseau cubeless + conversion après par la table d'équité de match » | 2 | Manuel gnubg ; `BRIEF.md` §6 | Le principe d'architecture | Aucun code. La table est celle de Kazaross, attribuée |
 | 2026-08-04 | Base de fin de partie unilatérale : distribution du nombre de jets par programmation dynamique | — | Calcul exact, tranché en T33 | Le calcul, refait de zéro | La table de gnubg a servi de **croisement**, pas de source |
 | 2026-08-06 | Bases `gnubg-OS` et `gnubg-TS` employées telles quelles en natif | — | `CLAUDE.md` : tables de fin de partie, quelle que soit leur origine | Les fichiers, comme données de calcul exact | Elles ne partent pas dans l'artefact navigateur — actif natif et de mesure |
+| 2026-08-06 | **Format binaire de la base bilatérale** — 4 × uint16, `équité = brut/65535 × 2 − 1` | **2** | Arithmétique du fichier + `bearoffdump`, outil documenté livré avec gnubg | Le format, **déduit puis vérifié** | Aucun code source consulté. L'échelle a été **ajustée** contre `bearoffdump`, pas transcrite |
+| 2026-08-06 | **Indexation combinatoire des positions de bearoff** | **2** | `gnubg.positionbearoff`, API Python publique de gnubg | La formule, **redérivée** et validée exhaustivement sur les 12 376 positions | Aucun code. `C(6+11, 6) = 12 376` : le compte dit lui-même qu'il s'agit d'un rang combinatoire, construction mathématique |
+| 2026-08-06 | **Mode Python de GNU Backgammon comme oracle** | **2** | `gnubg --python`, documenté dans son aide | L'usage de l'interpréteur embarqué, `evaluate` et `cfevaluate` | Rien n'est copié. C'est l'usage prévu de l'outil, et la FSF est explicite sur la sortie d'un programme |
+| 2026-08-06 | Réseaux d'élagage : un petit réseau classe, le gros note les survivants | 2 | Manuel gnubg | L'idée seule — **pas encore implémentée** | Leurs poids d'élagage sont GPL. Le nôtre devra être distillé de **notre** réseau |
 
 *(Ce tableau se complète au fil des fiches. Une idée reprise sans ligne ici est un manquement au
 protocole, pas un oubli véniel.)*
+
+### Une note de méthode — elle a servi trois fois le 2026-08-06
+
+**Le niveau 3 n'a jamais été nécessaire.** Trois questions qui semblaient exiger la lecture du code
+source — le format binaire d'une base de fin de partie, l'indexation de ses positions, la sémantique
+d'une évaluation cubeful — ont toutes été résolues au niveau 2 : l'arithmétique du fichier, les
+outils documentés livrés avec gnubg (`bearoffdump`, le mode `--python`), et une **validation
+exhaustive** contre le programme lui-même.
+
+Et la provenance en sort **meilleure** qu'après une lecture de source. On peut montrer que la
+formule a été redérivée et vérifiée sur les 12 376 cas — un fait qu'un tiers peut refaire. « Nous
+avons lu, puis réécrit de mémoire » ne se vérifie pas.
+
+La règle à retenir avant d'ouvrir le niveau 3 la prochaine fois : **chercher d'abord si le
+programme peut répondre lui-même à la question.** Il est livré avec des outils faits pour cela.
 
 ## Sources
 
