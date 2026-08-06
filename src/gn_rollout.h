@@ -143,6 +143,15 @@ int gn_rollout_difference(const GnNetwork *net,
                           const GnRolloutConfig *config,
                           double *difference, double *standard_error);
 
+/*
+ * The dice, exposed. Not a convenience: the common-random-numbers mechanism is
+ * the whole point of this module, and a test that cannot see the dice can only
+ * observe that two rollouts agree -- which they also do when the dice are
+ * broken and constant. That is exactly how the first version got through.
+ */
+void gn_rollout_roll(unsigned long seed, unsigned long trial, unsigned int ply,
+                     int *d1, int *d2);
+
 #ifdef __cplusplus
 }
 #endif

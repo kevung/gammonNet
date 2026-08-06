@@ -7,6 +7,7 @@
 #include "gn_rollout.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* A trial that has not ended by this many plies is abandoned and reported. Two
@@ -81,6 +82,17 @@ static int play_trial(const GnNetwork *net, const GnPosition *start,
     *outcome = 0;
     *finished = 0;
 
+    /*
+     * The candidate buffer is allocated ONCE per trial, not once per ply.
+     * `gn_search_plays` needs the whole buffer to rank at all -- passing
+     * `max_out = 1` would make it evaluate only the first legal play and call it
+     * the best, which is a different and much worse engine.
+     */
+    GnCandidate *buffer = malloc(sizeof(GnCandidate) * GN_MAX_PLAYS);
+    if (buffer == NULL) {
+        return -1;
+    }
+
     for (unsigned int ply = 0; ply < MAX_PLIES; ply++) {
         if (gn_position_is_over(&pos)) {
             /* `gn_terminal_equity` answers for `pos.turn`, the loser. Translate
@@ -89,6 +101,7 @@ static int play_trial(const GnNetwork *net, const GnPosition *start,
             *equity = ((int)pos.turn == hero) ? loser_equity : -loser_equity;
             *outcome = (int)(-loser_equity) * (((int)pos.turn == hero) ? -1 : 1);
             *finished = 1;
+            free(buffer);
             return 0;
         }
 
@@ -97,33 +110,55 @@ static int play_trial(const GnNetwork *net, const GnPosition *start,
              * is for `pos.turn`; translate as above. */
             float probs[GN_NUM_OUTPUTS];
             if (gn_evaluate(net, &pos, probs) != 0) {
+                free(buffer);
                 return -1;
             }
             const double value = (double)gn_money_equity(probs);
             *equity = ((int)pos.turn == hero) ? value : -value;
+            free(buffer);
             return 0;
         }
 
         int d1, d2;
         roll_at(config->seed, trial, ply, &d1, &d2);
 
-        GnCandidate best;
-        const int found = gn_best_play(net, &pos, d1, d2, &config->policy, &best);
-        if (found < 0) {
+        /*
+         * `gn_search_plays`, NOT `gn_best_play`. The latter returns 0 on success
+         * and -1 for BOTH "no legal play" and "error", so it cannot tell a
+         * legitimate pass from a failure -- and reading its 0 as "no play"
+         * produced a rollout in which the position never moved. Nothing crashed;
+         * a perfectly plausible +0.619393 came out; only a standard error of
+         * EXACTLY zero gave it away, because every trial had played the same
+         * non-game.
+         *
+         * Here the count says which is which: negative is an error, zero is a
+         * legitimate pass, positive is a play.
+         */
+        const int count = gn_search_plays(net, &pos, d1, d2, &config->policy,
+                                          buffer, GN_MAX_PLAYS);
+        if (count < 0) {
+            free(buffer);
             return -1;
         }
-        if (found == 0) {
-            /* No legal play is a legitimate outcome of the rules, not a
-             * failure: the turn simply passes. */
+        if (count == 0) {
+            /* No legal play is an outcome of the rules, not a failure: the turn
+             * simply passes. */
             gn_position_swap_turn(&pos);
             continue;
         }
-        pos = best.play.result;
+        pos = buffer[0].play.result;
     }
 
     /* Abandoned. Reported by the caller, never averaged in. */
+    free(buffer);
     *equity = 0.0;
     return 1;
+}
+
+void gn_rollout_roll(unsigned long seed, unsigned long trial, unsigned int ply,
+                     int *d1, int *d2)
+{
+    roll_at(seed, trial, ply, d1, d2);
 }
 
 GnRolloutConfig gn_rollout_config(unsigned long seed)
