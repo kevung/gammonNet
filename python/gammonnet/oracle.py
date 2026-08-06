@@ -189,10 +189,33 @@ class Oracle:
                 )
             ranked.append(RankedPlay(play, Evaluation(*probabilities), equity))
 
-        if len(ranked) != len(ours):
+        # AU 0-PLY SEULEMENT, l'ensemble doit coïncider exactement. C'est le
+        # contrôle croisé de T03 : deux générateurs de coups légaux qui ne
+        # voient pas le même ensemble se trompent, et l'un des deux est le nôtre.
+        #
+        # AU-DELÀ, GNU Backgammon applique **son propre filtre de coups** et ne
+        # rend que les survivants. Ce n'est pas une supposition : sondé sur 400
+        # positions offrant au moins six coups légaux, le 0-ply rend l'ensemble
+        # complet 400 fois sur 400, le 1-ply plafonne à 8 candidats et le 2-ply
+        # à quelques-uns — les réglages de filtre que son manuel documente.
+        # `tests/test_oracle.py` tient cette sonde.
+        #
+        # Conséquence à ne pas perdre de vue : « gnubg au 1-ply » est
+        # **gnubg au 1-ply avec son filtre**, et une mesure de force qui le
+        # prend pour adversaire doit le nommer ainsi.
+        #
+        # Le contrôle qui SURVIT à toutes les profondeurs est celui du dessus :
+        # tout candidat rendu doit être un coup que nous générons, sans quoi
+        # `by_key` lève. Un filtre retranche ; il n'invente pas.
+        if self.ply == 0 and len(ranked) != len(ours):
             raise AssertionError(
-                f"{len(ranked)} candidats pour {len(ours)} coups légaux — "
+                f"{len(ranked)} candidats pour {len(ours)} coups légaux au 0-ply — "
                 "l'oracle et nous ne voyons pas le même ensemble"
+            )
+        if not ranked:
+            raise AssertionError(
+                f"aucun candidat pour {len(ours)} coups légaux depuis {position!r} "
+                f"avec les dés {d1}-{d2} — un filtre retranche, il ne vide pas"
             )
         return ranked
 
