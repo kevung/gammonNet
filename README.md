@@ -41,6 +41,8 @@ cubeless et aveugle au score.
 | Coût d'une décision 2-ply | 245 ms (extrapolé) | 1 394 ms, filtre 1/1 |
 | Match de 7 points dans le navigateur | 30 à 60 s | ~2 min, 3,3 workers |
 | PR du modèle, 0-ply → 2-ply | 1,06 → 0,22 (auteur) | non vérifié — objet de T35 |
+| Coût d'une décision 2-ply, nous / gnubg | — | **3,29 s contre ~0,01 s** |
+| Perte d'équité par décision de bearoff, 0-ply | — | **0,00028**, contre 0,00000 pour gnubg avec sa table |
 
 Le +0,0578 n'a pas été reproduit. Le harnais du dépôt de référence, exécuté inchangé ici, donne
 +0,0351, soit le même résultat que le nôtre. L'hypothèse d'un oracle différent a été testée et
@@ -48,6 +50,23 @@ réfutée. La base de comparaison de ce dépôt est donc +0,0400 dans cet enviro
 
 La force de la configuration complète — recherche, équité de match, tables de fin de partie —
 n'est pas mesurée. C'est l'objet de T35.
+
+### Ce que le 2026-08-06 a établi
+
+**La table exacte comble 0,00028 point d'équité par décision de bearoff** (T38, 8 000 décisions,
+arbitre sans variance). GNU Backgammon n'y perd rien, parce qu'il consulte sa propre table : le
+tableau ne compare pas deux réseaux, il chiffre le trou qu'une table comblerait. Notre pire cas au
+1-ply vaut 0,0919 sur une seule décision, contre 0,0023 pour gnubg — c'est la queue, pas la
+moyenne, qui coûte.
+
+**Notre décision 2-ply coûte ~330 fois celle de gnubg** — 3,29 s contre ~10 ms, entièrement
+expliqué par 38 244 évaluations à 86 µs. Ses réseaux d'élagage rendent son coût quasi plat avec la
+profondeur ; le nôtre explose. Cela engage la faisabilité des mesures **et** le budget navigateur.
+
+**L'instrument de mesure a changé.** Une partie ne rend qu'un point de donnée et en contient
+cinquante-cinq. Mesurer la perte d'équité **par décision** contre une référence commune est deux
+ordres de grandeur plus sensible qu'un round-robin — et en fin de partie, la table bilatérale
+fournit un arbitre **exact**, sans variance et sans réserve.
 
 ## Coût dans le navigateur
 
@@ -75,7 +94,7 @@ Phases 0, 1 et 2 terminées. Phase 3 en cours.
 | 0 — Socle & instrument | T00 · T01 · T02 · T03 · T04 · T05 | ✅ |
 | 1 — Reproduire | T10 · T11 · T12 | ✅ |
 | 2 — Navigateur | T20 · T21 · T22 · T23 | ✅ |
-| 3 — Profondeur & exactitude | T30 ✅ · T31 ✅ · T32 ✅ · T33 ⏳ · T36 · T37 · T38 · T34 · T39 · T35 | en cours |
+| 3 — Profondeur & exactitude | T30 ✅ · T31 ✅ · T32 ✅ · T33 ⏳ · T36 ⏳ · T37 · T38 ⏳ · T39 ✅ · T34 · T35 | en cours |
 | 4 — Modèle propre au projet | — | fermée |
 | 5 — Publication | T50 | à venir |
 

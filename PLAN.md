@@ -118,6 +118,36 @@ Le trajet vers l'artefact distribué reste celui de T33 — notre propre table, 
 ce que le budget navigateur autorise. Les deux ne se remplacent pas : les bases gnubg deviennent
 **la référence contre laquelle notre table embarquée se mesure**.
 
+### Ce que l'exécution du 2026-08-06 a changé au plan lui-même
+
+Trois constats de terrain, chacun assis sur une mesure, modifient l'ordre et les moyens.
+
+**1. `gnubg-nn` est hors-jeu au-delà du 0-ply.** Segfault reproductible sur les positions de
+bearoff, base unilatérale activée ou non. La référence est **GNU Backgammon lui-même**, via son
+mode Python — ce qui apporte en prime la vraie table d'équité, les vraies bases de fin de partie et
+`cfevaluate`, dont T34 aura besoin. Voir `docs/prerequis.md`.
+
+**2. L'instrument de T36 change : par décision, plus par partie.** Le round-robin en 2-ply
+demandait ~24 h pour douze mille parties et aurait rendu ±0,017, quand l'effet à détecter vaut
+~0,02 — donc « on ne peut pas conclure », après une journée de machine. Une partie ne rend **qu'un**
+point de donnée et en contient cinquante-cinq. Mesurer la perte d'équité par décision contre une
+référence commune est deux ordres de grandeur plus sensible.
+
+En fin de partie, l'arbitre est **exact** (T38, table bilatérale) : sans variance et sans réserve.
+En contact, il faut des rollouts — donc **T39 remonte au chemin critique**, et le nouvel ordre est
+`T39 → T36 → T34`.
+
+**3. Notre moteur est ~330 fois plus lent que gnubg au 2-ply.** 3,29 s contre ~10 ms, entièrement
+expliqué par 38 244 évaluations à 86 µs — pas de gaspillage caché. Ses réseaux d'élagage rendent son
+coût quasi plat avec la profondeur. Cela engage la faisabilité de T35 **et** le budget navigateur,
+et ouvre une fiche à part : cache d'évaluation, inférence par lots, réseaux d'élagage distillés de
+**notre** réseau.
+
+> **Une réserve à ne pas perdre.** T31 n'a mesuré la qualité du filtre qu'à la **racine** — sa
+> référence était un 2-ply dont l'intérieur n'était pas filtré. La garde **intérieure**, dont
+> dépend tout 2-ply jouable en volume, **n'a jamais été mesurée en qualité**. C'est un choix de
+> coût, pas un choix mesuré, et il doit être nommé partout où il sert.
+
 ### Le protocole d'étude de GNU Backgammon
 
 `CLAUDE.md` autorise déjà « lire le code et le manuel » et « réimplémenter des idées documentées ».
