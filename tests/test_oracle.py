@@ -143,6 +143,50 @@ def test_ranked_plays_cover_exactly_our_legal_plays():
         assert {gb.key(r.play.result) for r in ranked} == {gb.key(p.result) for p in ours}
 
 
+def test_deeper_plies_return_a_filtered_subset():
+    """À partir du 1-ply, l'oracle applique son propre filtre de coups.
+
+    Trouvé en T36 : le garde-fou de `ranked_plays` — « autant de candidats que
+    de coups légaux » — se déclenchait au 1-ply. Ce n'était pas un désaccord sur
+    les règles mais le filtre de GNU Backgammon, et la distinction se sonde.
+
+    **Ce que ce test fige**, et qui compte au-delà du garde-fou : « gnubg au
+    1-ply » est *gnubg au 1-ply avec son filtre*. Une mesure de force qui le
+    prend pour adversaire doit le nommer ainsi, et si un jour ce comportement
+    change, l'adversaire de nos mesures aura changé sans que rien ne le dise.
+    """
+    rng = random.Random(20260806)
+    oracles = {ply: Oracle(ply=ply) for ply in (0, 1, 2)}
+
+    widest = {0: 0, 1: 0, 2: 0}
+    examined = 0
+
+    for position in CORPUS[:200]:
+        d1, d2 = rng.randint(1, 6), rng.randint(1, 6)
+        ours = position.legal_plays(d1, d2)
+        if len(ours) < 10:
+            continue
+        examined += 1
+
+        for ply, oracle in oracles.items():
+            ranked = oracle.ranked_plays(position, d1, d2)
+            # Un filtre retranche ; il n'invente pas. Ce contrôle-là vaut à
+            # toutes les profondeurs, et c'est celui qui protège vraiment.
+            assert ranked, "un filtre ne vide pas"
+            assert len(ranked) <= len(ours)
+            ours_keys = {gb.key(p.result) for p in ours}
+            assert {gb.key(r.play.result) for r in ranked} <= ours_keys
+            widest[ply] = max(widest[ply], len(ranked))
+
+        assert len(oracles[0].ranked_plays(position, d1, d2)) == len(ours)
+
+    assert examined >= 20, "corpus trop pauvre en positions à dix coups ou plus"
+    # Le 0-ply rend tout ; les profondeurs supérieures plafonnent bien en deçà.
+    assert widest[0] >= 10
+    assert widest[1] <= 8, f"1-ply a rendu jusqu'à {widest[1]} candidats"
+    assert widest[2] <= widest[1]
+
+
 def test_ranked_plays_are_ordered_best_first():
     oracle = Oracle(ply=0)
     rng = random.Random(12)
