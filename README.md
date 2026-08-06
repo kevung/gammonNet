@@ -75,12 +75,20 @@ Phases 0, 1 et 2 terminées. Phase 3 en cours.
 | 0 — Socle & instrument | T00 · T01 · T02 · T03 · T04 · T05 | ✅ |
 | 1 — Reproduire | T10 · T11 · T12 | ✅ |
 | 2 — Navigateur | T20 · T21 · T22 · T23 | ✅ |
-| 3 — Profondeur & exactitude | T30 · T31 · T32 ✅ · T33 ⏳ · T34 · T35 | en cours |
+| 3 — Profondeur & exactitude | T30 ✅ · T31 ✅ · T32 ✅ · T33 ⏳ · T36 · T37 · T38 · T34 · T39 · T35 | en cours |
 | 4 — Modèle propre au projet | — | fermée |
 | 5 — Publication | T50 | à venir |
 
 Chaque tâche porte un rapport dans [`docs/mesures/`](docs/mesures/), qui distingue le mesuré de
 l'estimé.
+
+La phase 3 a été **recadrée le 2026-08-06** vers l'objectif tel qu'il est posé : un moteur en
+match, avec videau, au moins aussi bon que GNU Backgammon. Le seul chiffre de force du dépôt est
+mesuré en 0-ply cubeless money, et **trois transports** le séparent de cette cible — la
+profondeur, le videau, le match. Aucun ne se déduit des autres. Le chemin est découpé en quatre
+paliers, chacun refermé par une mesure qui autorise ou interdit le suivant :
+diagnostic (T36, T37) → fins de partie exactes (T38) → videau (T34) → arbitre et verdict
+(T39, T35). Le détail est dans [`PLAN.md`](PLAN.md), section *Recadrage vers l'objectif*.
 
 La phase 4 devait s'ouvrir si la phase 1 échouait à confirmer la force annoncée. Le critère est
 atteint à la lettre, puisque le chiffre publié n'a pas été reproduit. Elle reste fermée : le
