@@ -138,11 +138,21 @@ typedef struct {
  * and the whole doubling window moves. The score is NOT a correction applied to
  * a money verdict; it replaces it.
  *
+ * `jacoby`: non-zero to apply the Jacoby rule -- gammons and backgammons do not
+ * count before the cube has been turned. It affects only the "don't double"
+ * branch (`docs/specs/t34-videau-spec.md` §4: `W` and `L` are both reset to 1
+ * there, nowhere else), and only when it can actually matter: a centred cube in
+ * a money game (`state == NULL`). Once the cube has been turned (`owner !=
+ * GN_CUBE_CENTRED`) the flag is silently without effect, because Jacoby governs
+ * the game *before* the first double, not after it -- and in a match the
+ * question does not arise at all: the equity table already prices gammons at
+ * the score, which is what Jacoby exists to approximate in money play.
+ *
  * Returns 0, or -1 if the state is not evaluable (`gn_met.h` refuses rather
  * than extrapolating, and so does this).
  */
 int gn_cube_decide(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
-                   const GnMatchState *state, double efficiency,
+                   const GnMatchState *state, double efficiency, int jacoby,
                    GnCubeDecision *out);
 
 #ifdef __cplusplus
