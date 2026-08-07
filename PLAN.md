@@ -770,9 +770,16 @@ avec **repli explicite** sur le réseau hors table. Mesure de l'écart réseau s
 > re-doublement à score (spec §9) est implémentée, ancrée et mesurée. Accord contesté avec gnubg
 > 67,6 % → **84,1 %** [83,6 ; 84,7] sur les 30 000 décisions du protocole §6.3 rejoué ; le foyer
 > 2-away/4-away rejoint l'ordre du money (84,9/85,6 %), money inchangé, aucun contexte dégradé
-> (`docs/mesures/2026-08-08-T34-recursion-v2.md`). Reste au périmètre : la phase 2 (spec §8, le
-> videau dans l'arbre) — et l'arbitrage des désaccords résiduels appartient à T39, pas à
-> l'accord.
+> (`docs/mesures/2026-08-08-T34-recursion-v2.md`). L'arbitrage des désaccords résiduels
+> appartient à T39, pas à l'accord.
+>
+> **Phase 2 (spec §8), même jour** — le videau est dans l'arbre : la distribution se propage à
+> toute profondeur (`gn_search_probs`, contrôles §8 verts), les feuilles se valuent cubeful
+> (`use_cube`, possession en miroir par pli, antisymétrie testée), exactes dans le domaine de
+> la table bilatérale. Décision contre l'exact : 96,8/95,3 % contesté, zéro effet de profondeur
+> dans le domaine exact ; corpus bold/safe versionné (338 entrées, rejouées par la suite de
+> tests). Voir `docs/mesures/2026-08-08-T34-arbre.md`. **Reste de la phase 2 : 3b** — l'accord
+> des choix de coups cubeful contre gnubg.
 
 **Objectif** — doubler, prendre, passer.
 

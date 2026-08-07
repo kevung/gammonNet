@@ -92,7 +92,36 @@ typedef struct {
     /* The match state as seen by the player to move AT THE ROOT. The search
      * swaps it as it descends; the caller never has to. */
     GnMatchState match;
+
+    /*
+     * Cubeful leaf valuation -- t34-videau-spec §8, step 2.
+     *
+     * When `use_cube` is set, leaves are valued through the cube model at
+     * efficiency `cube_x` (money §3, or the §9 match recursion when
+     * `use_match` is also set) instead of cubeless. `cube_owner` (a
+     * GnCubeOwner) is the cube as seen by the player to move AT THE ROOT;
+     * the search mirrors it (OWNED <-> OPPONENT) at every ply, exactly as it
+     * swaps the match state -- the caller never has to.
+     *
+     * No double/take/pass branches in the tree: the cube-aware value is
+     * applied at the LEAVES and rides the same expectiminimax -- what the
+     * reference engines do, and §8 records why. The expected effect is on
+     * MOVE CHOICE (bold toward the cash with the cube, sober under it); the
+     * cube DECISION consumes `gn_search_probs` plus `gn_cube_decide`,
+     * outside this module.
+     *
+     * In the two-sided bearoff table's domain, money leaves are EXACT --
+     * `gn_bearoff_equities`, no model. §8's own validation lever.
+     */
+    int use_cube;
+    int cube_owner;
+    double cube_x;
 } GnSearchConfig;
+
+/* Add cubeful leaf valuation to a config (money or match, per `use_match`).
+ * `owner` is the cube as the ROOT player sees it. `efficiency` is MEASURED
+ * (bench/fit_efficiency.py) -- never a borrowed constant. */
+void gn_search_use_cube(GnSearchConfig *config, int owner, double efficiency);
 
 /* Depth `ply`, no filtering, cubeless money. The honest baseline every filter
  * is measured against. */
@@ -141,6 +170,28 @@ int gn_best_play(const GnNetwork *net, const GnPosition *pos, int d1, int d2,
  */
 double gn_search_equity(const GnNetwork *net, const GnPosition *pos,
                         const GnSearchConfig *config);
+
+/*
+ * The pre-roll DISTRIBUTION at depth `config->ply`, from `pos->turn`'s point
+ * of view -- the §8 (t34-videau-spec) companion of `gn_search_equity`.
+ *
+ * At depth 0 it is exactly what `evaluate_position` answers (bearoff table,
+ * cache, or network -- same three sources, same order). Deeper, it is the
+ * roll-weighted average of the best play's own distribution, one perspective
+ * inversion per ply -- the best play being chosen by the SAME valuation the
+ * equity recursion uses (money or match, same filter), so the distribution
+ * describes the game the search would actually play.
+ *
+ * Why this exists: a cube decision at depth needs the five probabilities, not
+ * the scalar the search returns -- and the two must never come from different
+ * walks. Both money and match valuations are LINEAR in the distribution, so
+ * `gn_search_equity(config)` equals the valuation of this vector at any
+ * depth; a test holds that identity rather than trusting it.
+ *
+ * Returns 0, or -1 on error (and `out` is then untouched).
+ */
+int gn_search_probs(const GnNetwork *net, const GnPosition *pos,
+                    const GnSearchConfig *config, float out[GN_NUM_OUTPUTS]);
 
 /*
  * Exact equity of a finished game, from `pos->turn`'s point of view.

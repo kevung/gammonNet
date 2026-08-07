@@ -86,6 +86,15 @@ _LIB.gn_cube_decide.argtypes = [
 ]
 _LIB.gn_cube_decide.restype = ctypes.c_int
 
+_LIB.gn_cube_value.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.c_int,
+    ctypes.POINTER(_CMatchState),
+    ctypes.c_double,
+    ctypes.POINTER(ctypes.c_int),
+]
+_LIB.gn_cube_value.restype = ctypes.c_double
+
 
 @dataclass(frozen=True)
 class CubeInputs:
@@ -182,3 +191,29 @@ def decide(
         equity_double=out.equity_double,
         take_point=out.take_point,
     )
+
+
+def value(
+    evaluation: Evaluation,
+    owner: CubeOwner,
+    efficiency: float,
+    state: MatchState | None = None,
+) -> float:
+    """La valeur cubeful d'une distribution, sur l'échelle à négation de la
+    recherche — la valuation de feuille de `docs/specs/t34-videau-spec.md` §8.
+
+    Money (`state is None`) : points par unité de videau, §3. Match : équité
+    `2·MWC − 1` par la récursion §9, au videau de `state`. Voir `gn_cube_value`
+    en C pour l'antisymétrie qui rend ces valeurs propagables par
+    l'expectiminimax — et `tests/test_search_cube.py`, qui la vérifie au lieu
+    de la croire.
+    """
+    buffer = _ProbArray(*evaluation.as_tuple())
+    c_state = ctypes.byref(state._to_c()) if state is not None else None
+    failed = ctypes.c_int(0)
+    result = _LIB.gn_cube_value(
+        buffer, int(owner), c_state, efficiency, ctypes.byref(failed)
+    )
+    if failed.value:
+        raise ValueError(f"valeur cubeful refusée ({state})")
+    return result

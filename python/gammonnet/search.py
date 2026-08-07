@@ -38,6 +38,9 @@ class _CSearchConfig(ctypes.Structure):
         ("filter", ctypes.c_int * (MAX_PLY + 1)),
         ("use_match", ctypes.c_int),
         ("match", _CMatchState),
+        ("use_cube", ctypes.c_int),
+        ("cube_owner", ctypes.c_int),
+        ("cube_x", ctypes.c_double),
     ]
 
 
@@ -66,6 +69,14 @@ _LIB.gn_search_equity.argtypes = [
     ctypes.POINTER(_CSearchConfig),
 ]
 _LIB.gn_search_equity.restype = ctypes.c_double
+
+_LIB.gn_search_probs.argtypes = [
+    ctypes.c_void_p,
+    ctypes.POINTER(_CPosition),
+    ctypes.POINTER(_CSearchConfig),
+    ctypes.c_float * NUM_OUTPUTS,
+]
+_LIB.gn_search_probs.restype = ctypes.c_int
 
 _LIB.gn_terminal_equity.argtypes = [ctypes.POINTER(_CPosition)]
 _LIB.gn_terminal_equity.restype = ctypes.c_double
@@ -105,12 +116,22 @@ class SearchConfig:
     `use_match` fait valuer chaque nœud par la table d'équité de match plutôt
     qu'en money cubeless. Le score porté par `match` est celui du joueur au
     trait **à la racine** ; la recherche le bascule en descendant.
+
+    `use_cube` (t34-videau-spec §8, étape 2) fait valuer les **feuilles** par
+    le modèle de videau à l'efficacité `cube_x` — money §3, ou la récursion
+    §9 si `use_match` est aussi actif. `cube_owner` est l'état du videau vu
+    par le joueur au trait **à la racine** ; la recherche le met en miroir en
+    descendant, comme elle bascule le score. Dans le domaine de la table
+    bilatérale, les feuilles money sont **exactes** (lues, pas modélisées).
     """
 
     ply: int = 0
     filter: tuple[int, ...] = ()
     use_match: bool = False
     match: MatchState | None = None
+    use_cube: bool = False
+    cube_owner: int = 0
+    cube_x: float = 0.0
 
     def _to_c(self) -> _CSearchConfig:
         c = _CSearchConfig()
@@ -122,6 +143,10 @@ class SearchConfig:
                 raise ValueError("use_match sans score de match")
             c.use_match = 1
             c.match = self.match._to_c()
+        if self.use_cube:
+            c.use_cube = 1
+            c.cube_owner = int(self.cube_owner)
+            c.cube_x = self.cube_x
         return c
 
 
@@ -215,3 +240,26 @@ def position_equity(
     return _LIB.gn_search_equity(
         network._handle, ctypes.byref(position._to_c()), ctypes.byref(config._to_c())
     )
+
+
+def position_probs(
+    network: Network, position: Position, config: SearchConfig | None = None,
+) -> Evaluation:
+    """La distribution d'une position **avant le jet**, à la profondeur de
+    `config` — le pendant §8 de `position_equity` (t34-videau-spec).
+
+    Au 0-ply, identique à `Network.evaluate` (mêmes trois sources : table
+    exacte, cache, réseau). Plus profond, la moyenne pondérée sur les 21 jets
+    de la distribution du meilleur coup — choisi par la même valuation que la
+    recherche scalaire. C'est ce qu'une décision de videau à profondeur
+    consomme, à la place de l'évaluation statique de la racine.
+    """
+    config = config or SearchConfig()
+    buffer = (ctypes.c_float * NUM_OUTPUTS)()
+    result = _LIB.gn_search_probs(
+        network._handle, ctypes.byref(position._to_c()),
+        ctypes.byref(config._to_c()), buffer,
+    )
+    if result != 0:
+        raise ValueError("distribution non calculable pour cette position")
+    return Evaluation(*buffer)

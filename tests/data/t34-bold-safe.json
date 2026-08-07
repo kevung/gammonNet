@@ -1,0 +1,2375 @@
+{
+ "task": "T34-phase2-3c",
+ "seed": 20260808,
+ "scanned_positions": 300,
+ "cube_x": 0.6,
+ "note": "Coups 0-ply divergents selon le possesseur du videau, dans le domaine de la table bilat\u00e9rale (feuilles exactes). Voir docs/specs/t34-videau-spec.md \u00a78, constat d'impl\u00e9mentation.",
+ "entries": [
+  {
+   "position": "9moAAJg0AAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "oQEAwF4NAAAAAA",
+   "opponent_result": "VAEAwF4NAAAAAA"
+  },
+  {
+   "position": "9moAAJg0AAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "hwIAgL0aAAAAAA",
+   "opponent_result": "UwEAgL0aAAAAAA"
+  },
+  {
+   "position": "9moAAJg0AAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "hwIAgL0aAAAAAA",
+   "opponent_result": "UwEAgL0aAAAAAA"
+  },
+  {
+   "position": "9moAAJg0AAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "CwEAwF4NAAAAAA",
+   "opponent_result": "kwAAwF4NAAAAAA"
+  },
+  {
+   "position": "9moAAJg0AAAAAA",
+   "d1": 4,
+   "d2": 6,
+   "owned_result": "JwIAgL0aAAAAAA",
+   "opponent_result": "KwEAgL0aAAAAAA"
+  },
+  {
+   "position": "zesAAFDcAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "kwYAgOZ1AAAAAA",
+   "opponent_result": "WQUAgOZ1AAAAAA"
+  },
+  {
+   "position": "zesAAFDcAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "vQgAAM3rAAAAAA",
+   "opponent_result": "xQEAQPM6AAAAAA"
+  },
+  {
+   "position": "zesAAFDcAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "jQUAgOZ1AAAAAA",
+   "opponent_result": "lQMAgOZ1AAAAAA"
+  },
+  {
+   "position": "zesAAFDcAAAAAA",
+   "d1": 4,
+   "d2": 4,
+   "owned_result": "bwgAAM3rAAAAAA",
+   "opponent_result": "dwQAAM3rAAAAAA"
+  },
+  {
+   "position": "WQIAgGoPAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "1BsAALIEAAAAAA",
+   "opponent_result": "0R4AALIEAAAAAA"
+  },
+  {
+   "position": "WQIAgGoPAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "0h4AALIEAAAAAA",
+   "opponent_result": "oz0AAGQJAAAAAA"
+  },
+  {
+   "position": "WQIAgGoPAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "sh4AALIEAAAAAA",
+   "opponent_result": "0R4AALIEAAAAAA"
+  },
+  {
+   "position": "WQIAgGoPAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "qh0AALIEAAAAAA",
+   "opponent_result": "ah4AALIEAAAAAA"
+  },
+  {
+   "position": "WQIAgGoPAAAAAA",
+   "d1": 1,
+   "d2": 6,
+   "owned_result": "qhsAALIEAAAAAA",
+   "opponent_result": "ah0AALIEAAAAAA"
+  },
+  {
+   "position": "WQIAgGoPAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "1A4AAFkCAAAAAA",
+   "opponent_result": "TA8AAFkCAAAAAA"
+  },
+  {
+   "position": "WQIAgGoPAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "qg0AAFkCAAAAAA",
+   "opponent_result": "pg4AAFkCAAAAAA"
+  },
+  {
+   "position": "WQIAgGoPAAAAAA",
+   "d1": 4,
+   "d2": 4,
+   "owned_result": "XRoAALIEAAAAAA",
+   "opponent_result": "WxwAALIEAAAAAA"
+  },
+  {
+   "position": "PAUAAOYAAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "ygAAgKcAAAAAAA",
+   "opponent_result": "rAAAgKcAAAAAAA"
+  },
+  {
+   "position": "PAUAAOYAAAAAAA",
+   "d1": 1,
+   "d2": 6,
+   "owned_result": "ygAAgKcAAAAAAA",
+   "opponent_result": "rAAAgKcAAAAAAA"
+  },
+  {
+   "position": "2AAAQAsAAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "JgAAgA0AAAAAAA",
+   "opponent_result": "KQAAgA0AAAAAAA"
+  },
+  {
+   "position": "2AAAQAsAAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "JgAAgA0AAAAAAA",
+   "opponent_result": "KQAAgA0AAAAAAA"
+  },
+  {
+   "position": "c68AANDqAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "UwMAgLlXAAAAAA",
+   "opponent_result": "yQEAwNwrAAAAAA"
+  },
+  {
+   "position": "TQUAANEHAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "sAcAgKYCAAAAAA",
+   "opponent_result": "yAcAgKYCAAAAAA"
+  },
+  {
+   "position": "TQUAANEHAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "yg4AAE0FAAAAAA",
+   "opponent_result": "SQ8AAE0FAAAAAA"
+  },
+  {
+   "position": "TQUAANEHAAAAAA",
+   "d1": 4,
+   "d2": 6,
+   "owned_result": "RgcAgKYCAAAAAA",
+   "opponent_result": "hQcAgKYCAAAAAA"
+  },
+  {
+   "position": "lQ0AACUBAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "hQAAUNkAAAAAAA",
+   "opponent_result": "KgAAUNkAAAAAAA"
+  },
+  {
+   "position": "lQ0AACUBAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "gwAAUNkAAAAAAA",
+   "opponent_result": "KQAAUNkAAAAAAA"
+  },
+  {
+   "position": "lQ0AACUBAAAAAA",
+   "d1": 5,
+   "d2": 6,
+   "owned_result": "CwAAUNkAAAAAAA",
+   "opponent_result": "BQAAqGwAAAAAAA"
+  },
+  {
+   "position": "RAAAeFsDAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "zwwAAIgAAAAAAA",
+   "opponent_result": "PxoAABABAAAAAA"
+  },
+  {
+   "position": "qA8AAEsBAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "iwAAAPUBAAAAAA",
+   "opponent_result": "TQAAAPUBAAAAAA"
+  },
+  {
+   "position": "qA8AAEsBAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "hwAAAPUBAAAAAA",
+   "opponent_result": "SwAAAPUBAAAAAA"
+  },
+  {
+   "position": "a1sAAFjbBQAAAA",
+   "d1": 4,
+   "d2": 4,
+   "owned_result": "txkAAKxtAQAAAA",
+   "opponent_result": "rykAAKxtAQAAAA"
+  },
+  {
+   "position": "YgEAYGcPAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "PTsAABALAAAAAA",
+   "opponent_result": "Oz0AABALAAAAAA"
+  },
+  {
+   "position": "YgEAYGcPAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "OzsAABALAAAAAA",
+   "opponent_result": "Nz0AABALAAAAAA"
+  },
+  {
+   "position": "YgEAYGcPAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "91MAACAWAAAAAA",
+   "opponent_result": "72MAACAWAAAAAA"
+  },
+  {
+   "position": "YgEAYGcPAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "ezoAABALAAAAAA",
+   "opponent_result": "dzwAABALAAAAAA"
+  },
+  {
+   "position": "YgEAYGcPAAAAAA",
+   "d1": 3,
+   "d2": 5,
+   "owned_result": "ezYAABALAAAAAA",
+   "opponent_result": "dzoAABALAAAAAA"
+  },
+  {
+   "position": "YgEAYGcPAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "ezYAABALAAAAAA",
+   "opponent_result": "dzoAABALAAAAAA"
+  },
+  {
+   "position": "jB8AALJ5AAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "GQ8AAIwfAAAAAA",
+   "opponent_result": "2RkAABg/AAAAAA"
+  },
+  {
+   "position": "aysAAGxTAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "3QQAAGsrAAAAAA",
+   "opponent_result": "2wgAAGsrAAAAAA"
+  },
+  {
+   "position": "aysAAGxTAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "uwAAgLUVAAAAAA",
+   "opponent_result": "GwEAwNoKAAAAAA"
+  },
+  {
+   "position": "t3UAAFB1AAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "wwEAwG0dAAAAAA",
+   "opponent_result": "mQEAwG0dAAAAAA"
+  },
+  {
+   "position": "t3UAAFB1AAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "OwIAgNs6AAAAAA",
+   "opponent_result": "PQEAgNs6AAAAAA"
+  },
+  {
+   "position": "zi0AAKwUAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "DwIAgHMLAAAAAA",
+   "opponent_result": "kwAAwLkFAAAAAA"
+  },
+  {
+   "position": "zi0AAKwUAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "JwIAgHMLAAAAAA",
+   "opponent_result": "KwEAgHMLAAAAAA"
+  },
+  {
+   "position": "zi0AAKwUAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "FwIAgHMLAAAAAA",
+   "opponent_result": "GwEAgHMLAAAAAA"
+  },
+  {
+   "position": "zi0AAKwUAAAAAA",
+   "d1": 4,
+   "d2": 5,
+   "owned_result": "rwAAAOcWAAAAAA",
+   "opponent_result": "WwAAgHMLAAAAAA"
+  },
+  {
+   "position": "q3MAABgWAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "QwEAYHUOAAAAAA",
+   "opponent_result": "xQAAYHUOAAAAAA"
+  },
+  {
+   "position": "q3MAABgWAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "DwIAwOocAAAAAA",
+   "opponent_result": "kwAAYHUOAAAAAA"
+  },
+  {
+   "position": "q3MAABgWAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "JwIAwOocAAAAAA",
+   "opponent_result": "wwAAYHUOAAAAAA"
+  },
+  {
+   "position": "q3MAABgWAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "EwEAYHUOAAAAAA",
+   "opponent_result": "owAAYHUOAAAAAA"
+  },
+  {
+   "position": "q3MAABgWAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "FwIAwOocAAAAAA",
+   "opponent_result": "GwEAwOocAAAAAA"
+  },
+  {
+   "position": "q3MAABgWAAAAAA",
+   "d1": 3,
+   "d2": 5,
+   "owned_result": "CwEAYHUOAAAAAA",
+   "opponent_result": "kwAAYHUOAAAAAA"
+  },
+  {
+   "position": "q3MAABgWAAAAAA",
+   "d1": 4,
+   "d2": 5,
+   "owned_result": "BwEAYHUOAAAAAA",
+   "opponent_result": "iwAAYHUOAAAAAA"
+  },
+  {
+   "position": "q3MAABgWAAAAAA",
+   "d1": 4,
+   "d2": 6,
+   "owned_result": "hwAAYHUOAAAAAA",
+   "opponent_result": "iwAAYHUOAAAAAA"
+  },
+  {
+   "position": "VRcAAOyuAQAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "dlcAAKi6AAAAAA",
+   "opponent_result": "dWcAAKi6AAAAAA"
+  },
+  {
+   "position": "zRoAAAwDAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "lgAAoFkDAAAAAA",
+   "opponent_result": "FQEAoFkDAAAAAA"
+  },
+  {
+   "position": "zRoAAAwDAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "jgAAoFkDAAAAAA",
+   "opponent_result": "DQEAoFkDAAAAAA"
+  },
+  {
+   "position": "ujwAAKg1AAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "tAUAAF0eAAAAAA",
+   "opponent_result": "sgYAAF0eAAAAAA"
+  },
+  {
+   "position": "ujwAAKg1AAAAAA",
+   "d1": 1,
+   "d2": 6,
+   "owned_result": "WgUAAF0eAAAAAA",
+   "opponent_result": "aQUAAF0eAAAAAA"
+  },
+  {
+   "position": "bR4AAEgCAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "hQAA0OYBAAAAAA",
+   "opponent_result": "RAAAaPMAAAAAAA"
+  },
+  {
+   "position": "bR4AAEgCAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "gwAA0OYBAAAAAA",
+   "opponent_result": "QgAAaPMAAAAAAA"
+  },
+  {
+   "position": "KxcAAIgAAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "CgAAWLkAAAAAAA",
+   "opponent_result": "EAAArFwAAAAAAA"
+  },
+  {
+   "position": "KxcAAIgAAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "BgAAWLkAAAAAAA",
+   "opponent_result": "CQAAWLkAAAAAAA"
+  },
+  {
+   "position": "SgEAoF4CAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "ugQAAKUAAAAAAA",
+   "opponent_result": "vAIAAKUAAAAAAA"
+  },
+  {
+   "position": "SgEAoF4CAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "9QIAAEoBAAAAAA",
+   "opponent_result": "8wIAAEoBAAAAAA"
+  },
+  {
+   "position": "Gx0AANgEAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "tAAAYKMDAAAAAA",
+   "opponent_result": "LAEAYKMDAAAAAA"
+  },
+  {
+   "position": "Gx0AANgEAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "tAAAYKMDAAAAAA",
+   "opponent_result": "LAEAYKMDAAAAAA"
+  },
+  {
+   "position": "Gx0AANgEAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "gwAAsNEBAAAAAA",
+   "opponent_result": "GAAA2OgAAAAAAA"
+  },
+  {
+   "position": "rRoAAKIAAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "DQAA0KoBAAAAAA",
+   "opponent_result": "EQAAaNUAAAAAAA"
+  },
+  {
+   "position": "rRoAAKIAAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "CwAA0KoBAAAAAA",
+   "opponent_result": "CQAAaNUAAAAAAA"
+  },
+  {
+   "position": "rRoAAKIAAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "BwAA0KoBAAAAAA",
+   "opponent_result": "BQAAaNUAAAAAAA"
+  },
+  {
+   "position": "3QgAAFftAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "pzYAAHQjAAAAAA",
+   "opponent_result": "DzsAAHQjAAAAAA"
+  },
+  {
+   "position": "bfMAANBcAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "cQEAQNs8AAAAAA",
+   "opponent_result": "agEAQNs8AAAAAA"
+  },
+  {
+   "position": "eXkAAOAMAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "ygAAIC8PAAAAAA",
+   "opponent_result": "rAAAIC8PAAAAAA"
+  },
+  {
+   "position": "eXkAAOAMAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "ygAAIC8PAAAAAA",
+   "opponent_result": "rAAAIC8PAAAAAA"
+  },
+  {
+   "position": "eXkAAOAMAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "NQEAQF4eAAAAAA",
+   "opponent_result": "nAAAIC8PAAAAAA"
+  },
+  {
+   "position": "me8AAPAuAwAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "HwYAAJnvAAAAAA",
+   "opponent_result": "zwQAAJnvAAAAAA"
+  },
+  {
+   "position": "SzcAAKytAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "awoAAEs3AAAAAA",
+   "opponent_result": "swUAAEs3AAAAAA"
+  },
+  {
+   "position": "VR0AAIoFAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "HQEAQFUHAAAAAA",
+   "opponent_result": "KwEAQFUHAAAAAA"
+  },
+  {
+   "position": "kwYAgMYGAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "WwoAAJMGAAAAAA",
+   "opponent_result": "XQYAAJMGAAAAAA"
+  },
+  {
+   "position": "rzwAAKAEAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "hQAA8MoDAAAAAA",
+   "opponent_result": "RAAAeOUBAAAAAA"
+  },
+  {
+   "position": "rzwAAKAEAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "gwAA8MoDAAAAAA",
+   "opponent_result": "QgAAeOUBAAAAAA"
+  },
+  {
+   "position": "qAEAwN0GAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "dhcAAKAGAAAAAA",
+   "opponent_result": "bhsAAKAGAAAAAA"
+  },
+  {
+   "position": "qAEAwN0GAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "7hUAAKAGAAAAAA",
+   "opponent_result": "7g4AAKAGAAAAAA"
+  },
+  {
+   "position": "qAEAwN0GAAAAAA",
+   "d1": 1,
+   "d2": 6,
+   "owned_result": "7hUAAKAGAAAAAA",
+   "opponent_result": "7g4AAKAGAAAAAA"
+  },
+  {
+   "position": "WwMAAKttAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "tA0AAFsDAAAAAA",
+   "opponent_result": "ag8AALYGAAAAAA"
+  },
+  {
+   "position": "WwMAAKttAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "0xYAALYGAAAAAA",
+   "opponent_result": "KxsAALYGAAAAAA"
+  },
+  {
+   "position": "1gUAAHQAAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "JQAAYF0AAAAAAA",
+   "opponent_result": "FAAAsC4AAAAAAA"
+  },
+  {
+   "position": "1gUAAHQAAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "MQAAYF0AAAAAAA",
+   "opponent_result": "KgAAYF0AAAAAAA"
+  },
+  {
+   "position": "1gUAAHQAAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "MQAAYF0AAAAAAA",
+   "opponent_result": "KgAAYF0AAAAAAA"
+  },
+  {
+   "position": "1gUAAHQAAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "MQAAYF0AAAAAAA",
+   "opponent_result": "KgAAYF0AAAAAAA"
+  },
+  {
+   "position": "62oAAHgjAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "bwAAgHU1AAAAAA",
+   "opponent_result": "XwAAgHU1AAAAAA"
+  },
+  {
+   "position": "62oAAHgjAAAAAA",
+   "d1": 3,
+   "d2": 5,
+   "owned_result": "bwAAgHU1AAAAAA",
+   "opponent_result": "LwAAwLoaAAAAAA"
+  },
+  {
+   "position": "62oAAHgjAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "bwAAgHU1AAAAAA",
+   "opponent_result": "LwAAwLoaAAAAAA"
+  },
+  {
+   "position": "oQAAkNUBAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "bA0AAKEAAAAAAA",
+   "opponent_result": "qQ4AAKEAAAAAAA"
+  },
+  {
+   "position": "oQAAkNUBAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "uQcAAEIBAAAAAA",
+   "opponent_result": "hw4AAKEAAAAAAA"
+  },
+  {
+   "position": "oQAAkNUBAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "lQ4AAKEAAAAAAA",
+   "opponent_result": "ow4AAKEAAAAAAA"
+  },
+  {
+   "position": "oQAAkNUBAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "WQ0AAKEAAAAAAA",
+   "opponent_result": "kw4AAKEAAAAAAA"
+  },
+  {
+   "position": "oQAAkNUBAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "NQ4AAKEAAAAAAA",
+   "opponent_result": "Uw4AAKEAAAAAAA"
+  },
+  {
+   "position": "oQAAkNUBAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "2QoAAKEAAAAAAA",
+   "opponent_result": "Uw0AAKEAAAAAAA"
+  },
+  {
+   "position": "oQAAkNUBAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "UQMAQCgAAAAAAA",
+   "opponent_result": "CwcAgFAAAAAAAA"
+  },
+  {
+   "position": "oQAAkNUBAAAAAA",
+   "d1": 4,
+   "d2": 4,
+   "owned_result": "3QQAAKEAAAAAAA",
+   "opponent_result": "2wgAAKEAAAAAAA"
+  },
+  {
+   "position": "pAAAsNYAAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "rAEAACkAAAAAAA",
+   "opponent_result": "2gEAAFIAAAAAAA"
+  },
+  {
+   "position": "yAAAkN0AAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "3AUAAMgAAAAAAA",
+   "opponent_result": "6QYAAMgAAAAAAA"
+  },
+  {
+   "position": "yAAAkN0AAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "2QUAAMgAAAAAAA",
+   "opponent_result": "4wYAAMgAAAAAAA"
+  },
+  {
+   "position": "yAAAkN0AAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "uQUAAMgAAAAAAA",
+   "opponent_result": "0wYAAMgAAAAAAA"
+  },
+  {
+   "position": "yAAAkN0AAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "uQMAAMgAAAAAAA",
+   "opponent_result": "tQUAAMgAAAAAAA"
+  },
+  {
+   "position": "yAAAkN0AAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "uQMAAMgAAAAAAA",
+   "opponent_result": "tQUAAMgAAAAAAA"
+  },
+  {
+   "position": "wz0AADQtAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "OwIAgOEeAAAAAA",
+   "opponent_result": "PQEAgOEeAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "bB4AAIoAAAAAAA",
+   "opponent_result": "qh4AAIoAAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "bB4AAIoAAAAAAA",
+   "opponent_result": "qh4AAIoAAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "XB4AAIoAAAAAAA",
+   "opponent_result": "mh4AAIoAAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "PB4AAIoAAAAAAA",
+   "opponent_result": "Wh4AAIoAAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 1,
+   "d2": 6,
+   "owned_result": "PB0AAIoAAAAAAA",
+   "opponent_result": "Wh0AAIoAAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "vBwAAIoAAAAAAA",
+   "opponent_result": "Fz0AABQBAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "XB4AAIoAAAAAAA",
+   "opponent_result": "qR4AAIoAAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "PB4AAIoAAAAAAA",
+   "opponent_result": "mR4AAIoAAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "Oh4AAIoAAAAAAA",
+   "opponent_result": "WR4AAIoAAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "vBwAAIoAAAAAAA",
+   "opponent_result": "WR0AAIoAAAAAAA"
+  },
+  {
+   "position": "RQAAwNUDAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "kgcAgCIAAAAAAA",
+   "opponent_result": "oQcAgCIAAAAAAA"
+  },
+  {
+   "position": "jQEAACwAAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "hQAA0BgAAAAAAA",
+   "opponent_result": "SQAA0BgAAAAAAA"
+  },
+  {
+   "position": "JQMAQGoDAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "qQYAgJIBAAAAAA",
+   "opponent_result": "sQUAgJIBAAAAAA"
+  },
+  {
+   "position": "ts8AAJDWAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "iwYAANtnAAAAAA",
+   "opponent_result": "SQMAgO0zAAAAAA"
+  },
+  {
+   "position": "ts8AAJDWAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "YwUAANtnAAAAAA",
+   "opponent_result": "VQUAANtnAAAAAA"
+  },
+  {
+   "position": "ts8AAJDWAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "FwYAANtnAAAAAA",
+   "opponent_result": "aQEAgO0zAAAAAA"
+  },
+  {
+   "position": "awEAALkOAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "uAsAAGsBAAAAAA",
+   "opponent_result": "rA4AAGsBAAAAAA"
+  },
+  {
+   "position": "awEAALkOAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "uA0AAGsBAAAAAA",
+   "opponent_result": "tA4AAGsBAAAAAA"
+  },
+  {
+   "position": "awEAALkOAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "sg0AAGsBAAAAAA",
+   "opponent_result": "qg4AAGsBAAAAAA"
+  },
+  {
+   "position": "awEAALkOAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "cg0AAGsBAAAAAA",
+   "opponent_result": "ag4AAGsBAAAAAA"
+  },
+  {
+   "position": "awEAALkOAAAAAA",
+   "d1": 1,
+   "d2": 6,
+   "owned_result": "cgsAAGsBAAAAAA",
+   "opponent_result": "ag0AAGsBAAAAAA"
+  },
+  {
+   "position": "awEAALkOAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "dA0AAGsBAAAAAA",
+   "opponent_result": "sQ4AAGsBAAAAAA"
+  },
+  {
+   "position": "awEAALkOAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "ag0AAGsBAAAAAA",
+   "opponent_result": "pQ4AAGsBAAAAAA"
+  },
+  {
+   "position": "awEAALkOAAAAAA",
+   "d1": 3,
+   "d2": 5,
+   "owned_result": "6gwAAGsBAAAAAA",
+   "opponent_result": "ZQ4AAGsBAAAAAA"
+  },
+  {
+   "position": "VQUAACgAAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "EQAAqCoAAAAAAA",
+   "opponent_result": "EAAAVBUAAAAAAA"
+  },
+  {
+   "position": "pxUAANrlAQAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "ujoAAJxWAAAAAA",
+   "opponent_result": "tjwAAJxWAAAAAA"
+  },
+  {
+   "position": "pxUAANrlAQAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "uTMAAJxWAAAAAA",
+   "opponent_result": "OR4AAE4rAAAAAA"
+  },
+  {
+   "position": "RAAA2KYBAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "cwkAAEQAAAAAAA",
+   "opponent_result": "Dw0AAEQAAAAAAA"
+  },
+  {
+   "position": "RAAA2KYBAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "GwUAACIAAAAAAA",
+   "opponent_result": "uwgAAEQAAAAAAA"
+  },
+  {
+   "position": "RAAA2KYBAAAAAA",
+   "d1": 4,
+   "d2": 5,
+   "owned_result": "uxEAAIgAAAAAAA",
+   "opponent_result": "byMAABABAAAAAA"
+  },
+  {
+   "position": "RAAA2KYBAAAAAA",
+   "d1": 4,
+   "d2": 6,
+   "owned_result": "uwkAAIgAAAAAAA",
+   "opponent_result": "txEAAIgAAAAAAA"
+  },
+  {
+   "position": "UAAAyBYAAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "VQEAABQAAAAAAA",
+   "opponent_result": "YwEAABQAAAAAAA"
+  },
+  {
+   "position": "bwQAAFsWAAAAAA",
+   "d1": 4,
+   "d2": 6,
+   "owned_result": "twQAAG8EAAAAAA",
+   "opponent_result": "uwQAAG8EAAAAAA"
+  },
+  {
+   "position": "7QYAAGodAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "bAMAgHYDAAAAAA",
+   "opponent_result": "qgMAgHYDAAAAAA"
+  },
+  {
+   "position": "2wgAAHfqAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "u2oAANhGAAAAAA",
+   "opponent_result": "d3QAANhGAAAAAA"
+  },
+  {
+   "position": "2wgAAHfqAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "xxoAALYRAAAAAA",
+   "opponent_result": "Fx0AALYRAAAAAA"
+  },
+  {
+   "position": "2wgAAHfqAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "t2oAANhGAAAAAA",
+   "opponent_result": "b3QAANhGAAAAAA"
+  },
+  {
+   "position": "2wgAAHfqAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "d2kAANhGAAAAAA",
+   "opponent_result": "93AAANhGAAAAAA"
+  },
+  {
+   "position": "2wgAAHfqAAAAAA",
+   "d1": 3,
+   "d2": 5,
+   "owned_result": "d2UAANhGAAAAAA",
+   "opponent_result": "73AAANhGAAAAAA"
+  },
+  {
+   "position": "2wgAAHfqAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "d1UAANhGAAAAAA",
+   "opponent_result": "72gAANhGAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "kgcAAEoAAAAAAA",
+   "opponent_result": "oQcAAEoAAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "GQ8AAJQAAAAAAA",
+   "opponent_result": "Qw8AAJQAAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "lQ4AAJQAAAAAAA",
+   "opponent_result": "Ew8AAJQAAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "0wsAACgBAAAAAA",
+   "opponent_result": "jxwAACgBAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "ow4AAJQAAAAAAA",
+   "opponent_result": "Fx4AACgBAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "kwYAAEoAAAAAAA",
+   "opponent_result": "CwcAAEoAAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "iw4AAJQAAAAAAA",
+   "opponent_result": "Bw8AAJQAAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 4,
+   "d2": 4,
+   "owned_result": "ewkAACgBAAAAAA",
+   "opponent_result": "dxEAACgBAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 4,
+   "d2": 5,
+   "owned_result": "Kw4AAJQAAAAAAA",
+   "opponent_result": "TxwAACgBAAAAAA"
+  },
+  {
+   "position": "lAAAMOkBAAAAAA",
+   "d1": 4,
+   "d2": 6,
+   "owned_result": "Kw0AAJQAAAAAAA",
+   "opponent_result": "Jw4AAJQAAAAAAA"
+  },
+  {
+   "position": "6Q4AAD7dAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "ny4AAEh3AAAAAA",
+   "opponent_result": "XzYAAEh3AAAAAA"
+  },
+  {
+   "position": "YgAAcGoBAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "tAIAgBgAAAAAAA",
+   "opponent_result": "0gIAgBgAAAAAAA"
+  },
+  {
+   "position": "YgAAcGoBAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "5wgAAGIAAAAAAA",
+   "opponent_result": "TwoAAGIAAAAAAA"
+  },
+  {
+   "position": "YgAAcGoBAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "pwoAAGIAAAAAAA",
+   "opponent_result": "HxYAAMQAAAAAAA"
+  },
+  {
+   "position": "YgAAcGoBAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "ZwoAAGIAAAAAAA",
+   "opponent_result": "DwsAAGIAAAAAAA"
+  },
+  {
+   "position": "YgAAcGoBAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "ZwkAAGIAAAAAAA",
+   "opponent_result": "jwoAAGIAAAAAAA"
+  },
+  {
+   "position": "YgAAcGoBAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "ZwUAAGIAAAAAAA",
+   "opponent_result": "jwYAAGIAAAAAAA"
+  },
+  {
+   "position": "YgAAcGoBAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "lwIAADEAAAAAAA",
+   "opponent_result": "DwMAADEAAAAAAA"
+  },
+  {
+   "position": "TgAAYOYOAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "yhsAAJwAAAAAAA",
+   "opponent_result": "yR0AAJwAAAAAAA"
+  },
+  {
+   "position": "nRoAAKAAAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "QQAA6NQAAAAAAA",
+   "opponent_result": "IgAA6NQAAAAAAA"
+  },
+  {
+   "position": "nRoAAKAAAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "QgAA6NQAAAAAAA",
+   "opponent_result": "JAAA6NQAAAAAAA"
+  },
+  {
+   "position": "nRoAAKAAAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "QQAA6NQAAAAAAA",
+   "opponent_result": "IgAA6NQAAAAAAA"
+  },
+  {
+   "position": "nRoAAKAAAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "EQAA6NQAAAAAAA",
+   "opponent_result": "EAAAdGoAAAAAAA"
+  },
+  {
+   "position": "nRoAAKAAAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "CgAA6NQAAAAAAA",
+   "opponent_result": "EAAAdGoAAAAAAA"
+  },
+  {
+   "position": "nRoAAKAAAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "BgAA6NQAAAAAAA",
+   "opponent_result": "CQAA6NQAAAAAAA"
+  },
+  {
+   "position": "KwIAANcCAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "qgUAgBUBAAAAAA",
+   "opponent_result": "rAMAgBUBAAAAAA"
+  },
+  {
+   "position": "KwIAANcCAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "qgUAgBUBAAAAAA",
+   "opponent_result": "rAMAgBUBAAAAAA"
+  },
+  {
+   "position": "KwIAANcCAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "mgUAgBUBAAAAAA",
+   "opponent_result": "nAMAgBUBAAAAAA"
+  },
+  {
+   "position": "KwIAANcCAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "WgUAgBUBAAAAAA",
+   "opponent_result": "XAMAgBUBAAAAAA"
+  },
+  {
+   "position": "KwIAANcCAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "XAMAgBUBAAAAAA",
+   "opponent_result": "mQUAgBUBAAAAAA"
+  },
+  {
+   "position": "ay4AAJQGAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "ZAAAsOYCAAAAAA",
+   "opponent_result": "WAAAsOYCAAAAAA"
+  },
+  {
+   "position": "ay4AAJQGAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "xQAAYM0FAAAAAA",
+   "opponent_result": "pgAAYM0FAAAAAA"
+  },
+  {
+   "position": "ay4AAJQGAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "wwAAYM0FAAAAAA",
+   "opponent_result": "pQAAYM0FAAAAAA"
+  },
+  {
+   "position": "ay4AAJQGAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "FwEAwJoLAAAAAA",
+   "opponent_result": "jQAAYM0FAAAAAA"
+  },
+  {
+   "position": "ay4AAJQGAAAAAA",
+   "d1": 3,
+   "d2": 5,
+   "owned_result": "iwAAYM0FAAAAAA",
+   "opponent_result": "TQAAYM0FAAAAAA"
+  },
+  {
+   "position": "ay4AAJQGAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "iwAAYM0FAAAAAA",
+   "opponent_result": "TQAAYM0FAAAAAA"
+  },
+  {
+   "position": "2woAAJbdAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "UxsAALYVAAAAAA",
+   "opponent_result": "ixsAALYVAAAAAA"
+  },
+  {
+   "position": "2woAAJbdAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "0y4AAGwrAAAAAA",
+   "opponent_result": "qzsAANhWAAAAAA"
+  },
+  {
+   "position": "2woAAJbdAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "my0AAGwrAAAAAA",
+   "opponent_result": "qx0AAGwrAAAAAA"
+  },
+  {
+   "position": "z1MAABAbAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "iQEA4HkKAAAAAA",
+   "opponent_result": "sAAA8DwFAAAAAA"
+  },
+  {
+   "position": "z1MAABAbAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "DgEA4HkKAAAAAA",
+   "opponent_result": "YgAA8DwFAAAAAA"
+  },
+  {
+   "position": "z1MAABAbAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "RgEA4HkKAAAAAA",
+   "opponent_result": "ygAA4HkKAAAAAA"
+  },
+  {
+   "position": "WT0AACgFAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "oQAAkNUDAAAAAA",
+   "opponent_result": "kgAAkNUDAAAAAA"
+  },
+  {
+   "position": "WT0AACgFAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "QwEAIKsHAAAAAA",
+   "opponent_result": "lAAAkNUDAAAAAA"
+  },
+  {
+   "position": "WT0AACgFAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "oQAAkNUDAAAAAA",
+   "opponent_result": "kgAAkNUDAAAAAA"
+  },
+  {
+   "position": "WT0AACgFAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "EwEAIKsHAAAAAA",
+   "opponent_result": "igAAkNUDAAAAAA"
+  },
+  {
+   "position": "WT0AACgFAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "gwAAkNUDAAAAAA",
+   "opponent_result": "JAAAyOoBAAAAAA"
+  },
+  {
+   "position": "IgAAGBYAAAAAAA",
+   "d1": 4,
+   "d2": 6,
+   "owned_result": "iwAAQAQAAAAAAA",
+   "opponent_result": "hwAAQAQAAAAAAA"
+  },
+  {
+   "position": "wwIAwJYFAAAAAA",
+   "d1": 4,
+   "d2": 6,
+   "owned_result": "twQAAMMCAAAAAA",
+   "opponent_result": "uwQAAMMCAAAAAA"
+  },
+  {
+   "position": "6xYAAKQBAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "MQAAsG4BAAAAAA",
+   "opponent_result": "KgAAsG4BAAAAAA"
+  },
+  {
+   "position": "6xYAAKQBAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "RwAAYN0CAAAAAA",
+   "opponent_result": "JQAAsG4BAAAAAA"
+  },
+  {
+   "position": "0QIAwNILAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "kwsAANECAAAAAA",
+   "opponent_result": "owcAANECAAAAAA"
+  },
+  {
+   "position": "0QIAwNILAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "qw4AAKIFAAAAAA",
+   "opponent_result": "Fw8AAKIFAAAAAA"
+  },
+  {
+   "position": "JQAAcEsBAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "VgIAQAkAAAAAAA",
+   "opponent_result": "lQIAQAkAAAAAAA"
+  },
+  {
+   "position": "JQAAcEsBAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "uwQAACUAAAAAAA",
+   "opponent_result": "twgAACUAAAAAAA"
+  },
+  {
+   "position": "JQAAcEsBAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "ZwEAgBIAAAAAAA",
+   "opponent_result": "TwQAgBIAAAAAAA"
+  },
+  {
+   "position": "JQAAcEsBAAAAAA",
+   "d1": 4,
+   "d2": 5,
+   "owned_result": "dwEAACUAAAAAAA",
+   "opponent_result": "3wIAAEoAAAAAAA"
+  },
+  {
+   "position": "VgsAAIkAAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "QQAAsFoAAAAAAA",
+   "opponent_result": "FAAAsFoAAAAAAA"
+  },
+  {
+   "position": "VgsAAIkAAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "EwAAYLUAAAAAAA",
+   "opponent_result": "EQAAsFoAAAAAAA"
+  },
+  {
+   "position": "VgsAAIkAAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "CwAAYLUAAAAAAA",
+   "opponent_result": "CQAAsFoAAAAAAA"
+  },
+  {
+   "position": "VgsAAIkAAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "BwAAYLUAAAAAAA",
+   "opponent_result": "CQAAsFoAAAAAAA"
+  },
+  {
+   "position": "xQAA4HIGAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "cgUAgGIAAAAAAA",
+   "opponent_result": "cQYAgGIAAAAAAA"
+  },
+  {
+   "position": "xQAA4HIGAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "qxMAAIoBAAAAAA",
+   "opponent_result": "lxkAAIoBAAAAAA"
+  },
+  {
+   "position": "xQAA4HIGAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "xwkAAMUAAAAAAA",
+   "opponent_result": "lwwAAMUAAAAAAA"
+  },
+  {
+   "position": "xQAA4HIGAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "lwMAAMUAAAAAAA",
+   "opponent_result": "vyIAABQDAAAAAA"
+  },
+  {
+   "position": "xQAA4HIGAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "VwcAAIoBAAAAAA",
+   "opponent_result": "LxMAAIoBAAAAAA"
+  },
+  {
+   "position": "tRUAAKIBAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "RQAAUFsBAAAAAA",
+   "opponent_result": "KQAAUFsBAAAAAA"
+  },
+  {
+   "position": "tRUAAKIBAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "RQAAUFsBAAAAAA",
+   "opponent_result": "KQAAUFsBAAAAAA"
+  },
+  {
+   "position": "tRUAAKIBAAAAAA",
+   "d1": 3,
+   "d2": 5,
+   "owned_result": "QwAAUFsBAAAAAA",
+   "opponent_result": "JQAAUFsBAAAAAA"
+  },
+  {
+   "position": "tRUAAKIBAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "QwAAUFsBAAAAAA",
+   "opponent_result": "JQAAUFsBAAAAAA"
+  },
+  {
+   "position": "Z3UAAFgRAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "JwAA4KwOAAAAAA",
+   "opponent_result": "KwAA4KwOAAAAAA"
+  },
+  {
+   "position": "tAAAIGsBAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "uQIAAFoAAAAAAA",
+   "opponent_result": "NQMAAFoAAAAAAA"
+  },
+  {
+   "position": "tAAAIGsBAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "uQIAAFoAAAAAAA",
+   "opponent_result": "NQMAAFoAAAAAAA"
+  },
+  {
+   "position": "ajcAACgCAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "gwAAoHYDAAAAAA",
+   "opponent_result": "QgAAULsBAAAAAA"
+  },
+  {
+   "position": "cgUAgHo5AAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "vBoAAOQKAAAAAA",
+   "opponent_result": "uhwAAOQKAAAAAA"
+  },
+  {
+   "position": "yzYAANAtAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "cgEAwLINAAAAAA",
+   "opponent_result": "sQEAwLINAAAAAA"
+  },
+  {
+   "position": "yQAAgPYGAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "1BsAAJIBAAAAAA",
+   "opponent_result": "pTcAACQDAAAAAA"
+  },
+  {
+   "position": "yQAAgPYGAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "1BcAAJIBAAAAAA",
+   "opponent_result": "0hsAAJIBAAAAAA"
+  },
+  {
+   "position": "yQAAgPYGAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "tBcAAJIBAAAAAA",
+   "opponent_result": "shsAAJIBAAAAAA"
+  },
+  {
+   "position": "yQAAgPYGAAAAAA",
+   "d1": 1,
+   "d2": 6,
+   "owned_result": "tA8AAJIBAAAAAA",
+   "opponent_result": "shcAAJIBAAAAAA"
+  },
+  {
+   "position": "yQAAgPYGAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "5A0AAMkAAAAAAA",
+   "opponent_result": "xRsAAJIBAAAAAA"
+  },
+  {
+   "position": "yQAAgPYGAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "0hsAAJIBAAAAAA",
+   "opponent_result": "ozcAACQDAAAAAA"
+  },
+  {
+   "position": "yQAAgPYGAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "tBcAAJIBAAAAAA",
+   "opponent_result": "0RsAAJIBAAAAAA"
+  },
+  {
+   "position": "yQAAgPYGAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "dBcAAJIBAAAAAA",
+   "opponent_result": "sRsAAJIBAAAAAA"
+  },
+  {
+   "position": "yQAAgPYGAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "dA8AAJIBAAAAAA",
+   "opponent_result": "sRcAAJIBAAAAAA"
+  },
+  {
+   "position": "UQAA0NsEAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "bgsAAKIAAAAAAA",
+   "opponent_result": "bRMAAKIAAAAAAA"
+  },
+  {
+   "position": "UQAA0NsEAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "ewUAAKIAAAAAAA",
+   "opponent_result": "9xAAAKIAAAAAAA"
+  },
+  {
+   "position": "UQAA0NsEAAAAAA",
+   "d1": 5,
+   "d2": 6,
+   "owned_result": "vQUAAKIAAAAAAA",
+   "opponent_result": "ewsAAEQBAAAAAA"
+  },
+  {
+   "position": "Xe4AACAVAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "ogAA0OUOAAAAAA",
+   "opponent_result": "lAAA0OUOAAAAAA"
+  },
+  {
+   "position": "Xe4AACAVAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "RQEAoMsdAAAAAA",
+   "opponent_result": "pAAA0OUOAAAAAA"
+  },
+  {
+   "position": "Xe4AACAVAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "QwEAoMsdAAAAAA",
+   "opponent_result": "ogAA0OUOAAAAAA"
+  },
+  {
+   "position": "Xe4AACAVAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "CwEAoMsdAAAAAA",
+   "opponent_result": "SgAA0OUOAAAAAA"
+  },
+  {
+   "position": "RQAAQAkAAAAAAA",
+   "d1": 5,
+   "d2": 6,
+   "owned_result": "CQAAKAIAAAAAAA",
+   "opponent_result": "BAAAFAEAAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "SQEAwF0FAAAAAA",
+   "opponent_result": "qAAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 1,
+   "d2": 6,
+   "owned_result": "ZAAA4K4CAAAAAA",
+   "opponent_result": "WAAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "oQAA4K4CAAAAAA",
+   "opponent_result": "VAAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "RgEAwF0FAAAAAA",
+   "opponent_result": "qAAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "RQEAwF0FAAAAAA",
+   "opponent_result": "pAAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "ogAA4K4CAAAAAA",
+   "opponent_result": "lAAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "YgAA4K4CAAAAAA",
+   "opponent_result": "VAAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "LQAAwF0FAAAAAA",
+   "opponent_result": "RQAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "QwEAwF0FAAAAAA",
+   "opponent_result": "ogAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 3,
+   "d2": 5,
+   "owned_result": "oQAA4K4CAAAAAA",
+   "opponent_result": "kgAA4K4CAAAAAA"
+  },
+  {
+   "position": "7ioAAKAFAAAAAA",
+   "d1": 3,
+   "d2": 6,
+   "owned_result": "YQAA4K4CAAAAAA",
+   "opponent_result": "UgAA4K4CAAAAAA"
+  },
+  {
+   "position": "VAAA0C8LAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "vioAAFABAAAAAA",
+   "opponent_result": "vSwAAFABAAAAAA"
+  },
+  {
+   "position": "VAAA0C8LAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "/jIAAKACAAAAAA",
+   "opponent_result": "/VIAAKACAAAAAA"
+  },
+  {
+   "position": "VAAA0C8LAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "/TIAAKACAAAAAA",
+   "opponent_result": "+1IAAKACAAAAAA"
+  },
+  {
+   "position": "VAAA0C8LAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "/TEAAKACAAAAAA",
+   "opponent_result": "+1EAAKACAAAAAA"
+  },
+  {
+   "position": "VAAA0C8LAAAAAA",
+   "d1": 4,
+   "d2": 5,
+   "owned_result": "/SUAAKACAAAAAA",
+   "opponent_result": "+0UAAKACAAAAAA"
+  },
+  {
+   "position": "5RYAAKYKAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "aQEAQLkFAAAAAA",
+   "opponent_result": "lQIAQLkFAAAAAA"
+  },
+  {
+   "position": "5RYAAKYKAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "hwAAoNwCAAAAAA",
+   "opponent_result": "SwAAoNwCAAAAAA"
+  },
+  {
+   "position": "2wIAAM0aAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "qgYAgG0BAAAAAA",
+   "opponent_result": "cgYAgG0BAAAAAA"
+  },
+  {
+   "position": "y3YAALANAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "2QAAwLIdAAAAAA",
+   "opponent_result": "1gAAwLIdAAAAAA"
+  },
+  {
+   "position": "y3YAALANAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "YwAAYNkOAAAAAA",
+   "opponent_result": "VQAAYNkOAAAAAA"
+  },
+  {
+   "position": "NgUAALUOAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "tA0AADYFAAAAAA",
+   "opponent_result": "sg4AADYFAAAAAA"
+  },
+  {
+   "position": "NgUAALUOAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "sg0AADYFAAAAAA",
+   "opponent_result": "qg4AADYFAAAAAA"
+  },
+  {
+   "position": "ZzUAALRNAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "WwEAgLMaAAAAAA",
+   "opponent_result": "zQAAwFkNAAAAAA"
+  },
+  {
+   "position": "cgIAwC0dAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "uzQAAMgJAAAAAA",
+   "opponent_result": "tzgAAMgJAAAAAA"
+  },
+  {
+   "position": "cgIAwC0dAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "pxUAAOQEAAAAAA",
+   "opponent_result": "jxoAAOQEAAAAAA"
+  },
+  {
+   "position": "cgIAwC0dAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "tzQAAMgJAAAAAA",
+   "opponent_result": "rzgAAMgJAAAAAA"
+  },
+  {
+   "position": "cgIAwC0dAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "dzQAAMgJAAAAAA",
+   "opponent_result": "bzgAAMgJAAAAAA"
+  },
+  {
+   "position": "cgIAwC0dAAAAAA",
+   "d1": 4,
+   "d2": 5,
+   "owned_result": "dzEAAMgJAAAAAA",
+   "opponent_result": "32IAAJATAAAAAA"
+  },
+  {
+   "position": "WzoAAKACAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "oQAAsKUDAAAAAA",
+   "opponent_result": "kgAAsKUDAAAAAA"
+  },
+  {
+   "position": "WzoAAKACAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "iQAAsKUDAAAAAA",
+   "opponent_result": "SAAA2NIBAAAAAA"
+  },
+  {
+   "position": "WzoAAKACAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "hgAAsKUDAAAAAA",
+   "opponent_result": "SAAA2NIBAAAAAA"
+  },
+  {
+   "position": "WzoAAKACAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "hQAAsKUDAAAAAA",
+   "opponent_result": "RAAA2NIBAAAAAA"
+  },
+  {
+   "position": "WzoAAKACAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "gwAAsKUDAAAAAA",
+   "opponent_result": "QgAA2NIBAAAAAA"
+  },
+  {
+   "position": "QQAASHUAAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "aQUAgCAAAAAAAA",
+   "opponent_result": "EwcAgCAAAAAAAA"
+  },
+  {
+   "position": "QQAASHUAAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "sQYAgCAAAAAAAA",
+   "opponent_result": "hw4AAEEAAAAAAA"
+  },
+  {
+   "position": "QQAASHUAAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "qQYAgCAAAAAAAA",
+   "opponent_result": "QwcAgCAAAAAAAA"
+  },
+  {
+   "position": "QQAASHUAAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "aQYAgCAAAAAAAA",
+   "opponent_result": "IwcAgCAAAAAAAA"
+  },
+  {
+   "position": "QQAASHUAAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "aQUAgCAAAAAAAA",
+   "opponent_result": "owYAgCAAAAAAAA"
+  },
+  {
+   "position": "QQAASHUAAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "qQIAQBAAAAAAAA",
+   "opponent_result": "KwYAgCAAAAAAAA"
+  },
+  {
+   "position": "QQAASHUAAAAAAA",
+   "d1": 4,
+   "d2": 4,
+   "owned_result": "XQIAgCAAAAAAAA",
+   "opponent_result": "WwQAgCAAAAAAAA"
+  },
+  {
+   "position": "V1cAAGhrAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "2gIAgKsrAAAAAA",
+   "opponent_result": "VgMAgKsrAAAAAA"
+  },
+  {
+   "position": "zxQAAEIBAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "QgAAeKYAAAAAAA",
+   "opponent_result": "JAAAeKYAAAAAAA"
+  },
+  {
+   "position": "zxQAAEIBAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "QgAAeKYAAAAAAA",
+   "opponent_result": "JAAAeKYAAAAAAA"
+  },
+  {
+   "position": "zxQAAEIBAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "QQAAeKYAAAAAAA",
+   "opponent_result": "IgAAeKYAAAAAAA"
+  },
+  {
+   "position": "zxQAAEIBAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "CwAA8EwBAAAAAA",
+   "opponent_result": "CQAAeKYAAAAAAA"
+  },
+  {
+   "position": "zxQAAEIBAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "FQAA8EwBAAAAAA",
+   "opponent_result": "IQAAeKYAAAAAAA"
+  },
+  {
+   "position": "zxQAAEIBAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "EwAA8EwBAAAAAA",
+   "opponent_result": "EQAAeKYAAAAAAA"
+  },
+  {
+   "position": "zxQAAEIBAAAAAA",
+   "d1": 3,
+   "d2": 5,
+   "owned_result": "CwAA8EwBAAAAAA",
+   "opponent_result": "CQAAeKYAAAAAAA"
+  },
+  {
+   "position": "zxQAAEIBAAAAAA",
+   "d1": 4,
+   "d2": 5,
+   "owned_result": "BwAA8EwBAAAAAA",
+   "opponent_result": "BQAAeKYAAAAAAA"
+  },
+  {
+   "position": "GwYAgJwCAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "hQAAsGEAAAAAAA",
+   "opponent_result": "SQAAsGEAAAAAAA"
+  },
+  {
+   "position": "pQMAgFQAAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "RQAAUDoAAAAAAA",
+   "opponent_result": "KQAAUDoAAAAAAA"
+  },
+  {
+   "position": "lQAAIL0HAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "aQ8AACoBAAAAAA",
+   "opponent_result": "yx4AAFQCAAAAAA"
+  },
+  {
+   "position": "lQAAIL0HAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "5R4AAFQCAAAAAA",
+   "opponent_result": "xz0AAKgEAAAAAA"
+  },
+  {
+   "position": "lQAAIL0HAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "mxsAAFQCAAAAAA",
+   "opponent_result": "jx4AAFQCAAAAAA"
+  },
+  {
+   "position": "3toAAKAIAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "gwAA4K0NAAAAAA",
+   "opponent_result": "KQAA4K0NAAAAAA"
+  },
+  {
+   "position": "lQAAIO0AAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "qgMAgEoAAAAAAA",
+   "opponent_result": "sQMAgEoAAAAAAA"
+  },
+  {
+   "position": "lQAAIO0AAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "yQEAQCUAAAAAAA",
+   "opponent_result": "iwMAgEoAAAAAAA"
+  },
+  {
+   "position": "lQAAIO0AAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "aQMAgEoAAAAAAA",
+   "opponent_result": "pQMAgEoAAAAAAA"
+  },
+  {
+   "position": "lQAAIO0AAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "WQMAgEoAAAAAAA",
+   "opponent_result": "owMAgEoAAAAAAA"
+  },
+  {
+   "position": "lQAAIO0AAAAAAA",
+   "d1": 2,
+   "d2": 5,
+   "owned_result": "VQMAgEoAAAAAAA",
+   "opponent_result": "YwMAgEoAAAAAAA"
+  },
+  {
+   "position": "lQAAIO0AAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "VQMAgEoAAAAAAA",
+   "opponent_result": "YwMAgEoAAAAAAA"
+  },
+  {
+   "position": "eN8AAKAmAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "MQEAAO8bAAAAAA",
+   "opponent_result": "KgEAAO8bAAAAAA"
+  },
+  {
+   "position": "eN8AAKAmAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "YwIAAN43AAAAAA",
+   "opponent_result": "MgEAAO8bAAAAAA"
+  },
+  {
+   "position": "eN8AAKAmAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "MQEAAO8bAAAAAA",
+   "opponent_result": "KgEAAO8bAAAAAA"
+  },
+  {
+   "position": "eN8AAKAmAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "KQEAAO8bAAAAAA",
+   "opponent_result": "qgAAAO8bAAAAAA"
+  },
+  {
+   "position": "eN8AAKAmAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "0wAAAN43AAAAAA",
+   "opponent_result": "agAAAO8bAAAAAA"
+  },
+  {
+   "position": "eN8AAKAmAAAAAA",
+   "d1": 5,
+   "d2": 6,
+   "owned_result": "VQAAAO8bAAAAAA",
+   "opponent_result": "KgAAgPcNAAAAAA"
+  },
+  {
+   "position": "Iw8AAJUFAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "kwIAwMgDAAAAAA",
+   "opponent_result": "lQEAwMgDAAAAAA"
+  },
+  {
+   "position": "FQEAoGYDAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "NgsAABUBAAAAAA",
+   "opponent_result": "NQ0AABUBAAAAAA"
+  },
+  {
+   "position": "FQEAoGYDAAAAAA",
+   "d1": 2,
+   "d2": 4,
+   "owned_result": "NQsAABUBAAAAAA",
+   "opponent_result": "Mw0AABUBAAAAAA"
+  },
+  {
+   "position": "FQEAoGYDAAAAAA",
+   "d1": 3,
+   "d2": 4,
+   "owned_result": "LQsAABUBAAAAAA",
+   "opponent_result": "Kw0AABUBAAAAAA"
+  },
+  {
+   "position": "FQEAoGYDAAAAAA",
+   "d1": 4,
+   "d2": 5,
+   "owned_result": "bQoAABUBAAAAAA",
+   "opponent_result": "awwAABUBAAAAAA"
+  },
+  {
+   "position": "ZQAAgN0DAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "9A4AAMoAAAAAAA",
+   "opponent_result": "cg8AAMoAAAAAAA"
+  },
+  {
+   "position": "ZQAAgN0DAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "9A4AAMoAAAAAAA",
+   "opponent_result": "cg8AAMoAAAAAAA"
+  },
+  {
+   "position": "ZQAAgN0DAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "7A0AAMoAAAAAAA",
+   "opponent_result": "6g4AAMoAAAAAAA"
+  },
+  {
+   "position": "ZQAAgN0DAAAAAA",
+   "d1": 1,
+   "d2": 6,
+   "owned_result": "7A0AAMoAAAAAAA",
+   "opponent_result": "6g4AAMoAAAAAAA"
+  },
+  {
+   "position": "ZQAAgN0DAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "vA0AAMoAAAAAAA",
+   "opponent_result": "Yw8AAMoAAAAAAA"
+  },
+  {
+   "position": "ZQAAgN0DAAAAAA",
+   "d1": 2,
+   "d2": 3,
+   "owned_result": "ag8AAMoAAAAAAA",
+   "opponent_result": "cQ8AAMoAAAAAAA"
+  },
+  {
+   "position": "ZQAAgN0DAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "5gYAAGUAAAAAAA",
+   "opponent_result": "owcAAGUAAAAAAA"
+  },
+  {
+   "position": "aQIAwMwLAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "qgsAAGkCAAAAAA",
+   "opponent_result": "yQsAAGkCAAAAAA"
+  },
+  {
+   "position": "aQIAwMwLAAAAAA",
+   "d1": 2,
+   "d2": 6,
+   "owned_result": "sw4AANIEAAAAAA",
+   "opponent_result": "Jw8AANIEAAAAAA"
+  },
+  {
+   "position": "aQIAwMwLAAAAAA",
+   "d1": 4,
+   "d2": 4,
+   "owned_result": "XxMAAKQJAAAAAA",
+   "opponent_result": "PyMAAKQJAAAAAA"
+  },
+  {
+   "position": "TgIAgNUCAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "agUAACcBAAAAAA",
+   "opponent_result": "qgMAACcBAAAAAA"
+  },
+  {
+   "position": "TgIAgNUCAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "ZgUAACcBAAAAAA",
+   "opponent_result": "pgMAACcBAAAAAA"
+  },
+  {
+   "position": "bu4AAFDVAAAAAA",
+   "d1": 1,
+   "d2": 1,
+   "owned_result": "UgMAgJs7AAAAAA",
+   "opponent_result": "1AIAgJs7AAAAAA"
+  },
+  {
+   "position": "bu4AAFDVAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "QwMAgJs7AAAAAA",
+   "opponent_result": "qQIAgJs7AAAAAA"
+  },
+  {
+   "position": "bu4AAFDVAAAAAA",
+   "d1": 3,
+   "d2": 3,
+   "owned_result": "WwQAADd3AAAAAA",
+   "opponent_result": "VQEAgJs7AAAAAA"
+  },
+  {
+   "position": "VQ0AADl7AAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "OjsAAFQ1AAAAAA",
+   "opponent_result": "OT0AAFQ1AAAAAA"
+  },
+  {
+   "position": "cgIAgKsbAAAAAA",
+   "d1": 1,
+   "d2": 2,
+   "owned_result": "Vi8AAMgJAAAAAA",
+   "opponent_result": "NjcAAMgJAAAAAA"
+  },
+  {
+   "position": "cgIAgKsbAAAAAA",
+   "d1": 1,
+   "d2": 3,
+   "owned_result": "Ti8AAMgJAAAAAA",
+   "opponent_result": "LjcAAMgJAAAAAA"
+  },
+  {
+   "position": "cgIAgKsbAAAAAA",
+   "d1": 1,
+   "d2": 4,
+   "owned_result": "Li8AAMgJAAAAAA",
+   "opponent_result": "rjYAAMgJAAAAAA"
+  },
+  {
+   "position": "cgIAgKsbAAAAAA",
+   "d1": 1,
+   "d2": 5,
+   "owned_result": "ri4AAMgJAAAAAA",
+   "opponent_result": "rTYAAMgJAAAAAA"
+  },
+  {
+   "position": "cgIAgKsbAAAAAA",
+   "d1": 2,
+   "d2": 2,
+   "owned_result": "tAsAAHICAAAAAA",
+   "opponent_result": "yg0AAHICAAAAAA"
+  },
+  {
+   "position": "CwEAQN0XAAAAAA",
+   "d1": 4,
+   "d2": 4,
+   "owned_result": "lg8AABYCAAAAAA",
+   "opponent_result": "lRcAABYCAAAAAA"
+  }
+ ]
+}

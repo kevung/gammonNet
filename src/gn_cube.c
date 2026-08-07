@@ -420,6 +420,50 @@ static int build_levels(const GnMatchState *state,
     return count;
 }
 
+/* ── The leaf valuation for the search (spec §8, step 2) ─────────────── */
+
+double gn_cube_value(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
+                     const GnMatchState *state, double efficiency, int *failed)
+{
+    GnCubeInputs inputs;
+
+    if (failed)
+        *failed = 0;
+    if (!probs || gn_cube_inputs(probs, &inputs) != 0) {
+        if (failed) *failed = 1;
+        return 0.0;
+    }
+
+    if (state == NULL) {
+        /* Money, per unit of cube: the caller's stake scaling, if any, is the
+         * caller's -- `gn_search` values everything per unit and its verdicts
+         * are scale-invariant there. No Jacoby here: the flag governs the
+         * DECISION's "don't double" branch (spec §4), not the value of a
+         * position an expectiminimax averages over. */
+        return janowski_equity(inputs.win, inputs.win_points,
+                               inputs.lose_points, owner, efficiency);
+    }
+
+    if (!gn_match_state_is_valid(state)) {
+        if (failed) *failed = 1;
+        return 0.0;
+    }
+
+    {
+        double outcomes[GN_NUM_EXCLUSIVE];
+        GnMatchLevel levels[GN_CUBE_MAX_LEVELS];
+
+        gn_probs_exclusive(probs, outcomes);
+        if (build_levels(state, outcomes, levels) < 2) {
+            if (failed) *failed = 1;
+            return 0.0;
+        }
+        /* On the same `2 * MWC - 1` scale as the cubeless match search --
+         * what makes the two valuations swappable inside one recursion. */
+        return 2.0 * level_blend(&levels[0], inputs.win, owner, efficiency) - 1.0;
+    }
+}
+
 /* ── The decision, money and match sharing one verdict table ─────────── */
 
 /*
