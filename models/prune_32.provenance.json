@@ -1,0 +1,78 @@
+{
+  "network": "prune_32",
+  "architecture": {
+    "input_size": 196,
+    "hidden_sizes": [
+      32
+    ],
+    "activation": "relu",
+    "output_mode": "prob5"
+  },
+  "distilled_from": {
+    "network": "cubeless_prob5_512_512_256_128",
+    "artifact": "models/cubeless_prob5_512_512_256_128.bin",
+    "sha256": "8a68bf30cfde01366c914d9700e6e0e654967ea36c14f2575d6828237d25a601"
+  },
+  "corpus": {
+    "path": "build/prune_corpus.npz (gitignored \u2014 se r\u00e9g\u00e9n\u00e8re par graine)",
+    "size": 800000,
+    "seed": 20260807,
+    "workers": 32,
+    "generator": "tools/build_prune_corpus.py"
+  },
+  "training": {
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "batch_size": 4096,
+    "loss": "MSE (post-sigmoid, 5 outputs)",
+    "holdout_fraction": 0.05,
+    "epochs_run": 443,
+    "best_epoch": 423,
+    "best_holdout_mse": 0.000717241782695055,
+    "train_seconds": 63.413211922044866,
+    "device": "cuda:0",
+    "seed": 20260807,
+    "split_seed": 20260807,
+    "deterministic_note": "torch.manual_seed fixe ; les noyaux CUDA de retro-propagation restent partiellement non-d\u00e9terministes (accumulation atomique) \u2014 use_deterministic_algorithms(warn_only=True) rend cela visible, sans l'\u00e9liminer. Effet n\u00e9gligeable sur un r\u00e9seau de 6 469 param\u00e8tres."
+  },
+  "artifact": "prune_32.bin",
+  "sha256": "cc3ba059c3755041b79f1c42b949d573fefb4858c5b601ca66fc31a01619794b",
+  "bytes": 25900,
+  "date": "2026-08-07",
+  "verification": [
+    {
+      "label": "position initiale",
+      "probs": [
+        0.5126742124557495,
+        0.12784485518932343,
+        0.0032583398278802633,
+        0.12654177844524384,
+        0.005772726144641638
+      ],
+      "nested": true
+    },
+    {
+      "label": "position initiale, camp inverse",
+      "probs": [
+        0.5126742124557495,
+        0.12784485518932343,
+        0.0032583398278802633,
+        0.12654177844524384,
+        0.005772726144641638
+      ],
+      "nested": true
+    },
+    {
+      "label": "course pure (contr\u00f4le d'orientation)",
+      "probs": [
+        0.7450765371322632,
+        1.0704316366627609e-07,
+        2.1413501126357065e-15,
+        6.924373792571714e-06,
+        4.264661512820567e-08
+      ],
+      "nested": true
+    }
+  ],
+  "license": "MIT (poids produits par ce d\u00e9p\u00f4t ; exporteur vendor\u00e9 Alexander Strehl, MIT)"
+}
