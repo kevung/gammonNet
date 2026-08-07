@@ -244,3 +244,13 @@ constantes (même simplification que la v1, énoncée) :
    ≥ 85 %, ou l'écart résiduel expliqué). Les autres contextes ne doivent pas se dégrader.
 4. Tous les tests v1 restent verts — la v2 remplace le calcul des bornes de match, pas la
    mécanique de décision.
+
+> **Révision de l'ancre 4, constatée à l'implémentation** *(2026-08-08)*. Un test v1 — «
+> post-Crawford à away impair ne double pas systématiquement » — encodait un **artefact de la
+> v1**, pas une propriété du jeu : post-Crawford, le double du mené est gratuit à **tout** score
+> (concéder 1 ou 2 points est indifférent face à un meneur à la balle de match), et la récursion
+> le fait émerger partout. Vérifié par sonde gnubg 1.08.003 **avant** de réviser le test
+> (bearoff, p de 0,25 à 0,76, scores 3-away/1-away et 5-away/1-away : « Double, take » partout,
+> des deux moteurs). Le test est révisé en son contraire — le double émerge à tout away — et la
+> distinction pair/impair reste testée où elle vit réellement : dans le free drop du meneur.
+> Tous les autres tests v1 restent verts sans modification.

@@ -189,42 +189,55 @@ double gn_cube_equity(const GnCubeInputs *inputs, GnCubeOwner owner,
                            owner, efficiency);
 }
 
-/* ── Match: the same mechanism, transposed to MWC ────────────────────── */
+/* ── Match: the redouble recursion at the score (spec §9, v2) ────────── */
 
 /*
- * `docs/specs/` §5's "v1 simplification": the money model's redouble
- * recursion is not re-solved on the MWC scale (that is a genuinely different,
- * harder problem, and the spec defers it). Instead, this reuses the money
- * model's (TP_live, CP_live) -- the SHAPE of the correction, in winning-chance
- * space -- and re-expresses only the four values the shape interpolates
- * between, this time as match winning chances read from `gn_met_after`
- * instead of as points. Four anchors replace money's four constants:
+ * The money model's live curve exists in closed form because money is
+ * scale-invariant: doubling the stake doubles every equity, so one recursion
+ * step looks like every other. A match score breaks that symmetry -- §6.3
+ * measured exactly where: at 2-away/4-away the leader's cube dies at 2 while
+ * the trailer's redouble to 4 is free, and the v1 transposition (money's
+ * breakpoints carried onto the MWC scale) cannot see that asymmetry.
  *
- *   money -L (dead, p=0)  <->  `lose0`  MWC of the lose branch's own gammon mix
- *   money +W (dead, p=1)  <->  `win1`   MWC of the win branch's own gammon mix
- *   money -1 (cash a pass) <-> `pass`   MWC of passing this stake outright
- *   money +1 (cash a take) <-> `cash`   MWC of the opponent passing outright
+ * So the live curves are rebuilt HERE, per stake level `k`, by the §9
+ * recursion. The chain terminates on its own: once `k` covers both away
+ * scores, no further cube turn can change anything -- the cube is dead and
+ * `M(p; k) = M_dead(p; k)` exactly. Level `k`'s breakpoints are then resolved
+ * by bisection against the level-`2k` curves coming out of the recursion:
  *
- * `e(p) = pW - (1-p)L` STAYS a function of `p`, evaluated fresh at whatever
- * `p` a caller asks about -- money's `janowski_e()` does exactly that. The
- * match analogue, `(1-p)*lose0 + p*win1`, must do the same: `lose0`/`win1`
- * are the p-INDEPENDENT structural anchors (like `L`/`W`), and the MWC-dead
- * curve is built from them at the QUERIED `p` inside `match_equity`, never
- * cached at the position's own actual `p`. An earlier version of this file
- * cached `gn_match_winning_chance(state, probs)` once per anchor set and
- * reused it regardless of the `p` being evaluated -- correct only at the
- * one `p` it was computed for, and silently wrong at every other `p` the
- * take-point bisection below needs to probe. Caught by that bisection
- * itself returning a "take point" that moved with the position's `p`, which
- * a take point -- a property of the STATE, not of any one position -- must
- * never do.
+ *   TP(k) solves  M_own(p; 2k)  = pass(k)   -- I take a double and own at 2k
+ *   CP(k) solves  M_opp(p; 2k)  = cash(k)   -- the opponent takes mine at 2k
+ *
+ * Two invariants carried over from v1, both learned the hard way there:
+ *
+ *   - The dead curve is recomputed at whatever `p` a call asks about, never
+ *     cached at the position's own `p` -- the bisections below probe many `p`
+ *     that are not the position's, and a cached MWC is silently wrong at
+ *     every one of them.
+ *   - A pass concedes `k` DRY points (§9: "jamais pondérés gammon") -- the
+ *     gammon mix belongs to games that are played out, not conceded.
+ *
+ * Gammon fractions are held constant along the recursion, the same named
+ * simplification as everywhere else in this file. Efficiency enters ONCE, at
+ * the top: the recursion builds the fully-live curves, and the caller blends
+ * `(1-x)*dead + x*live` exactly as money's §3 does -- levels inside the
+ * recursion are live, because the live limit is what the recursion defines.
  */
 typedef struct {
-    double lose0;  /* MWC of the lose branch's gammon mix, weight fixed at p=0 */
-    double win1;   /* MWC of the win branch's gammon mix, weight fixed at p=1 */
-    double pass;   /* MWC of passing an offer worth this stake outright */
-    double cash;   /* MWC of the opponent passing my double at this stake */
-} GnMatchAnchors;
+    int dead;         /* base case: `stake` covers both away scores */
+    double lose_avg;  /* MWClose_avg(k): losing, at this position's gammon mix */
+    double win_avg;   /* MWCwin_avg(k): winning, same mix */
+    double pass;      /* MWC after conceding `k` dry points */
+    double cash;      /* MWC after collecting `k` dry points */
+    double tp;        /* my take point, resolved against level 2k */
+    double cp;        /* the opponent's take point, resolved against level 2k */
+} GnMatchLevel;
+
+/* The chain from the current cube up to the first dead level. Away scores are
+ * at most GN_MET_MAX_AWAY = 25, so a chain from cube 1 is 1,2,4,8,16,32 --
+ * six levels; ⌈log₂ 25⌉ = 5 doublings, the bound §9 states. Eight leaves
+ * room to always materialise the 2c level even when c is already dead. */
+#define GN_CUBE_MAX_LEVELS 8
 
 /* The weighted MWC average of one branch (win, or lose) at `stake`, folding in
  * the position's own single/gammon/backgammon mix within that branch. Falls
@@ -260,94 +273,74 @@ static double branch_mwc(const GnMatchState *state, const double outcomes[GN_NUM
     return (single / mass) * m1 + (gammon / mass) * m2 + (bg / mass) * m3;
 }
 
-static int match_anchors(const GnMatchState *state, const double outcomes[GN_NUM_EXCLUSIVE],
-                         int stake, GnMatchAnchors *out)
+/* `M_dead(p; k)`: linear in `p` between the two gammon-mix anchors, evaluated
+ * at the QUERIED `p` -- see the section comment for why it is never cached. */
+static double level_dead(const GnMatchLevel *lv, double p)
 {
-    int ok = 1;
-
-    out->lose0 = branch_mwc(state, outcomes, stake, 0, &ok);
-    out->win1 = branch_mwc(state, outcomes, stake, 1, &ok);
-    out->pass = gn_met_after(state, stake, 0);
-    out->cash = gn_met_after(state, stake, 1);
-    if (out->pass < 0.0 || out->cash < 0.0)
-        ok = 0;
-
-    return ok;
-}
-
-/* Same piecewise shape as `janowski_equity`, anchors substituted -- see the
- * table at the top of this section for the correspondence. `tp_live`/
- * `cp_live` are the MONEY breakpoints (spec §5: "l'interpolation en x
- * identique"), computed once from (W, L) and passed in rather than
- * recomputed per anchor set, since they do not depend on the stake.
- *
- * `dead` is recomputed HERE, at the `p` this particular call is asked about
- * -- never cached in `GnMatchAnchors`. See the comment on that struct for
- * why: this function is the bisection target of `match_take_point` below,
- * called at many `p` that are not the position's actual one. */
-static double match_equity(const GnMatchAnchors *a, double p, double tp_live,
-                           double cp_live, GnCubeOwner owner, double efficiency)
-{
-    const double dead = (1.0 - p) * a->lose0 + p * a->win1;
-    double live;
-
-    switch (owner) {
-    case GN_CUBE_OWNED:
-        if (p <= cp_live) {
-            live = a->lose0 + (a->cash - a->lose0) * (p / cp_live);
-        } else {
-            live = (a->cash > dead) ? a->cash : dead;
-        }
-        break;
-
-    case GN_CUBE_OPPONENT:
-        if (p <= tp_live) {
-            live = (a->pass < dead) ? a->pass : dead;
-        } else {
-            live = a->pass + (a->win1 - a->pass) * ((p - tp_live) / (1.0 - tp_live));
-        }
-        break;
-
-    case GN_CUBE_CENTRED:
-    default:
-        if (p <= tp_live) {
-            live = (a->pass < dead) ? a->pass : dead;
-        } else if (p <= cp_live) {
-            live = a->pass + (a->cash - a->pass) * ((p - tp_live) / (cp_live - tp_live));
-        } else {
-            live = (a->cash > dead) ? a->cash : dead;
-        }
-        break;
-    }
-
-    return (1.0 - efficiency) * dead + efficiency * live;
+    return (1.0 - p) * lv->lose_avg + p * lv->win_avg;
 }
 
 /*
- * The opponent's take point, on the match scale, at a specific state.
+ * The fully-live curve of one stake level -- `janowski_equity`'s piecewise
+ * shape with this LEVEL's anchors and breakpoints. On a dead level the shape
+ * collapses to the dead line for every cube state: §9's base case, "mort
+ * partout", is a return statement, not a special caller.
  *
- * Unlike money's `CP(x)` -- a closed form -- there is no closed form here:
- * `match_equity` is an affine blend of `gn_met_after` lookups, not a rational
- * function of `p`. So this bisects, exactly as `tests/test_met.py` already
- * does to recover a take point that has no closed form of its own. Relies on
- * equities being monotone increasing in `p` (spec §6.1's own property test
- * covers exactly this, for both money and match).
- *
- * This is what makes `GnCubeDecision.take_point` state-dependent in match play
- * -- reusing money's constant `CP(x)` here would silently report the same
- * number at every score, and the doubling window's monotony across scores
- * (spec §6.4) would have nothing real to test.
+ * Monotone non-decreasing in `p` for each state (each branch rises, and the
+ * min/max clamps splice non-decreasing pieces) -- the property every
+ * bisection below stands on.
  */
-static double match_take_point(const GnMatchAnchors *anchors, double tp_live,
-                               double cp_live, double efficiency, double target)
+static double level_live(const GnMatchLevel *lv, double p, GnCubeOwner owner)
+{
+    const double dead = level_dead(lv, p);
+
+    if (lv->dead)
+        return dead;
+
+    switch (owner) {
+    case GN_CUBE_OWNED:
+        if (p <= lv->cp)
+            return lv->lose_avg + (lv->cash - lv->lose_avg) * (p / lv->cp);
+        return (dead > lv->cash) ? dead : lv->cash;
+
+    case GN_CUBE_OPPONENT:
+        if (p <= lv->tp)
+            return (dead < lv->pass) ? dead : lv->pass;
+        return lv->pass + (lv->win_avg - lv->pass) * ((p - lv->tp) / (1.0 - lv->tp));
+
+    case GN_CUBE_CENTRED:
+    default:
+        if (p <= lv->tp)
+            return (dead < lv->pass) ? dead : lv->pass;
+        if (p <= lv->cp)
+            return lv->pass + (lv->cash - lv->pass) * ((p - lv->tp) / (lv->cp - lv->tp));
+        return (dead > lv->cash) ? dead : lv->cash;
+    }
+}
+
+/* `M(x) = (1-x)*M_dead + x*M_live` -- §9's interpolation, money's §3 verbatim. */
+static double level_blend(const GnMatchLevel *lv, double p, GnCubeOwner owner,
+                          double efficiency)
+{
+    return (1.0 - efficiency) * level_dead(lv, p) +
+           efficiency * level_live(lv, p, owner);
+}
+
+/* The `p` where a monotone level curve crosses `target` -- the §9 bisection
+ * ("les fonctions sont piecewise-linéaires monotones"). `blend < 0` bisects
+ * the fully-live curve (breakpoint resolution inside the recursion);
+ * otherwise the curve blended at that efficiency (the reported take point). */
+static double level_solve(const GnMatchLevel *lv, GnCubeOwner owner,
+                          double blend, double target)
 {
     double low = 0.0, high = 1.0;
     int i;
 
     for (i = 0; i < 60; i++) {
         const double mid = 0.5 * (low + high);
-        const double value = match_equity(anchors, mid, tp_live, cp_live,
-                                          GN_CUBE_OPPONENT, efficiency);
+        const double value = (blend < 0.0)
+            ? level_live(lv, mid, owner)
+            : level_blend(lv, mid, owner, blend);
         if (value < target) {
             low = mid;
         } else {
@@ -355,6 +348,76 @@ static double match_take_point(const GnMatchAnchors *anchors, double tp_live,
         }
     }
     return 0.5 * (low + high);
+}
+
+/*
+ * Build the §9 chain: `levels[0]` at the current cube, each next level at
+ * double the stake, ending on the first dead level -- and never before
+ * `levels[1]`, because the caller always needs the 2c level for the
+ * double/take branch, even when the current cube is already dead.
+ *
+ * Returns the number of levels, or 0 to REFUSE (an unevaluable state, or a
+ * chain that failed to die within the array -- unreachable while the table
+ * caps away scores at 25, and refused rather than approximated if that cap
+ * ever moves).
+ *
+ * Breakpoints are then resolved backwards, deepest first, so each level's
+ * bisection targets a fully-built `2k` level. This iterative form IS §9's
+ * memoised recursion: each (state, k) is computed once, from the base case
+ * down.
+ */
+static int build_levels(const GnMatchState *state,
+                        const double outcomes[GN_NUM_EXCLUSIVE],
+                        GnMatchLevel levels[GN_CUBE_MAX_LEVELS])
+{
+    int count = 0;
+    int stake = state->cube;
+    int i;
+
+    /* `gn_met_after` caps every payout at the away scores (at most 25), so
+     * any stake beyond 64 is indistinguishable from 64 -- for the level's
+     * own anchors AND for `branch_mwc`'s 2k/3k gammon stakes. Clamping here,
+     * once, keeps a validity-range cube (up to 2^30) from overflowing int in
+     * those multiplications. 64 rather than 32: a power of two comfortably
+     * past 2 * GN_MET_MAX_AWAY, so even a backgammon at half this stake is
+     * already capped. */
+    if (stake > 64)
+        stake = 64;
+
+    for (;;) {
+        GnMatchLevel *lv = &levels[count];
+        int ok = 1;
+
+        lv->dead = (stake >= state->away_on_roll && stake >= state->away_opponent);
+        lv->lose_avg = branch_mwc(state, outcomes, stake, 0, &ok);
+        lv->win_avg = branch_mwc(state, outcomes, stake, 1, &ok);
+        lv->pass = gn_met_after(state, stake, 0);
+        lv->cash = gn_met_after(state, stake, 1);
+        lv->tp = 0.0;
+        lv->cp = 1.0;
+        if (!ok || lv->pass < 0.0 || lv->cash < 0.0)
+            return 0;
+
+        count++;
+        if (count >= 2 && lv->dead)
+            break;
+        if (count == GN_CUBE_MAX_LEVELS)
+            return 0;
+        /* Same cap on the way up: past the table's horizon a doubled stake
+         * buys nothing new (every payout already saturated), and holding it
+         * there yields the identical anchors a doubled one would. Only
+         * reachable on a dead level, since 64 > GN_MET_MAX_AWAY. */
+        if (stake <= GN_MET_MAX_AWAY)
+            stake *= 2;
+    }
+
+    for (i = count - 2; i >= 0; i--) {
+        levels[i].tp = level_solve(&levels[i + 1], GN_CUBE_OWNED, -1.0,
+                                   levels[i].pass);
+        levels[i].cp = level_solve(&levels[i + 1], GN_CUBE_OPPONENT, -1.0,
+                                   levels[i].cash);
+    }
+    return count;
 }
 
 /* ── The decision, money and match sharing one verdict table ─────────── */
@@ -429,27 +492,30 @@ int gn_cube_decide(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
 
     {
         double outcomes[GN_NUM_EXCLUSIVE];
-        double tp_live, cp_live;
-        GnMatchAnchors anchors_c0, anchors_2c0;
+        GnMatchLevel levels[GN_CUBE_MAX_LEVELS];
         double e_nd, e_dt, e_dp, e_double;
 
         gn_probs_exclusive(probs, outcomes);
-        live_points(inputs.win_points, inputs.lose_points, &tp_live, &cp_live);
 
-        if (!match_anchors(state, outcomes, state->cube, &anchors_c0))
-            return -1;
-        if (!match_anchors(state, outcomes, 2 * state->cube, &anchors_2c0))
+        /* The §9 chain: levels[0] is the current cube (the "no double"
+         * curve), levels[1] the doubled stake the opponent would own after a
+         * take. Everything deeper exists only to resolve these two. */
+        if (build_levels(state, outcomes, levels) < 2)
             return -1;
 
-        e_nd = match_equity(&anchors_c0, inputs.win, tp_live, cp_live, owner, efficiency);
-        e_dt = match_equity(&anchors_2c0, inputs.win, tp_live, cp_live, GN_CUBE_OPPONENT,
-                            efficiency);
-        e_dp = anchors_c0.cash;
+        e_nd = level_blend(&levels[0], inputs.win, owner, efficiency);
+        e_dt = level_blend(&levels[1], inputs.win, GN_CUBE_OPPONENT, efficiency);
+        e_dp = levels[0].cash;
         e_double = (e_dt < e_dp) ? e_dt : e_dp;
 
         out->equity_no_double = e_nd;
         out->equity_double = e_double;
-        out->take_point = match_take_point(&anchors_2c0, tp_live, cp_live, efficiency, e_dp);
+        /* The opponent's take point at the doubled stake, on the curve the
+         * decision actually used -- blended at this efficiency, bisected
+         * because no closed form survives the score (v1's reasoning, which
+         * the recursion does not change). */
+        out->take_point = level_solve(&levels[1], GN_CUBE_OPPONENT, efficiency,
+                                      e_dp);
 
         /*
          * Two forced branches, and only one of them is a rule.

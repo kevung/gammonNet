@@ -295,17 +295,23 @@ def test_post_crawford_trailer_at_two_away_doubles_systematically():
         assert result.action != CubeAction.NO_DOUBLE, f"p={p} : {result.action}"
 
 
-def test_post_crawford_odd_away_does_not_double_systematically():
-    """Contraste avec le test précédent : à 3-away (impair), le double
-    systématique n'apparaît PAS — `NO_DOUBLE` survient pour des probabilités
-    de gain intermédiaires. Si le premier test tenait pour n'importe quel
-    score, il ne testerait rien de spécifique au plafond du videau."""
-    state = MatchState(away_on_roll=3, away_opponent=1, cube=1)
-    actions = {
-        p: decide(gammonless(p), CubeOwner.CENTRED, X, state=state).action
-        for p in (0.3, 0.5, 0.7)
-    }
-    assert CubeAction.NO_DOUBLE in actions.values(), actions
+def test_post_crawford_trailer_doubles_at_any_away():
+    """RÉVISÉ avec la v2 (spec §9). La version v1 de ce test affirmait le
+    contraire — que `NO_DOUBLE` survenait à 3-away — et encodait un artefact
+    de la v1, pas une propriété du jeu : post-Crawford, le double du mené est
+    gratuit à TOUT score, car concéder 1 ou 2 points est indifférent face à
+    un meneur à la balle de match. Vérifié par sonde gnubg 1.08.003 AVANT de
+    réviser (12 positions de bearoff, p de 0,25 à 0,76, scores 3-away/1-away
+    et 5-away/1-away : « Double, take » partout). La spécificité pair/impair
+    vit dans le point de prise du meneur — le free drop, testé juste en
+    dessous — pas dans le verdict du mené."""
+    for away in (2, 3, 5):
+        state = MatchState(away_on_roll=away, away_opponent=1, cube=1)
+        for p in (0.05, 0.3, 0.5, 0.7, 0.95):
+            result = decide(gammonless(p), CubeOwner.CENTRED, X, state=state)
+            assert result.action != CubeAction.NO_DOUBLE, (
+                f"away={away}, p={p} : {result.action}"
+            )
 
 
 def test_leaders_free_drop_at_even_trailer_scores():
@@ -372,6 +378,102 @@ def test_cube_value_is_capped_by_gn_met_after():
     result_2 = decide(gammonless(0.5), CubeOwner.CENTRED, X, state=at_two)
     result_4 = decide(gammonless(0.5), CubeOwner.CENTRED, X, state=at_four)
     assert result_2.action == result_4.action
+
+
+# ── §9 : la récursion de re-doublement à score (v2) ───────────────────
+
+
+def test_two_away_two_away_double_kills_the_cube():
+    """Ancre §9-1 : à 2-away/2-away, doubler rend le videau mort (l'enjeu 2
+    couvre les deux scores). La branche « double, il prend » doit donc être
+    la comparaison MORTE exactement — `M_dead(p; 2) = p`, puisque la partie
+    décide alors le match — indépendante de l'efficacité, et le double
+    émerger dès que `p` dépasse 0,5."""
+    state = MatchState(away_on_roll=2, away_opponent=2, cube=1)
+    for p in (0.55, 0.60, 0.65):
+        for x in (0.3, X, 0.9):
+            result = decide(gammonless(p), CubeOwner.CENTRED, x, state=state)
+            assert result.action == CubeAction.DOUBLE_TAKE, f"p={p}, x={x}"
+            # e_double = min(e_dt, e_dp) et ici e_dt = p exactement — à la
+            # précision float32 près, celle des probabilités d'entrée :
+            assert result.equity_double == pytest.approx(p, abs=1e-6), (
+                f"p={p}, x={x} : la branche prise n'est pas la MWC morte"
+            )
+
+
+def test_two_away_two_away_take_point_is_the_dead_one():
+    """Ancre §9-1, suite : le point de prise rapporté à 2-away/2-away
+    (exprimé en `p` du joueur au trait) est celui du videau MORT. Sur le
+    niveau doublé, mort, `M_dead(p; 2) = p` ; la bissection vise
+    `cash(1) = mwc(gagner 1 sec)`, donc le point de prise EST cette MWC —
+    une identité lue dans la table, pas un chiffre recopié. (Côté mené,
+    cela fait un point de prise de `1 − cash(1)` ≈ 32 %, le classique du
+    videau mort à 2-away/2-away — et plus le 0,80 money de la v1.)"""
+    state = MatchState(away_on_roll=2, away_opponent=2, cube=1)
+    result = decide(gammonless(0.5), CubeOwner.CENTRED, X, state=state)
+    cash_mwc = state.after(1, True)
+    assert result.take_point == pytest.approx(cash_mwc, abs=1e-9)
+
+
+def test_leader_reticence_emerges_at_two_away_four_away():
+    """Ancre §9-2, la décisive — celle que la v1 rate. À 2-away/4-away, après
+    prise du meneur doublé, le re-doublement du mené est GRATUIT (un videau à
+    4 ne change plus rien pour un meneur à 2-away). La récursion doit faire
+    émerger la réticence doctrinale du meneur : au pire désaccord mesuré en
+    §6.3 (p = 0,543, état possédé, la v1 disait `DOUBLE_TAKE` à marge quasi
+    nulle, gnubg *No redouble*), la v2 dit `NO_DOUBLE` — et de même sur toute
+    la plage intermédiaire, videau centré comme possédé."""
+    state = MatchState(away_on_roll=2, away_opponent=4, cube=1)
+    for owner in (CubeOwner.CENTRED, CubeOwner.OWNED):
+        for p in (0.5, 0.543, 0.6, 0.7):
+            result = decide(gammonless(p), owner, X, state=state)
+            assert result.action == CubeAction.NO_DOUBLE, (
+                f"owner={owner}, p={p} : {result.action}"
+            )
+    # La fenêtre existe toujours : très haut, le meneur double et le mené
+    # passe (prendre un videau qui ira à 4 ne sauve plus rien à p si haut).
+    high = decide(gammonless(0.85), CubeOwner.CENTRED, X, state=state)
+    assert high.action == CubeAction.DOUBLE_PASS
+
+
+def test_trailer_take_point_widens_with_the_free_redouble():
+    """Ancre §9-2, le mécanisme : à 2-away/4-away, le point de prise du mené
+    est nettement plus LARGE que ce que le videau MORT justifierait au même
+    score — c'est le re-doublement gratuit qui paie la prise, et il n'existe
+    que dans la récursion. Le point de prise mort se calcule ici même depuis
+    la table (`M_dead(p; 2)` croise `cash(1)`) ; le rapporté doit le dépasser
+    franchement, en `p` du meneur."""
+    state = MatchState(away_on_roll=2, away_opponent=4, cube=1)
+    result = decide(gammonless(0.6), CubeOwner.CENTRED, X, state=state)
+    cash = state.after(1, True)
+    win2, lose2 = state.after(2, True), state.after(2, False)
+    dead_take_point = (cash - lose2) / (win2 - lose2)
+    assert result.take_point > dead_take_point + 0.05, (
+        f"rapporté {result.take_point}, mort {dead_take_point}"
+    )
+
+
+def test_huge_cube_is_capped_not_overflowed():
+    """Un videau déjà énorme (2³⁰ — la validation n'accepte que les puissances
+    de deux, sans borne haute) est mort de partout : la chaîne ne doit ni
+    déborder l'entier en doublant l'enjeu, ni changer le verdict par rapport
+    à un videau qui couvre déjà les deux scores."""
+    small = MatchState(away_on_roll=2, away_opponent=2, cube=32)
+    huge = MatchState(away_on_roll=2, away_opponent=2, cube=2 ** 30)
+    for p in (0.3, 0.5, 0.7):
+        a = decide(gammonless(p), CubeOwner.CENTRED, X, state=small)
+        b = decide(gammonless(p), CubeOwner.CENTRED, X, state=huge)
+        assert a.action == b.action
+        assert a.equity_no_double == pytest.approx(b.equity_no_double)
+
+
+def test_recursion_depth_is_bounded_by_the_table():
+    """§9 : la chaîne se termine d'elle-même — `⌈log₂ 25⌉ = 5` doublements au
+    plus. Le pire cas de la table (25-away/25-away, videau à 1) doit donc
+    répondre, pas déborder ni refuser."""
+    state = MatchState(away_on_roll=25, away_opponent=25, cube=1)
+    result = decide(gammonless(0.5), CubeOwner.CENTRED, X, state=state)
+    assert result.action in CubeAction
 
 
 # ── Refus plutôt qu'extrapolation ─────────────────────────────────────
