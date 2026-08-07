@@ -163,6 +163,38 @@ def op_cfeval(request):
     return {"values": [gnubg.cfevaluate(as_board(b), cubeinfo, context) for b in boards]}
 
 
+def op_bestmove(request):
+    """Le meilleur coup selon gnubg, pour un ou plusieurs (plateau, dés).
+
+    Sémantique établie par sonde le 2026-08-08 (T34 phase 2, 3b) — la
+    documentation embarquée (`help(gnubg.findbestmove)`) n'énonce que trois
+    arguments, mais l'appel à trois lève et l'appel à quatre répond :
+
+        gnubg.findbestmove(board, cube-info, eval-context, dice)
+
+    rend un tuple d'entiers par paires `(de, vers)` — `(8, 5, 6, 5)` pour le
+    3-1 d'ouverture, soit 8/5 6/5. Les points sont 1..24 du point de vue du
+    joueur au trait, `25` la barre, `0` la sortie (à confirmer en masse par le
+    client : chaque tuple rendu doit correspondre à exactement un de nos coups
+    légaux — voir `bench/compare_moves.py`). Le tuple est rendu **non
+    interprété** ; c'est le client qui le confronte à ses propres coups.
+
+    `cubeful` dans le contexte est ce qui fait de ce choix un choix cubeful —
+    la question même de la mesure 3b.
+    """
+    context = make_context(request)
+    cubeinfo = make_cubeinfo(request.get("state"))
+    if "items" in request:
+        items = request["items"]
+    else:
+        items = [{"board": request["board"], "dice": request["dice"]}]
+    return {"moves": [
+        list(gnubg.findbestmove(as_board(item["board"]), cubeinfo, context,
+                                tuple(item["dice"])))
+        for item in items
+    ]}
+
+
 def op_met(request):
     """La table d'équité de match que gnubg tient — le repère de T32."""
     return {"met": gnubg.met(int(request.get("match_to", 25)))}
@@ -182,6 +214,7 @@ def op_classify(request):
 OPS = {
     "eval": op_eval,
     "cfeval": op_cfeval,
+    "bestmove": op_bestmove,
     "met": op_met,
     "classify": op_classify,
 }

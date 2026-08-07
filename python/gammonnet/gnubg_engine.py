@@ -126,6 +126,22 @@ class GnubgSession:
             request["state"] = state
         return self.ask(request)["values"]
 
+    def bestmove(self, items, plies: int = 0, cubeful: int = 1, prune: int = 0,
+                 state: dict | None = None):
+        """Le meilleur coup de gnubg par (plateau, dés), **non interprété**.
+
+        `items` : liste de `{"board": ..., "dice": (d1, d2)}`. Rend la liste
+        des tuples d'entiers de `findbestmove` — paires (de, vers), sémantique
+        sondée et documentée dans `tools/gnubg_server.py::op_bestmove`. C'est
+        le client (`bench/compare_moves.py`) qui les confronte à ses coups
+        légaux, et qui doit refuser tout tuple qu'il ne sait pas apparier.
+        """
+        request = {"op": "bestmove", "items": items, "plies": plies,
+                   "cubeful": cubeful, "prune": prune}
+        if state:
+            request["state"] = state
+        return self.ask(request)["moves"]
+
     def met(self, match_to: int = 25):
         return self.ask({"op": "met", "match_to": match_to})["met"]
 
