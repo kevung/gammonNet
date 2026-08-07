@@ -70,7 +70,7 @@ PROGRESS = Path(os.environ.get("T36_PROGRESS", "/tmp/t36-decision-progress.log")
 #: L'indexation du filtre est celle du C : `filter[d]` s'applique à un nœud de
 #: profondeur RESTANTE `d`. La racine d'une recherche à k plies lit `filter[k]`.
 #: Coûts mesurés par `bench/cost_by_depth.py`.
-FILTERS = {0: (), 1: (0, 5), 2: (0, 1, 5)}
+FILTERS = {0: (), 1: (0, 5), 2: (0, 1, 5), 3: (0, 1, 1, 5)}
 
 #: La profondeur à laquelle GNU Backgammon arbitre. Supérieure à celle des
 #: moteurs comparés, sans quoi il arbitrerait avec le même regard que celui qui
@@ -133,13 +133,17 @@ def has_contact(position: Position) -> bool:
 
 def measure(payload):
     database, model, plies, trials, truncate, seed, cases, arbiter_ply = payload
+    # `plies` est une liste de couples (notre profondeur, la leur). Les
+    # dissocier sert une question précise : la profondeur peut-elle racheter
+    # l'avantage que le réseau a perdu ? La comparaison n'est alors PAS équitable
+    # en calcul — notre 3-ply coûte 180 fois leur 2-ply — et c'est assumé.
 
     from gammonnet.gnubg_engine import GnubgEngine, GnubgSession
 
     network = Network.load(model)
     session = GnubgSession()
-    ours = {p: SearchConfig(ply=p, filter=FILTERS[p]) for p in plies}
-    theirs = {p: GnubgEngine(ply=p, filter=FILTERS[p]) for p in plies}
+    ours = {pair: SearchConfig(ply=pair[0], filter=FILTERS[pair[0]]) for pair in plies}
+    theirs = {pair: GnubgEngine(ply=pair[1], filter=FILTERS[pair[1]]) for pair in plies}
 
     rows = {p: [] for p in plies}
     disagreements = {p: 0 for p in plies}
@@ -200,7 +204,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--decisions", type=int, default=2000)
-    parser.add_argument("--plies", default="0,1,2")
+    parser.add_argument("--plies", default="0,1,2",
+                        help="profondeurs ; « 3:2 » compare NOTRE 3-ply à LEUR 2-ply")
     parser.add_argument("--workers", type=int, default=26)
     parser.add_argument("--trials", type=int, default=648)
     parser.add_argument("--truncate", type=int, default=11)
@@ -210,11 +215,20 @@ def main() -> int:
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
-    plies = [int(p) for p in args.plies.split(",") if p.strip()]
+    plies = []
+    for token in args.plies.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        if ":" in token:
+            a, b = token.split(":")
+            plies.append((int(a), int(b)))
+        else:
+            plies.append((int(token), int(token)))
     model = str(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
 
     print("T36 — avantage par décision contre GNU Backgammon")
-    print(f"  profondeurs : {', '.join(str(p) for p in plies)}"
+    print(f"  profondeurs : {', '.join(f'{a}-ply contre {b}-ply' for a, b in plies)}"
           f"   arbitre gnubg à {args.arbiter_ply}-ply")
     print(f"  {args.decisions} décisions de contact, graine {args.seed}, "
           f"{args.workers} processus")
@@ -259,12 +273,12 @@ def main() -> int:
         yours, yours_low, yours_high = summarise([v[1] for v in values],
                                                  args.bootstrap, args.seed)
         agree = (mine > 0) == (yours > 0)
-        print(f"{ply:<6}{disagreements[ply] / n * 100:>9.1f} % "
+        print(f"{f'{ply[0]}v{ply[1]}':<6}{disagreements[ply] / n * 100:>9.1f} % "
               f"{f'{mine:+.5f} [{mine_low:+.5f} ; {mine_high:+.5f}]':>29}"
               f"{f'{yours:+.5f} [{yours_low:+.5f} ; {yours_high:+.5f}]':>29}"
               f"{'' if agree else '   ⚠ SIGNES OPPOSÉS'}")
         payload_rows.append({
-            "ply": ply, "decisions": n,
+            "our_ply": ply[0], "their_ply": ply[1], "decisions": n,
             "disagreement_rate": disagreements[ply] / n,
             "ours": {"mean": mine, "ci95": [mine_low, mine_high]},
             "gnubg": {"mean": yours, "ci95": [yours_low, yours_high]},

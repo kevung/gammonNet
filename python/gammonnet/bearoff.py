@@ -226,3 +226,74 @@ class TwoSidedBearoff:
 
     def __exit__(self, *_):
         self.close()
+
+
+# ── Le lecteur C, et pourquoi il est lié ici ─────────────────────────
+#
+# Le C est ce qui tourne dans la recherche ; ce module Python est la référence
+# lisible. Les deux existent, donc les deux peuvent diverger — et une divergence
+# ne se verrait nulle part, puisque chacun rendrait un nombre parfaitement
+# plausible. Les exposer côte à côte est ce qui rend le croisement possible.
+
+import ctypes as _ctypes
+
+from .infer import NUM_OUTPUTS as _NUM_OUTPUTS
+from .rules import _LIB, _CPosition
+
+_LIB.gn_bearoff_open.argtypes = [_ctypes.c_char_p]
+_LIB.gn_bearoff_open.restype = _ctypes.c_void_p
+_LIB.gn_bearoff_close.argtypes = [_ctypes.c_void_p]
+_LIB.gn_bearoff_close.restype = None
+_LIB.gn_bearoff_contains.argtypes = [_ctypes.c_void_p, _ctypes.POINTER(_CPosition)]
+_LIB.gn_bearoff_contains.restype = _ctypes.c_int
+_LIB.gn_bearoff_equities.argtypes = [_ctypes.c_void_p, _ctypes.POINTER(_CPosition),
+                                     _ctypes.POINTER(_ctypes.c_double)]
+_LIB.gn_bearoff_equities.restype = _ctypes.c_int
+_LIB.gn_bearoff_probs.argtypes = [_ctypes.c_void_p, _ctypes.POINTER(_CPosition),
+                                  _ctypes.POINTER(_ctypes.c_float)]
+_LIB.gn_bearoff_probs.restype = _ctypes.c_int
+_LIB.gn_bearoff_index.argtypes = [_ctypes.POINTER(_ctypes.c_int), _ctypes.c_int]
+_LIB.gn_bearoff_index.restype = _ctypes.c_long
+
+
+class NativeBearoff:
+    """Le lecteur C, tel que la recherche l'emploie."""
+
+    def __init__(self, path):
+        self._handle = _LIB.gn_bearoff_open(str(path).encode())
+        if not self._handle:
+            raise ValueError(f"gn_bearoff_open a refusé {path}")
+
+    def contains(self, position) -> bool:
+        return bool(_LIB.gn_bearoff_contains(self._handle,
+                                             _ctypes.byref(position._to_c())))
+
+    def equities(self, position):
+        buffer = (_ctypes.c_double * 4)()
+        if not _LIB.gn_bearoff_equities(self._handle,
+                                        _ctypes.byref(position._to_c()), buffer):
+            return None
+        return ExactEquity(*buffer)
+
+    def probs(self, position):
+        buffer = (_ctypes.c_float * _NUM_OUTPUTS)()
+        if not _LIB.gn_bearoff_probs(self._handle,
+                                     _ctypes.byref(position._to_c()), buffer):
+            return None
+        return tuple(buffer)
+
+    @staticmethod
+    def index(side, points):
+        array = (_ctypes.c_int * len(side))(*side)
+        return _LIB.gn_bearoff_index(array, points)
+
+    def close(self):
+        if self._handle:
+            _LIB.gn_bearoff_close(self._handle)
+            self._handle = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
