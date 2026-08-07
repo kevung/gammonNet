@@ -120,6 +120,43 @@ int gn_bearoff_equities(const GnBearoff *table, const GnPosition *pos,
  */
 long gn_bearoff_index(const int *side, int points);
 
+/*
+ * ── THE SHARED TABLE (T38) ──────────────────────────────────────────
+ *
+ * `gn_search.c` and `gn_choose.c` consult the exact table instead of the
+ * network whenever a leaf position falls in its domain. Threading a `const
+ * GnBearoff *` through every search entry point would touch every signature
+ * in this project for one optional lookup, so instead the table is a single
+ * module-level pointer, set once by the caller before any search runs.
+ *
+ * NOT LOCKED, ON PURPOSE: this project's parallelism is by PROCESS (see
+ * `bench/exact_gap.py`, one `ProcessPoolExecutor` worker per core), never by
+ * thread. A pointer set once before the first search and only read afterwards
+ * needs no synchronisation under that model. If threads are ever introduced
+ * here, this assumption must be revisited alongside them -- see the same
+ * reasoning for `g_evaluations` in `gn_search.c`.
+ *
+ * Defaults to NULL: without a call to `gn_bearoff_set_shared`, nothing about
+ * a search changes, and the T12 regression corpus stays exactly as measured.
+ */
+
+/* Install (or clear, with NULL) the table consulted by the search. The table
+ * itself is owned by the caller -- this module never opens or closes one. */
+void gn_bearoff_set_shared(const GnBearoff *table);
+
+/* The table currently installed, or NULL if none. */
+const GnBearoff *gn_bearoff_shared(void);
+
+/*
+ * How many leaf evaluations the shared table has answered since the last
+ * reset. Distinct from `gn_search_evaluations()`: a position served by the
+ * table is NOT a network evaluation, and the two counters must never be
+ * conflated -- the throughput measurements in `bench/` depend on that
+ * distinction.
+ */
+unsigned long gn_bearoff_shared_hits(void);
+void gn_bearoff_shared_reset_hits(void);
+
 #ifdef __cplusplus
 }
 #endif

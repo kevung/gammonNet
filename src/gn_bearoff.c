@@ -46,6 +46,15 @@ struct GnBearoff {
     size_t mapped_bytes;
 };
 
+/*
+ * The shared table (T38). A single module-level pointer, deliberately not
+ * locked -- see the note in gn_bearoff.h. `g_shared_hits` is the same story
+ * as `g_evaluations` in gn_search.c: an honestly single-threaded counter, not
+ * one that pretends to be thread-safe without being tested as such.
+ */
+static const GnBearoff *g_shared = NULL;
+static unsigned long g_shared_hits = 0;
+
 long gn_bearoff_index(const int *side, int points)
 {
     int total = 0;
@@ -284,5 +293,20 @@ int gn_bearoff_probs(const GnBearoff *table, const GnPosition *pos,
     probs[2] = 0.0f;
     probs[3] = 0.0f;
     probs[4] = 0.0f;
+    /* Hit-tracking lives here rather than in the callers: this is the ONE
+     * place that knows both "did the table answer" and "was it the shared
+     * table that answered", so it is the only place that cannot double-count
+     * or miss a hit. */
+    if (table == g_shared) {
+        g_shared_hits++;
+    }
     return 1;
 }
+
+void gn_bearoff_set_shared(const GnBearoff *table) { g_shared = table; }
+
+const GnBearoff *gn_bearoff_shared(void) { return g_shared; }
+
+unsigned long gn_bearoff_shared_hits(void) { return g_shared_hits; }
+
+void gn_bearoff_shared_reset_hits(void) { g_shared_hits = 0; }
