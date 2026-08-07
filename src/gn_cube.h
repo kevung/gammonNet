@@ -110,6 +110,24 @@ double gn_cube_take_point(const GnCubeInputs *inputs, GnCubeOwner owner,
 double gn_cube_equity(const GnCubeInputs *inputs, GnCubeOwner owner,
                       int cube, double efficiency);
 
+/*
+ * The cubeful value of one DISTRIBUTION, on the search's negating scale --
+ * the leaf valuation of t34-videau-spec §8, step 2.
+ *
+ * `state == NULL` values in money points per unit of cube (Janowski §3);
+ * otherwise in match equity `2 * MWC - 1` through the §9 recursion, at
+ * `state`'s own cube value. Both scales NEGATE between sides provided the
+ * caller mirrors `owner` (OWNED <-> OPPONENT) and swaps `state` along with
+ * the perspective -- exactly what `gn_search`'s recursion does at each ply.
+ * That antisymmetry is what lets an expectiminimax carry cubeful values with
+ * the same negations it uses for cubeless ones, and a test holds it.
+ *
+ * Returns the value, or sets `*failed` (when non-NULL) and returns 0.0 for a
+ * distribution or state that cannot be valued -- refused, never approximated.
+ */
+double gn_cube_value(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
+                     const GnMatchState *state, double efficiency, int *failed);
+
 /* What the on-roll player should do, and what the opponent should answer. */
 typedef enum {
     GN_NO_DOUBLE = 0,

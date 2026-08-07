@@ -9,6 +9,7 @@
 
 #include "gn_bearoff.h"
 #include "gn_choose.h"
+#include "gn_cube.h"
 #include "gn_evalcache.h"
 
 #include <stdlib.h>
@@ -137,6 +138,29 @@ static GnMatchState swap_sides(GnMatchState state)
     return state;
 }
 
+/* The same cube, seen from the other side of the table: mine becomes theirs,
+ * a centred cube is centred for everyone. Mirrored at every ply for exactly
+ * the reason the match state is swapped -- forgetting it would value every
+ * odd ply with the wrong player holding the cube, plausibly. */
+static int mirror_owner(int owner)
+{
+    if (owner == GN_CUBE_OWNED)
+        return GN_CUBE_OPPONENT;
+    if (owner == GN_CUBE_OPPONENT)
+        return GN_CUBE_OWNED;
+    return GN_CUBE_CENTRED;
+}
+
+void gn_search_use_cube(GnSearchConfig *config, int owner, double efficiency)
+{
+    if (config == NULL) {
+        return;
+    }
+    config->use_cube = 1;
+    config->cube_owner = owner;
+    config->cube_x = efficiency;
+}
+
 /*
  * Turn a distribution into a value, from the point of view of the player whose
  * `state` this is.
@@ -165,17 +189,58 @@ static double value_from_probs(const float probs[GN_NUM_OUTPUTS],
     return equity;
 }
 
+/*
+ * The value of one evaluated node -- cubeless (`value_from_probs`) or, under
+ * `use_cube`, the cube model at this node's owner (t34-videau-spec §8).
+ *
+ * Takes the position as well as its distribution because the exact shortcut
+ * needs it: in the two-sided table's money domain the four cubeful equities
+ * are stored, and reading one beats modelling it. Only money -- the table
+ * stores points, and turning them into a MWC would need the distribution
+ * anyway, which is exactly the model path below.
+ */
+static double node_value(const GnPosition *pos,
+                         const float probs[GN_NUM_OUTPUTS],
+                         const GnSearchConfig *config, GnMatchState state,
+                         int owner, int *failed)
+{
+    if (!config->use_cube) {
+        return value_from_probs(probs, config, state, failed);
+    }
+
+    if (!config->use_match) {
+        const GnBearoff *table = gn_bearoff_shared();
+        double equities[4];
+        if (table != NULL && gn_bearoff_equities(table, pos, equities)) {
+            /* gn_bearoff.h's order: cubeless, owned, centred, opponent --
+             * indexed by GnCubeOwner {CENTRED=0, OWNED=1, OPPONENT=2}. */
+            static const int index_of_owner[3] = {2, 1, 3};
+            return equities[index_of_owner[owner]];
+        }
+    }
+
+    int cube_failed = 0;
+    const double value = gn_cube_value(probs, (GnCubeOwner)owner,
+                                       config->use_match ? &state : NULL,
+                                       config->cube_x, &cube_failed);
+    if (cube_failed) {
+        if (failed) *failed = 1;
+        return 0.0;
+    }
+    return value;
+}
+
 /* The value of a leaf: evaluate once, then convert. */
 static double leaf_value(const GnNetwork *net, const GnPosition *pos,
                          const GnSearchConfig *config, GnMatchState state,
-                         int *failed)
+                         int owner, int *failed)
 {
     float probs[GN_NUM_OUTPUTS];
     if (evaluate_position(net, pos, probs) != 0) {
         if (failed) *failed = 1;
         return 0.0;
     }
-    return value_from_probs(probs, config, state, failed);
+    return node_value(pos, probs, config, state, owner, failed);
 }
 
 /* The value of a finished game, from the point of view of `pos->turn` -- who
@@ -219,10 +284,11 @@ double gn_terminal_equity(const GnPosition *pos)
     return (pos->turn == (unsigned char)winner) ? (double)stake : -(double)stake;
 }
 
-/* Equity of `pos` from `pos->turn`'s point of view, dice not yet rolled. */
+/* Equity of `pos` from `pos->turn`'s point of view, dice not yet rolled.
+ * `owner` is the cube as `pos->turn` sees it (unused unless `use_cube`). */
 static double position_equity(const GnNetwork *net, const GnPosition *pos,
                               const GnSearchConfig *config, int depth,
-                              GnMatchState state);
+                              GnMatchState state, int owner);
 
 static int compare_candidates(const void *a, const void *b)
 {
@@ -244,7 +310,8 @@ static int compare_candidates(const void *a, const void *b)
  */
 static int rank_plays(const GnNetwork *net, const GnPosition *pos,
                       int d1, int d2, const GnSearchConfig *config, int depth,
-                      GnMatchState state, GnCandidate *out, int max_out)
+                      GnMatchState state, int owner, GnCandidate *out,
+                      int max_out)
 {
     if (net == NULL || pos == NULL || out == NULL || max_out <= 0) {
         return -1;
@@ -287,7 +354,8 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
         }
 
         int failed = 0;
-        const double value = value_from_probs(out[i].probs, config, theirs, &failed);
+        const double value = node_value(result, out[i].probs, config, theirs,
+                                        mirror_owner(owner), &failed);
         if (failed) {
             free(plays);
             return -1;
@@ -326,7 +394,8 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
          * never once differing from 0-ply over 114 decisions.
          */
         out[i].equity = -position_equity(net, result, config, depth,
-                                         swap_sides(state));
+                                         swap_sides(state),
+                                         mirror_owner(owner));
     }
 
     /* Re-rank: the deep pass is allowed to disagree with the shallow one, and
@@ -337,14 +406,14 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
 
 static double position_equity(const GnNetwork *net, const GnPosition *pos,
                               const GnSearchConfig *config, int depth,
-                              GnMatchState state)
+                              GnMatchState state, int owner)
 {
     if (gn_position_is_over(pos)) {
         return terminal_value(pos, config, state);
     }
 
     if (depth <= 0) {
-        return leaf_value(net, pos, config, state, NULL);
+        return leaf_value(net, pos, config, state, owner, NULL);
     }
 
     build_rolls();
@@ -357,7 +426,7 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
     double total = 0.0;
     for (int r = 0; r < GN_NUM_ROLLS; r++) {
         const int count = rank_plays(net, pos, g_rolls[r].d1, g_rolls[r].d2,
-                                     config, depth - 1, state,
+                                     config, depth - 1, state, owner,
                                      candidates, MAX_PLAYS);
 
         double best;
@@ -372,13 +441,132 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
             GnPosition passed = *pos;
             gn_position_swap_turn(&passed);
             best = -position_equity(net, &passed, config, depth - 1,
-                                    swap_sides(state));
+                                    swap_sides(state), mirror_owner(owner));
         }
         total += g_rolls[r].weight * best;
     }
 
     free(candidates);
     return total;
+}
+
+/* ── The distribution at depth (t34-videau-spec §8, step 1) ──────────── */
+
+/* The same distribution, seen from the other side of the table. The nested
+ * encoding makes this a swap plus one complement: my gammon losses are the
+ * opponent's gammon wins, and P(win) partitions. */
+static void invert_probs(const float in[GN_NUM_OUTPUTS],
+                         float out[GN_NUM_OUTPUTS])
+{
+    out[GN_P_WIN] = 1.0f - in[GN_P_WIN];
+    out[GN_P_WIN_G] = in[GN_P_LOSE_G];
+    out[GN_P_WIN_BG] = in[GN_P_LOSE_BG];
+    out[GN_P_LOSE_G] = in[GN_P_WIN_G];
+    out[GN_P_LOSE_BG] = in[GN_P_WIN_BG];
+}
+
+/* The distribution of a finished game -- all mass on the one outcome that
+ * happened. Computed, never evaluated, like `gn_terminal_equity`. */
+static void terminal_probs(const GnPosition *pos, float out[GN_NUM_OUTPUTS])
+{
+    const int winner = gn_position_winner(pos);
+    const int stake = gn_game_value(pos, winner);
+    const int we_won = (pos->turn == (unsigned char)winner);
+
+    out[GN_P_WIN] = we_won ? 1.0f : 0.0f;
+    out[GN_P_WIN_G] = (we_won && stake >= 2) ? 1.0f : 0.0f;
+    out[GN_P_WIN_BG] = (we_won && stake >= 3) ? 1.0f : 0.0f;
+    out[GN_P_LOSE_G] = (!we_won && stake >= 2) ? 1.0f : 0.0f;
+    out[GN_P_LOSE_BG] = (!we_won && stake >= 3) ? 1.0f : 0.0f;
+}
+
+/*
+ * The §8 recursion: the distribution follows the play the SCALAR recursion
+ * would choose. `rank_plays` picks the best play with the configured
+ * valuation; only what happens to the winner's distribution is new here.
+ *
+ * A separate walk rather than a widening of `position_equity`: the price is
+ * re-walking one subtree per node (paid only when a caller actually asks for
+ * a distribution -- once per cube decision, never per move choice), the
+ * reward is that the equity path is untouched, byte for byte, so T12's
+ * non-regression corpus keeps meaning what it meant. With the T3A cache
+ * installed the re-walk's network evaluations are all hits anyway.
+ */
+static int position_probs(const GnNetwork *net, const GnPosition *pos,
+                          const GnSearchConfig *config, int depth,
+                          GnMatchState state, int owner,
+                          float out[GN_NUM_OUTPUTS])
+{
+    if (gn_position_is_over(pos)) {
+        terminal_probs(pos, out);
+        return 0;
+    }
+
+    if (depth <= 0) {
+        return evaluate_position(net, pos, out);
+    }
+
+    build_rolls();
+
+    GnCandidate *candidates = malloc(sizeof(GnCandidate) * MAX_PLAYS);
+    if (candidates == NULL) {
+        return -1;
+    }
+
+    double total[GN_NUM_OUTPUTS] = {0.0, 0.0, 0.0, 0.0, 0.0};
+    for (int r = 0; r < GN_NUM_ROLLS; r++) {
+        const int count = rank_plays(net, pos, g_rolls[r].d1, g_rolls[r].d2,
+                                     config, depth - 1, state, owner,
+                                     candidates, MAX_PLAYS);
+        if (count < 0) {
+            free(candidates);
+            return -1;
+        }
+
+        float theirs[GN_NUM_OUTPUTS];
+        int failed;
+        if (count > 0) {
+            /* The best play's own distribution, at the depth its equity was
+             * scored at -- `depth - 1`, mirroring `-V(result, depth - 1)`. */
+            failed = position_probs(net, &candidates[0].play.result, config,
+                                    depth - 1, swap_sides(state),
+                                    mirror_owner(owner), theirs);
+        } else {
+            /* No legal play: the turn passes, exactly as in the scalar
+             * recursion -- dropping the branch would bias the average. */
+            GnPosition passed = *pos;
+            gn_position_swap_turn(&passed);
+            failed = position_probs(net, &passed, config, depth - 1,
+                                    swap_sides(state), mirror_owner(owner),
+                                    theirs);
+        }
+        if (failed != 0) {
+            free(candidates);
+            return -1;
+        }
+
+        float mine[GN_NUM_OUTPUTS];
+        invert_probs(theirs, mine);
+        for (int i = 0; i < GN_NUM_OUTPUTS; i++) {
+            total[i] += g_rolls[r].weight * (double)mine[i];
+        }
+    }
+
+    free(candidates);
+    for (int i = 0; i < GN_NUM_OUTPUTS; i++) {
+        out[i] = (float)total[i];
+    }
+    return 0;
+}
+
+int gn_search_probs(const GnNetwork *net, const GnPosition *pos,
+                    const GnSearchConfig *config, float out[GN_NUM_OUTPUTS])
+{
+    if (net == NULL || pos == NULL || config == NULL || out == NULL) {
+        return -1;
+    }
+    return position_probs(net, pos, config, config->ply, config->match,
+                          config->cube_owner, out);
 }
 
 int gn_search_plays(const GnNetwork *net, const GnPosition *pos, int d1, int d2,
@@ -389,7 +577,7 @@ int gn_search_plays(const GnNetwork *net, const GnPosition *pos, int d1, int d2,
         return -1;
     }
     return rank_plays(net, pos, d1, d2, config, config->ply, config->match,
-                      out, max_out);
+                      config->cube_owner, out, max_out);
 }
 
 int gn_best_play(const GnNetwork *net, const GnPosition *pos, int d1, int d2,
@@ -414,5 +602,6 @@ double gn_search_equity(const GnNetwork *net, const GnPosition *pos,
     if (net == NULL || pos == NULL || config == NULL) {
         return 0.0;
     }
-    return position_equity(net, pos, config, config->ply, config->match);
+    return position_equity(net, pos, config, config->ply, config->match,
+                           config->cube_owner);
 }
