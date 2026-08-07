@@ -195,3 +195,52 @@ s'appuient sur la distribution à profondeur, pas sur l'évaluation statique de 
 **Hors périmètre, décidé** : le branchement explicite des actions de videau dans l'arbre. Aucun
 moteur de référence documenté ne le fait pour l'évaluation ; les rollouts cubeful le modélisent,
 et c'est là qu'il vivra si un jour on en a besoin.
+
+## 9. §5-v2 — la récursion de re-doublement à score *(ajouté le 2026-08-07)*
+
+> La mesure §6.3 a localisé le défaut de la v1 : accord money 92–95 %, accord match 61–86 %, et
+> les vingt pires désaccords tous à 2-away/4-away. Le mécanisme est identifié : à ce score, quand
+> le meneur double, **le re-doublement du mené est gratuit** — un videau à 4 ne change plus rien
+> pour un meneur à 2-away, mais fait jouer le match au mené. La v1, sans récursion, ne voit pas
+> cette gratuité. La v2 la calcule exactement.
+
+### Le principe
+
+La chaîne de re-doublements **se termine d'elle-même** : dès que l'enjeu `k` couvre les deux
+scores (`k ≥ away_on_roll` et `k ≥ away_opponent`), aucun re-doublement ne peut plus rien changer
+— le videau est mort, et `M(p; k) = M_dead(p; k)` exactement. C'est le cas de base. La profondeur
+de récursion est bornée par `⌈log₂ 25⌉ = 5`.
+
+### La construction, par état et niveau d'enjeu `k`
+
+Sur l'échelle MWC, du point de vue du joueur au trait, fractions de gammon conditionnelles
+constantes (même simplification que la v1, énoncée) :
+
+- **Ancres** : `M_dead(p; k) = p·MWCwin_avg(k) + (1−p)·MWClose_avg(k)`, linéaire en `p`.
+  **Un passe concède `k` points SECS** — jamais pondérés gammon : `M_pass(k) = mwc(+k sec)`.
+- **Mort partout** si `k` couvre les deux scores (cas de base).
+- **Je possède (`k`)** : linéaire de `(0, MWClose_avg(k))` à `(CP, M_pass(k))`, puis
+  `max(M_pass(k), M_dead(p;k))` (trop bon). `CP` résout `M_adverse(CP; 2k) = M_pass(k)` — la
+  fonction adverse au niveau `2k` venant de la récursion, la résolution par bissection (les
+  fonctions sont piecewise-linéaires monotones).
+- **Adversaire possède** et **centré** : miroir et combinaison, comme au §2, avec les bornes
+  résolues contre les fonctions récursives au niveau `2k`.
+- **Interpolation** : `M(x) = (1−x)·M_dead + x·M_live` — le `x` money transporté, même réserve
+  qu'au §3.
+- **Crawford** : aucune branche de double. **Post-Crawford** : rien de spécial — le meneur à
+  1-away déclenche le cas de base (tout gain finit le match), le double systématique du mené
+  émerge de la récursion comme en v1.
+- Mémoïser les fonctions par `(état, k)` ; le coût est négligeable.
+
+### Les ancres de validation
+
+1. **2-away/2-away** : doubler rend le videau mort (`k = 2` couvre les deux) — le verdict doit se
+   réduire à la comparaison morte, et le double quasi systématique émerger.
+2. **2-away/4-away, le meneur double** : après prise, la fonction du mené possédant à `2k = 4`
+   est MORTE (4 couvre 4) et son re-doublement est gratuit — la réticence doctrinale du meneur
+   doit ÉMERGER. C'est l'ancre décisive : celle que la v1 rate.
+3. **Critère d'acceptation mesurable** : rejouer `bench/compare_cube.py` ; l'accord contesté au
+   contexte 2-away/4-away doit remonter nettement (cible indicative : rejoindre l'ordre du money,
+   ≥ 85 %, ou l'écart résiduel expliqué). Les autres contextes ne doivent pas se dégrader.
+4. Tous les tests v1 restent verts — la v2 remplace le calcul des bornes de match, pas la
+   mécanique de décision.
