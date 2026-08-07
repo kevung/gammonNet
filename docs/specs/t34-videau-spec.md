@@ -158,3 +158,40 @@ Même mécanique, sur l'échelle **MWC**, via `gn_met` :
 document impose de plus : le drapeau `jacoby`, et l'accès aux équités de branche dans
 `GnCubeDecision` (déjà présent). Liaison Python `python/gammonnet/cube.py` sur le modèle de
 `met.py`.
+
+## 8. Phase 2 — le videau dans l'arbre *(ajouté le 2026-08-07)*
+
+> Question posée par le propriétaire du projet : le videau ne doit-il pas entrer dans l'arbre de
+> décision, comme gnubg semble le faire ? Réponse : oui, et voici la forme exacte que cela prend.
+
+**Ce que font les moteurs de référence** — et ce qu'ils ne font pas. Pas de branchement explicite
+double/prend/passe à chaque nœud (coût exponentiel) : la **formule d'équité cubeful est appliquée
+aux feuilles**, avec l'état du videau de la racine, et cette valeur cube-consciente remonte par
+l'expectiminimax. Trace indépendante dans `BRIEF.md` §3.2 : hedgehog-public embarque
+l'expectiminimax et les formules de Janowski côte à côte.
+
+**Les deux effets attendus** : (1) le choix de coup devient sensible à la possession du videau
+(jeu hardi vers le cash quand on le possède, sobre sous la menace) ; (2) les décisions de videau
+s'appuient sur la distribution à profondeur, pas sur l'évaluation statique de la racine.
+
+**Étapes, dans l'ordre** :
+
+1. **Propager la distribution.** La recherche ne remonte aujourd'hui qu'un scalaire ; les cinq
+   probabilités ne sont exposées qu'au 0-ply. Étendre `gn_search` pour moyenner le vecteur des
+   cinq probabilités sur les jets (au meilleur coup près), et l'exposer à toute profondeur. Le
+   contrôle : au 0-ply, identique à l'existant ; à 1-ply, la moyenne pondérée à la main sur les
+   21 jets d'une position figée coïncide.
+2. **Valuation cubeful aux feuilles.** Un mode `use_cube` dans `GnSearchConfig` (état du videau +
+   `x`) : `value_from_probs` applique `E(x)` du §3 (money) ou son transposé MWC (§5, match) au
+   lieu de l'équité cubeless. Le max/min de l'arbre porte alors sur des valeurs cubeful.
+   **Dans le domaine de la table bilatérale, les feuilles sont exactes** — `gn_bearoff_equities`
+   fournit possédé/centré/adverse ; le repli modèle ne sert que hors domaine. C'est l'avantage de
+   validation propre à ce dépôt : l'arbre cubeful se vérifie étage par étage.
+3. **Validation** : (a) sur des positions de bearoff, la décision de videau à 1-ply coïncide avec
+   la décision exacte lisible dans la table ; (b) taux d'accord des choix de coups cubeful contre
+   gnubg en évaluation cubeful, deux colonnes comme toujours ; (c) l'effet « bold/safe » est
+   VISIBLE : un corpus où possession du videau change le coup choisi, non vide, versionné.
+
+**Hors périmètre, décidé** : le branchement explicite des actions de videau dans l'arbre. Aucun
+moteur de référence documenté ne le fait pour l'évaluation ; les rollouts cubeful le modélisent,
+et c'est là qu'il vivra si un jour on en a besoin.
