@@ -297,3 +297,56 @@ class NativeBearoff:
 
     def __exit__(self, *_):
         self.close()
+
+
+# ── La table partagée (T38) ───────────────────────────────────────────
+#
+# `gn_search.c` et `gn_choose.c` consultent un pointeur de module unique
+# (`gn_bearoff_set_shared`) plutôt qu'une table passée explicitement à chaque
+# appel. Côté Python, ce module garde la `NativeBearoff` correspondante en vie
+# dans une variable de module : le pointeur C que `set_shared` installe est un
+# pointeur vers la base mappée, et si l'objet Python était collecté, `close()`
+# démapperait le fichier sous les pieds de la recherche sans que rien ne le
+# signale.
+
+_LIB.gn_bearoff_set_shared.argtypes = [_ctypes.c_void_p]
+_LIB.gn_bearoff_set_shared.restype = None
+_LIB.gn_bearoff_shared_hits.argtypes = []
+_LIB.gn_bearoff_shared_hits.restype = _ctypes.c_ulong
+_LIB.gn_bearoff_shared_reset_hits.argtypes = []
+_LIB.gn_bearoff_shared_reset_hits.restype = None
+
+_shared: NativeBearoff | None = None
+
+
+def use_shared(path) -> NativeBearoff:
+    """Ouvre `path` et le branche comme table de la recherche.
+
+    La table reste ouverte tant que `disable_shared()` (ou un nouvel appel à
+    `use_shared`) ne la remplace pas -- c'est ce module qui la garde en vie.
+    Sans cet appel, `gn_bearoff_shared()` reste NULL côté C et la recherche se
+    comporte exactement comme avant T38.
+    """
+    global _shared
+    table = NativeBearoff(path)
+    _shared = table
+    _LIB.gn_bearoff_set_shared(table._handle)
+    return table
+
+
+def disable_shared() -> None:
+    """Débranche la table et referme celle que `use_shared` avait ouverte."""
+    global _shared
+    _LIB.gn_bearoff_set_shared(None)
+    if _shared is not None:
+        _shared.close()
+        _shared = None
+
+
+def shared_hits() -> int:
+    """Nombre de feuilles servies par la table depuis la dernière remise à zéro."""
+    return _LIB.gn_bearoff_shared_hits()
+
+
+def reset_shared_hits() -> None:
+    _LIB.gn_bearoff_shared_reset_hits()
