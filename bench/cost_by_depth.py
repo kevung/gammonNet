@@ -127,8 +127,12 @@ def has_contact(position: Position) -> bool:
     if not white or not black:
         return False
     # Blanc va vers l'indice 0, Noir vers l'indice 23 : il y a contact tant
-    # que le pion noir le plus avancé est devant le pion blanc le plus arriéré.
-    return max(black) >= min(white)
+    # que le pion blanc le plus arriéré (l'indice le plus grand) n'a pas
+    # encore dépassé le pion noir le plus arriéré (l'indice le plus petit) --
+    # il pourrait encore le frapper en descendant. Pas de contact seulement
+    # quand TOUS les blancs ont déjà dépassé TOUS les noirs. Même formule que
+    # `bench/decision_loss.py::has_contact`.
+    return max(white) > min(black)
 
 
 def race_corpus(network: Network, count: int, seed: int) -> list[tuple[Position, int, int]]:
