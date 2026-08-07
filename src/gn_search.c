@@ -7,6 +7,7 @@
 
 #include "gn_search.h"
 
+#include "gn_bearoff.h"
 #include "gn_choose.h"
 
 #include <stdlib.h>
@@ -55,6 +56,33 @@ static unsigned long g_evaluations = 0;
 
 unsigned long gn_search_evaluations(void) { return g_evaluations; }
 void gn_search_reset_evaluations(void) { g_evaluations = 0; }
+
+/*
+ * The single place a leaf position becomes five probabilities (T38).
+ *
+ * The exact bearoff table, if one is installed, is consulted FIRST. A hit
+ * costs a lookup and is exact; a miss falls back to the network, exactly as
+ * before this table existed. The two outcomes are counted separately --
+ * `gn_bearoff_shared_hits()` and `g_evaluations` -- because a table answer is
+ * NOT a network evaluation, and the throughput measurements in `bench/`
+ * depend on that distinction staying clean.
+ *
+ * Both call sites that used to invoke `gn_evaluate` directly on a leaf go
+ * through here now: `leaf_value` and the shallow pass of `rank_plays`.
+ */
+static int evaluate_position(const GnNetwork *net, const GnPosition *pos,
+                             float probs[GN_NUM_OUTPUTS])
+{
+    const GnBearoff *table = gn_bearoff_shared();
+    if (table != NULL && gn_bearoff_probs(table, pos, probs)) {
+        return 0;
+    }
+    if (gn_evaluate(net, pos, probs) != 0) {
+        return -1;
+    }
+    g_evaluations++;
+    return 0;
+}
 
 GnSearchConfig gn_search_config(int ply)
 {
@@ -121,11 +149,10 @@ static double leaf_value(const GnNetwork *net, const GnPosition *pos,
                          int *failed)
 {
     float probs[GN_NUM_OUTPUTS];
-    if (gn_evaluate(net, pos, probs) != 0) {
+    if (evaluate_position(net, pos, probs) != 0) {
         if (failed) *failed = 1;
         return 0.0;
     }
-    g_evaluations++;
     return value_from_probs(probs, config, state, failed);
 }
 
@@ -232,11 +259,10 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
 
         /* Evaluated ONCE. `probs` keeps the raw distribution -- it describes
          * the position, not the score -- and only `equity` is score-aware. */
-        if (gn_evaluate(net, result, out[i].probs) != 0) {
+        if (evaluate_position(net, result, out[i].probs) != 0) {
             free(plays);
             return -1;
         }
-        g_evaluations++;
 
         int failed = 0;
         const double value = value_from_probs(out[i].probs, config, theirs, &failed);

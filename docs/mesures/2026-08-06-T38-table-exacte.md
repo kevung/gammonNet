@@ -102,3 +102,76 @@ python bench/exact_gap.py --decisions 8000 --plies 0,1,2 --workers 26 --with-gnu
 
 Sortie : [`t38-exact-gap.json`](t38-exact-gap.json). Durée mesurée : **5 min** sur 26 processus.
 Prérequis : la base `gnubg_ts6x11.bd`, voir [`docs/prerequis.md`](../prerequis.md).
+
+## Le branchement, et ce qu'il rapporte — 2026-08-07
+
+Ce que la section précédente annonçait comme reste à faire est fait : `gn_search.c`
+(`leaf_value`, la passe superficielle de `rank_plays`) et `gn_choose.c`
+(`gn_best_play_0ply`) consultent désormais la table bilatérale — via un pointeur de
+module réglé une fois par `gn_bearoff_set_shared` (`src/gn_bearoff.h`/`.c`) — avant
+d'interroger le réseau sur une feuille. Par défaut le pointeur est `NULL` et rien ne
+change : aucune régression n'a été refigée pour ce travail. Deux compteurs distincts
+existent maintenant, `gn_bearoff_shared_hits()` et `gn_search_evaluations()`, et
+`src/gn_search.c` prend soin de ne jamais compter une réponse de table comme une
+évaluation réseau.
+
+### La mesure : le trou se ferme
+
+Même protocole que la section précédente — **8 000 décisions de bearoff**, notées
+exactement par la table — mais avec `--with-table`, qui branche la table sur nos
+moteurs (jamais sur GNU Backgammon, qui a déjà la sienne) avant la première
+évaluation de chaque processus.
+
+| moteur | perte moyenne **sans** table | perte moyenne **avec** table |
+|---|---|---|
+| gammonNet 0-ply | 0,00028 | **0,00000** |
+| gammonNet 1-ply | 0,00020 | **0,00000** |
+| gammonNet 2-ply *(garde 1-5)* | 0,00004 | **0,00000** |
+
+**100,0 % d'accord avec le jeu parfait aux trois profondeurs, perte moyenne, perte en
+cas de désaccord et pire cas tous exactement à 0,0** — colonnes complètes dans
+[`t38-exact-gap-table.json`](t38-exact-gap-table.json). Ce n'est pas une amélioration
+partielle : dans le domaine de la table, gammonNet joue désormais aussi bien que la
+table elle-même le permet, au ply près, exactement comme GNU Backgammon dans la
+mesure de référence — parce qu'il fait la même chose qu'elle, consulter une table
+plutôt qu'estimer.
+
+La mesure elle-même a pris **6 secondes** sur 26 processus, contre 5 minutes sans
+table : une réponse de table est une lecture mémoire, une évaluation réseau est une
+propagation avant à travers quatre couches.
+
+### Le taux de hits
+
+Sur 300 décisions de bearoff tirées dans le même domaine (`random_bearoff`), à
+chaque profondeur, toutes les feuilles rencontrées sont tombées dans le domaine de
+la table :
+
+| profondeur | feuilles | hits de table | évaluations réseau | taux de hits |
+|---|---|---|---|---|
+| 0-ply | 1 320 | 1 320 | 0 | 100,00 % |
+| 1-ply | 166 593 | 166 593 | 0 | 100,00 % |
+| 2-ply *(garde 1-5)* | 1 644 308 | 1 644 308 | 0 | 100,00 % |
+
+Ce n'est pas une coïncidence à expliquer : le domaine sans contact est fermé par
+construction sous les coups légaux — un pion n'y fait que descendre vers la sortie,
+jamais sortir des six premiers points ni faire remonter le nombre de pions d'un
+camp — donc toute feuille atteinte depuis une position du domaine y reste, à une
+exception près, la position terminale, qui n'est de toute façon ni évaluée ni
+recherchée en table (elle est calculée, voir `gn_terminal_equity`). Un taux de hits
+inférieur à 100 % sur ce protocole aurait signalé un bug d'appartenance plutôt
+qu'un phénomène à interpréter — ce qu'il n'a pas fait.
+
+### Ce que cette mesure ne dit pas
+
+Le domaine reste celui de la section précédente : bearoff sans contact, au plus onze
+pions par camp, tous dans les six premiers points. La table ne referme aucun trou en
+contact — elle n'y répond jamais, `gn_bearoff_contains` la refuse — et un taux de
+hits de 100 % ici ne dit rien du taux de hits sur une partie complète, où la plupart
+des décisions se jouent hors de ce domaine. C'est une mesure, pas une hypothèse :
+`docs/mesures/t38-exact-gap-table.json` en est la sortie brute.
+
+**La table reste un actif natif, jamais un artefact de navigateur.** Le fichier fait
+1,2 Gio ; il est ouvert par `mmap`, jamais chargé, et jamais compilé en WebAssembly.
+`gn_bearoff_set_shared` ne s'active qu'explicitement, par configuration côté
+appelant (`use_shared(path)` en Python, ou l'équivalent C) — un build ou un test qui
+n'appelle jamais cette fonction ne sait même pas qu'elle existe.
