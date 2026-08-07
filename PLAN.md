@@ -765,6 +765,14 @@ avec **repli explicite** sur le réseau hors table. Mesure de l'écart réseau s
 ## T34 — Décision de videau
 
 > **Palier C.** C'est ici que se joue l'objectif.
+>
+> **État au 2026-08-08** — le modèle existe et la simplification v1 est levée : la récursion de
+> re-doublement à score (spec §9) est implémentée, ancrée et mesurée. Accord contesté avec gnubg
+> 67,6 % → **84,1 %** [83,6 ; 84,7] sur les 30 000 décisions du protocole §6.3 rejoué ; le foyer
+> 2-away/4-away rejoint l'ordre du money (84,9/85,6 %), money inchangé, aucun contexte dégradé
+> (`docs/mesures/2026-08-08-T34-recursion-v2.md`). Reste au périmètre : la phase 2 (spec §8, le
+> videau dans l'arbre) — et l'arbitrage des désaccords résiduels appartient à T39, pas à
+> l'accord.
 
 **Objectif** — doubler, prendre, passer.
 
