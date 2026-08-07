@@ -72,20 +72,48 @@ def make_cubeinfo(state):
     Sans `state`, la partie d'argent que gnubg tient par défaut. Avec, un score
     de match explicite — c'est ce dont T34 et T35 ont besoin, et c'est la seule
     façon d'obtenir de gnubg une équité de match plutôt qu'une équité money.
+
+    ## Le bug trouvé en T34 §6.3, corrigé ici
+
+    `gnubg.cubeinfo(...)` ne prend que **sept** arguments positionnels — établi
+    par `help(gnubg.cubeinfo)`, pas par lecture de source :
+
+        [cube value, cube owner, player on move, match length,
+         score (tuple), is crawford, bg variant]
+
+    La version précédente en passait **neuf** (elle intercalait `jacoby` et
+    `beavers`, qui n'existent pas comme arguments positionnels de `cubeinfo`).
+    Neuf arguments contre sept attendus ne lève pas d'exception Python : le
+    processus gnubg entier meurt sans un mot, ce que `GnubgSession._read` ne
+    peut alors distinguer d'un plantage silencieux d'origine inconnue. Personne
+    ne l'avait remarqué parce que rien n'appelait `evaluate`/`cfeval` avec un
+    `state` avant T34.
+
+    La correction, toujours par `help()` : `cubeinfo(...)` **rend un
+    dictionnaire** — exactement la forme que `cfevaluate`/`evaluate` attendent
+    pour leur paramètre `cube-info` (`'jacoby'`, `'crawford'`, `'move'`,
+    `'beavers'`, `'cube'`, `'matchto'`, `'bgv'`, `'score'`, `'cubeowner'`,
+    `'gammonprice'`). `jacoby` et `beavers` n'ont pas d'argument positionnel
+    dans `cubeinfo()` — ils sont dans le dictionnaire qu'il rend, avec une
+    valeur par défaut sensée (`jacoby=1` quand `matchto=0`, `0` sinon) qu'on
+    écrase seulement si l'appelant l'a demandé explicitement.
     """
     if not state:
         return gnubg.cubeinfo()
-    return gnubg.cubeinfo(
+    info = gnubg.cubeinfo(
         int(state.get("cube", 1)),
         int(state.get("cube_owner", -1)),
         int(state.get("move", 1)),
         int(state.get("match_to", 0)),
         tuple(state.get("score", (0, 0))),
         int(state.get("crawford", 0)),
-        int(state.get("jacoby", 0)),
-        int(state.get("beavers", 0)),
         int(state.get("bgv", 0)),
     )
+    if "jacoby" in state:
+        info["jacoby"] = int(state["jacoby"])
+    if "beavers" in state:
+        info["beavers"] = int(state["beavers"])
+    return info
 
 
 def make_context(request):
