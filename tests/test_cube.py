@@ -453,6 +453,20 @@ def test_trailer_take_point_widens_with_the_free_redouble():
     )
 
 
+def test_huge_cube_is_capped_not_overflowed():
+    """Un videau déjà énorme (2³⁰ — la validation n'accepte que les puissances
+    de deux, sans borne haute) est mort de partout : la chaîne ne doit ni
+    déborder l'entier en doublant l'enjeu, ni changer le verdict par rapport
+    à un videau qui couvre déjà les deux scores."""
+    small = MatchState(away_on_roll=2, away_opponent=2, cube=32)
+    huge = MatchState(away_on_roll=2, away_opponent=2, cube=2 ** 30)
+    for p in (0.3, 0.5, 0.7):
+        a = decide(gammonless(p), CubeOwner.CENTRED, X, state=small)
+        b = decide(gammonless(p), CubeOwner.CENTRED, X, state=huge)
+        assert a.action == b.action
+        assert a.equity_no_double == pytest.approx(b.equity_no_double)
+
+
 def test_recursion_depth_is_bounded_by_the_table():
     """§9 : la chaîne se termine d'elle-même — `⌈log₂ 25⌉ = 5` doublements au
     plus. Le pire cas de la table (25-away/25-away, videau à 1) doit donc

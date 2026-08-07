@@ -374,6 +374,16 @@ static int build_levels(const GnMatchState *state,
     int stake = state->cube;
     int i;
 
+    /* `gn_met_after` caps every payout at the away scores (at most 25), so
+     * any stake beyond 64 is indistinguishable from 64 -- for the level's
+     * own anchors AND for `branch_mwc`'s 2k/3k gammon stakes. Clamping here,
+     * once, keeps a validity-range cube (up to 2^30) from overflowing int in
+     * those multiplications. 64 rather than 32: a power of two comfortably
+     * past 2 * GN_MET_MAX_AWAY, so even a backgammon at half this stake is
+     * already capped. */
+    if (stake > 64)
+        stake = 64;
+
     for (;;) {
         GnMatchLevel *lv = &levels[count];
         int ok = 1;
@@ -393,7 +403,12 @@ static int build_levels(const GnMatchState *state,
             break;
         if (count == GN_CUBE_MAX_LEVELS)
             return 0;
-        stake *= 2;
+        /* Same cap on the way up: past the table's horizon a doubled stake
+         * buys nothing new (every payout already saturated), and holding it
+         * there yields the identical anchors a doubled one would. Only
+         * reachable on a dead level, since 64 > GN_MET_MAX_AWAY. */
+        if (stake <= GN_MET_MAX_AWAY)
+            stake *= 2;
     }
 
     for (i = count - 2; i >= 0; i--) {
