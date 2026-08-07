@@ -196,6 +196,19 @@ s'appuient sur la distribution à profondeur, pas sur l'évaluation statique de 
 moteur de référence documenté ne le fait pour l'évaluation ; les rollouts cubeful le modélisent,
 et c'est là qu'il vivra si un jour on en a besoin.
 
+> **Constat d'implémentation** *(2026-08-08, étape 2)* — **où l'effet bold/safe peut vivre, et où
+> il ne peut pas.** Dans la région linéaire médiane du modèle §3, les courbes « possédé » et
+> « adverse » diffèrent d'une **constante** (½ par unité de videau — se lit dans les formes
+> fermées du §2 : les deux rampes ont la même pente `W + L + ½`). L'ordre de deux coups n'y
+> change donc jamais avec le possesseur. Constaté avant d'être compris : 245 décisions de
+> contact au 0-ply, zéro choix modifié ; puis 1 260 décisions dans le domaine de la table
+> bilatérale — feuilles **exactes**, saturations réelles — **73 choix modifiés** possédé vs
+> adverse. Conséquence pour l'étape 3c : le corpus bold/safe se construit près des points de
+> cash et de prise et dans le domaine exact, pas sur du contact médian ; et un effet de
+> possession en plein contact ne peut venir que de la profondeur (les feuilles d'un 2-ply
+> atteignent les saturations) ou du passage centré↔possédé (pentes différentes), jamais du
+> 0-ply possédé↔adverse.
+
 ## 9. §5-v2 — la récursion de re-doublement à score *(ajouté le 2026-08-07)*
 
 > La mesure §6.3 a localisé le défaut de la v1 : accord money 92–95 %, accord match 61–86 %, et
