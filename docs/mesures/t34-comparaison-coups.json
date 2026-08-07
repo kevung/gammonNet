@@ -1,0 +1,4938 @@
+{
+  "task": "T34-phase2-3b",
+  "dice_seed": 20260809,
+  "corpus": {
+    "contact": 2000,
+    "bearoff": 1000
+  },
+  "efficiency": {
+    "centred": 0.6880000000000001,
+    "owned": 0.5660000000000001,
+    "opponent": 0.687
+  },
+  "jacoby": false,
+  "n_scored": 2922,
+  "n_forced": 304,
+  "per_config": {
+    "cubeless": {
+      "n": 2618,
+      "agreed": 2163,
+      "rate": 0.8262032085561497
+    },
+    "centred": {
+      "n": 2618,
+      "agreed": 2118,
+      "rate": 0.8090145148968678
+    },
+    "owned": {
+      "n": 2618,
+      "agreed": 2139,
+      "rate": 0.8170359052711994
+    },
+    "opponent": {
+      "n": 2618,
+      "agreed": 2138,
+      "rate": 0.8166539343009931
+    }
+  },
+  "cube_sensitive": {
+    "centred": {
+      "n": 104,
+      "agreed": 27,
+      "rate": 0.25961538461538464,
+      "ours_moved": 65,
+      "theirs_moved": 40,
+      "both_moved": 1,
+      "by_origin": {
+        "contact": 53,
+        "bearoff": 51
+      }
+    },
+    "owned": {
+      "n": 74,
+      "agreed": 24,
+      "rate": 0.32432432432432434,
+      "ours_moved": 39,
+      "theirs_moved": 36,
+      "both_moved": 1,
+      "by_origin": {
+        "contact": 50,
+        "bearoff": 24
+      }
+    },
+    "opponent": {
+      "n": 76,
+      "agreed": 21,
+      "rate": 0.27631578947368424,
+      "ours_moved": 46,
+      "theirs_moved": 30,
+      "both_moved": 0,
+      "by_origin": {
+        "contact": 47,
+        "bearoff": 29
+      }
+    }
+  },
+  "disagreements": [
+    {
+      "id": "sGfwATDgc/ABMA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 1,
+      "cubeless": {
+        "ours": "sFvwATCwZ/ABMA",
+        "theirs": "sHPwASSwZ/ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "sFvwATCwZ/ABMA",
+        "theirs": "sHPwASSwZ/ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "sFvwATCwZ/ABMA",
+        "theirs": "sHPwASSwZ/ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "sFvwATCwZ/ABMA",
+        "theirs": "sHPwASSwZ/ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "cGfwASLgc+EBIg",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 1,
+      "cubeless": {
+        "ours": "xOfgASJwZ/ABUA",
+        "theirs": "yOfgARJwZ/ABUA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "xOfgASJwZ/ABUA",
+        "theirs": "yOfgARJwZ/ABUA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "xOfgASJwZ/ABUA",
+        "theirs": "yOfgARJwZ/ABUA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "xOfgASJwZ/ABUA",
+        "theirs": "yOfgARJwZ/ABUA",
+        "agree": false
+      }
+    },
+    {
+      "id": "cGc2A0C2GcUBBg",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "tjmUAQZwZzYDQA",
+        "theirs": "thnFEQRwZzYDQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tjmUAQZwZzYDQA",
+        "theirs": "thnFEQRwZzYDQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tjmUAQZwZzYDQA",
+        "theirs": "thnFEQRwZzYDQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tjmUAQZwZzYDQA",
+        "theirs": "thnFEQRwZzYDQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "cGctAyC2GcMBQg",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 6,
+      "cubeless": {
+        "ours": "tlmGASJwZy0DIA",
+        "theirs": "thnDQQRwZy0DIA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tlmGASJwZy0DIA",
+        "theirs": "thnDQQRwZy0DIA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tlmGASJwZy0DIA",
+        "theirs": "thnDQQRwZy0DIA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tlmGASJwZy0DIA",
+        "theirs": "thnDQQRwZy0DIA",
+        "agree": false
+      }
+    },
+    {
+      "id": "cGfGgGBbcyqEAA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 5,
+      "cubeless": {
+        "ours": "29YpCABwZ8YAcA",
+        "theirs": "2+a0AABwZ8aAYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "29YpCABwZ8YAcA",
+        "theirs": "2+a0AABwZ8aAYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "cGfGgGDb5iiEAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "cubeless": {
+        "ours": "29aogABwZ8YAcA",
+        "theirs": "u80ohABwZ8YAcA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "29aogABwZ8YAcA",
+        "theirs": "u80ohABwZ8YAcA",
+        "agree": false
+      }
+    },
+    {
+      "id": "cGfGgGC3zdEAAA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 2,
+      "cubeless": {
+        "ours": "tzvDAABwZ8YAcA",
+        "theirs": "t5uTAABwZ8YAcA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tzvDAABwZ8YAcA",
+        "theirs": "t5uTAABwZ8YAcA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tzvDAABwZ8YAcA",
+        "theirs": "t5uTAABwZ8YAcA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tzvDAABwZ8YAcA",
+        "theirs": "t5uTAABwZ8YAcA",
+        "agree": false
+      }
+    },
+    {
+      "id": "cGfGAHC3vaEAAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 6,
+      "cubeless": {
+        "ours": "t3tDAABwZ8YAcA",
+        "theirs": "t30jAABwZ8YAcA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "t3tDAABwZ8YAcA",
+        "theirs": "t30jAABwZ8YAcA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "t3tDAABwZ8YAcA",
+        "theirs": "t30jAABwZ8YAcA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "t3tDAABwZ8YAcA",
+        "theirs": "t30jAABwZ8YAcA",
+        "agree": false
+      }
+    },
+    {
+      "id": "dw8AAIA7MwYKAg",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 4,
+      "cubeless": {
+        "ours": "cGfGIAV3DwAAAA",
+        "theirs": "cGfGQAN3DwAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "cGfGIAV3DwAAAA",
+        "theirs": "cGfGQAN3DwAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "cGfGIAV3DwAAAA",
+        "theirs": "cGfGQAN3DwAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "cGfGIAV3DwAAAA",
+        "theirs": "cGfGQAN3DwAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "xOfIASGM5+ABUA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 3,
+      "cubeless": {
+        "ours": "jOfgASHgc+SAUA",
+        "theirs": "jOfIASTgc+SAUA",
+        "agree": false
+      }
+    },
+    {
+      "id": "TOfgAVBk58gBKA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "5M7BARGMc/AAaA",
+        "theirs": "zM6RAShM5+ABUA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "5M7BARGMc/AAaA",
+        "theirs": "zM6RAShM5+ABUA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "5M7BARGMc/AAaA",
+        "theirs": "zM6RAShM5+ABUA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "5M7BARGMc/AAaA",
+        "theirs": "zM6RAShM5+ABUA",
+        "agree": false
+      }
+    },
+    {
+      "id": "jPPgAFhsu4IBIQ",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 5,
+      "cubeless": {
+        "ours": "bLuCCQSM8+AAWA",
+        "theirs": "bLsmACGM8+AAWA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bLuCCQSM8+AAWA",
+        "theirs": "bLsmACGM8+AAWA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bLuCCQSM8+AAWA",
+        "theirs": "bLsmACGM8+AAWA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bLuCCQSM8+AAWA",
+        "theirs": "bLsmACGM8+AAWA",
+        "agree": false
+      }
+    },
+    {
+      "id": "jPPgIEjZNicAKA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 4,
+      "centred": {
+        "ours": "2XYNACiM8+AAZA",
+        "theirs": "sy0nACiM8+AgYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "2XYNACiM8+AAZA",
+        "theirs": "sy0nACiM8+AgYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "jPPgIGDb2iQEIA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 3,
+      "cubeless": {
+        "ours": "29oqACCM8+AAcA",
+        "theirs": "29pUAASM8+AgYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "29oqACCM8+AAcA",
+        "theirs": "29pUAASM8+AgYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "jPPgAHDbbicAAA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 5,
+      "cubeless": {
+        "ours": "3+4GAACM8+AAcA",
+        "theirs": "tzsDAADjPDgAHA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "3+4GAACM8+AAcA",
+        "theirs": "tzsDAADjPDgAHA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "3+4GAACM8+AAcA",
+        "theirs": "tzsDAADjPDgAHA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "3+4GAACM8+AAcA",
+        "theirs": "tzsDAADjPDgAHA",
+        "agree": false
+      }
+    },
+    {
+      "id": "jPPgAHDb3gYAAA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 4,
+      "opponent": {
+        "ours": "7+0BAADGeXAAOA",
+        "theirs": "e9sAAIBxHhwADg",
+        "agree": false
+      }
+    },
+    {
+      "id": "Y56DA0DbtgUAAw",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 2,
+      "cubeless": {
+        "ours": "27YFBAJjnoMDQA",
+        "theirs": "27YFkABjnoMDQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "27YFBAJjnoMDQA",
+        "theirs": "27YFkABjnoMDQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "27YFBAJjnoMDQA",
+        "theirs": "27YFkABjnoMDQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "27YFBAJjnoMDQA",
+        "theirs": "27YFkABjnoMDQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "u5sBAGDMc3AACA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 1,
+      "cubeless": {
+        "ours": "Y55DAwK7mwEAAA",
+        "theirs": "Y16DAwK7mwEAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Y55DAwK7mwEAAA",
+        "theirs": "Y16DAwK7mwEAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Y55DAwK7mwEAAA",
+        "theirs": "Y16DAwK7mwEAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Y55DAwK7mwEAAA",
+        "theirs": "Y16DAwK7mwEAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "M9YTAwK2WQsBSA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 1,
+      "cubeless": {
+        "ours": "tjkLARgz1hMDAg",
+        "theirs": "tlULARgz1hMDQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tjkLARgz1hMDAg",
+        "theirs": "tlULARgz1hMDQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tjkLARgz1hMDAg",
+        "theirs": "tlULARgz1hMDQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tjkLARgz1hMDAg",
+        "theirs": "tlULARgz1hMDQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "M+bBAFi23QqIAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 6,
+      "cubeless": {
+        "ours": "trspgAAz5sEAWA",
+        "theirs": "tt0qEAAz5sEAWA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "trspgAAz5sEAWA",
+        "theirs": "tt0qEAAz5sEAWA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "trspgAAz5sEAWA",
+        "theirs": "tt0qEAAz5sEAWA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "trspgAAz5sEAWA",
+        "theirs": "tt0qEAAz5sEAWA",
+        "agree": false
+      }
+    },
+    {
+      "id": "M+aRADh2e4cAAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "7u6GAAAz5pEAOA",
+        "theirs": "dvsOAAAz5pEAOA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "7u6GAAAz5pEAOA",
+        "theirs": "dvsOAAAz5pEAOA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "7u6GAAAz5pEAOA",
+        "theirs": "dvsOAAAz5pEAOA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "7u6GAAAz5pEAOA",
+        "theirs": "dvsOAAAz5pEAOA",
+        "agree": false
+      }
+    },
+    {
+      "id": "3jtAAGC2HQAUCg",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 3,
+      "cubeless": {
+        "ours": "c9sAYCHeO0AAAA",
+        "theirs": "s+0ARCHeO0AAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "c9sAYCHeO0AAAA",
+        "theirs": "s+0ARCHeO0AAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "c9sAYCHeO0AAAA",
+        "theirs": "s+0ARCHeO0AAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "c9sAYCHeO0AAAA",
+        "theirs": "s+0ARCHeO0AAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgASjgc/ADIA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 1,
+      "centred": {
+        "ours": "4HPkAxDg8+ABKA",
+        "theirs": "4HPiAyDg8+ABKA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4c5NBgBbmZgBDA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "2zKYAQzhzk0GAA",
+        "theirs": "24aYAQzhzk0GAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2zKYAQzhzk0GAA",
+        "theirs": "24aYAQzhzk0GAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "2zKYAQzhzk0GAA",
+        "theirs": "24aYAQzhzk0GAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2zKYAQzhzk0GAA",
+        "theirs": "24aYAQzhzk0GAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "29YIwQDFnbsAAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 4,
+      "cubeless": {
+        "ours": "pT13AADb1gjBAA",
+        "theirs": "pTt7AADb1gjBAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "pT13AADb1gjBAA",
+        "theirs": "pTt7AADb1gjBAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "pT13AADb1gjBAA",
+        "theirs": "pTt7AADb1gjBAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "pT13AADb1gjBAA",
+        "theirs": "pTt7AADb1gjBAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "2G4cA0Db2gAAFw",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 5,
+      "cubeless": {
+        "ours": "29kACBbYbhwDQA",
+        "theirs": "29oABBbYbhwDQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "29kACBbYbhwDQA",
+        "theirs": "29oABBbYbhwDQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "29kACBbYbhwDQA",
+        "theirs": "29oABBbYbhwDQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "29kACBbYbhwDQA",
+        "theirs": "29oABBbYbhwDQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "ey8AGAzjdhgDAQ",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "cubeless": {
+        "ours": "4/YQAwF7LwAYDA",
+        "theirs": "y20YAwF7LwAYDA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "4/YQAwF7LwAYDA",
+        "theirs": "y20YAwF7LwAYDA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "4/YQAwF7LwAYDA",
+        "theirs": "y20YAwF7LwAYDA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "4/YQAwF7LwAYDA",
+        "theirs": "y20YAwF7LwAYDA",
+        "agree": false
+      }
+    },
+    {
+      "id": "ex8AOAjj7hADAQ",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 4,
+      "cubeless": {
+        "ours": "090hBgB7HwA4QA",
+        "theirs": "y90xAAF7HwA4CA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "090hBgB7HwA4QA",
+        "theirs": "y90xAAF7HwA4CA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "090hBgB7HwA4QA",
+        "theirs": "y90xAAF7HwA4CA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "090hBgB7HwA4QA",
+        "theirs": "y90xAAF7HwA4CA",
+        "agree": false
+      }
+    },
+    {
+      "id": "ex8AOECz2w0IAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "c7cNAgB7HwA4QA",
+        "theirs": "s9tNAAB7HwA4QA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "c7cNAgB7HwA4QA",
+        "theirs": "s9tNAAB7HwA4QA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "c7cNAgB7HwA4QA",
+        "theirs": "s9tNAAB7HwA4QA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "c7cNAgB7HwA4QA",
+        "theirs": "s9tNAAB7HwA4QA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bLuBAQbMzk4AKA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 6,
+      "cubeless": {
+        "ours": "zJ1NICBsu4EBBg",
+        "theirs": "zDsbAChsu4EBBg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "zJ1NICBsu4EBBg",
+        "theirs": "zDsbAChsu4EBBg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "zJ1NICBsu4EBBg",
+        "theirs": "zDsbAChsu4EBBg",
+        "agree": false
+      }
+    },
+    {
+      "id": "zM4eABhsu4EBBg",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "cubeless": {
+        "ours": "bLsJAQbMzh4AGA",
+        "theirs": "bLuRAAbMzh4AGA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bLsJAQbMzh4AGA",
+        "theirs": "bLuRAAbMzh4AGA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bLsJAQbMzh4AGA",
+        "theirs": "bLuRAAbMzh4AGA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bLsJAQbMzh4AGA",
+        "theirs": "bLuRAAbMzh4AGA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bLsDAQbMzh4AGA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 3,
+      "cubeless": {
+        "ours": "mjseABhsuwMBBg",
+        "theirs": "nD0bABhsuwMBBg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "mjseABhsuwMBBg",
+        "theirs": "nD0bABhsuwMBBg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "mjseABhsuwMBBg",
+        "theirs": "nD0bABhsuwMBBg",
+        "agree": false
+      }
+    },
+    {
+      "id": "2XYDAQbMnRsAGA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "mj0bABjZdgMBBg",
+        "theirs": "nDsbABjZdgMBBg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "mj0bABjZdgMBBg",
+        "theirs": "nDsbABjZdgMBBg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "mj0bABjZdgMBBg",
+        "theirs": "nDsbABjZdgMBBg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "mj0bABjZdgMBBg",
+        "theirs": "nDsbABjZdgMBBg",
+        "agree": false
+      }
+    },
+    {
+      "id": "s90GgEB7u0FAAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 3,
+      "cubeless": {
+        "ours": "e7tBBACz3QaAQA",
+        "theirs": "e7shCACz3QaAQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "e7tBBACz3QaAQA",
+        "theirs": "e7shCACz3QaAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "e7tBBACz3QaAQA",
+        "theirs": "e7shCACz3QaAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "ZrsGIwCYdyMHAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 6,
+      "centred": {
+        "ours": "uN4GBwBmuwYjAA",
+        "theirs": "2N4FBwBmuwYjAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "uN4GBwBmuwYjAA",
+        "theirs": "2N4FBwBmuwYjAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "uN4GBwBmuwYjAA",
+        "theirs": "2N4FBwBmuwYjAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Y7sNAGDb5ioEAA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 6,
+      "cubeless": {
+        "ours": "u81VAABjuw0AYA",
+        "theirs": "284tAABjuw0AYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "u81VAABjuw0AYA",
+        "theirs": "284tAABjuw0AYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "u81VAABjuw0AYA",
+        "theirs": "284tAABjuw0AYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "u81VAABjuw0AYA",
+        "theirs": "284tAABjuw0AYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Y7sNAGDbthMBAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 2,
+      "cubeless": {
+        "ours": "23ZTAABjuw0AYA",
+        "theirs": "23YHAQBjuw0AYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "23ZTAABjuw0AYA",
+        "theirs": "23YHAQBjuw0AYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "23ZTAABjuw0AYA",
+        "theirs": "23YHAQBjuw0AYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "23ZTAABjuw0AYA",
+        "theirs": "23YHAQBjuw0AYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Y7sNAGDbdg8AAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 3,
+      "cubeless": {
+        "ours": "u9sGAICx3QYAMA",
+        "theirs": "23YDAMDYbgMAGA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "u9sGAICx3QYAMA",
+        "theirs": "23YDAMDYbgMAGA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "u9sGAICx3QYAMA",
+        "theirs": "23YDAMDYbgMAGA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "u9sGAICx3QYAMA",
+        "theirs": "23YDAMDYbgMAGA",
+        "agree": false
+      }
+    },
+    {
+      "id": "3wEAAMZ2GwCEAA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 2,
+      "cubeless": {
+        "ours": "Y7sNIATfAQAAAA",
+        "theirs": "Y3sLgATfAQAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Y7sNIATfAQAAAA",
+        "theirs": "Y3sLgATfAQAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Y7sNIATfAQAAAA",
+        "theirs": "Y3sLgATfAQAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Y7sNIATfAQAAAA",
+        "theirs": "Y3sLgATfAQAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "mGdwADOGZ8wDEA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 6,
+      "cubeless": {
+        "ours": "htcxAxCYZ3AAMw",
+        "theirs": "hteYgwCYZ3AAMw",
+        "agree": false
+      },
+      "centred": {
+        "ours": "htcxAxCYZ3AAMw",
+        "theirs": "hteYgwCYZ3AAMw",
+        "agree": false
+      },
+      "owned": {
+        "ours": "htcxAxCYZ3AAMw",
+        "theirs": "hteYgwCYZ3AAMw",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "htcxAxCYZ3AAMw",
+        "theirs": "hteYgwCYZ3AAMw",
+        "agree": false
+      }
+    },
+    {
+      "id": "mGdwMCSGZ8wLAA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 6,
+      "cubeless": {
+        "ours": "hucyBwCYZ3AwJA",
+        "theirs": "DueYBwCYZ3AwJA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "hucyBwCYZ3AwJA",
+        "theirs": "DueYBwCYZ3AwJA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "hucyBwCYZ3AwJA",
+        "theirs": "DueYBwCYZ3AwJA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "hucyBwCYZ3AwJA",
+        "theirs": "DueYBwCYZ3AwJA",
+        "agree": false
+      }
+    },
+    {
+      "id": "dF4DMAxmZsMDQA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 3,
+      "cubeless": {
+        "ours": "ZmbDAwI4rwEYRg",
+        "theirs": "ZmaTAwg4rwEYRg",
+        "agree": false
+      }
+    },
+    {
+      "id": "Zs63AACza4EBDA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 6,
+      "cubeless": {
+        "ours": "s1sDAQxmzrcAAA",
+        "theirs": "s2uDAAxmzrcAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "s1sDAQxmzrcAAA",
+        "theirs": "s2uDAAxmzrcAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "s1sDAQxmzrcAAA",
+        "theirs": "s2uDAAxmzrcAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "s1sDAQxmzrcAAA",
+        "theirs": "s2uDAAxmzrcAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "27YJAAzNmW8AAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "cubeless": {
+        "ours": "zTk/AADbtgkADA",
+        "theirs": "zTNvAADbtgkADA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "zTk/AADbtgkADA",
+        "theirs": "zTNvAADbtgkADA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "zTk/AADbtgkADA",
+        "theirs": "zTNvAADbtgkADA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "zTk/AADbtgkADA",
+        "theirs": "zTNvAADbtgkADA",
+        "agree": false
+      }
+    },
+    {
+      "id": "l2duAAC33QIADA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 2,
+      "cubeless": {
+        "ours": "t7sBAAyXZ24AAA",
+        "theirs": "d9sBAAyXZ24AAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "t7sBAAyXZ24AAA",
+        "theirs": "d9sBAAyXZ24AAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "t7sBAAyXZ24AAA",
+        "theirs": "d9sBAAyXZ24AAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "t7sBAAyXZ24AAA",
+        "theirs": "d9sBAAyXZ24AAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPwATDgc/ABMA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 3,
+      "cubeless": {
+        "ours": "4HPiQSDgc/ABMA",
+        "theirs": "4HPwCSDgc/ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "4HPiQSDgc/ABMA",
+        "theirs": "4HPwCSDgc/ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "4HPiQSDgc/ABMA",
+        "theirs": "4HPwCSDgc/ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "4HPiQSDgc/ABMA",
+        "theirs": "4HPwCSDgc/ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4NvBwQCYZ/ABMA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 4,
+      "cubeless": {
+        "ours": "WGfhATDg28HBAA",
+        "theirs": "WGfwASHg28HBAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "WOfBAUIzW4MTAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "s3aCEwBY58EBYA",
+        "theirs": "szYjEwBY58EBYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "s3aCEwBY58EBYA",
+        "theirs": "szYjEwBY58EBYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "s3aCEwBY58EBYA",
+        "theirs": "szYjEwBY58EBYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "s3aCEwBY58EBYA",
+        "theirs": "szYjEwBY58EBYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "WOfBAWCzbUUSAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 4,
+      "cubeless": {
+        "ours": "s+0KEgBY58EBYA",
+        "theirs": "s21VEABY58EBYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "s+0KEgBY58EBYA",
+        "theirs": "s21VEABY58EBYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "s+0KEgBY58EBYA",
+        "theirs": "s21VEABY58EBYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "s+0KEgBY58EBYA",
+        "theirs": "s21VEABY58EBYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "WOfBAWCz7UoEAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 4,
+      "cubeless": {
+        "ours": "c9sVBABY58EBYA",
+        "theirs": "s92lAABY58EBYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "c9sVBABY58EBYA",
+        "theirs": "s92lAABY58EBYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "c9sVBABY58EBYA",
+        "theirs": "s92lAABY58EBYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "c9sVBABY58EBYA",
+        "theirs": "s92lAABY58EBYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "v5sAAIDWOTjAAA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 4,
+      "cubeless": {
+        "ours": "tJ0bAAa/mwAAAA",
+        "theirs": "dDsLAQa/mwAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tJ0bAAa/mwAAAA",
+        "theirs": "dDsLAQa/mwAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tJ0bAAa/mwAAAA",
+        "theirs": "dDsLAQa/mwAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tJ0bAAa/mwAAAA",
+        "theirs": "dDsLAQa/mwAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "vxsAAIi2MzigAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 3,
+      "cubeless": {
+        "ours": "bFsTAQW/GwAACA",
+        "theirs": "bJuJBQS/GwAACA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bFsTAQW/GwAACA",
+        "theirs": "bJuJBQS/GwAACA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bFsTAQW/GwAACA",
+        "theirs": "bJuJBQS/GwAACA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bFsTAQW/GwAACA",
+        "theirs": "bJuJBQS/GwAACA",
+        "agree": false
+      }
+    },
+    {
+      "id": "vxsACIBtFyqgAA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 2,
+      "cubeless": {
+        "ours": "bLsigQK/GwAACA",
+        "theirs": "bLsKAQW/GwAACA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bLsigQK/GwAACA",
+        "theirs": "bLsKAQW/GwAACA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bLsigQK/GwAACA",
+        "theirs": "bLsKAQW/GwAACA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bLsigQK/GwAACA",
+        "theirs": "bLsKAQW/GwAACA",
+        "agree": false
+      }
+    },
+    {
+      "id": "fw8AAKhtG6oAAA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 2,
+      "cubeless": {
+        "ours": "bdtSAgB/DwAACA",
+        "theirs": "bduKAgB/DwAACA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bdtSAgB/DwAACA",
+        "theirs": "bduKAgB/DwAACA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bdtSAgB/DwAACA",
+        "theirs": "bduKAgB/DwAACA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bdtSAgB/DwAACA",
+        "theirs": "bduKAgB/DwAACA",
+        "agree": false
+      }
+    },
+    {
+      "id": "fw8AAKhtW6QAAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "cubeless": {
+        "ours": "bduGBAB/DwAACA",
+        "theirs": "bdsGAwB/DwAACA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bduGBAB/DwAACA",
+        "theirs": "bdsGAwB/DwAACA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bduGBAB/DwAACA",
+        "theirs": "bdsGAwB/DwAACA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bduGBAB/DwAACA",
+        "theirs": "bdsGAwB/DwAACA",
+        "agree": false
+      }
+    },
+    {
+      "id": "mNvBAQOG5+ABKA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 2,
+      "cubeless": {
+        "ours": "ZubgARGY28EBAw",
+        "theirs": "Zs7gARSY28EBAw",
+        "agree": false
+      },
+      "centred": {
+        "ours": "ZubgARGY28EBAw",
+        "theirs": "Zs7gARSY28EBAw",
+        "agree": false
+      },
+      "owned": {
+        "ours": "ZubgARGY28EBAw",
+        "theirs": "Zs7gARSY28EBAw",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "ZubgARGY28EBAw",
+        "theirs": "Zs7gARSY28EBAw",
+        "agree": false
+      }
+    },
+    {
+      "id": "hufgkQBmneCABQ",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 3,
+      "cubeless": {
+        "ours": "Zl3EgAWG5+ARQA",
+        "theirs": "Zp3CgAWG5+BBQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Zl3EgAWG5+ARQA",
+        "theirs": "Zp3CgAWG5+BBQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Zl3EgAWG5+ARQA",
+        "theirs": "Zp3CgAWG5+BBQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Zl3EgAWG5+ARQA",
+        "theirs": "Zp3CgAWG5+BBQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "JufgA0Bme4QEAw",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 3,
+      "cubeless": {
+        "ours": "tu0QBAMm5+ADQA",
+        "theirs": "tm0JBAMm5+ADQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tu0QBAMm5+ADQA",
+        "theirs": "tm0JBAMm5+ADQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tu0QBAMm5+ADQA",
+        "theirs": "tm0JBAMm5+ADQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tu0QBAMm5+ADQA",
+        "theirs": "tm0JBAMm5+ADQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "ZtbBAyDufQAAAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 5,
+      "cubeless": {
+        "ours": "3j0AAGBmHTwAAg",
+        "theirs": "7jsAAGBmHTwAAg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "3j0AAGBmHTwAAg",
+        "theirs": "7jsAAGBmHTwAAg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "3j0AAGBmHTwAAg",
+        "theirs": "7jsAAGBmHTwAAg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "3j0AAGBmHTwAAg",
+        "theirs": "7jsAAGBmHTwAAg",
+        "agree": false
+      }
+    },
+    {
+      "id": "23sAAMDMOngACA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 1,
+      "cubeless": {
+        "ours": "Zs7BAwHbewAAAA",
+        "theirs": "ZtahAwHbewAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Zs7BAwHbewAAAA",
+        "theirs": "ZtahAwHbewAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Zs7BAwHbewAAAA",
+        "theirs": "ZtahAwHbewAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Zs7BAwHbewAAAA",
+        "theirs": "ZtahAwHbewAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgQSCMZ/ABMA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "jOfgATDg8+BBIA",
+        "theirs": "jGfkASLg8+BBIA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "jOfgATDg8+BBIA",
+        "theirs": "jGfkASLg8+BBIA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "jOfgATDg8+BBIA",
+        "theirs": "jGfkASLg8+BBIA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "jOfgATDg8+BBIA",
+        "theirs": "jGfkASLg8+BBIA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgQRCMp/AAWA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 5,
+      "cubeless": {
+        "ours": "LM/BgDDg8+BBEA",
+        "theirs": "jGfFATDg8+BBEA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "LM/BgDDg8+BBEA",
+        "theirs": "jGfFATDg8+BBEA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "LM/BgDDg8+BBEA",
+        "theirs": "jGfFATDg8+BBEA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "LM/BgDDg8+BBEA",
+        "theirs": "jGfFATDg8+BBEA",
+        "agree": false
+      }
+    },
+    {
+      "id": "7G4OBgC2bSJgEA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 1,
+      "cubeless": {
+        "ours": "tu0IYBDsbg4GAA",
+        "theirs": "tm0FYBDsbg4GAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tu0IYBDsbg4GAA",
+        "theirs": "tm0FYBDsbg4GAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tu0IYBDsbg4GAA",
+        "theirs": "tm0FYBDsbg4GAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tu0IYBDsbg4GAA",
+        "theirs": "tm0FYBDsbg4GAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "tt0E4ADsbg4GAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 5,
+      "cubeless": {
+        "ours": "tVsOBgC23QTgAA",
+        "theirs": "s10OBgC23QTgAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tVsOBgC23QTgAA",
+        "theirs": "s10OBgC23QTgAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tVsOBgC23QTgAA",
+        "theirs": "s10OBgC23QTgAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tVsOBgC23QTgAA",
+        "theirs": "s10OBgC23QTgAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPkQSDgc/AAWA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 5,
+      "cubeless": {
+        "ours": "wXPwADTgc+RBQA",
+        "theirs": "4HPwgCTgc+RBIA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "wXPwADTgc+RBQA",
+        "theirs": "4HPwgCTgc+RBIA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "wXPwADTgc+RBQA",
+        "theirs": "4HPwgCTgc+RBIA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "wXPwADTgc+RBQA",
+        "theirs": "4HPwgCTgc+RBIA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4OtgAiOwZ+QBAw",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 3,
+      "cubeless": {
+        "ours": "sGeVAQPg62CAUQ",
+        "theirs": "sM/IAQPg62CAUQ",
+        "agree": false
+      },
+      "centred": {
+        "ours": "sGeVAQPg62CAUQ",
+        "theirs": "sM/IAQPg62CAUQ",
+        "agree": false
+      },
+      "owned": {
+        "ours": "sGeVAQPg62CAUQ",
+        "theirs": "sM/IAQPg62CAUQ",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "sGeVAQPg62CAUQ",
+        "theirs": "sM/IAQPg62CAUQ",
+        "agree": false
+      }
+    },
+    {
+      "id": "4NtgRhBwz+CAQQ",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "cubeless": {
+        "ours": "Ys/ggCHg22BGQA",
+        "theirs": "cM/ggAXg22BGEA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Ys/ggCHg22BGQA",
+        "theirs": "cM/ggAXg22BGEA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Ys/ggCHg22BGQA",
+        "theirs": "cM/ggAXg22BGEA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Ys/ggCHg22BGQA",
+        "theirs": "cM/ggAXg22BGEA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4NtgLgDYniOAIQ",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 2,
+      "cubeless": {
+        "ours": "tD0HgCHg22AOQA",
+        "theirs": "2J4LAiHg22AOQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tD0HgCHg22AOQA",
+        "theirs": "2J4LAiHg22AOQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tD0HgCHg22AOQA",
+        "theirs": "2J4LAiHg22AOQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tD0HgCHg22AOQA",
+        "theirs": "2J4LAiHg22AOQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "wttgHgDYXgcYAg",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 3,
+      "cubeless": {
+        "ours": "2L0GNADC22AeAA",
+        "theirs": "bLsGGALC22AeAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2L0GNADC22AeAA",
+        "theirs": "bLsGGALC22AeAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "2L0GNADC22AeAA",
+        "theirs": "bLsGGALC22AeAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2L0GNADC22AeAA",
+        "theirs": "bLsGGALC22AeAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "wtvBHADYXgcsAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 4,
+      "cubeless": {
+        "ours": "tD0HHADC28EcAA",
+        "theirs": "sV4HHADC28EcAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tD0HHADC28EcAA",
+        "theirs": "sV4HHADC28EcAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tD0HHADC28EcAA",
+        "theirs": "sV4HHADC28EcAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tD0HHADC28EcAA",
+        "theirs": "sV4HHADC28EcAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "hreFGQBstwYMQA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 4,
+      "cubeless": {
+        "ours": "bG8FDASGt4UZAA",
+        "theirs": "7G4FDAiGt4UZAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bG8FDASGt4UZAA",
+        "theirs": "7G4FDAiGt4UZAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bG8FDASGt4UZAA",
+        "theirs": "7G4FDAiGt4UZAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bG8FDASGt4UZAA",
+        "theirs": "7G4FDAiGt4UZAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bLeFCAJ2vDcAAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 6,
+      "cubeless": {
+        "ours": "7fg2AABst4UIAg",
+        "theirs": "3Xg3AABst4UIAg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "7fg2AABst4UIAg",
+        "theirs": "3Xg3AABst4UIAg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "7fg2AABst4UIAg",
+        "theirs": "3Xg3AABst4UIAg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "7fg2AABst4UIAg",
+        "theirs": "3Xg3AABst4UIAg",
+        "agree": false
+      }
+    },
+    {
+      "id": "7vI2AABst4UIAg",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 5,
+      "cubeless": {
+        "ours": "bHcLAQLu8jYAAA",
+        "theirs": "bLdNAALu8jYAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bHcLAQLu8jYAAA",
+        "theirs": "bLdNAALu8jYAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bHcLAQLu8jYAAA",
+        "theirs": "bLdNAALu8jYAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bHcLAQLu8jYAAA",
+        "theirs": "bLdNAALu8jYAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "7uYbAABstxUIAg",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 4,
+      "cubeless": {
+        "ours": "3L2FAALu5hsAAA",
+        "theirs": "7N4OAALu5hsAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "3L2FAALu5hsAAA",
+        "theirs": "7N4OAALu5hsAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "3L2FAALu5hsAAA",
+        "theirs": "7N4OAALu5hsAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "3L2FAALu5hsAAA",
+        "theirs": "7N4OAALu5hsAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bHcrACDetgcAAA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 2,
+      "centred": {
+        "ours": "e5sHAAC2uxUAIA",
+        "theirs": "O7cDAADb3QoAEA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "e5sHAAC2uxUAIA",
+        "theirs": "O7cDAADb3QoAEA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4NvgATDgc/ADIA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 3,
+      "cubeless": {
+        "ours": "4HPKAyDg2+ABMA",
+        "theirs": "4HPkAwTg2+ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "4HPKAyDg2+ABMA",
+        "theirs": "4HPkAwTg2+ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "4HPKAyDg2+ABMA",
+        "theirs": "4HPkAwTg2+ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "4HPKAyDg2+ABMA",
+        "theirs": "4HPkAwTg2+ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "2G4LATBmewMDIA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 5,
+      "cubeless": {
+        "ours": "ZnsLAgjYbgsBMA",
+        "theirs": "ZnuLACDYbgsBMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "ZnsLAgjYbgsBMA",
+        "theirs": "ZnuLACDYbgsBMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "ZnsLAgjYbgsBMA",
+        "theirs": "ZnuLACDYbgsBMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "ZnsLAgjYbgsBMA",
+        "theirs": "ZnuLACDYbgsBMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "2G2DAFi27Q0gAA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 3,
+      "cubeless": {
+        "ours": "dtuNAADYbYMAWA",
+        "theirs": "tu0dAADYbYMAWA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "dtuNAADYbYMAWA",
+        "theirs": "tu0dAADYbYMAWA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "dtuNAADYbYMAWA",
+        "theirs": "tu0dAADYbYMAWA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "dtuNAADYbYMAWA",
+        "theirs": "tu0dAADYbYMAWA",
+        "agree": false
+      }
+    },
+    {
+      "id": "9t4GAADstkEALA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 1,
+      "cubeless": {
+        "ours": "tG1DADj23gYAAA",
+        "theirs": "uG0jADj23gYAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tG1DADj23gYAAA",
+        "theirs": "uG0jADj23gYAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tG1DADj23gYAAA",
+        "theirs": "uG0jADj23gYAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tG1DADj23gYAAA",
+        "theirs": "uG0jADj23gYAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "9t4BAAB2uwEADg",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "cubeless": {
+        "ours": "2LsFADj23gEAAA",
+        "theirs": "tNsGADj23gEAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2LsFADj23gEAAA",
+        "theirs": "tNsGADj23gEAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2LsFADj23gEAAA",
+        "theirs": "tNsGADj23gEAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "dm8AAIDdXQAEAw",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 3,
+      "cubeless": {
+        "ours": "st0FATB2bwAAAA",
+        "theirs": "2LsDATB2bwAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "st0FATB2bwAAAA",
+        "theirs": "2LsDATB2bwAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "st0FATB2bwAAAA",
+        "theirs": "2LsDATB2bwAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "st0FATB2bwAAAA",
+        "theirs": "2LsDATB2bwAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "9j4AAEC7WwAEAw",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 2,
+      "cubeless": {
+        "ours": "tLtFADD2PgAAAA",
+        "theirs": "2nYDQDD2PgAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tLtFADD2PgAAAA",
+        "theirs": "tHcFATD2PgAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tLtFADD2PgAAAA",
+        "theirs": "2nYDQDD2PgAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tLtFADD2PgAAAA",
+        "theirs": "tHcFATD2PgAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "7h4AAKDdLQKAAQ",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 6,
+      "cubeless": {
+        "ours": "2u5CADDuHgAAAA",
+        "theirs": "tLtFBCDuHgAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2u5CADDuHgAAAA",
+        "theirs": "tLtFBCDuHgAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2u5CADDuHgAAAA",
+        "theirs": "tLtFBCDuHgAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "3hsAAFC7NwCAAQ",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 6,
+      "cubeless": {
+        "ours": "avcGECDeGwAAAA",
+        "theirs": "2vYGQCDeGwAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "avcGECDeGwAAAA",
+        "theirs": "2vYGQCDeGwAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "avcGECDeGwAAAA",
+        "theirs": "2vYGQCDeGwAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "avcGECDeGwAAAA",
+        "theirs": "2vYGQCDeGwAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPwATDgc/ABMA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "mHcbDAA4z4wDAg",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 4,
+      "cubeless": {
+        "ours": "5pwVAwKYdxsMAA",
+        "theirs": "5poZAwKYdxsMAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "5pwVAwKYdxsMAA",
+        "theirs": "5poZAwKYdxsMAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "5pwVAwKYdxsMAA",
+        "theirs": "5poZAwKYdxsMAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "5pwVAwKYdxsMAA",
+        "theirs": "5poZAwKYdxsMAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "OM8cBwCYdxsMAA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 3,
+      "cubeless": {
+        "ours": "mHc3AQA4zxwHAA",
+        "theirs": "ct4aDAA4zxwHAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "mHc3AQA4zxwHAA",
+        "theirs": "ct4aDAA4zxwHAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "mHc3AQA4zxwHAA",
+        "theirs": "ct4aDAA4zxwHAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "mHc3AQA4zxwHAA",
+        "theirs": "ct4aDAA4zxwHAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPwATDgc/ABMA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 6,
+      "cubeless": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4LlwgFjGHuIJBA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 1,
+      "cubeless": {
+        "ours": "pj3gCQTguXAAbA",
+        "theirs": "xh3iKQDgOThAbA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "pj3gCQTguXAAbA",
+        "theirs": "xh3iKQDgOThAbA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "pj3gCQTguXAAbA",
+        "theirs": "xh3iKQDgOThAbA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "pj3gCQTguXAAbA",
+        "theirs": "xh3iKQDgOThAbA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4LlwgFjGXhYDBA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 5,
+      "cubeless": {
+        "ours": "ZnslIgDgOTgAdg",
+        "theirs": "ZvcCIwDgOTgAdg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "ZnslIgDgOTgAdg",
+        "theirs": "ZvcCIwDgOTgAdg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "ZnslIgDgOTgAdg",
+        "theirs": "ZvcCIwDgOTgAdg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "ZnslIgDgOTgAdg",
+        "theirs": "ZntRBgDgOTgAdg",
+        "agree": false
+      }
+    },
+    {
+      "id": "4Dk4AG627YYEAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 1,
+      "cubeless": {
+        "ours": "truFBADgOTgAbg",
+        "theirs": "tt0lBADgOTgAbg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "truFBADgOTgAbg",
+        "theirs": "tt0lBADgOTgAbg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "truFBADgOTgAbg",
+        "theirs": "tt0lBADgOTgAbg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "truFBADgOTgAbg",
+        "theirs": "tt0lBADgOTgAbg",
+        "agree": false
+      }
+    },
+    {
+      "id": "fgMAAJDr4IJgAA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 6,
+      "cubeless": {
+        "ours": "mO1gQTB+AwAAAA",
+        "theirs": "yO1gETB+AwAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "mO1gQTB+AwAAAA",
+        "theirs": "mHVwoSB+AwAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "mO1gQTB+AwAAAA",
+        "theirs": "yO1gETB+AwAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "mO1gQTB+AwAAAA",
+        "theirs": "mHVwoSB+AwAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "HgAAALMdLEQIAA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 3,
+      "cubeless": {
+        "ours": "mO1gUQQeAAAAAA",
+        "theirs": "mO1gYQIeAAAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "mO1gUQQeAAAAAA",
+        "theirs": "mO1gYQIeAAAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "mO1gUQQeAAAAAA",
+        "theirs": "mO1gYQIeAAAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "mO1gUQQeAAAAAA",
+        "theirs": "mO1gYQIeAAAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPwATDgc/ABMA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 1,
+      "cubeless": {
+        "ours": "0HPkATDgc/ABMA",
+        "theirs": "4HPkASjgc/ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "0HPkATDgc/ABMA",
+        "theirs": "4HPkASjgc/ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "0HPkATDgc/ABMA",
+        "theirs": "4HPkASjgc/ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "0HPkATDgc/ABMA",
+        "theirs": "4HPkASjgc/ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "jM/gQSBmTvAAIw",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 3,
+      "cubeless": {
+        "ours": "G67gACOMz+ABYA",
+        "theirs": "Zm7BACOMz+ABUA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Zo4AuFE2nsEhIA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 5,
+      "cubeless": {
+        "ours": "bZzBIQJmjgC4YQ",
+        "theirs": "Np6DIQJmjgC4UQ",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bZzBIQJmjgC4YQ",
+        "theirs": "Np6DIQJmjgC4UQ",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bZzBIQJmjgC4YQ",
+        "theirs": "Np6DIQJmjgC4UQ",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bZzBIQJmjgC4YQ",
+        "theirs": "Np6DIQJmjgC4UQ",
+        "agree": false
+      }
+    },
+    {
+      "id": "Ns7ggFBmJgDcWA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 4,
+      "cubeless": {
+        "ours": "ZiZA2Dg2zuCAUA",
+        "theirs": "ZhYA3DE2zuCAUA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "ZiZA2Dg2zuCAUA",
+        "theirs": "ZhYA3DE2zuCAUA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "ZiZA2Dg2zuCAUA",
+        "theirs": "ZhYA3DE2zuCAUA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "ZiZA2Dg2zuCAUA",
+        "theirs": "ZhYA3DE2zuCAUA",
+        "agree": false
+      }
+    },
+    {
+      "id": "ZgYg7Dg2zuCAUA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 3,
+      "centred": {
+        "ours": "Ns4cgCRmBiDsOA",
+        "theirs": "Ns6MECRmBiDsOA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Ns4cgCRmBiDsOA",
+        "theirs": "Ns6MECRmBiDsOA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Ns4cgCRmBiDsOA",
+        "theirs": "Ns6MECRmBiDsOA",
+        "agree": false
+      }
+    },
+    {
+      "id": "ZgYg2TE2zsggCQ",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "cubeless": {
+        "ours": "Nq7BIAlmBiDsWA",
+        "theirs": "Ns7IMAhmBiDZMQ",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Nq7BIAlmBiDsWA",
+        "theirs": "Ns7IMAhmBiDZMQ",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Nq7BIAlmBiDsWA",
+        "theirs": "Ns7IMAhmBiDZMQ",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Nq7BIAlmBiDsWA",
+        "theirs": "Ns7IMAhmBiDZMQ",
+        "agree": false
+      }
+    },
+    {
+      "id": "ZgYwsjE2zmDGAA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 6,
+      "centred": {
+        "ours": "Ns7GBgBmBjCyMQ",
+        "theirs": "Nm4bwABmBjDYWA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Ns7GBgBmBjCyMQ",
+        "theirs": "Nm4bwABmBjDYWA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Ns7GBgBmBjCyMQ",
+        "theirs": "Nm4bwABmBjDYWA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Zh4IsCM2bhsBAg",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 5,
+      "cubeless": {
+        "ours": "21gbAQJmHgiwQw",
+        "theirs": "Nm47AgBmHgiwIw",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Nt42EABmHgiwIw",
+        "theirs": "Nm47AgBmHgiwIw",
+        "agree": false
+      },
+      "owned": {
+        "ours": "21gbAQJmHgiwQw",
+        "theirs": "Nm47AgBmHgiwIw",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "21gbAQJmHgiwQw",
+        "theirs": "Nm47AgBmHgiwIw",
+        "agree": false
+      }
+    },
+    {
+      "id": "Zh6IYAsb3nYAAA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 6,
+      "cubeless": {
+        "ours": "N7xtAABmHohgQw",
+        "theirs": "W7xbAABmHohgQw",
+        "agree": false
+      },
+      "centred": {
+        "ours": "N7xtAABmHohgQw",
+        "theirs": "W7xbAABmHohgQw",
+        "agree": false
+      },
+      "owned": {
+        "ours": "N7xtAABmHohgQw",
+        "theirs": "W7xbAABmHohgQw",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "N7xtAABmHohgQw",
+        "theirs": "W7xbAABmHohgQw",
+        "agree": false
+      }
+    },
+    {
+      "id": "G949AABmHohgCw",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 2,
+      "cubeless": {
+        "ours": "Zh2CYAsb3j0AAA",
+        "theirs": "Zh0oYAsb3j0AAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Zh2CYAsb3j0AAA",
+        "theirs": "Zh0oYAsb3j0AAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Zh2CYAsb3j0AAA",
+        "theirs": "Zh0oYAsb3j0AAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Zh2CYAsb3j0AAA",
+        "theirs": "Zh0oYAsb3j0AAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "27g7AABmHkjBBg",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 1,
+      "cubeless": {
+        "ours": "ZhuowAbbuDsAAA",
+        "theirs": "ZhskwQbbuDsAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "ZhuowAbbuDsAAA",
+        "theirs": "ZhskwQbbuDsAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "ZhuowAbbuDsAAA",
+        "theirs": "ZhskwQbbuDsAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "ZhuowAbbuDsAAA",
+        "theirs": "ZhskwQbbuDsAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "28c5AABmPQXABg",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 1,
+      "cubeless": {
+        "ours": "1jYFwAbbxzkAAA",
+        "theirs": "ZrsBwAbbxzkAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "1jYFwAbbxzkAAA",
+        "theirs": "ZrsBwAbbxzkAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "1jYFwAbbxzkAAA",
+        "theirs": "ZrsBwAbbxzkAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "1jYFwAbbxzkAAA",
+        "theirs": "ZrsBwAbbxzkAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "22czAABme0IIBg",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 6,
+      "cubeless": {
+        "ours": "ZnuGAAbbZzMAAA",
+        "theirs": "5naSAAbbZzMAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "ZnuGAAbbZzMAAA",
+        "theirs": "5naSAAbbZzMAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "ZnuGAAbbZzMAAA",
+        "theirs": "5naSAAbbZzMAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "sOfgASKwZ/ABMA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "aGfiATCw5+ABUA",
+        "theirs": "aGfwASKw5+ABUA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "aGfiATCw5+ABUA",
+        "theirs": "aGfwASKw5+ABUA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "aGfiATCw5+ABUA",
+        "theirs": "aGfwASKw5+ABUA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "aGfiATCw5+ABUA",
+        "theirs": "aGfwASKw5+ABUA",
+        "agree": false
+      }
+    },
+    {
+      "id": "6J6DATDYTvAARg",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 4,
+      "cubeless": {
+        "ours": "2E7iAA1wz8EAWA",
+        "theirs": "2E7wIAxwz8EAWA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2E7iAA1wz8EAWA",
+        "theirs": "2E7wIAxwz8EAWA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "2E7iAA1wz8EAWA",
+        "theirs": "2E7wIAxwz8EAWA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2E7iAA1wz8EAWA",
+        "theirs": "2E7wIAxwz8EAWA",
+        "agree": false
+      }
+    },
+    {
+      "id": "uM0lA0C29gAAFw",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 4,
+      "centred": {
+        "ours": "dvYAEBa4zSUDQA",
+        "theirs": "tu4AEBa4zSUDQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "dvYAEBa4zSUDQA",
+        "theirs": "tu4AEBa4zSUDQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "dvYAEBa4zSUDQA",
+        "theirs": "tu4AEBa4zSUDQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "uM3BAHDbtgECDA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 6,
+      "cubeless": {
+        "ours": "27ZhCAC4zcEAcA",
+        "theirs": "27ZJIAC4zcEAcA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "27ZhCAC4zcEAcA",
+        "theirs": "27ZJIAC4zcEAcA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "27ZhCAC4zcEAcA",
+        "theirs": "27ZJIAC4zcEAcA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "27ZhCAC4zcEAcA",
+        "theirs": "27ZJIAC4zcEAcA",
+        "agree": false
+      }
+    },
+    {
+      "id": "uM3BAHDbtokACA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "23YTgAC4zcEAcA",
+        "theirs": "226DIAC4zcEAcA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "23YTgAC4zcEAcA",
+        "theirs": "226DIAC4zcEAcA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "23YTgAC4zcEAcA",
+        "theirs": "226DIAC4zcEAcA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "23YTgAC4zcEAcA",
+        "theirs": "226DIAC4zcEAcA",
+        "agree": false
+      }
+    },
+    {
+      "id": "+wAAALjNwUBBAA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 3,
+      "cubeless": {
+        "ours": "uM3BiAL7AAAAAA",
+        "theirs": "uM3BkAH7AAAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "uM3BiAL7AAAAAA",
+        "theirs": "uM3BkAH7AAAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "uM3BiAL7AAAAAA",
+        "theirs": "uM3BkAH7AAAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "uM3BiAL7AAAAAA",
+        "theirs": "uM3BkAH7AAAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bhzwAQawbXCAMQ",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 6,
+      "cubeless": {
+        "ours": "sNtggDFuHPABBg",
+        "theirs": "sG1wCCNuHPABBg",
+        "agree": false
+      }
+    },
+    {
+      "id": "7hjwCQSw7WBAIw",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 3,
+      "cubeless": {
+        "ours": "sO1gwAbuGPAJBA",
+        "theirs": "sO1EwCLuGPABQg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "sO1gwAbuGPAJBA",
+        "theirs": "sO1EwCLuGPABQg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "sO1gwAbuGPAJBA",
+        "theirs": "sO1EwCLuGPABQg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "sO1gwAbuGPAJBA",
+        "theirs": "sO1EwCLuGPABQg",
+        "agree": false
+      }
+    },
+    {
+      "id": "7hicAwSw7eAAIw",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 3,
+      "centred": {
+        "ours": "sNvgAAfuGJwDBA",
+        "theirs": "sO3IAAfuGJwDBA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "sNvgAAfuGJwDBA",
+        "theirs": "sO3IAAfuGJwDBA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "sNvgAAfuGJwDBA",
+        "theirs": "sO3IAAfuGJwDBA",
+        "agree": false
+      }
+    },
+    {
+      "id": "78UYBgB2tykABA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 2,
+      "cubeless": {
+        "ours": "bbclAATvxRgGAA",
+        "theirs": "brcjAATvxRgGAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bbclAATvxRgGAA",
+        "theirs": "brcjAATvxRgGAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bbclAATvxRgGAA",
+        "theirs": "brcjAATvxRgGAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bbclAATvxRgGAA",
+        "theirs": "brcjAATvxRgGAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "740HAEB3GwAAAA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 5,
+      "centred": {
+        "ours": "9wYAALw3HgAAAQ",
+        "theirs": "twUAAN4bDwCAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "9wYAALw3HgAAAQ",
+        "theirs": "twUAAN4bDwCAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Np6DAUHbZgWAIQ",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 6,
+      "cubeless": {
+        "ours": "29YEAiE2noMBYA",
+        "theirs": "29YEIAM2noMBYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "29YEAiE2noMBYA",
+        "theirs": "29YEIAM2noMBYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "29YEAiE2noMBYA",
+        "theirs": "29YEIAM2noMBYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "29YEAiE2noMBYA",
+        "theirs": "29YEIAM2noMBYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "++4BAAR2NoMCAw",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "centred": {
+        "ours": "djaDIQL77gEABA",
+        "theirs": "dm2CAgP77gEAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "djaDIQL77gEABA",
+        "theirs": "dm2CAgP77gEAQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "djaDIQL77gEABA",
+        "theirs": "dm2CAgP77gEAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "++4BAEB220AFAg",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 1,
+      "cubeless": {
+        "ours": "dtugAgL77gEAQA",
+        "theirs": "dtvAAgH77gEAQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "dtugAgL77gEAQA",
+        "theirs": "dtvAAgH77gEAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "dtugAgL77gEAQA",
+        "theirs": "dtvAAgH77gEAQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "dtugAgL77gEAQA",
+        "theirs": "dtvAAgH77gEAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "++4BAEDtbhsAAA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 4,
+      "centred": {
+        "ours": "u7sZAAD77gEAQA",
+        "theirs": "3bsNAAD77gEAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "u7sZAAD77gEAQA",
+        "theirs": "3bsNAAD77gEAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bJvgASjg88EBMA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 4,
+      "cubeless": {
+        "ours": "wfPBATBsm+ABYA",
+        "theirs": "4PODATBsm+ABKA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "wfPBATBsm+ABYA",
+        "theirs": "4PODATBsm+ABKA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "wfPBATBsm+ABYA",
+        "theirs": "4PODATBsm+ABKA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "wfPBATBsm+ABYA",
+        "theirs": "4PODATBsm+ABKA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bJvgAQaG58EBMA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 1,
+      "cubeless": {
+        "ours": "FufBATBsm+ABBg",
+        "theirs": "hs/BAShsm+ABBg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "FufBATBsm+ABBg",
+        "theirs": "hs/BAShsm+ABBg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "FufBATBsm+ABBg",
+        "theirs": "hs/BAShsm+ABBg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "FufBATBsm+ABBg",
+        "theirs": "hs/BAShsm+ABBg",
+        "agree": false
+      }
+    },
+    {
+      "id": "Lp7BATBsm4kBBg",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 1,
+      "cubeless": {
+        "ours": "bLuCAQYunsEBMA",
+        "theirs": "bJsNAQYunsEBMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bLuCAQYunsEBMA",
+        "theirs": "bJsNAQYunsEBMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bLuCAQYunsEBMA",
+        "theirs": "bJsNAQYunsEBMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bLuCAQYunsEBMA",
+        "theirs": "bJsNAQYunsEBMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Ds/gwgBsOwKgUQ",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "bDsCQSMOz+DCAA",
+        "theirs": "bDuCgCMOz+DCAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bDsCQSMOz+DCAA",
+        "theirs": "bDuCgCMOz+DCAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bDsCQSMOz+DCAA",
+        "theirs": "bDuCgCMOz+DCAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bDsCQSMOz+DCAA",
+        "theirs": "bDuCgCMOz+DCAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bDsCYAsOz+DCAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "Ds/ghQBsOwCwRQ",
+        "theirs": "Ds+YwQBsOwJgCw",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Ds/ghQBsOwCwRQ",
+        "theirs": "Ds+YwQBsOwJgCw",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Ds/ghQBsOwCwRQ",
+        "theirs": "Ds+YwQBsOwJgCw",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Ds/ghQBsOwCwRQ",
+        "theirs": "Ds+YwQBsOwJgCw",
+        "agree": false
+      }
+    },
+    {
+      "id": "Hs7gwgBsOwJgQw",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "7DYCYAsezuDCAA",
+        "theirs": "bDsC4AYezuDCAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "7DYCYAsezuDCAA",
+        "theirs": "bDsC4AYezuDCAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "7DYCYAsezuDCAA",
+        "theirs": "bDsC4AYezuDCAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "7DYCYAsezuDCAA",
+        "theirs": "bDsC4AYezuDCAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "95YHAEDbZgCUAw",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 5,
+      "cubeless": {
+        "ours": "22aAUgL3lgcAQA",
+        "theirs": "22ZAEQP3lgcAQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "22aAUgL3lgcAQA",
+        "theirs": "22ZAEQP3lgcAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "22aAUgL3lgcAQA",
+        "theirs": "22ZAEQP3lgcAQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "22aAUgL3lgcAQA",
+        "theirs": "22ZAEQP3lgcAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "95YHAEDbZiApAg",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "22aYIAL3lgcAQA",
+        "theirs": "22ZIUgD3lgcAQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "22aYIAL3lgcAQA",
+        "theirs": "22ZIUgD3lgcAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "22aYIAL3lgcAQA",
+        "theirs": "22ZIUgD3lgcAQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "22aYIAL3lgcAQA",
+        "theirs": "22ZIUgD3lgcAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "95YHAEDbZrAQAg",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 5,
+      "cubeless": {
+        "ours": "2+ZgKAD3lgcAQA",
+        "theirs": "22ZoEQD3lgcAQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2+ZgKAD3lgcAQA",
+        "theirs": "22ZoEQD3lgcAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "2+ZgKAD3lgcAQA",
+        "theirs": "22ZoEQD3lgcAQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2+ZgKAD3lgcAQA",
+        "theirs": "22ZoEQD3lgcAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "wdtgAB7M3kYCAg",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 2,
+      "cubeless": {
+        "ours": "zN0WAgLB22AAHg",
+        "theirs": "rN0mAgLB22AAHg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "zN0WAgLB22AAHg",
+        "theirs": "rN0mAgLB22AAHg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "zN0WAgLB22AAHg",
+        "theirs": "rN0mAgLB22AAHg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "zN0WAgLB22AAHg",
+        "theirs": "rN0mAgLB22AAHg",
+        "agree": false
+      }
+    },
+    {
+      "id": "zL0dAQDB22AAHg",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 2,
+      "cubeless": {
+        "ours": "oddCAB7MvR0BAA",
+        "theirs": "kdtCAB7MvR0BAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "oddCAB7MvR0BAA",
+        "theirs": "kdtCAB7MvR0BAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "oddCAB7MvR0BAA",
+        "theirs": "kdtCAB7MvR0BAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "oddCAB7MvR0BAA",
+        "theirs": "kdtCAB7MvR0BAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "wdtgBBzMvR0BAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 2,
+      "cubeless": {
+        "ours": "zLtdAADB22AATg",
+        "theirs": "zL1bAADB22AATg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "zLtdAADB22AATg",
+        "theirs": "zL1bAADB22AATg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "zLtdAADB22AATg",
+        "theirs": "zL1bAADB22AATg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "zLtdAADB22AATg",
+        "theirs": "zL1bAADB22AATg",
+        "agree": false
+      }
+    },
+    {
+      "id": "c+4zAABht0EAHg",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 5,
+      "cubeless": {
+        "ours": "YbcHABxz7jMAAA",
+        "theirs": "md1AMBhz7jMAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "YbcHABxz7jMAAA",
+        "theirs": "md1AMBhz7jMAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "YbcHABxz7jMAAA",
+        "theirs": "md1AMBhz7jMAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "YbcHABxz7jMAAA",
+        "theirs": "md1AMBhz7jMAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "aTdBAB5z7jMAAA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 3,
+      "cubeless": {
+        "ours": "89wzAABpN0EAHg",
+        "theirs": "c94nAABpN0EAHg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "89wzAABpN0EAHg",
+        "theirs": "c94nAABpN0EAHg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "89wzAABpN0EAHg",
+        "theirs": "c94nAABpN0EAHg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "89wzAABpN0EAHg",
+        "theirs": "c94nAABpN0EAHg",
+        "agree": false
+      }
+    },
+    {
+      "id": "57kPAABptwIQHA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 4,
+      "owned": {
+        "ours": "2e4EABznuQ8AAA",
+        "theirs": "s20SABznuQ8AAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "520PAABptwIhGA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 4,
+      "cubeless": {
+        "ours": "aXclABjnbQ8AAA",
+        "theirs": "2e4EAhjnbQ8AAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "aXclABjnbQ8AAA",
+        "theirs": "2e4EAhjnbQ8AAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "aXclABjnbQ8AAA",
+        "theirs": "s9sQIBjnbQ8AAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "aXclABjnbQ8AAA",
+        "theirs": "2e4EAhjnbQ8AAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "5/0GAADV7goAGA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 4,
+      "cubeless": {
+        "ours": "bdsKABjn/QYAAA",
+        "theirs": "td0DABjn/QYAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bdsKABjn/QYAAA",
+        "theirs": "td0DABjn/QYAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bdsKABjn/QYAAA",
+        "theirs": "td0DABjn/QYAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "5/0BAIC13QEADA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 3,
+      "owned": {
+        "ours": "27YDBBDn/QEAAA",
+        "theirs": "a7uDABDn/QEAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "534AAGBtd4AAAg",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 3,
+      "owned": {
+        "ours": "a7sLABDnfgAAAA",
+        "theirs": "27ZDABDnfgAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPkQSDgc/ABMA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 5,
+      "cubeless": {
+        "ours": "wXPwASHgc+RBQA",
+        "theirs": "4PPgASHgc+RBIA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "wXPwASHgc+RBQA",
+        "theirs": "4PPgASHgc+RBIA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "wXPwASHgc+RBQA",
+        "theirs": "4PPgASHgc+RBIA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "wXPwASHgc+RBQA",
+        "theirs": "4PPgASHgc+RBIA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPiwQCwZ/ABMA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 6,
+      "cubeless": {
+        "ours": "sGfhQSDgc+LBAA",
+        "theirs": "sGfwBSDgc+LBAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "sGfhQSDgc+LBAA",
+        "theirs": "sGfwBSDgc+LBAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "sGfhQSDgc+LBAA",
+        "theirs": "sGfwBSDgc+LBAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "sGfhQSDgc+LBAA",
+        "theirs": "sGfwBSDgc+LBAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "yzzBYASw5+AZAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 3,
+      "cubeless": {
+        "ours": "zOaMGQDLPMFgBA",
+        "theirs": "sOc8GADLPMFgBA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "zOaMGQDLPMFgBA",
+        "theirs": "sOc8GADLPMFgBA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "zOaMGQDLPMFgBA",
+        "theirs": "sOc8GADLPMFgBA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "zOaMGQDLPMFgBA",
+        "theirs": "sOc8GADLPMFgBA",
+        "agree": false
+      }
+    },
+    {
+      "id": "sM/BGQDLPMFgBA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 5,
+      "cubeless": {
+        "ours": "y7wGYASwz8EZAA",
+        "theirs": "m3nAyACwz8EZAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "y7wGYASwz8EZAA",
+        "theirs": "m3nAyACwz8EZAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "y7wGYASwz8EZAA",
+        "theirs": "m3nAyACwz8EZAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "y7wGYASwz8EZAA",
+        "theirs": "m3nAyACwz8EZAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "mzlVwABaOwcHAA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 5,
+      "cubeless": {
+        "ours": "tW0GBwCbOVXAAA",
+        "theirs": "2nYOBgCbOVXAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tW0GBwCbOVXAAA",
+        "theirs": "2nYOBgCbOVXAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tW0GBwCbOVXAAA",
+        "theirs": "2nYOBgCbOVXAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tW0GBwCbOVXAAA",
+        "theirs": "2nYOBgCbOVXAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bXUGBwCbOVXAAA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 6,
+      "cubeless": {
+        "ours": "W+tEwABtdQYHAA",
+        "theirs": "2+ZQwABtdQYHAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "W+tEwABtdQYHAA",
+        "theirs": "2+ZQwABtdQYHAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "W+tEwABtdQYHAA",
+        "theirs": "2+ZQwABtdQYHAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "W+tEwABtdQYHAA",
+        "theirs": "2+ZQwABtdQYHAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "260HBAC3bQPAAA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 1,
+      "cubeless": {
+        "ours": "t22DgADbrQcAQA",
+        "theirs": "t20DQQDbrQcAQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "t22DgADbrQcAQA",
+        "theirs": "t20DQQDbrQcAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "t22DgADbrQcAQA",
+        "theirs": "t20DQQDbrQcAQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "t22DgADbrQcAQA",
+        "theirs": "t20DQQDbrQcAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "260HAEC3bUOAAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 5,
+      "cubeless": {
+        "ours": "t23DAADbrQcAQA",
+        "theirs": "t20LBADbrQcAQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "t23DAADbrQcAQA",
+        "theirs": "t20LBADbrQcAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "t23DAADbrQcAQA",
+        "theirs": "t20LBADbrQcAQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "t23DAADbrQcAQA",
+        "theirs": "t20LBADbrQcAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgAQawt+ABMA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 6,
+      "centred": {
+        "ours": "Yu/AwQDg8+ABBg",
+        "theirs": "sPeCwQDg8+ABBg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Yu/AwQDg8+ABBg",
+        "theirs": "sPeCwQDg8+ABBg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Yu/AwQDg8+ABBg",
+        "theirs": "sPeCwQDg8+ABBg",
+        "agree": false
+      }
+    },
+    {
+      "id": "xm6MCQTEt8EBBg",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 4,
+      "cubeless": {
+        "ours": "LG/BAQbGbowJQA",
+        "theirs": "GrfBAQbGbowJBA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "LG/BAQbGbowJQA",
+        "theirs": "GrfBAQbGbowJBA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "LG/BAQbGbowJQA",
+        "theirs": "GrfBAQbGbowJBA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "LG/BAQbGbowJQA",
+        "theirs": "GrfBAQbGbowJBA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bWuBAQaWuzEGAA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 1,
+      "cubeless": {
+        "ours": "K7sxBgBta4EBBg",
+        "theirs": "LbcxBgBta4EBBg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "K7sxBgBta4EBBg",
+        "theirs": "LbcxBgBta4EBBg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "K7sxBgBta4EBBg",
+        "theirs": "LbcxBgBta4EBBg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "K7sxBgBta4EBBg",
+        "theirs": "LbcxBgBta4EBBg",
+        "agree": false
+      }
+    },
+    {
+      "id": "lu82AABta4EBBg",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 1,
+      "cubeless": {
+        "ours": "besgAQaW7zYAAA",
+        "theirs": "bWuhAAaW7zYAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "besgAQaW7zYAAA",
+        "theirs": "bWuhAAaW7zYAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "besgAQaW7zYAAA",
+        "theirs": "bWuhAAaW7zYAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "besgAQaW7zYAAA",
+        "theirs": "bWuhAAaW7zYAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "fmcbAABt2wUABg",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 1,
+      "cubeless": {
+        "ours": "27YFAAZ+ZxsAAA",
+        "theirs": "bdsDIAR+ZxsAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "27YFAAZ+ZxsAAA",
+        "theirs": "bdsDIAR+ZxsAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "27YFAAZ+ZxsAAA",
+        "theirs": "bdsDIAR+ZxsAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "27YFAAZ+ZxsAAA",
+        "theirs": "bdsDIAR+ZxsAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPwATDgc/ABMA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 2,
+      "cubeless": {
+        "ours": "0HPkATDgc/ABMA",
+        "theirs": "4HPkASjgc/ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "0HPkATDgc/ABMA",
+        "theirs": "4HPkASjgc/ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "0HPkATDgc/ABMA",
+        "theirs": "4HPkASjgc/ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "0HPkATDgc/ABMA",
+        "theirs": "4HPkASjgc/ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "crvAgCHg2w0HAA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 6,
+      "cubeless": {
+        "ours": "g9cNBwByu8CAQQ",
+        "theirs": "wbsbBgByu8CAQQ",
+        "agree": false
+      },
+      "centred": {
+        "ours": "g9cNBwByu8CAQQ",
+        "theirs": "wbsbBgByu8CAQQ",
+        "agree": false
+      },
+      "owned": {
+        "ours": "g9cNBwByu8CAQQ",
+        "theirs": "wbsbBgByu8CAQQ",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "g9cNBwByu8CAQQ",
+        "theirs": "wbsbBgByu8CAQQ",
+        "agree": false
+      }
+    },
+    {
+      "id": "OL87AADabQOAIQ",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 4,
+      "cubeless": {
+        "ours": "2m0LAAM4vzsAAA",
+        "theirs": "2m0LECA4vzsAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2m0LAAM4vzsAAA",
+        "theirs": "2m0LECA4vzsAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "2m0LAAM4vzsAAA",
+        "theirs": "2m0LECA4vzsAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2m0LAAM4vzsAAA",
+        "theirs": "2m0LECA4vzsAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "290AAiF28w4EAA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 2,
+      "cubeless": {
+        "ours": "bdsLAQDb3QAAcA",
+        "theirs": "drsHAQDb3QAAaA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bdsLAQDb3QAAcA",
+        "theirs": "drsHAQDb3QAAaA",
+        "agree": false
+      }
+    },
+    {
+      "id": "7jcHAEC73QgAIQ",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 5,
+      "cubeless": {
+        "ours": "u90IASDuNwcAQA",
+        "theirs": "u90BCCDuNwcAQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "u90IASDuNwcAQA",
+        "theirs": "u90BCCDuNwcAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "u90IASDuNwcAQA",
+        "theirs": "u90BCCDuNwcAQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "u90IASDuNwcAQA",
+        "theirs": "u90BCCDuNwcAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "7jcHAEC73QgIAg",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 5,
+      "cubeless": {
+        "ours": "u90IEQDuNwcAQA",
+        "theirs": "u90BGADuNwcAQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "u90IEQDuNwcAQA",
+        "theirs": "u90BGADuNwcAQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "u90IEQDuNwcAQA",
+        "theirs": "u90BGADuNwcAQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "u90IEQDuNwcAQA",
+        "theirs": "u90BGADuNwcAQA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPwATDgc/ABMA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 3,
+      "cubeless": {
+        "ours": "4HPiQSDgc/ABMA",
+        "theirs": "4HPwCSDgc/ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "4HPiQSDgc/ABMA",
+        "theirs": "4HPwCSDgc/ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "4HPiQSDgc/ABMA",
+        "theirs": "4HPwCSDgc/ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "4HPiQSDgc/ABMA",
+        "theirs": "4HPwCSDgc/ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Fc8H4ADYzsgBAw",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "tJ2RAQMVzwfgAA",
+        "theirs": "ZpvIAQMVzwfgAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "tJ2RAQMVzwfgAA",
+        "theirs": "ZpvIAQMVzwfgAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "tJ2RAQMVzwfgAA",
+        "theirs": "ZpvIAQMVzwfgAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "tJ2RAQMVzwfgAA",
+        "theirs": "ZpvIAQMVzwfgAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "d8cMwADWNoMBAw",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 2,
+      "cubeless": {
+        "ours": "ze2AAQN3xwzAAA",
+        "theirs": "1jZjwAB3xwzAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "ze2AAQN3xwzAAA",
+        "theirs": "1jZjwAB3xwzAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "ze2AAQN3xwzAAA",
+        "theirs": "1jZjwAB3xwzAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "ze2AAQN3xwzAAA",
+        "theirs": "1jZjwAB3xwzAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "fxcDwABu24ARAg",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 6,
+      "cubeless": {
+        "ours": "bdsQAwJ/FwPAAA",
+        "theirs": "bduAJQB/FwPAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bdsQAwJ/FwPAAA",
+        "theirs": "bduAJQB/FwPAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bdsQAwJ/FwPAAA",
+        "theirs": "bduAJQB/FwPAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bdsQAwJ/FwPAAA",
+        "theirs": "bduAJQB/FwPAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "drsHAIC/RwAAHA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 1,
+      "cubeless": {
+        "ours": "f08AADh2uwcAAA",
+        "theirs": "/44AADh2uwcAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "f08AADh2uwcAAA",
+        "theirs": "/44AADh2uwcAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "f08AADh2uwcAAA",
+        "theirs": "/44AADh2uwcAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "f08AADh2uwcAAA",
+        "theirs": "/44AADh2uwcAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPwATDgc/ABMA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "NOfgARjY3ZABAw",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 4,
+      "cubeless": {
+        "ours": "2N0MAQM05+ABGA",
+        "theirs": "2N1kAAM05+ABGA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2N0MAQM05+ABGA",
+        "theirs": "2N1kAAM05+ABGA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "2N0MAQM05+ABGA",
+        "theirs": "2N1kAAM05+ABGA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2N0MAQM05+ABGA",
+        "theirs": "2N1kAAM05+ABGA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bOY4BwCyd0MAAw",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 1,
+      "cubeless": {
+        "ours": "ZndDAANs5jgHAA",
+        "theirs": "cncTAANs5jgHAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "ZndDAANs5jgHAA",
+        "theirs": "cncTAANs5jgHAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "ZndDAANs5jgHAA",
+        "theirs": "cncTAANs5jgHAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "ZndDAANs5jgHAA",
+        "theirs": "cncTAANs5jgHAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bLZxBgBq7wYAAw",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "q90FAANstnEGAA",
+        "theirs": "rb0FAANstnEGAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "q90FAANstnEGAA",
+        "theirs": "rb0FAANstnEGAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "q90FAANstnEGAA",
+        "theirs": "rb0FAANstnEGAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "q90FAANstnEGAA",
+        "theirs": "rb0FAANstnEGAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "a9sFAANstscEAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 5,
+      "cubeless": {
+        "ours": "2pnHBABr2wUAAw",
+        "theirs": "WbaPAQBr2wUAAw",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2pnHBABr2wUAAw",
+        "theirs": "WbaPAQBr2wUAAw",
+        "agree": false
+      },
+      "owned": {
+        "ours": "2pnHBABr2wUAAw",
+        "theirs": "WbaPAQBr2wUAAw",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2pnHBABr2wUAAw",
+        "theirs": "WbaPAQBr2wUAAw",
+        "agree": false
+      }
+    },
+    {
+      "id": "4NuRBwDIc/AAJg",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 3,
+      "cubeless": {
+        "ours": "WGfwACbg25EHAA",
+        "theirs": "qGfkACbg25EHAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "WGfwACbg25EHAA",
+        "theirs": "qGfkACbg25EHAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "WGfwACbg25EHAA",
+        "theirs": "qGfkACbg25EHAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "WGfwACbg25EHAA",
+        "theirs": "qGfkACbg25EHAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "nN0NBgDYrsEAEw",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 5,
+      "owned": {
+        "ours": "bLvAGBCc3Q0GAA",
+        "theirs": "bLsGABOc3Q0GAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "nN0dAQC0XcEAEw",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 1,
+      "cubeless": {
+        "ours": "bFuhABOc3R0BAA",
+        "theirs": "bNvAABOc3R0BAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "bFuhABOc3R0BAA",
+        "theirs": "bNvAABOc3R0BAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "bFuhABOc3R0BAA",
+        "theirs": "bNvAABOc3R0BAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "bFuhABOc3R0BAA",
+        "theirs": "bNvAABOc3R0BAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "tF3BAhKc3R0AQA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 5,
+      "cubeless": {
+        "ours": "nN0dQADYLrCAZA",
+        "theirs": "OrsdAAjYrmABYQ",
+        "agree": false
+      },
+      "centred": {
+        "ours": "nN0dQADYLrCAZA",
+        "theirs": "OrsdAAjYrmABYQ",
+        "agree": false
+      },
+      "owned": {
+        "ours": "nN0dQADYLrCAZA",
+        "theirs": "OrsdAAjYrmABYQ",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "nN0dQADYLrCAZA",
+        "theirs": "OrsdAAjYrmABYQ",
+        "agree": false
+      }
+    },
+    {
+      "id": "2K5gAXC63QoADA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 3,
+      "cubeless": {
+        "ours": "dtsGAAzYrmABcA",
+        "theirs": "tr0FAAzYrmABcA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "dtsGAAzYrmABcA",
+        "theirs": "tr0FAAzYrmABcA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "dtsGAAzYrmABcA",
+        "theirs": "tr0FAAzYrmABcA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "dtsGAAzYrmABcA",
+        "theirs": "tr0FAAzYrmABcA",
+        "agree": false
+      }
+    },
+    {
+      "id": "2A4YAH7btgUkAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 3,
+      "cubeless": {
+        "ours": "27ZFIADYDhgAfg",
+        "theirs": "27aDIADYDhgAfg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "27ZFIADYDhgAfg",
+        "theirs": "27aDIADYDhgAfg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "27ZFIADYDhgAfg",
+        "theirs": "27aDIADYDhgAfg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "27ZFIADYDhgAfg",
+        "theirs": "27aDIADYDhgAfg",
+        "agree": false
+      }
+    },
+    {
+      "id": "2A4YAH7btkUgAA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "27aLAADYDhgAfg",
+        "theirs": "290GIADYDhgAfg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "27aLAADYDhgAfg",
+        "theirs": "290GIADYDhgAfg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "27aLAADYDhgAfg",
+        "theirs": "290GIADYDhgAfg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "27aLAADYDhgAfg",
+        "theirs": "290GIADYDhgAfg",
+        "agree": false
+      }
+    },
+    {
+      "id": "2A4YAH7btiUEAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "27ZVAADYDhgAfg",
+        "theirs": "27aNAADYDhgAfg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "27ZVAADYDhgAfg",
+        "theirs": "27aNAADYDhgAfg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "27ZVAADYDhgAfg",
+        "theirs": "27aNAADYDhgAfg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "27ZVAADYDhgAfg",
+        "theirs": "27aNAADYDhgAfg",
+        "agree": false
+      }
+    },
+    {
+      "id": "4HPwATDgc/ABMA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 6,
+      "cubeless": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "hmfwATDgc/ABMA",
+        "theirs": "4HPwBSDgc/ABMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "sDN4ADqw5+AJCA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 6,
+      "cubeless": {
+        "ours": "xs7gCQiwM3gAXA",
+        "theirs": "sOeGAwiwM3gAOg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "xs7gCQiwM3gAXA",
+        "theirs": "sOeGAwiwM3gAOg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "xs7gCQiwM3gAXA",
+        "theirs": "sOeGAwiwM3gAOg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "xs7gCQiwM3gAXA",
+        "theirs": "sOeGAwiwM3gAOg",
+        "agree": false
+      }
+    },
+    {
+      "id": "sLNwgEYbu4gDCA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 6,
+      "cubeless": {
+        "ours": "m3YFAwiws3AAYw",
+        "theirs": "G7sSIwCwMzhAYw",
+        "agree": false
+      },
+      "centred": {
+        "ours": "m3YFAwiws3AAYw",
+        "theirs": "G7sSIwCwMzhAYw",
+        "agree": false
+      },
+      "owned": {
+        "ours": "m3YFAwiws3AAYw",
+        "theirs": "G7sSIwCwMzhAYw",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "m3YFAwiws3AAYw",
+        "theirs": "G7sSIwCwMzhAYw",
+        "agree": false
+      }
+    },
+    {
+      "id": "sDM4gHGb7QIHAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 3,
+      "cubeless": {
+        "ours": "m9tFBACwMziAcQ",
+        "theirs": "m+3GAACwMziAcQ",
+        "agree": false
+      },
+      "centred": {
+        "ours": "m9tFBACwMziAcQ",
+        "theirs": "m+3GAACwMziAcQ",
+        "agree": false
+      },
+      "owned": {
+        "ours": "m9tFBACwMziAcQ",
+        "theirs": "m+3GAACwMziAcQ",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "m9tFBACwMziAcQ",
+        "theirs": "m+3GAACwMziAcQ",
+        "agree": false
+      }
+    },
+    {
+      "id": "sDM4gHGb7QUGAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 2,
+      "cubeless": {
+        "ours": "m9tFBACwMziAcQ",
+        "theirs": "m+1FAQCwMziAcQ",
+        "agree": false
+      },
+      "centred": {
+        "ours": "m9tFBACwMziAcQ",
+        "theirs": "m+1FAQCwMziAcQ",
+        "agree": false
+      },
+      "owned": {
+        "ours": "m9tFBACwMziAcQ",
+        "theirs": "m+1FAQCwMziAcQ",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "m9tFBACwMziAcQ",
+        "theirs": "m+1FAQCwMziAcQ",
+        "agree": false
+      }
+    },
+    {
+      "id": "sDM4gGOb2xMEAA",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 1,
+      "cubeless": {
+        "ours": "m7uTAACwMziAYw",
+        "theirs": "m3sHBACwMziAYw",
+        "agree": false
+      },
+      "centred": {
+        "ours": "m7uTAACwMziAYw",
+        "theirs": "m3sHBACwMziAYw",
+        "agree": false
+      },
+      "owned": {
+        "ours": "m7uTAACwMziAYw",
+        "theirs": "m3sHBACwMziAYw",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "m7uTAACwMziAYw",
+        "theirs": "m3sHBACwMziAYw",
+        "agree": false
+      }
+    },
+    {
+      "id": "9wwAAMDO4EAcAQ",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 6,
+      "cubeless": {
+        "ours": "sDM4Ig73DAAAAA",
+        "theirs": "sDM4cAz3DAAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "sDM4Ig73DAAAAA",
+        "theirs": "sDM4cAz3DAAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "sDM4Ig73DAAAAA",
+        "theirs": "sDM4cAz3DAAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "sDM4Ig73DAAAAA",
+        "theirs": "sDM4cAz3DAAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgASTg8+ABIQ",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 2,
+      "centred": {
+        "ours": "4PPIAQPg8+ABJA",
+        "theirs": "mOfgASHg8+ABJA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "4PPIAQPg8+ABJA",
+        "theirs": "mOfgASHg8+ABJA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "4PPIAQPg8+ABJA",
+        "theirs": "mOfgASHg8+ABJA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgAWDb1iaAAA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 3,
+      "cubeless": {
+        "ours": "27YNEADg8+ABYA",
+        "theirs": "224LgADg8+ABYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "27YNEADg8+ABYA",
+        "theirs": "224LgADg8+ABYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "27YNEADg8+ABYA",
+        "theirs": "224LgADg8+ABYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "27YNEADg8+ABYA",
+        "theirs": "224LgADg8+ABYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgAWC3bQeAAA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 3,
+      "cubeless": {
+        "ours": "t90GEADg8+ABYA",
+        "theirs": "t20HBADg8+ABYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "t90GEADg8+ABYA",
+        "theirs": "t20HBADg8+ABYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "t90GEADg8+ABYA",
+        "theirs": "t20HBADg8+ABYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "t90GEADg8+ABYA",
+        "theirs": "t20HBADg8+ABYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgAWC37QYBAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 2,
+      "cubeless": {
+        "ours": "t+0mAADg8+ABYA",
+        "theirs": "t91GAADg8+ABYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "t+0mAADg8+ABYA",
+        "theirs": "t91GAADg8+ABYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "t+0mAADg8+ABYA",
+        "theirs": "t91GAADg8+ABYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "t+0mAADg8+ABYA",
+        "theirs": "t91GAADg8+ABYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgASTgc/ABMA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 3,
+      "cubeless": {
+        "ours": "xHPkATDg8+ABUA",
+        "theirs": "xHPwASTg8+ABUA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "xHPkATDg8+ABUA",
+        "theirs": "xHPwASTg8+ABUA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "xHPkATDg8+ABUA",
+        "theirs": "xHPwASTg8+ABUA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "xHPkATDg8+ABUA",
+        "theirs": "xHPwASTg8+ABUA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Y56DAWCz2xUEAA",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 1,
+      "cubeless": {
+        "ours": "c7cTBABjnoMBYA",
+        "theirs": "c7sLBABjnoMBYA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "c7cTBABjnoMBYA",
+        "theirs": "c7sLBABjnoMBYA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "c7cTBABjnoMBYA",
+        "theirs": "c7sLBABjnoMBYA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "c7cTBABjnoMBYA",
+        "theirs": "c7sLBABjnoMBYA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Y56DAWDbbgsEAA",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 4,
+      "cubeless": {
+        "ours": "t7sNAABjnoMBYA",
+        "theirs": "2+0GAIAxz8EAMA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "t7sNAABjnoMBYA",
+        "theirs": "2+0GAIAxz8EAMA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "t7sNAABjnoMBYA",
+        "theirs": "2+0GAIAxz8EAMA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "t7sNAABjnoMBYA",
+        "theirs": "2+0GAIAxz8EAMA",
+        "agree": false
+      }
+    },
+    {
+      "id": "bwcAAIx5DgYCAQ",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 2,
+      "cubeless": {
+        "ours": "Yz6DgQJvBwAAAA",
+        "theirs": "Y54jgQJvBwAAAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "Yz6DgQJvBwAAAA",
+        "theirs": "Y54jgQJvBwAAAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "Yz6DgQJvBwAAAA",
+        "theirs": "Y54jgQJvBwAAAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "Yz6DgQJvBwAAAA",
+        "theirs": "Y54jgQJvBwAAAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4PPgAQXgc/AAWA",
+      "origin": "contact",
+      "d1": 6,
+      "d2": 4,
+      "cubeless": {
+        "ours": "4HPwICLg8+ABBQ",
+        "theirs": "4HPwBDDg8+ABBQ",
+        "agree": false
+      }
+    },
+    {
+      "id": "mOfgAQXgc/AgMA",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 3,
+      "cubeless": {
+        "ours": "jGfwIDCY5+ABBQ",
+        "theirs": "0GfwATCY5+ABQg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "jGfwIDCY5+ABBQ",
+        "theirs": "0GfwATCY5+ABQg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "jGfwIDCY5+ABBQ",
+        "theirs": "0GfwATCY5+ABQg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "jGfwIDCY5+ABBQ",
+        "theirs": "0GfwATCY5+ABQg",
+        "agree": false
+      }
+    },
+    {
+      "id": "sLfBARTY7ogBBg",
+      "origin": "contact",
+      "d1": 4,
+      "d2": 2,
+      "cubeless": {
+        "ours": "dNuIAQawt8EBSA",
+        "theirs": "uN2BAQawt8EBFA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "dNuIAQawt8EBSA",
+        "theirs": "uN2BAQawt8EBFA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "dNuIAQawt8EBSA",
+        "theirs": "uN2BAQawt8EBFA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "dNuIAQawt8EBSA",
+        "theirs": "uN2BAQawt8EBFA",
+        "agree": false
+      }
+    },
+    {
+      "id": "YrfBASh024EBBg",
+      "origin": "contact",
+      "d1": 5,
+      "d2": 1,
+      "cubeless": {
+        "ours": "2raBAQZit8EBUA",
+        "theirs": "5raBAQZit8EBUA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "2raBAQZit8EBUA",
+        "theirs": "5raBAQZit8EBUA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "2raBAQZit8EBUA",
+        "theirs": "5raBAQZit8EBUA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "2raBAQZit8EBUA",
+        "theirs": "5raBAQZit8EBUA",
+        "agree": false
+      }
+    },
+    {
+      "id": "Y9vACAZit4MBFA",
+      "origin": "contact",
+      "d1": 2,
+      "d2": 4,
+      "cubeless": {
+        "ours": "YncHARRj28AAQw",
+        "theirs": "xm6DARRj28AIBg",
+        "agree": false
+      },
+      "centred": {
+        "ours": "YncHARRj28AAQw",
+        "theirs": "xm6DARRj28AIBg",
+        "agree": false
+      },
+      "owned": {
+        "ours": "YncHARRj28AAQw",
+        "theirs": "xm6DARRj28AIBg",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "YncHARRj28AAQw",
+        "theirs": "xm6DARRj28AIBg",
+        "agree": false
+      }
+    },
+    {
+      "id": "xd0GBwBrboEBBg",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 1,
+      "centred": {
+        "ours": "W1uBAQbF3QYHAA",
+        "theirs": "a9uAAQbF3QYHAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "W1uBAQbF3QYHAA",
+        "theirs": "a9uAAQbF3QYHAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "W1uBAQbF3QYHAA",
+        "theirs": "a9uAAQbF3QYHAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "d3MDBgDb3QEABg",
+      "origin": "contact",
+      "d1": 1,
+      "d2": 2,
+      "cubeless": {
+        "ours": "u7sBAAZ3cwMGAA",
+        "theirs": "t9sBAAZ3cwMGAA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "u7sBAAZ3cwMGAA",
+        "theirs": "t9sBAAZ3cwMGAA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "u7sBAAZ3cwMGAA",
+        "theirs": "t9sBAAZ3cwMGAA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "u7sBAAZ3cwMGAA",
+        "theirs": "t9sBAAZ3cwMGAA",
+        "agree": false
+      }
+    },
+    {
+      "id": "4LuDA0Bmm4YBAw",
+      "origin": "contact",
+      "d1": 3,
+      "d2": 6,
+      "cubeless": {
+        "ours": "ZpsmAwLgu4MDQA",
+        "theirs": "ZlstAAPgu4MDQA",
+        "agree": false
+      },
+      "centred": {
+        "ours": "ZpsmAwLgu4MDQA",
+        "theirs": "ZlstAAPgu4MDQA",
+        "agree": false
+      },
+      "owned": {
+        "ours": "ZpsmAwLgu4MDQA",
+        "theirs": "ZlstAAPgu4MDQA",
+        "agree": false
+      },
+      "opponent": {
+        "ours": "ZpsmAwLgu4MDQA",
+        "theirs": "ZlstAAPgu4MDQA",
+        "agree": false
+      }
+    }
+  ]
+}

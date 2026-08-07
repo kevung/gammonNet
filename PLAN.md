@@ -778,8 +778,12 @@ avec **repli explicite** sur le réseau hors table. Mesure de l'écart réseau s
 > (`use_cube`, possession en miroir par pli, antisymétrie testée), exactes dans le domaine de
 > la table bilatérale. Décision contre l'exact : 96,8/95,3 % contesté, zéro effet de profondeur
 > dans le domaine exact ; corpus bold/safe versionné (338 entrées, rejouées par la suite de
-> tests). Voir `docs/mesures/2026-08-08-T34-arbre.md`. **Reste de la phase 2 : 3b** — l'accord
-> des choix de coups cubeful contre gnubg.
+> tests). Voir `docs/mesures/2026-08-08-T34-arbre.md`. **3b est mesurée aussi**
+> (`docs/mesures/2026-08-08-T34-coups-cubeful.md`) : accord des choix de coups stable à
+> ~81-83 % quel que soit l'état du videau ; sur les décisions cube-sensibles (~2 % du volume),
+> les deux moteurs plient sur des positions presque disjointes (intersection ≤ 1) — des
+> quasi-égalités que chaque modèle départage à sa façon, arbitrables seulement par T39. La
+> phase 2 de T34 est close ; la suite du chemin est T39 puis T35.
 
 **Objectif** — doubler, prendre, passer.
 
