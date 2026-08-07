@@ -9,6 +9,7 @@
 
 #include "gn_bearoff.h"
 #include "gn_choose.h"
+#include "gn_evalcache.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -58,14 +59,26 @@ unsigned long gn_search_evaluations(void) { return g_evaluations; }
 void gn_search_reset_evaluations(void) { g_evaluations = 0; }
 
 /*
- * The single place a leaf position becomes five probabilities (T38).
+ * The single place a leaf position becomes five probabilities (T38, T3A).
  *
- * The exact bearoff table, if one is installed, is consulted FIRST. A hit
- * costs a lookup and is exact; a miss falls back to the network, exactly as
- * before this table existed. The two outcomes are counted separately --
- * `gn_bearoff_shared_hits()` and `g_evaluations` -- because a table answer is
- * NOT a network evaluation, and the throughput measurements in `bench/`
- * depend on that distinction staying clean.
+ * Three sources are tried in order, each cheaper to skip than the one after
+ * it:
+ *
+ *   1. The exact bearoff table, if one is installed. A hit is exact, and
+ *      costs one memory read.
+ *   2. The evaluation cache, if one is installed (T3A). A hit is the network's
+ *      own past answer for this EXACT position -- see gn_evalcache.h for why
+ *      that makes it safe to return without re-running the network -- and it
+ *      also costs about one memory read plus a 29-byte comparison.
+ *   3. The network itself: the one source that was ever expensive.
+ *
+ * `g_evaluations` counts ONLY step 3. A bearoff hit was never a network
+ * evaluation (T38's distinction), and neither is a cache hit: it is the
+ * SAME evaluation, counted once, when it first happened. Counting it twice
+ * would make the cache look like it does nothing, and counting it zero times
+ * for the miss that populated the cache would undercount the real cost.
+ * `gn_evalcache_hits()` / `_misses()` are the separate counters that make the
+ * cache's own contribution measurable.
  *
  * Both call sites that used to invoke `gn_evaluate` directly on a leaf go
  * through here now: `leaf_value` and the shallow pass of `rank_plays`.
@@ -77,10 +90,19 @@ static int evaluate_position(const GnNetwork *net, const GnPosition *pos,
     if (table != NULL && gn_bearoff_probs(table, pos, probs)) {
         return 0;
     }
+
+    GnEvalCache *cache = gn_evalcache_shared();
+    if (cache != NULL && gn_evalcache_lookup(cache, pos, probs)) {
+        return 0;
+    }
+
     if (gn_evaluate(net, pos, probs) != 0) {
         return -1;
     }
     g_evaluations++;
+    if (cache != NULL) {
+        gn_evalcache_store(cache, pos, probs);
+    }
     return 0;
 }
 
