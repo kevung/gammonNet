@@ -248,6 +248,10 @@ def main() -> int:
             "rate": agreed / len(sensitive) if sensitive else None,
             "ours_moved": ours_moved, "theirs_moved": theirs_moved,
             "both_moved": both_moved,
+            "by_origin": {
+                origin: sum(1 for r in sensitive if r["origin"] == origin)
+                for origin in ("contact", "bearoff")
+            },
         }
 
     print(json.dumps(report, indent=2))
