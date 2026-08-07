@@ -148,6 +148,52 @@ et ouvre une fiche à part : cache d'évaluation, inférence par lots, réseaux 
 > dépend tout 2-ply jouable en volume, **n'a jamais été mesurée en qualité**. C'est un choix de
 > coût, pas un choix mesuré, et il doit être nommé partout où il sert.
 
+### L'objectif, reprécisé — *le 2026-08-07*
+
+> **Formulation du propriétaire du projet** : un moteur d'évaluation en **match play avec
+> videau**, offrant des profondeurs **jusqu'au 3-ply**, **aussi bon que GNU Backgammon** — mieux
+> si on y arrive —, et qui tourne **raisonnablement vite dans un navigateur** pour analyser des
+> positions et des matchs en local.
+
+Deux choses changent par rapport au cadrage initial du `BRIEF.md` :
+
+1. **Le 3-ply entre au périmètre navigateur.** Le cadrage initial visait le 2-ply dans le
+   navigateur et renvoyait les profondeurs supérieures au natif. La vitesse cesse donc d'être un
+   confort : c'est une **exigence produit**. Elle avait perdu son statut de levier de *force* — la
+   mesure a montré que le calcul supplémentaire se perd — mais elle en gagne un autre, celui de
+   condition d'usage.
+
+2. **Le critère de succès est la parité, la supériorité est l'extension.** « Aussi bon que
+   GNU Backgammon, voire meilleur si on réussit. » Cela change la lecture de T36 du tout au tout.
+
+### Pourquoi l'objectif est atteignable **sans** la phase 4
+
+La mesure de T36 disait : notre avantage s'annule au 2-ply. Lue contre un objectif de
+*supériorité*, c'était une mauvaise nouvelle. Lue contre un objectif de **parité**, c'est
+l'inverse : **la parité au jeu de pions en 2-ply est déjà mesurée** — +0,00007 par décision
+[−0,00005 ; +0,00019] par l'arbitre de gnubg, zéro dans l'intervalle, léger positif au point
+d'estimation.
+
+Le chemin vers l'objectif est donc :
+
+| Étape | État | Ce qui manque |
+|---|---|---|
+| Jeu de pions en contact, parité 2-ply | **mesurée** | rien |
+| Fin de partie | déficit chiffré (0,00028/déc.) | **brancher** le lecteur natif dans la recherche — gain certain |
+| Videau, money et match | absent | **T34**, avec sa référence exacte de validation |
+| Vitesse 3-ply navigateur | 60–96 s/déc. natif | **T3A** — cache, inférence par lots, réseaux d'élagage distillés |
+| Verdict | — | **T35**, en match, cubeful, réglage nommé |
+
+**La phase 4 redevient ce que le plan voulait qu'elle soit** : un chantier de différenciation
+qu'on choisit si l'on veut *dépasser* gnubg au jeu de pions — pas un passage obligé vers l'objectif.
+
+### Répartition du travail — *à partir du 2026-08-07*
+
+L'orchestration, la conception et la validation des mesures restent au fil principal. **Les
+sous-tâches d'implémentation sont déléguées à des agents économiques** (Sonnet), chacun dans son
+worktree, avec un cahier des charges fermé : les décisions de conception sont prises avant le
+lancement, l'agent implémente et mesure, le fil principal vérifie et fusionne.
+
 ### Où en est le chemin — *au 2026-08-07*
 
 Trois mesures ont refermé des questions et en ont ouvert d'autres. La carte des leviers, telle
