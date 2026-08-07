@@ -68,6 +68,29 @@ cinquante-cinq. Mesurer la perte d'équité **par décision** contre une référ
 ordres de grandeur plus sensible qu'un round-robin — et en fin de partie, la table bilatérale
 fournit un arbitre **exact**, sans variance et sans réserve.
 
+### Ce que le 2026-08-07 a établi
+
+**L'avantage du réseau s'annule sous recherche.** Mesuré sur 2 400 décisions de contact, à
+profondeur égale, avec deux arbitres indépendants :
+
+| profondeur | notre arbitre | arbitre gnubg |
+|---|---|---|
+| 0-ply | +0,00247 | +0,00182 |
+| 1-ply | +0,00154 | +0,00070 |
+| 2-ply | +0,00053 | **+0,00007 — l'intervalle contient zéro** |
+
+Ce n'est pas la faute de notre filtre : un contrôle sur 2 000 décisions établit que le resserrement
+de la garde intérieure ne change que 1,1 % des coups et **ne coûte rien de mesurable**, tout en
+divisant le coût d'une décision par douze.
+
+**Et la profondeur ne le rachète pas.** Notre 3-ply contre leur 2-ply — 180 fois plus de calcul —
+ne gagne rien de plus que notre 2-ply. La vitesse reste nécessaire au budget navigateur, mais elle
+n'est **pas** un levier de force.
+
+Il reste donc deux voies bon marché avant la phase 4 : **brancher les tables de fin de partie**,
+dont le déficit est connu et se comble avec certitude, et le **videau**, seul composant totalement
+absent. Sur le jeu de pions en contact, aucune voie bon marché ne subsiste.
+
 ## Coût dans le navigateur
 
 Position d'ouverture, Chromium :
@@ -94,7 +117,7 @@ Phases 0, 1 et 2 terminées. Phase 3 en cours.
 | 0 — Socle & instrument | T00 · T01 · T02 · T03 · T04 · T05 | ✅ |
 | 1 — Reproduire | T10 · T11 · T12 | ✅ |
 | 2 — Navigateur | T20 · T21 · T22 · T23 | ✅ |
-| 3 — Profondeur & exactitude | T30 ✅ · T31 ✅ · T32 ✅ · T33 ⏳ · T36 ⏳ · T37 · T38 ⏳ · T39 ✅ · T34 · T35 | en cours |
+| 3 — Profondeur & exactitude | T30 ✅ · T31 ✅ · T32 ✅ · T33 ⏳ · T36 ✅ · T37 · T38 ⏳ · T39 ✅ · T34 · T35 | en cours |
 | 4 — Modèle propre au projet | — | fermée |
 | 5 — Publication | T50 | à venir |
 

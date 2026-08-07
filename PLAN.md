@@ -148,6 +148,25 @@ et ouvre une fiche à part : cache d'évaluation, inférence par lots, réseaux 
 > dépend tout 2-ply jouable en volume, **n'a jamais été mesurée en qualité**. C'est un choix de
 > coût, pas un choix mesuré, et il doit être nommé partout où il sert.
 
+### Où en est le chemin — *au 2026-08-07*
+
+Trois mesures ont refermé des questions et en ont ouvert d'autres. La carte des leviers, telle
+qu'elle se lit maintenant :
+
+| Levier | État | Fondement |
+|---|---|---|
+| **Tables de fin de partie** | **ouvert, gain certain** | T38 : notre réseau perd 0,00028/décision là où gnubg, qui consulte sa table, ne perd rien. Lecteur natif écrit et croisé ; reste à le brancher dans la recherche |
+| **Videau (T34)** | **ouvert, potentiel inconnu** | Seul composant totalement absent. Et il dispose d'une référence **exacte** pour se valider : la table bilatérale porte les équités cubeful |
+| ~~Profondeur comme levier de force~~ | **fermé** | Notre 3-ply contre leur 2-ply, à 180 fois leur coût, ne gagne rien de plus que notre 2-ply |
+| **Réentraîner sous recherche (T41)** | le levier qui reste pour le jeu de pions | L'avantage s'annule au 2-ply, et ce n'est pas la faute du filtre |
+
+**Ce que cela impose à l'ordre des travaux.** La phase 4 ne s'ouvre toujours que sur T35 ; c'est la
+règle et elle tient. Mais les deux voies bon marché qui restent doivent être épuisées d'abord — et
+elles le seront vite, l'une étant du branchement et l'autre une fiche déjà cadrée.
+
+**Ce que cela impose au ton des rapports.** Sur le jeu de pions en contact, il n'existe plus de voie
+bon marché vers une supériorité. Un rapport qui laisserait croire le contraire serait faux.
+
 ### Le protocole d'étude de GNU Backgammon
 
 `CLAUDE.md` autorise déjà « lire le code et le manuel » et « réimplémenter des idées documentées ».
