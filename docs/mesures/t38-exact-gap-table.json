@@ -1,0 +1,33 @@
+{
+  "task": "T38",
+  "seed": 20260806,
+  "decisions": 8000,
+  "database": "/home/kunger/dev/gammonNet-t38w/gnu_bearoff_database/gnubg_ts6x11.bd",
+  "with_table": true,
+  "rows": [
+    {
+      "engine": "gammonnet-0ply",
+      "decisions": 8000,
+      "agreement": 1.0,
+      "mean_loss": 0.0,
+      "mean_loss_when_wrong": 0.0,
+      "worst_loss": 0.0
+    },
+    {
+      "engine": "gammonnet-1ply",
+      "decisions": 8000,
+      "agreement": 1.0,
+      "mean_loss": 0.0,
+      "mean_loss_when_wrong": 0.0,
+      "worst_loss": 0.0
+    },
+    {
+      "engine": "gammonnet-2ply",
+      "decisions": 8000,
+      "agreement": 1.0,
+      "mean_loss": 0.0,
+      "mean_loss_when_wrong": 0.0,
+      "worst_loss": 0.0
+    }
+  ]
+}

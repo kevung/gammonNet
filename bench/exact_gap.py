@@ -30,6 +30,7 @@ globale.
 
 Usage :
     python bench/exact_gap.py --decisions 2000 --plies 0,1,2
+    python bench/exact_gap.py --decisions 2000 --plies 0,1,2 --with-table
 """
 
 from __future__ import annotations
@@ -44,7 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
 from gammonnet.arena import game_value  # noqa: E402
-from gammonnet.bearoff import TwoSidedBearoff  # noqa: E402
+from gammonnet.bearoff import TwoSidedBearoff, use_shared  # noqa: E402
 from gammonnet.infer import Network  # noqa: E402
 from gammonnet.rules import BLACK, NUM_POINTS, WHITE, Position  # noqa: E402
 from gammonnet.search import SearchConfig, search_plays  # noqa: E402
@@ -109,12 +110,23 @@ def measure(payload):
     propre, ouvre sa propre vue sur la table et sa propre session GNU Backgammon.
     Rien n'est partagé, donc rien n'a à être verrouillé — et le résultat ne
     dépend pas de la répartition, puisque chaque lot est déterministe.
+
+    `with_table` branche la table bilatérale sur NOS moteurs (`gammonnet-*`),
+    jamais sur GNU Backgammon : gnubg consulte déjà sa propre base -- c'est
+    précisément ce que `t38-exact-gap.json` mesurait sans elle -- et lui
+    brancher la nôtre ne testerait plus la même chose.
     """
-    database, model, plies, with_gnubg, seed, count, progress = payload
+    database, model, plies, with_gnubg, with_table, seed, count, progress = payload
 
     rng = random.Random(seed)
     table = TwoSidedBearoff(database)
     network = Network.load(model)
+
+    if with_table:
+        # Réglé une fois, avant toute évaluation de ce processus : le
+        # pointeur de module que `gn_search.c` et `gn_choose.c` consultent
+        # n'a pas besoin de l'être à nouveau entre deux décisions.
+        use_shared(database)
 
     # LE FILTRE EST EXPLICITE, ET IL A COÛTÉ UNE HEURE DE MACHINE DE NE PAS
     # L'ÊTRE. La première version lançait `SearchConfig(ply=2)` sans filtre :
@@ -194,6 +206,9 @@ def main() -> int:
     parser.add_argument("--database", default=str(DEFAULT_DATABASE))
     parser.add_argument("--with-gnubg", action="store_true",
                         help="mesurer aussi GNU Backgammon, à la même profondeur")
+    parser.add_argument("--with-table", action="store_true",
+                        help="brancher la table bilatérale sur nos moteurs "
+                             "(gammonnet-*), jamais sur gnubg")
     parser.add_argument("--progress", default="/tmp/t38-progress.log",
                         help="fichier de suivi ; `wc -l` donne l'avancement")
     parser.add_argument("--out", default="")
@@ -209,14 +224,15 @@ def main() -> int:
           f"{points}x{chequers}")
     print(f"  {args.decisions} décisions, graine {args.seed}, "
           f"{args.workers} processus")
+    print(f"  table branchée sur nos moteurs : {'oui' if args.with_table else 'non'}")
     print(f"  suivi : {args.progress}\n", flush=True)
 
     workers = max(1, min(args.workers, args.decisions))
     share = [args.decisions // workers + (1 if i < args.decisions % workers else 0)
              for i in range(workers)]
     payloads = [
-        (args.database, model, plies, args.with_gnubg, args.seed + 1000 * i, n,
-         args.progress)
+        (args.database, model, plies, args.with_gnubg, args.with_table,
+         args.seed + 1000 * i, n, args.progress)
         for i, n in enumerate(share) if n
     ]
 
@@ -272,7 +288,8 @@ def main() -> int:
     if args.out:
         Path(args.out).write_text(json.dumps({
             "task": "T38", "seed": args.seed, "decisions": considered,
-            "database": str(args.database), "rows": rows,
+            "database": str(args.database), "with_table": args.with_table,
+            "rows": rows,
         }, indent=2) + "\n")
         print(f"\nécrit dans {args.out}")
     return 0
