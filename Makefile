@@ -96,11 +96,11 @@ INCLUDES := -Isrc -I$(REFERENCE)/c_engine -I$(REFERENCE)/c_inference
 build: $(LIBRARY)
 
 SOURCES := src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
-           src/gn_rollout.c \
+           src/gn_rollout.c src/gn_bearoff.c \
            src/gn_search.c \
            src/gn_infer_reference.c src/gn_choose.c src/gn_met.c
 HEADERS := src/gn_rules.h src/gn_encoding.h src/gn_position_id.h src/gn_infer.h \
-           src/gn_rollout.h \
+           src/gn_rollout.h src/gn_bearoff.h \
            src/gn_choose.h src/gn_search.h src/gn_met.h src/gn_met_table.h
 OBJECTS := $(patsubst src/%.c,$(BUILD)/%.o,$(SOURCES))
 
