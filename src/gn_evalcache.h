@@ -100,9 +100,11 @@ typedef struct GnEvalCache GnEvalCache;
 
 /*
  * Default table size: 2^19 = 524 288 entries. Each entry is the 29-byte key,
- * five 4-byte floats and one occupancy byte -- 50 bytes of payload, padded to
- * a multiple of 4 by the compiler -- so the default table is on the order of
- * 24 MiB. See gn_evalcache.c for the exact entry layout.
+ * five 4-byte floats and one occupancy byte -- 50 bytes of payload, padded by
+ * the compiler to 56 bytes (a float needs 4-byte alignment, and 29 is not a
+ * multiple of 4). Measured, not guessed: `sizeof(GnEvalCacheEntry)` is 56 on
+ * this project's build, so the default table is exactly 2^19 * 56 = 28 MiB.
+ * See gn_evalcache.c for the entry layout.
  */
 #define GN_EVALCACHE_DEFAULT_LOG2 19
 
