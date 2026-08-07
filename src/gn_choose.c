@@ -8,6 +8,7 @@
 
 #include "gn_bearoff.h"
 #include "gn_encoding.h"
+#include "gn_evalcache.h"
 
 #include <stddef.h>
 
@@ -93,18 +94,26 @@ int gn_best_play_0ply(const GnNetwork *net, const GnPosition *pos,
                 return -1;
             equity = (float) -value;
         } else {
-            /* The exact table first, same rule as gn_search.c's
-             * `evaluate_position`: a hit is exact and free of the network, a
-             * miss falls back to it unchanged. See gn_bearoff.h for why this
-             * needs no lock. */
+            /* Same order as gn_search.c's `evaluate_position`: the exact
+             * table first (a hit is exact and free of the network), then the
+             * evaluation cache (T3A -- a hit is the network's own past answer
+             * for this exact position, see gn_evalcache.h), and only then the
+             * network itself. Neither a table hit nor a cache hit needs a
+             * lock -- see gn_bearoff.h / gn_evalcache.h for why. */
             const GnBearoff *table = gn_bearoff_shared();
+            GnEvalCache *cache = gn_evalcache_shared();
             if (table != NULL && gn_bearoff_probs(table, result, probs)) {
+                equity = gn_money_equity(probs);
+            } else if (cache != NULL && gn_evalcache_lookup(cache, result, probs)) {
                 equity = gn_money_equity(probs);
             } else {
                 if (gn_encode(result, features) != 0)
                     return -1;
                 if (gn_evaluate_features(net, features, probs) != 0)
                     return -1;
+                if (cache != NULL) {
+                    gn_evalcache_store(cache, result, probs);
+                }
                 equity = gn_money_equity(probs);
             }
         }

@@ -29,6 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
+from gammonnet import evalcache  # noqa: E402
 from gammonnet.arena import BLACK, RandomEngine, opening_roll  # noqa: E402
 from gammonnet.gnubg_engine import GnubgEngine  # noqa: E402
 from gammonnet.infer import Network  # noqa: E402
@@ -100,6 +101,164 @@ def corpus(count: int, seed: int) -> list[tuple[Position, int, int]]:
     return out
 
 
+#: Les trois configurations que T3A mesure avec et sans cache -- profondeur
+#: et garde choisies pour rester praticables : `filter[d]` s'applique à un
+#: nœud de profondeur RESTANTE `d`, donc la racine d'une recherche à k plies
+#: lit `filter[k]` (voir la note de `CONFIGS` ci-dessus).
+CACHE_CONFIGS = [
+    (1, (0, 5)),
+    (2, (0, 1, 5)),
+    (3, (0, 1, 1, 5)),
+]
+
+
+def has_contact(position: Position) -> bool:
+    """Un pion de chaque camp peut-il encore en frapper un autre ?
+
+    Même définition que `bench/decision_loss.py` : vrai dès qu'un pion blanc
+    est derrière un pion noir, et toujours vrai si quelqu'un est sur la barre
+    (un pion à rentrer est du contact par définition). Reprise ici plutôt
+    qu'importée, pour que ce banc reste un script autonome.
+    """
+    if position.bar[0] or position.bar[1]:
+        return True
+    white = [i for i, n in enumerate(position.points) if n > 0]
+    black = [i for i, n in enumerate(position.points) if n < 0]
+    if not white or not black:
+        return False
+    # Blanc va vers l'indice 0, Noir vers l'indice 23 : il y a contact tant
+    # que le pion blanc le plus arriéré (l'indice le plus grand) n'a pas
+    # encore dépassé le pion noir le plus arriéré (l'indice le plus petit) --
+    # il pourrait encore le frapper en descendant. Pas de contact seulement
+    # quand TOUS les blancs ont déjà dépassé TOUS les noirs. Même formule que
+    # `bench/decision_loss.py::has_contact`.
+    return max(white) > min(black)
+
+
+def race_corpus(network: Network, count: int, seed: int) -> list[tuple[Position, int, int]]:
+    """Des positions de COURSE, avec au moins trois coups légaux.
+
+    Contrairement à `corpus()`, le jeu n'est pas conduit au hasard jusqu'au
+    bout : il est conduit par notre propre 0-ply, comme le fait
+    `bench/decision_loss.py` pour ses positions de contact. Un coup
+    entièrement aléatoire laisse rarement une vraie course -- il laisse un
+    carnage qui reste du contact encore longtemps. C'est en course que les
+    transpositions abondent : beaucoup d'ordres de descente différents
+    mènent à la MÊME répartition de pions, ce qui est précisément ce que ce
+    banc veut mettre en contraste avec le contact.
+    """
+    rng = random.Random(seed)
+    out: list[tuple[Position, int, int]] = []
+
+    position = Position.initial()
+    first, d1, d2 = opening_roll(rng)
+    if first == BLACK:
+        position = position.swapped_turn()
+
+    guard = 0
+    while len(out) < count:
+        guard += 1
+        if guard > 200_000:
+            raise RuntimeError(
+                f"race_corpus n'a trouvé que {len(out)}/{count} positions de course "
+                "après 200 000 coups -- le générateur est probablement cassé"
+            )
+        plays = position.legal_plays(d1, d2)
+        if plays and len(plays) >= 3 and not has_contact(position):
+            out.append((position, d1, d2))
+        if plays:
+            chosen = best_play(network, position, d1, d2, SearchConfig(ply=0))
+            position = chosen.result if chosen is not None else position
+        else:
+            position = position.swapped_turn()
+        if position.is_over():
+            position = Position.initial()
+            first, d1, d2 = opening_roll(rng)
+            if first == BLACK:
+                position = position.swapped_turn()
+            continue
+        d1, d2 = rng.randint(1, 6), rng.randint(1, 6)
+
+    return out
+
+
+def _run_timed(network: Network, config: SearchConfig,
+               cases: list[tuple[Position, int, int]], budget: float) -> tuple[float, float, int]:
+    """Joue `cases` sous `config` jusqu'à épuisement ou budget.
+
+    Rend (s/décision, éval/décision, décisions jouées). Le compteur
+    d'évaluations et les compteurs du cache actif (s'il y en a un) sont
+    remis à zéro par l'appelant -- cette fonction ne fait que jouer et
+    chronométrer.
+    """
+    start = time.perf_counter()
+    done = 0
+    for position, d1, d2 in cases:
+        best_play(network, position, d1, d2, config)
+        done += 1
+        if time.perf_counter() - start > budget:
+            break
+    elapsed = time.perf_counter() - start
+    return elapsed / done, evaluations() / done, done
+
+
+def cache_benchmark(network: Network, cases: list[tuple[Position, int, int]],
+                    budget: float, log2_entries: int, label: str) -> list[dict]:
+    """Cache éteint contre cache allumé, aux `CACHE_CONFIGS`, sur `cases`.
+
+    Chaque config est jouée deux fois sur la MÊME liste de décisions : une
+    fois cache désactivé (la référence), une fois avec un cache FRAIS
+    (`evalcache.clear` avant chaque config, pour qu'aucune décision ne
+    profite des recherches d'une config précédente -- ce serait comparer un
+    cache tiède à un cache froid, pas mesurer ce qu'une config coûte).
+
+    Mono-processus, délibérément : ce n'est pas un manque de rigueur mais une
+    conséquence du protocole (voir `main()` et le rapport) -- c'est un coût
+    UNITAIRE qui est mesuré ici, par construction en série, comme
+    `bench/README.md` l'exige déjà pour `bench_throughput.py`.
+    """
+    print(f"\n── {label} ── ({len(cases)} décisions)")
+    print(f"{'config':<16}{'sans cache':>13}{'':>13}{'avec cache':>15}{'':>13}{'':>10}")
+    print(f"{'':16}{'éval/déc':>13}{'s/déc':>13}{'éval/déc':>15}{'s/déc':>13}{'hits':>10}")
+
+    rows = []
+    for ply, filt in CACHE_CONFIGS:
+        config_label = f"{ply}-ply/" + "-".join(map(str, filt))
+        config = SearchConfig(ply=ply, filter=filt)
+
+        evalcache.disable()
+        reset_evaluations()
+        off_time, off_evals, off_done = _run_timed(network, config, cases, budget)
+
+        evalcache.enable(log2_entries)
+        reset_evaluations()
+        on_time, on_evals, on_done = _run_timed(network, config, cases, budget)
+        stats = evalcache.stats()
+        evalcache.disable()
+
+        note = ""
+        if off_done < len(cases) or on_done < len(cases):
+            note = f"  (abandon : {off_done}/{on_done} sur {len(cases)})"
+
+        print(f"{config_label:<16}{off_evals:>13,.0f}{off_time:>13.4f}"
+              f"{on_evals:>15,.0f}{on_time:>13.4f}{stats.hit_rate:>10.1%}{note}")
+
+        rows.append({
+            "label": label, "ply": ply, "filter": list(filt),
+            "decisions_off": off_done, "decisions_on": on_done,
+            "evaluations_per_decision_off": off_evals,
+            "seconds_per_decision_off": off_time,
+            "evaluations_per_decision_on": on_evals,
+            "seconds_per_decision_on": on_time,
+            "cache_hits": stats.hits, "cache_misses": stats.misses,
+            "cache_stores": stats.stores, "cache_hit_rate": stats.hit_rate,
+            "eval_speedup": (off_evals / on_evals) if on_evals else float("inf"),
+            "time_speedup": (off_time / on_time) if on_time else float("inf"),
+        })
+
+    return rows
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -108,14 +267,42 @@ def main() -> int:
     parser.add_argument("--budget", type=float, default=20.0,
                         help="secondes au-delà desquelles une configuration est abandonnée")
     parser.add_argument("--out", default="")
+    parser.add_argument("--cache", action="store_true",
+                        help="mesure le cache d'évaluation (T3A) au lieu du tableau habituel : "
+                             "cache éteint contre allumé, contact et course, aux CACHE_CONFIGS")
+    parser.add_argument("--cache-log2", type=int, default=evalcache.DEFAULT_LOG2_ENTRIES,
+                        help="taille du cache en log2(entrées), défaut celui de gn_evalcache.h")
+    parser.add_argument("--cache-budget", type=float, default=120.0,
+                        help="secondes au-delà desquelles une config du banc --cache est abandonnée")
     args = parser.parse_args()
+
+    network = Network.load(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+
+    if args.cache:
+        contact_count = max(args.positions, 40)
+        contact = corpus(contact_count, args.seed)
+        print(f"contact : {len(contact)} décisions (corpus de marche aléatoire, comme le "
+              f"tableau habituel)")
+        race = race_corpus(network, contact_count, args.seed + 1)
+        print(f"course  : {len(race)} décisions (conduites au 0-ply jusqu'à l'absence de "
+              f"contact)")
+
+        rows = []
+        rows += cache_benchmark(network, contact, args.cache_budget, args.cache_log2, "contact")
+        rows += cache_benchmark(network, race, args.cache_budget, args.cache_log2, "course")
+
+        if args.out:
+            Path(args.out).write_text(json.dumps({
+                "positions": len(contact), "seed": args.seed,
+                "cache_log2_entries": args.cache_log2, "rows": rows,
+            }, indent=2) + "\n")
+            print(f"\nécrit dans {args.out}")
+        return 0
 
     cases = corpus(args.positions, args.seed)
     legal = [len(p.legal_plays(d1, d2)) for p, d1, d2 in cases]
     print(f"{len(cases)} décisions, médiane {sorted(legal)[len(legal) // 2]} coups légaux "
           f"(min {min(legal)}, max {max(legal)})\n")
-
-    network = Network.load(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
 
     print(f"{'config':<14}{'gammonNet':>26}{'GNU Backgammon':>18}")
     print(f"{'':14}{'éval/déc':>12}{'s/déc':>14}{'s/déc':>18}")
