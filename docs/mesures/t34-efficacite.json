@@ -1,0 +1,27 @@
+{
+  "task": "T34",
+  "seed": 20260807,
+  "samples": 10000,
+  "step": 0.001,
+  "database": "/home/kunger/dev/gammonNet-t34/gnu_bearoff_database/gnubg_ts6x11.bd",
+  "results": {
+    "owned": {
+      "x": 0.5660000000000001,
+      "rms": 0.03576920617375428,
+      "max_abs_residual": 0.22491450370031274,
+      "mean_residual": 0.0027392429114213796
+    },
+    "centered": {
+      "x": 0.6880000000000001,
+      "rms": 0.04947241558379038,
+      "max_abs_residual": 0.4064309249510438,
+      "mean_residual": 0.011142214393326716
+    },
+    "opponent": {
+      "x": 0.687,
+      "rms": 0.03416613958560206,
+      "max_abs_residual": 0.26716317235065246,
+      "mean_residual": -0.005218986127260257
+    }
+  }
+}
