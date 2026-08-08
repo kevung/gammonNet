@@ -16,6 +16,7 @@ import ctypes
 from dataclasses import dataclass
 
 from .infer import NUM_OUTPUTS, Network
+from .met import MatchState, _CMatchState
 from .rules import _LIB, Position, _CPosition
 from .search import MAX_PLY, SearchConfig, _CSearchConfig
 
@@ -31,6 +32,11 @@ class _CRolloutConfig(ctypes.Structure):
         ("cube_x", ctypes.c_double * 3),
         ("jacoby", ctypes.c_int),
         ("cube_defer_first", ctypes.c_int),
+        ("variance_reduction", ctypes.c_int),
+        ("target_se", ctypes.c_double),
+        ("min_trials", ctypes.c_ulong),
+        ("use_match", ctypes.c_int),
+        ("match", _CMatchState),
     ]
 
 
@@ -43,6 +49,7 @@ class _CRolloutResult(ctypes.Structure):
         ("stalled", ctypes.c_ulong),
         ("cashed", ctypes.c_ulong),
         ("average_cube", ctypes.c_double),
+        ("average_luck", ctypes.c_double),
     ]
 
 
@@ -111,6 +118,29 @@ class RolloutConfig:
     #: Actif pour arbitrer une décision de videau ; inactif pour une position
     #: d'après-coup, dont l'adversaire entame son tour avec son option.
     cube_defer_first: bool = False
+    #: Réduction de variance par la chance : à chaque pli, la chance du jet
+    #: tiré (équité 0-ply du meilleur jeu sous ce jet, moins la moyenne
+    #: pondérée des 21 jets) est soustraite de l'essai. Espérance nulle par
+    #: construction — aucun biais possible, seulement moins de dés dans le
+    #: résultat. Le prix (≈ une recherche 1-ply par coup joué) et le gain se
+    #: mesurent : bench/vr_gain.py.
+    variance_reduction: bool = False
+    #: Arrêt sur l'intervalle : dès que le se atteint `target_se` (contrôlé
+    #: toutes les 36 parties, jamais avant `min_trials`), le rollout s'arrête ;
+    #: `trials` reste le plafond. Zéro conserve le comptage fixe. Pour une
+    #: différence, c'est `rollout_difference` qui porte le bon critère —
+    #: l'erreur SUR la différence.
+    target_se: float = 0.0
+    min_trials: int = 0
+    #: Essais de MATCH : chaque partie finie (ou encaissée) devient des points,
+    #: les points un score, le score une chance de gain de match par la MET —
+    #: une partie par essai, la table valorisant toutes les suivantes. Le
+    #: résultat est en équité de match (2·MWC − 1). `match` est l'état vu par
+    #: le joueur au trait de la position confiée, `match.cube` le videau
+    #: COURANT. `use_cube` garde son sens (consultation vivante), mais la
+    #: décision passe par la récursion §9, jamais par le modèle money ni par
+    #: la table exacte (money par nature). Un état invalide est refusé.
+    match: MatchState | None = None
 
     def _to_c(self) -> _CRolloutConfig:
         c = _CRolloutConfig()
@@ -124,6 +154,12 @@ class RolloutConfig:
             c.cube_x = (ctypes.c_double * 3)(*self.cube_x)
             c.jacoby = int(self.jacoby)
             c.cube_defer_first = int(self.cube_defer_first)
+        c.variance_reduction = int(self.variance_reduction)
+        c.target_se = float(self.target_se)
+        c.min_trials = int(self.min_trials)
+        if self.match is not None:
+            c.use_match = 1
+            c.match = self.match._to_c()
         return c
 
 
@@ -138,6 +174,11 @@ class RolloutResult:
     #: l'un et l'autre pour un rollout cubeless.
     cashed: int = 0
     average_cube: float = 0.0
+    #: Chance moyenne par essai — zéro sans réduction de variance. Son
+    #: espérance est nulle par construction : loin de zéro à plusieurs se,
+    #: c'est la correction elle-même qui est cassée. La moyenne non corrigée
+    #: se retrouve par `equity + average_luck`.
+    average_luck: float = 0.0
 
     def __str__(self) -> str:
         return (f"{self.equity:+.5f} ± {self.standard_error:.5f} "
@@ -160,6 +201,7 @@ def rollout(network: Network, position: Position,
         frequencies=tuple(result.frequencies),
         cashed=result.cashed,
         average_cube=result.average_cube,
+        average_luck=result.average_luck,
     )
 
 

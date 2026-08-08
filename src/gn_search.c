@@ -129,13 +129,11 @@ GnSearchConfig gn_search_config_match(int ply, const GnMatchState *state)
     return config;
 }
 
-/* The same position, seen from the other side of the table. */
+/* The same position, seen from the other side of the table. One reading of
+ * the swap for the whole repository: gn_met.h owns it. */
 static GnMatchState swap_sides(GnMatchState state)
 {
-    const int mine = state.away_on_roll;
-    state.away_on_roll = state.away_opponent;
-    state.away_opponent = mine;
-    return state;
+    return gn_match_state_swap(state);
 }
 
 /* The same cube, seen from the other side of the table: mine becomes theirs,

@@ -1,0 +1,199 @@
+{
+ "task": "T39-vr-gain",
+ "trials": 216,
+ "seed": 20260808,
+ "truncate": 11,
+ "gains": [
+  {
+   "position": "contact-initial",
+   "cubeful": false,
+   "se_plain": 0.03159685395170716,
+   "se_vr": 0.002503803360337395,
+   "seconds_plain": 20.712504148483276,
+   "seconds_vr": 396.4604902267456,
+   "variance_ratio": 159.25286333522385,
+   "time_ratio": 19.14111820495531,
+   "efficiency": 8.31993521120391
+  },
+  {
+   "position": "contact-initial",
+   "cubeful": true,
+   "se_plain": 0.059221859333118625,
+   "se_vr": 0.01315766612446804,
+   "seconds_plain": 21.069025993347168,
+   "seconds_vr": 389.923623085022,
+   "variance_ratio": 20.258456482333727,
+   "time_ratio": 18.506960084825263,
+   "efficiency": 1.094639875456618
+  },
+  {
+   "position": "course-hors-domaine",
+   "cubeful": false,
+   "se_plain": 0.036598650832800755,
+   "se_vr": 0.004955035361196652,
+   "seconds_plain": 21.081607818603516,
+   "seconds_vr": 416.1465971469879,
+   "variance_ratio": 54.55526071444466,
+   "time_ratio": 19.739794076795146,
+   "efficiency": 2.7637198494677495
+  },
+  {
+   "position": "bearoff-en-domaine",
+   "cubeful": false,
+   "se_plain": 0.055393821426187796,
+   "se_vr": 1.352672360815809e-06,
+   "seconds_plain": 0.02347850799560547,
+   "seconds_vr": 0.05839991569519043,
+   "variance_ratio": 1677016829.5148792,
+   "time_ratio": 2.487377635159836,
+   "efficiency": 674210785.6120192
+  }
+ ],
+ "bias_check": {
+  "position": "contact-initial",
+  "truth": 0.07867724757350276,
+  "truth_se": 0.004005126505424419,
+  "truth_trials": 15552,
+  "vr_mean": 0.07978602107844236,
+  "vr_se": 0.001496640237000667,
+  "vr_runs": 6,
+  "vr_trials_each": 108,
+  "gap": 0.0011087735049395975,
+  "gap_se": 0.004275625138323357,
+  "seed_dispersion": 0.0040431675346263305,
+  "rows": [
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": false,
+    "trials": 2592,
+    "equity": 0.07293261235786809,
+    "se": 0.009974653185193265,
+    "luck": 0.0,
+    "seconds": 337.4581251144409,
+    "seed": 1000
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": false,
+    "trials": 2592,
+    "equity": 0.07565197514163123,
+    "se": 0.009880436651432045,
+    "luck": 0.0,
+    "seconds": 338.2261950969696,
+    "seed": 1001
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": false,
+    "trials": 2592,
+    "equity": 0.07966645593168559,
+    "se": 0.009894239869060618,
+    "luck": 0.0,
+    "seconds": 335.887197971344,
+    "seed": 1002
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": false,
+    "trials": 2592,
+    "equity": 0.08504942983940796,
+    "se": 0.00991206785706789,
+    "luck": 0.0,
+    "seconds": 341.78882241249084,
+    "seed": 1003
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": false,
+    "trials": 2592,
+    "equity": 0.0778922181300543,
+    "se": 0.009749267515684461,
+    "luck": 0.0,
+    "seconds": 336.36210012435913,
+    "seed": 1004
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": false,
+    "trials": 2592,
+    "equity": 0.0808707940403694,
+    "se": 0.009442846827650045,
+    "luck": 0.0,
+    "seconds": 339.71060371398926,
+    "seed": 1005
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": true,
+    "trials": 108,
+    "equity": 0.07630208824519763,
+    "se": 0.003313955959767052,
+    "luck": -0.006223116483953305,
+    "seconds": 321.7686424255371,
+    "seed": 2000
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": true,
+    "trials": 108,
+    "equity": 0.08689874353906744,
+    "se": 0.003780647362652017,
+    "luck": 0.06501998284777986,
+    "seconds": 324.12482261657715,
+    "seed": 2001
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": true,
+    "trials": 108,
+    "equity": 0.07664232800710839,
+    "se": 0.0031466355797584384,
+    "luck": -0.005747583345989154,
+    "seconds": 324.611811876297,
+    "seed": 2002
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": true,
+    "trials": 108,
+    "equity": 0.08137673182497301,
+    "se": 0.0038746570902435024,
+    "luck": 0.042232147644086115,
+    "seconds": 339.3439733982086,
+    "seed": 2003
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": true,
+    "trials": 108,
+    "equity": 0.07725819209475573,
+    "se": 0.004124079165904151,
+    "luck": -0.004551219535462655,
+    "seconds": 318.2732448577881,
+    "seed": 2004
+   },
+   {
+    "position": "contact-initial",
+    "cubeful": false,
+    "vr": true,
+    "trials": 108,
+    "equity": 0.08023804275955196,
+    "se": 0.0036660116441324902,
+    "luck": 0.006088076213014445,
+    "seconds": 328.3199415206909,
+    "seed": 2005
+   }
+  ]
+ }
+}

@@ -828,8 +828,22 @@ ce soit, tous font prendre un videau qu'il fallait passer.
 > course, le chemin neuronal sous-double (25 défaites à coût réel, +1,95 d'équité total) —
 > la table exacte corrige en domaine, le hors-domaine est un chantier nommé. Limite
 > d'instrument constatée : notre colonne tronquée ne résout que 35 % des fenêtres fines.
-> Reste : la réduction de variance (qui lèverait cette limite), le rollout de MATCH (fin de
-> partie à score non écrite), l'arrêt sur IC.
+>
+> **CLOSE le 2026-08-08** (`docs/mesures/2026-08-08-T39-fin.md`). Les trois pièces restantes
+> sont écrites et mesurées. **Réduction de variance par la chance** : espérance nulle par
+> construction, vérifiée contre 15 552 essais bruts (écart +0,0011 ± 0,0043) ; variance ÷159
+> en contact cubeless (efficacité ×8,3), ÷20 en cubeful — les queues de videau ne sont pas
+> des dés, réserve nommée. **Arrêt sur IC** : cible de se par familles de 36 essais, plafond
+> conservé. **Rollout de MATCH** : une partie par essai, points → score → MWC par la MET,
+> décisions §9, Crawford et videau mort respectés ; ancres exactes tenues (identité DMP dés
+> pour dés, free drop d'après-Crawford trouvé par le modèle, refus hors table). Le
+> ré-arbitrage des 210 fenêtres non résolues (colonne corrigée, mêmes graines) en résout 72
+> — concordance à 73 % avec la colonne gnubg — et laisse 138 quasi-égalités authentiques
+> (écart médian 0,025 pour se 0,012). Cumul des campagnes : pas de vainqueur global
+> (54–62, p = 0,26), mais la fenêtre du double marginal en contact est perdue
+> significativement (26–60, p = 1,6×10⁻⁴) : **nous sur-doublons les fenêtres fines de
+> contact**, miroir de la sous-double de course — les deux défauts du doublage 0-ply sont
+> nommés, mesurés, et bornés par le faible coût propre à ces fenêtres.
 
 **Objectif** — pouvoir dire lequel de deux moteurs a raison quand ils diffèrent.
 

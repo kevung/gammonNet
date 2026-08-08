@@ -30,6 +30,14 @@ int gn_match_state_is_valid(const GnMatchState *state)
     return 1;
 }
 
+GnMatchState gn_match_state_swap(GnMatchState state)
+{
+    const int mine = state.away_on_roll;
+    state.away_on_roll = state.away_opponent;
+    state.away_opponent = mine;
+    return state;
+}
+
 double gn_met_pre(int away_a, int away_b)
 {
     if (away_a < 1 || away_b < 1 ||
