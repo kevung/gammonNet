@@ -225,6 +225,53 @@ def test_a_cubeful_pair_against_gnubg_completes():
 
 
 @needs_model
+@pytest.mark.skipif(__import__("shutil").which(
+    __import__("os").environ.get("GNUBG", "gnubg")) is None,
+    reason="gnubg absent")
+def test_gnubg_score_evaluation_still_speaks_emg():
+    """L'ancrage de la sonde du 2026-08-09, tenu contre toute dérive : une
+    perte simple certaine vaut exactement −1,0 à tous les scores — la
+    signature de l'échelle EMG sur laquelle repose le jeu de gnubg au score.
+    Si gnubg change d'échelle un jour, ce test le dira avant la campagne."""
+    from gammonnet import gnubg_board as gb
+    from gammonnet.gnubg_engine import GnubgSession, gnubg_state
+    from gammonnet.met import MatchState
+
+    points = [0] * NUM_POINTS
+    points[0] = 2
+    points[18] = points[19] = points[20] = -2
+    off = [0, 0]
+    off[WHITE] = 13
+    off[BLACK] = 9
+    certain_loss = Position(points=tuple(points), bar=(0, 0),
+                            off=tuple(off), turn=BLACK)
+
+    with GnubgSession() as session:
+        board = gb.to_gnubg(certain_loss)
+        for match in (MatchState(2, 2), MatchState(2, 4), MatchState(1, 1)):
+            state = gnubg_state(CubeOwner.CENTRED, match, jacoby=False)
+            values = session.evaluate([board], plies=0, state=state)
+            assert float(values[0][5]) == pytest.approx(-1.0, abs=1e-6), match
+
+
+@needs_model
+@pytest.mark.skipif(__import__("shutil").which(
+    __import__("os").environ.get("GNUBG", "gnubg")) is None,
+    reason="gnubg absent")
+def test_a_match_pair_against_gnubg_completes_at_dmp():
+    """Fumée : gnubg joue ses pions AU SCORE (chemin EMG) dans un vrai match.
+    DMP, pour que la paire reste courte et ne consulte pas le videau."""
+    from gammonnet.cubeful import GnubgCubePlayer
+
+    ours = GammonNetCubePlayer(ply=0)
+    theirs = GnubgCubePlayer(ply=0, cube_ply=0)
+    total, stats = play_match_duplicate(ours, theirs, 1, 1, 20260809, 0)
+    assert total in (-2, 0, 2)
+    assert stats["doubles"] == 0 and stats["biggest_cube"] == 1
+    assert not stats["stalled"]
+
+
+@needs_model
 @needs_db
 def test_the_exact_and_model_take_answers_agree_here():
     """La même question, par les deux chemins : la table exacte, et le modèle

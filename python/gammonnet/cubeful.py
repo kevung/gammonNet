@@ -233,8 +233,12 @@ class GnubgCubePlayer(GnubgEngine):
     """GNU Backgammon, videau compris — les questions de `cfevaluate`.
 
     Le jeu de pions est celui de `GnubgEngine` (convention composée, vérifiée
-    en T36). **Au score il n'est pas encore sondé : demandé, il refuse** —
-    jamais approximé en silence (CLAUDE.md, règle 2).
+    en T36) ; au score, la sonde de T35
+    (`docs/mesures/2026-08-09-t35-sonde-emg.md`) a établi que `evaluate` sous
+    un `cubeinfo` de match rend l'équité EMG — affine en la MWC du joueur au
+    trait, à pente positive — de sorte que la même composition vaut à tout
+    score, l'état étant décrit du point de vue du joueur au trait des
+    positions résultantes.
     """
 
     cube_ply: int = 0
@@ -246,11 +250,17 @@ class GnubgCubePlayer(GnubgEngine):
             self.name = f"{self.name}-cube{self.cube_ply}"
 
     def choose(self, position, d1, d2, rng, match=None):
-        if match is not None:
-            raise NotImplementedError(
-                "le jeu de pions de gnubg au score n'est pas sondé — "
-                "refusé plutôt qu'approximé")
-        return super().choose(position, d1, d2, rng)
+        if match is None:
+            return super().choose(position, d1, d2, rng)
+        # `play.result` a rendu le trait : l'état envoyé décrit l'ADVERSAIRE
+        # du chooser. Le propriétaire du videau est sans objet pour une
+        # évaluation cubeless — sondé : eval[5] identique au millionième pour
+        # les trois propriétaires — CENTRED par convention.
+        swapped = MatchState(match.away_opponent, match.away_on_roll,
+                             cube=match.cube, crawford=match.crawford)
+        state = gnubg_state(CubeOwner.CENTRED, swapped, jacoby=False,
+                            cube=match.cube)
+        return super().choose(position, d1, d2, rng, state=state)
 
     def _cube_answer(self, position, cube, owner, match):
         state = gnubg_state(owner, match, jacoby=match is None, cube=cube)

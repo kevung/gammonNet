@@ -46,8 +46,9 @@ siège, les moteurs échangent leurs places entre les deux manches — voir
 `play_match_duplicate` pour pourquoi c'est la construction qui rend le
 contrôle nul exact.
 
-Le jeu de pions de gnubg au score n'est pas encore sondé : `--mode match`
-contre gnubg est refusé tant que la sonde n'est pas faite.
+Le jeu de pions de gnubg au score passe par l'EMG sondée le 2026-08-09
+(`docs/mesures/2026-08-09-t35-sonde-emg.md`) : `evaluate` sous un `cubeinfo`
+de match, même convention composée qu'en money.
 
 Ce pilote produit un journal, pas une conclusion : le dépouillement (ppg,
 MWC, intervalles bootstrap) est `bench/report_t35.py`.
@@ -205,11 +206,6 @@ def main() -> int:
                                      cube_ply=ours_cube,
                                      name=ours.name + "-bis")
     else:
-        if args.mode == "match":
-            raise SystemExit(
-                "le jeu de pions de gnubg au score n'est pas encore sondé — "
-                "`--mode match` contre gnubg est refusé, jamais approximé "
-                "(voir GnubgCubePlayer.choose)")
         gnubg_cube = (args.gnubg_cube_ply if args.gnubg_cube_ply is not None
                       else args.gnubg_ply)
         theirs = GnubgCubePlayer(ply=args.gnubg_ply,

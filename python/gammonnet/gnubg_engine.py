@@ -237,7 +237,20 @@ class GnubgEngine:
             self._session = GnubgSession()
         return self._session
 
-    def choose(self, position: Position, d1: int, d2: int, rng: random.Random) -> Play | None:
+    def choose(self, position: Position, d1: int, d2: int, rng: random.Random,
+               state: dict | None = None) -> Play | None:
+        """Le meilleur coup, money (`state=None`) ou au score.
+
+        `state` est un dictionnaire `cubeinfo` décrivant **le joueur au trait
+        des positions résultantes** — c'est-à-dire l'adversaire de celui qui
+        choisit, puisque `play.result` a déjà rendu le trait. Sondé (T35,
+        `docs/mesures/2026-08-09-t35-sonde-emg.md`) : sous un `cubeinfo` de
+        match, `evaluate` rend l'équité EMG au score — affine en la MWC du
+        joueur au trait, à pente positive. Comme tous les candidats partagent
+        le même état, `-eval[5]` classe par la MWC de celui qui choisit
+        (`mwc_chooser = 1 - mwc_mover`), et la convention composée de T36 se
+        transporte au score sans changer d'arithmétique.
+        """
         plays = position.legal_plays(d1, d2)
         if not plays:
             return None
@@ -250,23 +263,33 @@ class GnubgEngine:
 
         # Le pré-tri de la racine se fait au 0-ply, comme chez nous : c'est la
         # règle de T31, et l'appliquer des deux côtés est ce qui fait que
-        # « 2-ply, garde 5 » désigne le même joueur des deux côtés.
+        # « 2-ply, garde 5 » désigne le même joueur des deux côtés. Au score,
+        # le pré-tri est lui aussi au score — le point mesuré par T31-match.
         keep = self.filter[self.ply] if len(self.filter) > self.ply else 0
         if self.ply > 0 and keep and len(plays) > keep:
-            shallow = self._evaluate_at(session, position, plays, 0)
+            shallow = self._evaluate_at(session, position, plays, 0, state)
             survivors = sorted(range(len(plays)),
                                key=lambda i: shallow[i], reverse=True)[:keep]
         else:
             survivors = list(range(len(plays)))
 
         candidates = [plays[i] for i in survivors]
-        deep = self._evaluate_at(session, position, candidates, self.ply)
+        deep = self._evaluate_at(session, position, candidates, self.ply, state)
         return plays[survivors[max(range(len(candidates)), key=lambda j: deep[j])]]
 
-    def _evaluate_at(self, session, position, plays, ply) -> list[float]:
+    def _evaluate_at(self, session, position, plays, ply,
+                     state: dict | None = None) -> list[float]:
         # Une position terminale se calcule, elle ne s'évalue pas : donner une
         # partie finie à un réseau, c'est lui poser une question qu'il n'a
         # jamais vue, et il répondra. Voir `gn_terminal_equity`.
+        #
+        # Au score, la valeur en points d'un coup terminal est une
+        # approximation NOMMÉE de l'EMG : un gain simple certain vaut
+        # exactement +1 sur les deux échelles (c'est la définition de l'EMG) ;
+        # un gammon terminal vaut 2 en points contre un EMG dans (1 ; ~1,6] —
+        # l'ordre ne peut s'inverser que si un coup NON terminal dépasse
+        # l'EMG du gammon terminal, ce qui demande des chances de backgammon
+        # au-delà d'un gammon certain, à un score où la différence compte.
         pending, boards = [], []
         equities: list[float] = [0.0] * len(plays)
         for index, play in enumerate(plays):
@@ -277,11 +300,14 @@ class GnubgEngine:
                 boards.append(gb.to_gnubg(play.result))
 
         if boards:
-            values = session.evaluate(boards, plies=ply, prune=self.prune)
+            values = session.evaluate(boards, plies=ply, prune=self.prune,
+                                      state=state)
             for index, value in zip(pending, values):
                 # `value[5]` est l'équité de la position résultante, vue par le
                 # joueur au trait DANS cette position — c'est-à-dire par notre
-                # adversaire. La nôtre en est l'opposée.
+                # adversaire. La nôtre en est l'opposée (au score : l'EMG est
+                # affine en la MWC du mover, donc la négation classe par la
+                # MWC du chooser — même arithmétique).
                 equities[index] = -float(value[5])
 
         return equities
