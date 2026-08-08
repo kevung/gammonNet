@@ -136,6 +136,23 @@ typedef enum {
     GN_TOO_GOOD = 3         /* playing on is worth more than cashing */
 } GnCubeAction;
 
+/*
+ * Spec §4's verdict table, exported raw: hand it the three branch values --
+ * "don't double", "double, taken", "double, passed" -- on ANY common scale
+ * (money points, MWC, exact table equities) and it answers. Exported because
+ * the cubeful rollout (gn_rollout) and the exact-reference benches need the
+ * SAME four comparisons as `gn_cube_decide`, and a second copy of a verdict
+ * table is how two readings of one rule end up in one repository.
+ */
+GnCubeAction gn_cube_verdict(double e_nd, double e_dt, double e_dp);
+
+/* The same cube, seen from the other side of the table: mine becomes theirs,
+ * centred stays centred. The search and the rollout both mirror ownership at
+ * every turn swap, for the same reason they swap the match state -- forgetting
+ * it values every other ply with the wrong player holding the cube. */
+GnCubeOwner gn_cube_mirror(GnCubeOwner owner);
+
+
 typedef struct {
     GnCubeAction action;
     /* Equity of doubling and of not doubling, on the same scale, so the caller
