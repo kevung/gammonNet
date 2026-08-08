@@ -820,8 +820,15 @@ ce soit, tous font prendre un videau qu'il fallait passer.
 > convention des équités cubeful stockées (l'option du tour courant exclue → `cube_defer_first`).
 > Non-biais mesuré en volume : 360 positions × 4 colonnes × 2 592 essais, la colonne témoin
 > cubeless partage les artefacts de méthode et l'appariement donne Δz compatibles avec zéro
-> pour les trois états (`docs/mesures/2026-08-08-T39-rollout-cubeful.md`). Reste : la campagne
-> d'arbitrage des désaccords de §6.3/3b (l'instrument existe), le rollout de MATCH (fin de
+> pour les trois états (`docs/mesures/2026-08-08-T39-rollout-cubeful.md`). La campagne
+> d'arbitrage des désaccords de videau money est faite : 394 désaccords sur 6 000 décisions,
+> deux colonnes de rollout plus la table exacte en domaine
+> (`docs/mesures/2026-08-08-T39-arbitrage-money.md`). Verdict : en contact, égalité
+> statistique sur le consensus des deux colonnes (38–31, p = 0,235, 37 non tranchées) ; en
+> course, le chemin neuronal sous-double (25 défaites à coût réel, +1,95 d'équité total) —
+> la table exacte corrige en domaine, le hors-domaine est un chantier nommé. Limite
+> d'instrument constatée : notre colonne tronquée ne résout que 35 % des fenêtres fines.
+> Reste : la réduction de variance (qui lèverait cette limite), le rollout de MATCH (fin de
 > partie à score non écrite), l'arrêt sur IC.
 
 **Objectif** — pouvoir dire lequel de deux moteurs a raison quand ils diffèrent.
