@@ -54,10 +54,10 @@
  * both optimal, so the rollout must reproduce the table's own cubeful equity
  * within its interval -- measured, not assumed (bench/rollout_bias.py).
  *
- * What it still does not do: MATCH cubeful trials. The §9 recursion prices a
- * live cube at a score, but a match rollout must also END at a score --
- * Crawford sequences, post-Crawford, match wins -- and that game-state
- * machinery does not exist here yet. Named, not omitted.
+ * MATCH trials (added 2026-08-08): `use_match` ends the game AT THE SCORE --
+ * points become the score reached, the score a match winning chance through
+ * the equity table, Crawford and match wins included; the §9 recursion
+ * prices the live cube and values truncated horizons. See the config note.
  *
  * SPDX-License-Identifier: MIT
  */
