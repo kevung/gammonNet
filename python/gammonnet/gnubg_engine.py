@@ -49,6 +49,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import gnubg_board as gb
+from .cube import CubeAction, CubeOwner
+from .met import MatchState
 from .rules import Play, Position
 
 #: Le binaire. Surchargeable pour une machine qui l'installe ailleurs.
@@ -290,3 +292,71 @@ def _terminal_points(result: Position, mover: int) -> int:
     from .arena import game_value
 
     return game_value(result, mover)
+
+
+# ── Les questions de videau, telles que la sonde de T34 les a établies ──
+#
+# Historique : ces trois définitions vivaient dans `bench/compare_cube.py`, où
+# la sonde qui les a établies est documentée (en-tête du fichier — 4000+ appels
+# `cfevaluate`, les paires (code, texte) observées, les conventions de
+# `cubeinfo`). T35 les fait entrer dans le paquet parce que l'arène cubeful en
+# a besoin ; le banc les réimporte d'ici.
+
+#: La convention de propriétaire de `cubeinfo`, établie par sonde :
+#: -1 centré, 1 le joueur au trait possède, 0 l'adversaire possède.
+_GNUBG_OWNER_OF = {CubeOwner.CENTRED: -1, CubeOwner.OWNED: 1, CubeOwner.OPPONENT: 0}
+
+
+def classify_gnubg_verdict(text: str) -> CubeAction:
+    """Map gnubg's `recommendationtext` to our four-verdict `CubeAction`.
+
+    Order matters: "too good" must be checked before the generic
+    double/pass-or-take rule, since "Too good to double, pass" would
+    otherwise match the DOUBLE_PASS rule. Everything not recognised raises --
+    per `CLAUDE.md` rule 2, an unmapped string is refused, never guessed at.
+    The probe that established the vocabulary lives in
+    `bench/compare_cube.py` (its `_VERDICTS` table).
+    """
+    lowered = text.lower()
+    if "too good" in lowered:
+        return CubeAction.TOO_GOOD
+    if "cube not available" in lowered:
+        return CubeAction.NO_DOUBLE
+    if "never double" in lowered:
+        return CubeAction.NO_DOUBLE
+    if lowered.startswith("no double") or lowered.startswith("no redouble"):
+        return CubeAction.NO_DOUBLE
+    has_double_word = "double" in lowered or "redouble" in lowered
+    if has_double_word and "pass" in lowered:
+        return CubeAction.DOUBLE_PASS
+    if has_double_word and "take" in lowered:
+        return CubeAction.DOUBLE_TAKE
+    raise ValueError(
+        f"gnubg verdict string not in the mapping established by the T34 "
+        f"probe: {text!r}. Refused rather than guessed -- see "
+        f"bench/compare_cube.py for the probe and extend the classifier "
+        f"deliberately."
+    )
+
+
+def gnubg_state(owner: CubeOwner, match: MatchState | None, jacoby: bool,
+                cube: int = 1) -> dict:
+    """Build the `state` dict `GnubgSession.cubeful` forwards to `cubeinfo`.
+
+    `move` is fixed at 1 (established by probe: arbitrary but must be
+    consistent with the score assignment below). For a match state,
+    `score[move]` must be the mover's own score -- also established by probe,
+    against the post-Crawford systematic-double signature. `cube` is the
+    CURRENT cube value, before any double under consideration.
+    """
+    state = {"cube": int(cube), "cube_owner": _GNUBG_OWNER_OF[owner], "move": 1}
+    if match is None:
+        state.update(match_to=0, score=(0, 0), crawford=0, jacoby=int(jacoby))
+    else:
+        match_to = max(match.away_on_roll, match.away_opponent)
+        state.update(
+            match_to=match_to,
+            score=(match_to - match.away_opponent, match_to - match.away_on_roll),
+            crawford=int(match.crawford),
+        )
+    return state
