@@ -186,3 +186,100 @@ def test_candidate_equities_are_seen_by_the_mover(network):
         network, [p.result for p in plays],
         RolloutConfig(trials=300, truncate=0, seed=3))
     assert max(equities) > 0.0, "un coup gagnant vaut positif pour celui qui le joue"
+
+
+# ── Le videau vivant (T39 × T34) ─────────────────────────────────────
+
+# Les trois efficacités mesurées (t34-efficacite.json), indexées par état :
+# centré, possédé, adverse. Sans effet dans le domaine de la table — les
+# décisions y sont exactes — mais le rollout les exige pour le hors-domaine.
+X3 = (0.688, 0.566, 0.687)
+
+
+def cubeful_config(owner: int, trials: int = 2000, seed: int = 4243,
+                   truncate: int = 0) -> RolloutConfig:
+    # `cube_defer_first` : la cible du contrôle est l'équité STOCKÉE, dont la
+    # convention exclut l'option de double du tour courant — établi par sonde,
+    # voir gn_rollout.h. Sans lui, un meneur encaisse au ply 0 et le rollout
+    # vise une autre question que la table.
+    policy = SearchConfig(ply=0, use_cube=True, cube_owner=owner, cube_x=0.6)
+    return RolloutConfig(trials=trials, truncate=truncate, seed=seed,
+                         policy=policy, use_cube=True, cube_owner=owner,
+                         cube_x=X3, cube_defer_first=True)
+
+
+def test_cubeful_same_seed_gives_the_same_answer(network):
+    position = race([2, 2, 1], [2, 1, 2])
+    first = rollout(network, position, cubeful_config(0, trials=200, seed=7))
+    second = rollout(network, position, cubeful_config(0, trials=200, seed=7))
+    assert first.equity == second.equity
+    assert first.cashed == second.cashed
+    assert first.average_cube == second.average_cube
+
+
+def test_cubeless_rollout_reports_no_cube_stats(network):
+    position = race([2, 2, 1], [2, 1, 2])
+    result = rollout(network, position,
+                     RolloutConfig(trials=100, truncate=6, seed=3))
+    assert result.cashed == 0
+    assert result.average_cube == 0.0
+
+
+@pytest.mark.skipif(not DATABASE.exists(),
+                    reason=f"base bilatérale absente : {DATABASE}")
+def test_cubeful_rollout_matches_the_exact_cubeful_equity(network):
+    """LE contrôle de non-biais cubeful : dans le domaine de la table, les
+    verdicts de videau ET le jeu de pions du rollout sont exacts (table
+    partagée installée), les parties vont au bout — le rollout doit donc
+    retrouver l'équité cubeful STOCKÉE, pour chacun des trois états, dans son
+    intervalle. C'est aussi le juge de la convention : si le verdict dérivé
+    des équités stockées avait le mauvais timing de double, l'équité visée
+    serait ratée ici, visiblement, et rien de cubeful ne serait arbitrable.
+    """
+    from gammonnet.bearoff import NativeBearoff, disable_shared, use_shared
+
+    rng = random.Random(20260806)
+    native = NativeBearoff(DATABASE)
+    use_shared(DATABASE)
+    try:
+        outside = 0
+        checks = 0
+        cashed_total = 0
+        worst = 0.0
+        positions = []
+        while len(positions) < 6:
+            white = [rng.randrange(3) for _ in range(4)]
+            black = [rng.randrange(3) for _ in range(4)]
+            if not sum(white) or not sum(black):
+                continue
+            position = race(white, black)
+            if native.contains(position):
+                positions.append(position)
+
+        for position in positions:
+            exact = native.equities(position)
+            reference = {0: exact.centered, 1: exact.owned,
+                         2: exact.opponent_owns}
+            for owner, target in reference.items():
+                result = rollout(network, position,
+                                 cubeful_config(owner, trials=2000, seed=4243))
+                assert result.stalled == 0
+                cashed_total += result.cashed
+                spread = abs(result.equity - target)
+                error = max(result.standard_error, 1e-9)
+                worst = max(worst, spread / error)
+                checks += 1
+                if spread > 3.0 * error:
+                    outside += 1
+
+        assert cashed_total > 0, (
+            "aucun essai encaissé sur un passe : le videau n'a pas vécu"
+        )
+        assert outside <= 1, (
+            f"{outside}/{checks} contrôles hors de 3 écarts-types — le pire "
+            f"à {worst:.1f} sigma. L'arbitre cubeful est biaisé, ou la "
+            f"convention de la table n'est pas celle du verdict dérivé."
+        )
+    finally:
+        disable_shared()
+        native.close()

@@ -6,6 +6,9 @@
 
 #include "gn_rollout.h"
 
+#include "gn_bearoff.h"
+#include "gn_cube.h"
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +18,11 @@
  * measurement from hanging, and every abandoned trial is counted rather than
  * quietly averaged in as a draw. */
 #define MAX_PLIES 4000
+
+/* A cube past 2^20 changes nothing a money equity can express and would only
+ * march toward integer overflow; further doubles are refused there. In real
+ * trials the cube stays in single digits -- `average_cube` says so. */
+#define MAX_CUBE (1L << 20)
 
 /*
  * ── The dice, and why they are computed rather than drawn ────────────
@@ -66,6 +74,41 @@ static double terminal_equity(const GnPosition *pos)
 }
 
 /*
+ * The cube verdict at one node of a trial, seen from the player on roll.
+ *
+ * Inside the two-sided table's domain the verdict is EXACT -- the three
+ * stored cubeful equities feed spec §4's table directly, no model and no
+ * `x`. Outside it, the fitted model decides (`gn_cube_decide`, money). This
+ * is the same exact-first discipline as the search's leaf valuation, and it
+ * is what makes the in-domain rollout a non-bias control rather than a
+ * model echoing itself.
+ */
+static int cube_action(const GnNetwork *net, const GnPosition *pos, int owner,
+                       const GnRolloutConfig *config, GnCubeAction *action)
+{
+    const GnBearoff *table = gn_bearoff_shared();
+    double equities[4];
+
+    if (table != NULL && gn_bearoff_equities(table, pos, equities)) {
+        /* gn_bearoff.h's order: cubeless, owned, centred, opponent. */
+        static const int index_of_owner[3] = {2, 1, 3};
+        *action = gn_cube_verdict(equities[index_of_owner[owner]],
+                                  2.0 * equities[3], 1.0);
+        return 0;
+    }
+
+    float probs[GN_NUM_OUTPUTS];
+    GnCubeDecision decision;
+    if (gn_evaluate(net, pos, probs) != 0)
+        return -1;
+    if (gn_cube_decide(probs, (GnCubeOwner)owner, NULL,
+                       config->cube_x[owner], config->jacoby, &decision) != 0)
+        return -1;
+    *action = decision.action;
+    return 0;
+}
+
+/*
  * One trial. Returns the equity from `start`'s turn's point of view.
  *
  * `outcome` receives the signed points (positive if the player on roll at
@@ -74,13 +117,28 @@ static double terminal_equity(const GnPosition *pos)
  */
 static int play_trial(const GnNetwork *net, const GnPosition *start,
                       const GnRolloutConfig *config, unsigned long trial,
-                      double *equity, int *outcome, int *finished)
+                      double *equity, int *outcome, int *finished,
+                      int *cashed, long *final_cube)
 {
     GnPosition pos = *start;
     const int hero = (int)start->turn;
 
+    /* The live cube of this trial: `owner` is always as seen by the player
+     * on roll in `pos`, mirrored at every turn swap. Equities stay in units
+     * of the INITIAL cube -- `cube` starts at 1 whatever the caller's real
+     * stake, exactly as the cubeless rollout works per unit. */
+    int owner = config->cube_owner;
+    long cube = 1;
+
+    /* The policy is copied so its cube viewpoint can follow the trial: a
+     * cube-aware policy (`policy.use_cube`) must choose each move with the
+     * CURRENT owner as the mover sees it, not the root's. */
+    GnSearchConfig policy = config->policy;
+
     *outcome = 0;
     *finished = 0;
+    *cashed = 0;
+    *final_cube = 1;
 
     /*
      * The candidate buffer is allocated ONCE per trial, not once per ply.
@@ -97,10 +155,11 @@ static int play_trial(const GnNetwork *net, const GnPosition *start,
         if (gn_position_is_over(&pos)) {
             /* `gn_terminal_equity` answers for `pos.turn`, the loser. Translate
              * to the hero's point of view. */
-            const double loser_equity = terminal_equity(&pos);
+            const double loser_equity = terminal_equity(&pos) * (double)cube;
             *equity = ((int)pos.turn == hero) ? loser_equity : -loser_equity;
-            *outcome = (int)(-loser_equity) * (((int)pos.turn == hero) ? -1 : 1);
+            *outcome = (int)(-terminal_equity(&pos)) * (((int)pos.turn == hero) ? -1 : 1);
             *finished = 1;
+            *final_cube = cube;
             free(buffer);
             return 0;
         }
@@ -113,10 +172,52 @@ static int play_trial(const GnNetwork *net, const GnPosition *start,
                 free(buffer);
                 return -1;
             }
-            const double value = (double)gn_money_equity(probs);
+            double value;
+            if (config->use_cube) {
+                /* The model's live curves already price every future double,
+                 * so the horizon value is the cubeful leaf value times the
+                 * stake reached -- the same valuation the search's leaves
+                 * use, at the efficiency measured for this cube state. */
+                int failed = 0;
+                value = gn_cube_value(probs, (GnCubeOwner)owner, NULL,
+                                      config->cube_x[owner], &failed)
+                        * (double)cube;
+                if (failed) {
+                    free(buffer);
+                    return -1;
+                }
+            } else {
+                value = (double)gn_money_equity(probs);
+            }
             *equity = ((int)pos.turn == hero) ? value : -value;
+            *final_cube = cube;
             free(buffer);
             return 0;
+        }
+
+        if (config->use_cube && cube < MAX_CUBE
+            && (ply > 0 || !config->cube_defer_first)
+            && (owner == GN_CUBE_CENTRED || owner == GN_CUBE_OWNED)) {
+            GnCubeAction action;
+            if (cube_action(net, &pos, owner, config, &action) != 0) {
+                free(buffer);
+                return -1;
+            }
+            if (action == GN_DOUBLE_PASS) {
+                /* The opponent concedes the CURRENT stake -- a pass never
+                 * pays the doubled cube, spec §4. Not an outcome frequency:
+                 * the game was not played out (`cashed`, not `finished`). */
+                *equity = ((int)pos.turn == hero) ? (double)cube : -(double)cube;
+                *cashed = 1;
+                *final_cube = cube;
+                free(buffer);
+                return 0;
+            }
+            if (action == GN_DOUBLE_TAKE) {
+                cube *= 2;
+                owner = GN_CUBE_OPPONENT;
+            }
+            /* TOO_GOOD and NO_DOUBLE both mean: play on. */
         }
 
         int d1, d2;
@@ -134,7 +235,10 @@ static int play_trial(const GnNetwork *net, const GnPosition *start,
          * Here the count says which is which: negative is an error, zero is a
          * legitimate pass, positive is a play.
          */
-        const int count = gn_search_plays(net, &pos, d1, d2, &config->policy,
+        if (policy.use_cube) {
+            policy.cube_owner = owner;
+        }
+        const int count = gn_search_plays(net, &pos, d1, d2, &policy,
                                           buffer, GN_MAX_PLAYS);
         if (count < 0) {
             free(buffer);
@@ -144,9 +248,11 @@ static int play_trial(const GnNetwork *net, const GnPosition *start,
             /* No legal play is an outcome of the rules, not a failure: the turn
              * simply passes. */
             gn_position_swap_turn(&pos);
+            owner = (int)gn_cube_mirror((GnCubeOwner)owner);
             continue;
         }
         pos = buffer[0].play.result;
+        owner = (int)gn_cube_mirror((GnCubeOwner)owner);
     }
 
     /* Abandoned. Reported by the caller, never averaged in. */
@@ -189,13 +295,16 @@ int gn_rollout(const GnNetwork *net, const GnPosition *pos,
 
     double sum = 0.0;
     double sum_squares = 0.0;
+    double sum_cube = 0.0;
     unsigned long counted = 0;
 
     for (unsigned long trial = 0; trial < config->trials; trial++) {
         double equity;
-        int outcome, finished;
+        int outcome, finished, cashed;
+        long final_cube;
         const int status = play_trial(net, pos, config, trial, &equity,
-                                      &outcome, &finished);
+                                      &outcome, &finished, &cashed,
+                                      &final_cube);
         if (status < 0) {
             return -1;
         }
@@ -206,6 +315,10 @@ int gn_rollout(const GnNetwork *net, const GnPosition *pos,
 
         sum += equity;
         sum_squares += equity * equity;
+        sum_cube += (double)final_cube;
+        if (cashed) {
+            out->cashed++;
+        }
         counted++;
 
         if (finished) {
@@ -227,6 +340,7 @@ int gn_rollout(const GnNetwork *net, const GnPosition *pos,
     }
 
     out->equity = sum / (double)counted;
+    out->average_cube = config->use_cube ? sum_cube / (double)counted : 0.0;
     if (counted > 1) {
         const double variance =
             (sum_squares - sum * sum / (double)counted) / (double)(counted - 1);
@@ -236,7 +350,10 @@ int gn_rollout(const GnNetwork *net, const GnPosition *pos,
     /* Frequencies only mean something for an untruncated rollout; a truncated
      * one ends on an evaluation, not on an outcome. Left at zero rather than
      * filled with a fraction of the trials, which would look like a
-     * distribution and be one only in part. */
+     * distribution and be one only in part. Cubeful trials ended by a pass are
+     * NOT in them either -- those games were conceded, not played out, and
+     * `cashed` reports them; the frequencies are fractions of ALL counted
+     * trials, so with a live cube they no longer sum to about 1. */
     if (config->truncate) {
         memset(out->frequencies, 0, sizeof(out->frequencies));
     } else {
@@ -289,17 +406,20 @@ int gn_rollout_difference(const GnNetwork *net,
 
     for (unsigned long trial = 0; trial < config->trials; trial++) {
         double equity_a, equity_b;
-        int outcome, finished;
+        int outcome, finished, cashed;
+        long final_cube;
 
         /* THE SAME TRIAL INDEX ON BOTH SIDES. That is the entire mechanism:
          * `roll_at` is a pure function of (seed, trial, ply), so both variants
          * meet identical dice at identical plies, and the dice cancel out of the
          * difference. */
-        int status = play_trial(net, a, config, trial, &equity_a, &outcome, &finished);
+        int status = play_trial(net, a, config, trial, &equity_a, &outcome,
+                                &finished, &cashed, &final_cube);
         if (status < 0) return -1;
         if (status == 1) continue;
 
-        status = play_trial(net, b, config, trial, &equity_b, &outcome, &finished);
+        status = play_trial(net, b, config, trial, &equity_b, &outcome,
+                            &finished, &cashed, &final_cube);
         if (status < 0) return -1;
         if (status == 1) continue;
 

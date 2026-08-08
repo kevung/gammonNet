@@ -37,12 +37,27 @@
  *    play it perfectly, and a 1-ply policy costs about five hundred times more
  *    per trial for a second-order improvement.
  *
- * ── WHAT IT DOES NOT DO ─────────────────────────────────────────────
+ * ── THE CUBE (added 2026-08-08, once T34 existed to stand on) ───────
  *
- * No cube. This rollout is cubeless, and a cubeful rollout is a different
- * object -- it has to decide, at every node, whether a player would double. That
- * belongs with T34, and building it on an unwritten cube model would produce
- * numbers that look like measurements.
+ * The reservation above -- "building it on an unwritten cube model would
+ * produce numbers that look like measurements" -- expired when T34 landed:
+ * the cube model is written, fitted against the exact table, and measured.
+ * With `use_cube`, every trial carries a LIVE cube: before each roll the
+ * player who may double consults the cube decision -- the EXACT table
+ * verdict inside the two-sided database's domain, the fitted model outside
+ * it -- a pass ends the trial at the current stake, a take doubles it and
+ * hands the cube over. Truncated trials are valued by the cubeful leaf value
+ * at the horizon, times the cube. Equities are in units of the INITIAL cube.
+ *
+ * That in-domain exactness is also the non-bias control: on positions the
+ * table covers, cube verdicts and checker play (via a cubeful policy) are
+ * both optimal, so the rollout must reproduce the table's own cubeful equity
+ * within its interval -- measured, not assumed (bench/rollout_bias.py).
+ *
+ * What it still does not do: MATCH cubeful trials. The §9 recursion prices a
+ * live cube at a score, but a match rollout must also END at a score --
+ * Crawford sequences, post-Crawford, match wins -- and that game-state
+ * machinery does not exist here yet. Named, not omitted.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -79,6 +94,38 @@ typedef struct {
 
     /* Common random numbers. Two variants compared MUST share this. */
     unsigned long seed;
+
+    /*
+     * The live cube (see the header note). `cube_owner` is a GnCubeOwner as
+     * seen by the player on roll in the position handed in; the rollout
+     * mirrors it at every turn, like the search does. `cube_x[o]` is the
+     * cube efficiency used when the state, seen from the decider, is `o` --
+     * three values because the fit measured three (t34-efficacite.json), and
+     * indexed by GnCubeOwner. `jacoby` is forwarded to the model's decision
+     * (money semantics, spec §4). All ignored unless `use_cube`.
+     */
+    int use_cube;
+    int cube_owner;
+    double cube_x[3];
+    int jacoby;
+
+    /*
+     * Skip the cube consultation at ply 0 -- the handed-in position's player
+     * on roll has already passed their doubling point THIS turn; everyone
+     * doubles freely from the next turn on.
+     *
+     * This is not a tuning knob; it selects which QUESTION the rollout
+     * answers, and the two-sided table settled which is which (probe of
+     * 2026-08-08): a race where the leader would gladly cash now but whose
+     * future double windows are all worthless carries the SAME stored equity
+     * for all four cube states -- so the stored cubeful equities exclude the
+     * current turn's option, and only a deferred rollout can reproduce them.
+     * Set it to arbitrate a cube DECISION (the "no double" branch means
+     * exactly "I did not double this turn") and to hit the table's numbers;
+     * clear it for a post-move position, whose opponent's turn begins with
+     * their option intact.
+     */
+    int cube_defer_first;
 } GnRolloutConfig;
 
 typedef struct {
@@ -100,6 +147,13 @@ typedef struct {
     /* Trials that hit the turn cap without finishing. Reported, never silently
      * counted as a draw. */
     unsigned long stalled;
+
+    /* Cubeful trials only (zero otherwise): trials ended by a pass, and the
+     * mean final cube in units of the initial one. A cashed game is NOT an
+     * outcome frequency -- `frequencies` counts games played to the end, and
+     * mixing the two would make both unreadable. */
+    unsigned long cashed;
+    double average_cube;
 } GnRolloutResult;
 
 /* Sensible defaults: 1296 trials, truncated at 11 plies, 0-ply policy. */

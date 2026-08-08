@@ -472,8 +472,19 @@ double gn_cube_value(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
  * either scale. Kept as one function so the two branches of `gn_cube_decide`
  * cannot silently diverge on the verdict logic itself.
  */
-static GnCubeAction verdict(double e_nd, double e_dt, double e_dp, double e_double)
+GnCubeOwner gn_cube_mirror(GnCubeOwner owner)
 {
+    if (owner == GN_CUBE_OWNED)
+        return GN_CUBE_OPPONENT;
+    if (owner == GN_CUBE_OPPONENT)
+        return GN_CUBE_OWNED;
+    return GN_CUBE_CENTRED;
+}
+
+GnCubeAction gn_cube_verdict(double e_nd, double e_dt, double e_dp)
+{
+    const double e_double = (e_dt < e_dp) ? e_dt : e_dp;
+
     if (e_nd > e_dp && e_nd >= e_double)
         return GN_TOO_GOOD;
     if (e_dt >= e_dp)
@@ -526,7 +537,7 @@ int gn_cube_decide(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
          * outside that precondition there is nothing to weigh. */
         out->action = (owner == GN_CUBE_OPPONENT)
             ? GN_NO_DOUBLE
-            : verdict(e_nd, e_dt, e_dp, e_double);
+            : gn_cube_verdict(e_nd, e_dt, e_dp);
         return 0;
     }
 
@@ -576,7 +587,7 @@ int gn_cube_decide(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
          */
         out->action = state->crawford ? GN_NO_DOUBLE
             : (owner == GN_CUBE_OPPONENT) ? GN_NO_DOUBLE
-            : verdict(e_nd, e_dt, e_dp, e_double);
+            : gn_cube_verdict(e_nd, e_dt, e_dp);
         return 0;
     }
 }

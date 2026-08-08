@@ -813,6 +813,16 @@ ce soit, tous font prendre un videau qu'il fallait passer.
 
 > **Palier D.** Promue au chemin critique le 2026-08-06 : sans elle, T34 et T35 ne peuvent
 > constater qu'une ressemblance.
+>
+> **État au 2026-08-08** — l'arbitre est cubeless ET cubeful. Le rollout cubeless (dés
+> communs, troncature, différences appariées) était en place ; le videau vivant s'y ajoute,
+> décisions exactes dans le domaine de la table et modèle ajusté ailleurs. La sonde a fixé la
+> convention des équités cubeful stockées (l'option du tour courant exclue → `cube_defer_first`).
+> Non-biais mesuré en volume : 360 positions × 4 colonnes × 2 592 essais, la colonne témoin
+> cubeless partage les artefacts de méthode et l'appariement donne Δz compatibles avec zéro
+> pour les trois états (`docs/mesures/2026-08-08-T39-rollout-cubeful.md`). Reste : la campagne
+> d'arbitrage des désaccords de §6.3/3b (l'instrument existe), le rollout de MATCH (fin de
+> partie à score non écrite), l'arrêt sur IC.
 
 **Objectif** — pouvoir dire lequel de deux moteurs a raison quand ils diffèrent.
 

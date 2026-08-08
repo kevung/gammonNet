@@ -26,6 +26,11 @@ class _CRolloutConfig(ctypes.Structure):
         ("truncate", ctypes.c_uint),
         ("policy", _CSearchConfig),
         ("seed", ctypes.c_ulong),
+        ("use_cube", ctypes.c_int),
+        ("cube_owner", ctypes.c_int),
+        ("cube_x", ctypes.c_double * 3),
+        ("jacoby", ctypes.c_int),
+        ("cube_defer_first", ctypes.c_int),
     ]
 
 
@@ -36,6 +41,8 @@ class _CRolloutResult(ctypes.Structure):
         ("frequencies", ctypes.c_double * NUM_OUTPUTS),
         ("trials", ctypes.c_ulong),
         ("stalled", ctypes.c_ulong),
+        ("cashed", ctypes.c_ulong),
+        ("average_cube", ctypes.c_double),
     ]
 
 
@@ -81,12 +88,29 @@ class RolloutConfig:
     moins cher : c'est un **estimateur différent**, à variance plus faible et à
     biais non nul. Lequel vaut mieux dépend de la précision du réseau à
     l'horizon, ce qui se mesure.
+
+    `use_cube` (T39 × T34) : chaque essai porte un videau **vivant** — la
+    décision est EXACTE dans le domaine de la table bilatérale, celle du
+    modèle ajusté ailleurs ; un passe encaisse l'enjeu courant, une prise le
+    double et transfère le videau. `cube_owner` est vu par le joueur au trait
+    de la position confiée ; `cube_x` est indexé par état (centré, possédé,
+    adverse) — les trois valeurs mesurées de t34-efficacite.json, jamais une
+    seule recyclée. Les équités restent en unités du videau INITIAL.
     """
 
     trials: int = 1296
     truncate: int = 11
     seed: int = 0
     policy: SearchConfig = SearchConfig(ply=0)
+    use_cube: bool = False
+    cube_owner: int = 0
+    cube_x: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    jacoby: bool = False
+    #: L'option de double du tour courant est déjà passée — voir gn_rollout.h
+    #: pour la sonde qui a fixé ce que la table bilatérale entend par là.
+    #: Actif pour arbitrer une décision de videau ; inactif pour une position
+    #: d'après-coup, dont l'adversaire entame son tour avec son option.
+    cube_defer_first: bool = False
 
     def _to_c(self) -> _CRolloutConfig:
         c = _CRolloutConfig()
@@ -94,6 +118,12 @@ class RolloutConfig:
         c.truncate = self.truncate
         c.seed = self.seed
         c.policy = self.policy._to_c()
+        if self.use_cube:
+            c.use_cube = 1
+            c.cube_owner = int(self.cube_owner)
+            c.cube_x = (ctypes.c_double * 3)(*self.cube_x)
+            c.jacoby = int(self.jacoby)
+            c.cube_defer_first = int(self.cube_defer_first)
         return c
 
 
@@ -104,6 +134,10 @@ class RolloutResult:
     trials: int
     stalled: int
     frequencies: tuple[float, ...]
+    #: Essais cubeful terminés par un passe, et videau final moyen — zéro
+    #: l'un et l'autre pour un rollout cubeless.
+    cashed: int = 0
+    average_cube: float = 0.0
 
     def __str__(self) -> str:
         return (f"{self.equity:+.5f} ± {self.standard_error:.5f} "
@@ -124,6 +158,8 @@ def rollout(network: Network, position: Position,
         trials=result.trials,
         stalled=result.stalled,
         frequencies=tuple(result.frequencies),
+        cashed=result.cashed,
+        average_cube=result.average_cube,
     )
 
 
