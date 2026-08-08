@@ -188,6 +188,22 @@ def main() -> int:
             report["columns"][column]["average_cube"] = (
                 sum(r[column]["average_cube"] for r in rows) / len(rows))
 
+    # L'appariement qui isole la machinerie du videau : même graine par
+    # position, donc z_colonne − z_cubeless est bien déterminé, et la colonne
+    # cubeless — non biaisée par construction et par son propre contrôle —
+    # sert de témoin. Un biais DU VIDEAU se lirait ici, débarrassé de
+    # l'artefact d'approximation normale que les quatre colonnes partagent.
+    for column in ("centred", "owned", "opponent"):
+        deltas = [r[column]["z"] - r["cubeless"]["z"] for r in rows
+                  if r[column]["se"] > 0.0 and r["cubeless"]["se"] > 0.0]
+        if deltas:
+            mean = sum(deltas) / len(deltas)
+            var = (sum(x * x for x in deltas) - len(deltas) * mean * mean) \
+                / max(len(deltas) - 1, 1)
+            report["columns"][column]["paired_dz_vs_cubeless"] = {
+                "n": len(deltas), "mean": mean,
+                "se": math.sqrt(max(var, 0.0) / len(deltas))}
+
     worst = sorted(
         rows,
         key=lambda r: -max(
