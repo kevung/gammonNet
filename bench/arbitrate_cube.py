@@ -213,7 +213,7 @@ def collect(payload):
 
 
 def arbitrate(payload):
-    rows, x3, trials = payload
+    rows, x3, trials, our_trials = payload
     use_shared(DATABASE)
     evalcache.enable()
     native = NativeBearoff(DATABASE)
@@ -246,7 +246,7 @@ def arbitrate(payload):
             policy = SearchConfig(ply=0, use_cube=True,
                                   cube_owner=int(branch_owner), cube_x=0.6)
             config = RolloutConfig(
-                trials=trials, truncate=11, seed=seed, policy=policy,
+                trials=our_trials, truncate=11, seed=seed, policy=policy,
                 use_cube=True, cube_owner=int(branch_owner), cube_x=x3,
                 jacoby=True, cube_defer_first=True)
             result = rollout(network, position, config)
@@ -286,7 +286,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--contact", type=int, default=2000)
     parser.add_argument("--bearoff", type=int, default=1000)
-    parser.add_argument("--trials", type=int, default=1296)
+    parser.add_argument("--trials", type=int, default=1296,
+                        help="essais du rollout gnubg")
+    parser.add_argument("--our-trials", type=int, default=3888,
+                        help="essais de notre rollout tronqué — plus que "
+                             "gnubg, qui a sa réduction de variance et pas "
+                             "nous ; le cache amortit le surcoût")
     parser.add_argument("--workers", type=int, default=15)
     parser.add_argument("--limit", type=int, default=0,
                         help="arbitrer au plus N désaccords (0 = tous)")
@@ -317,12 +322,13 @@ def main() -> int:
     with Pool(args.workers) as pool:
         batches = pool.map(
             arbitrate,
-            [(indexed[i::args.workers], x3, args.trials)
+            [(indexed[i::args.workers], x3, args.trials, args.our_trials)
              for i in range(args.workers)])
     rows = [r for batch in batches for r in batch]
 
     report = {
         "task": "T39-arbitrage-money", "trials": args.trials,
+        "our_trials": args.our_trials,
         "rollout_seed": ROLLOUT_SEED, "jacoby": True,
         "corpus": {"contact": args.contact, "bearoff": args.bearoff},
         "n_disagreements": len(rows),
