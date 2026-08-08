@@ -145,6 +145,235 @@ def test_finds_the_exact_answer_within_its_interval(network):
     )
 
 
+# ── La réduction de variance par la chance ──────────────────────────
+
+
+def contact_position():
+    """La position initiale : du contact, aucun domaine exact pour aider."""
+    points = [0] * NUM_POINTS
+    for point, count in ((23, 2), (12, 5), (7, 3), (5, 5)):
+        points[point] = count
+    for point, count in ((0, -2), (11, -5), (16, -3), (18, -5)):
+        points[point] = count
+    return Position(points=tuple(points), bar=(0, 0), off=(0, 0), turn=WHITE)
+
+
+def test_luck_correction_is_an_exact_decomposition(network):
+    """Même graine : moyenne brute = moyenne corrigée + chance moyenne.
+
+    La correction ne change pas le jeu des essais — elle ne fait que déplacer
+    de la variance du résultat vers un terme de chance observé. Si l'identité
+    comptable casse, la correction fait autre chose que ce qu'elle prétend.
+    """
+    position = contact_position()
+    plain = rollout(network, position,
+                    RolloutConfig(trials=72, truncate=7, seed=31))
+    corrected = rollout(network, position,
+                        RolloutConfig(trials=72, truncate=7, seed=31,
+                                      variance_reduction=True))
+    assert plain.average_luck == 0.0
+    assert corrected.equity + corrected.average_luck == pytest.approx(
+        plain.equity, abs=1e-9)
+
+
+def test_luck_correction_shrinks_the_error(network):
+    """Le se corrigé doit être plusieurs fois plus petit, à essais égaux.
+
+    Le facteur mesuré en fumée est ~13× sur cette position ; exiger 3× laisse
+    la marge d'une autre graine sans laisser passer une correction morte.
+    """
+    position = contact_position()
+    plain = rollout(network, position,
+                    RolloutConfig(trials=108, truncate=7, seed=32))
+    corrected = rollout(network, position,
+                        RolloutConfig(trials=108, truncate=7, seed=32,
+                                      variance_reduction=True))
+    assert corrected.standard_error * 3.0 < plain.standard_error
+
+
+@pytest.mark.skipif(not DATABASE.exists(),
+                    reason=f"base bilatérale absente : {DATABASE}")
+def test_luck_corrected_rollout_still_finds_the_exact_answer(network):
+    """Non-biais : corrigé et non tronqué, sur des positions où la table sait."""
+    from gammonnet.bearoff import TwoSidedBearoff
+
+    rng = random.Random(20260808)
+    config = RolloutConfig(trials=360, truncate=0, seed=4244,
+                           variance_reduction=True)
+
+    outside = 0
+    examined = 0
+    worst = 0.0
+
+    with TwoSidedBearoff(DATABASE) as table:
+        while examined < 6:
+            white = [rng.randrange(3) for _ in range(4)]
+            black = [rng.randrange(3) for _ in range(4)]
+            if not sum(white) or not sum(black):
+                continue
+            position = race(white, black)
+            if not table.contains(position):
+                continue
+            examined += 1
+
+            exact = table.equity(position).cubeless
+            result = rollout(network, position, config)
+            assert result.stalled == 0
+            spread = abs(result.equity - exact)
+            worst = max(worst, spread / max(result.standard_error, 1e-9))
+            if spread > 3.0 * result.standard_error:
+                outside += 1
+
+    assert outside <= 1, (
+        f"{outside}/6 positions hors de 3 écarts-types — le pire à "
+        f"{worst:.1f} sigma. La correction de chance a introduit un biais."
+    )
+
+
+# ── L'arrêt sur intervalle de confiance ─────────────────────────────
+
+
+def test_stops_when_the_interval_is_reached(network):
+    """Cible lâche : l'arrêt vient avant le plafond, sur une famille de 36."""
+    result = rollout(network, contact_position(),
+                     RolloutConfig(trials=5000, truncate=7, seed=7,
+                                   target_se=0.05, min_trials=72))
+    assert result.trials < 5000
+    assert result.trials % 36 == 0
+    assert result.trials >= 72
+    assert result.standard_error <= 0.05
+
+
+def test_the_cap_still_caps(network):
+    """Cible inatteignable : le plafond tient, et le résultat porte son erreur."""
+    result = rollout(network, contact_position(),
+                     RolloutConfig(trials=144, truncate=7, seed=7,
+                                   target_se=1e-6, min_trials=72))
+    assert result.trials == 144
+    assert result.standard_error > 1e-6
+
+
+# ── Le rollout de MATCH : la fin de partie à score ──────────────────
+
+
+def test_match_rollout_at_dmp_is_the_win_frequency(network):
+    """À 1-partout, chaque essai vaut ±1 selon le gagnant, rien d'autre.
+
+    L'équité de match doit donc valoir exactement 2·P(gain) − 1 du MÊME
+    rollout cubeless (mêmes dés, même politique, non tronqué) — au bruit
+    d'arrondi d'une somme près. C'est l'ancre exacte du convertisseur : si
+    la MET, la permutation d'état ou la traduction héros/perdant se trompe,
+    l'identité casse.
+    """
+    from gammonnet.met import MatchState
+
+    position = contact_position()
+    cubeless = rollout(network, position,
+                       RolloutConfig(trials=200, truncate=0, seed=51))
+    match = rollout(network, position,
+                    RolloutConfig(trials=200, truncate=0, seed=51,
+                                  match=MatchState(1, 1)))
+    assert cubeless.stalled == 0 and match.stalled == 0
+    assert match.equity == pytest.approx(
+        2.0 * cubeless.frequencies[0] - 1.0, abs=1e-9)
+    assert -1.0 <= match.equity <= 1.0
+
+
+def test_match_crawford_game_never_doubles(network):
+    """Pendant la partie Crawford, personne n'est consulté : videau final 1."""
+    from gammonnet.cube import CubeOwner
+    from gammonnet.met import MatchState
+
+    result = rollout(network, contact_position(),
+                     RolloutConfig(trials=100, truncate=0, seed=52,
+                                   use_cube=True,
+                                   cube_owner=int(CubeOwner.CENTRED),
+                                   cube_x=(0.688, 0.566, 0.687),
+                                   match=MatchState(2, 1, crawford=True)))
+    assert result.average_cube == 1.0
+    assert result.cashed == 0
+
+
+def test_match_post_crawford_free_drop(network):
+    """2-away contre 1-away après Crawford, position d'ouverture : le free drop.
+
+    Le mené double d'entrée (il n'a rien à perdre) et le meneur, très
+    légèrement outsider dans la partie puisque l'adversaire est au trait,
+    PASSE : un point gratuit qui le laisse à 1-partout, MWC exactement ½.
+    Chaque essai doit donc s'encaisser immédiatement, au videau 1, à une
+    équité de match exactement nulle. Une ancre exacte, trouvée par le
+    modèle §9 lui-même — le test l'épingle.
+    """
+    from gammonnet.cube import CubeOwner
+    from gammonnet.met import MatchState
+
+    result = rollout(network, contact_position(),
+                     RolloutConfig(trials=100, truncate=0, seed=53,
+                                   use_cube=True,
+                                   cube_owner=int(CubeOwner.CENTRED),
+                                   cube_x=(0.688, 0.566, 0.687),
+                                   match=MatchState(2, 1, crawford=False)))
+    assert result.cashed == result.trials
+    assert result.average_cube == 1.0
+    assert result.equity == 0.0
+
+
+def test_match_post_crawford_hopeless_trailer_doubles_and_is_taken(network):
+    """Le même score, mais le mené est perdu d'avance : double et prise.
+
+    Course où le meneur (pas au trait) sort ses deux derniers pions au
+    prochain tour : le mené double quand même (rien à perdre), le meneur
+    prend (gagner la partie gagne le match, et il la gagne presque
+    toujours) ; le match se joue alors sur cette partie, donc l'équité de
+    match vaut 2·P(gain) − 1 du même rollout cubeless, mêmes dés.
+    """
+    from gammonnet.cube import CubeOwner
+    from gammonnet.met import MatchState
+
+    position = race([2, 2, 2, 2], [1, 1])
+    cubeless = rollout(network, position,
+                       RolloutConfig(trials=100, truncate=0, seed=56))
+    result = rollout(network, position,
+                     RolloutConfig(trials=100, truncate=0, seed=56,
+                                   use_cube=True,
+                                   cube_owner=int(CubeOwner.CENTRED),
+                                   cube_x=(0.688, 0.566, 0.687),
+                                   match=MatchState(2, 1, crawford=False)))
+    assert result.average_cube == 2.0, (
+        "le mené n'a pas doublé, ou le meneur n'a pas pris — l'un des deux "
+        "a mal lu un score où le double ne coûte rien et la prise non plus"
+    )
+    assert result.equity == pytest.approx(
+        2.0 * cubeless.frequencies[0] - 1.0, abs=1e-9)
+
+
+def test_match_luck_correction_shrinks_the_error_too(network):
+    """La chance à l'échelle du match : la correction doit rester efficace."""
+    from gammonnet.met import MatchState
+
+    position = contact_position()
+    state = MatchState(7, 5)
+    plain = rollout(network, position,
+                    RolloutConfig(trials=108, truncate=7, seed=54,
+                                  match=state))
+    corrected = rollout(network, position,
+                        RolloutConfig(trials=108, truncate=7, seed=54,
+                                      match=state, variance_reduction=True))
+    assert corrected.equity + corrected.average_luck == pytest.approx(
+        plain.equity, abs=1e-9)
+    assert corrected.standard_error * 2.0 < plain.standard_error
+
+
+def test_match_rollout_refuses_an_invalid_state(network):
+    """Un match de 30 points n'est pas dans la table : refusé, pas approché."""
+    from gammonnet.met import MatchState
+
+    with pytest.raises(RuntimeError):
+        rollout(network, contact_position(),
+                RolloutConfig(trials=36, truncate=5, seed=55,
+                              match=MatchState(30, 3)))
+
+
 # ── Ce que le rollout refuse de faire ───────────────────────────────
 
 

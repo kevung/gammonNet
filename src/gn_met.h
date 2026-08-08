@@ -65,6 +65,12 @@ typedef struct {
  */
 int gn_match_state_is_valid(const GnMatchState *state);
 
+/* The same state, seen from the other side of the table. Cube and Crawford
+ * are shared facts; only the away scores trade places. Exported for the same
+ * reason as `gn_cube_mirror`: the search and the rollout both swap at every
+ * turn, and two readings of one swap is how they drift apart. */
+GnMatchState gn_match_state_swap(GnMatchState state);
+
 /*
  * Pre-Crawford table lookup: the match winning chance of a player who needs
  * `away_a` points against an opponent who needs `away_b`.

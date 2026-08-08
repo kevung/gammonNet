@@ -126,6 +126,66 @@ typedef struct {
      * their option intact.
      */
     int cube_defer_first;
+
+    /*
+     * Luck-based variance reduction (the idea gnubg documents; reimplemented
+     * from the idea).
+     *
+     * At every ply the roll's LUCK is the 0-ply best-play equity under the
+     * roll actually thrown, minus the probability-weighted average of that
+     * quantity over all 21 rolls. Each term has expectation EXACTLY zero
+     * given the position -- whatever evaluator computes it -- so subtracting
+     * the trial's accumulated luck (signed to the rolled-out player's view,
+     * scaled by the live cube at that ply) changes no expectation, only the
+     * variance. A bad evaluator makes the reduction smaller, never the
+     * answer wrong.
+     *
+     * The price is evaluating all 21 rolls' candidates at every ply, roughly
+     * the cost of a 1-ply search per move played. Whether that buys more
+     * certainty per second than spending the same time on extra trials is a
+     * MEASUREMENT (bench/vr_gain.py), not a property of the idea.
+     */
+    int variance_reduction;
+
+    /*
+     * Stop on the confidence interval instead of a fixed count: once at least
+     * `min_trials` trials are in, the rollout ends as soon as the standard
+     * error of its mean falls to `target_se`, checked every 36 trials (a
+     * whole roll family, so the opening dice stay balanced). Zero keeps the
+     * fixed-count behaviour; `trials` is always the CAP, and a result that
+     * hits the cap without reaching the target simply reports the error it
+     * got -- the result carries its interval either way.
+     *
+     * Two rollouts compared under common dice may now stop at different
+     * counts. For a difference that matters, use `gn_rollout_difference`,
+     * which stops on the error OF THE DIFFERENCE -- the only criterion that
+     * pairs the trials it keeps.
+     */
+    double target_se;
+    unsigned long min_trials;
+
+    /*
+     * MATCH trials (the piece gn_rollout.h's own header note called "named,
+     * not omitted" -- until now).
+     *
+     * `use_match` values every trial through the match equity table at
+     * `match`, the state seen by the player on roll in the position handed
+     * in; `match.cube` is the CURRENT cube value, so results come out in
+     * match equity (2*MWC - 1), not in per-cube units. One GAME per trial:
+     * a finished or cashed game becomes points, the points become the score
+     * reached, and `gn_met_after` says what the match is then worth -- the
+     * table prices all the following games, including Crawford sequences
+     * and match wins. A truncated trial is valued by the §9 recursion at
+     * the horizon (`gn_cube_value` with the state reached).
+     *
+     * `use_cube` keeps its meaning -- it turns the LIVE cube consultation on
+     * -- but the decisions are priced by the §9 match model, never the money
+     * one, and never the (money-only) exact table. Nobody is consulted
+     * during the Crawford game, nor once the cube already covers both away
+     * scores. An invalid `match` is refused at the door, not approximated.
+     */
+    int use_match;
+    GnMatchState match;
 } GnRolloutConfig;
 
 typedef struct {
@@ -154,6 +214,12 @@ typedef struct {
      * mixing the two would make both unreadable. */
     unsigned long cashed;
     double average_cube;
+
+    /* Mean accumulated luck per trial, zero unless `variance_reduction`. Its
+     * expectation is zero by construction, so a value many standard errors
+     * from zero is the diagnostic that the correction itself is broken. The
+     * uncorrected mean is `equity + average_luck`. */
+    double average_luck;
 } GnRolloutResult;
 
 /* Sensible defaults: 1296 trials, truncated at 11 plies, 0-ply policy. */
