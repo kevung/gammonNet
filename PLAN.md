@@ -937,21 +937,24 @@ tables de fin de partie) contre GNU Backgammon à profondeur équivalente, en mo
 
 **Dimensionnement mesuré** (2026-08-09) : décision garde 3 = 38 721 évals = 2,9 s ; videau 2-ply
 = 1,7 s ; gnubg ≈ 0,2 s (nous coûtons ~20× eux). **Cache d'évaluation ×3,41** (paire identique,
-bit à bit — activé par défaut). **Le débit agrégé plafonne à ×4,4 à 11 ouvriers** (bande
+bit à bit — activé par défaut). **Le débit agrégé plafonne à ×4,4-4,6 à 11 ouvriers** (bande
 passante mémoire, pas les cœurs ; 14 ouvriers retombent à ×3,0). Estimation — hypothèse, la
 répétition tranchera : **~4-6 jours la moitié money** (100 000 parties), autant en match, en
 lots interruptibles.
 
+**L'inférence par lot est faite** (2026-08-09) : la passe peu profonde de `rank_plays` évalue
+ses coups frères par lots de 32 à **largeur fixe** — le dispositif qui garantit l'invariance au
+découpage bit à bit, y compris sous les drapeaux de réassociation (`tests/test_batch.py`).
+Mesuré : 0,055 ms/éval contre 0,076 (garde 3 : décision 2,13 s contre 2,93, ×1,38 seul ;
+**×1,19 au point de fonctionnement** 11 ouvriers + cache, 3,35 s/décision). Sur build par
+défaut, le lot est bit-identique au scalaire ; l'empreinte du journal couvre les deux chemins.
+
 **Reste à faire, dans l'ordre** :
 
-1. *(Optionnel, recommandé avant le volume)* **l'inférence par lot dans la recherche** : le
-   noyau est mesuré ×2,21 à lot 32, **exact au bit près** (`bench/bench_batch.c`, rapport T21) ;
-   les boucles de coups frères de `gn_search.c` ont la largeur ~15-30 qu'il faut. C'est LE
-   levier restant contre le mur de bande passante.
-2. **La répétition : 2 000 parties money** au réglage arrêté (`--pairs 1000`), qui mesure le
+1. **La répétition : 2 000 parties money** au réglage arrêté (`--pairs 1000`), qui mesure le
    débit réel et la variance, et dimensionne les lots et le volume match.
-3. **La campagne money puis match**, en lots (mêmes commandes, relancées).
-4. La métrique **PR** n'est pas branchée dans ce pilote — elle demande le corpus de référence
+2. **La campagne money puis match**, en lots (mêmes commandes, relancées).
+3. La métrique **PR** n'est pas branchée dans ce pilote — elle demande le corpus de référence
    de T30 ; à traiter comme un complément du verdict, pas un préalable.
 
 ```bash
