@@ -112,6 +112,18 @@ $(BUILD)/%.o: src/%.c $(HEADERS)
 	@mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
+# Le noyau de lot (T35) suit les drapeaux du build : par défaut -O3 strict
+# (vectorisation sur la dimension n, légale sans réassociation — bit-identique
+# au scalaire par défaut) ; sous NATIVE_FP=1, les mêmes drapeaux de
+# réassociation que la passe avant vendor.
+BATCH_CFLAGS := $(filter-out -O2,$(CFLAGS)) -O3
+ifeq ($(NATIVE_FP),1)
+BATCH_CFLAGS += -fassociative-math -fno-signed-zeros -fno-trapping-math -fno-math-errno
+endif
+$(BUILD)/gn_infer_reference.o: src/gn_infer_reference.c $(HEADERS)
+	@mkdir -p $(BUILD)
+	$(CC) $(BATCH_CFLAGS) $(INCLUDES) -c $< -o $@
+
 $(BUILD)/bg_engine.o: $(REFERENCE)/c_engine/bg_engine.c
 	@mkdir -p $(BUILD)
 	$(CC) $(VENDOR_CFLAGS) $(INCLUDES) -c $< -o $@

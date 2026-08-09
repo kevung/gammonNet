@@ -84,26 +84,44 @@ void gn_search_reset_evaluations(void) { g_evaluations = 0; }
  * Both call sites that used to invoke `gn_evaluate` directly on a leaf go
  * through here now: `leaf_value` and the shallow pass of `rank_plays`.
  */
-static int evaluate_position(const GnNetwork *net, const GnPosition *pos,
-                             float probs[GN_NUM_OUTPUTS])
+/* Steps 1 and 2 alone: the exact table, then the cache. Returns 1 on a hit
+ * (probs filled), 0 on a miss. Split out so the batched shallow pass of
+ * `rank_plays` can gather its misses and forward them together. */
+static int evaluate_cheap(const GnPosition *pos, float probs[GN_NUM_OUTPUTS])
 {
     const GnBearoff *table = gn_bearoff_shared();
     if (table != NULL && gn_bearoff_probs(table, pos, probs)) {
-        return 0;
+        return 1;
     }
 
     GnEvalCache *cache = gn_evalcache_shared();
     if (cache != NULL && gn_evalcache_lookup(cache, pos, probs)) {
-        return 0;
+        return 1;
     }
+    return 0;
+}
 
-    if (gn_evaluate(net, pos, probs) != 0) {
-        return -1;
-    }
+/* The bookkeeping of step 3, shared by the scalar and batched paths: one
+ * network evaluation happened for `pos` — count it, remember it. */
+static void evaluated(const GnPosition *pos, const float probs[GN_NUM_OUTPUTS])
+{
     g_evaluations++;
+    GnEvalCache *cache = gn_evalcache_shared();
     if (cache != NULL) {
         gn_evalcache_store(cache, pos, probs);
     }
+}
+
+static int evaluate_position(const GnNetwork *net, const GnPosition *pos,
+                             float probs[GN_NUM_OUTPUTS])
+{
+    if (evaluate_cheap(pos, probs)) {
+        return 0;
+    }
+    if (gn_evaluate(net, pos, probs) != 0) {
+        return -1;
+    }
+    evaluated(pos, probs);
     return 0;
 }
 
@@ -328,27 +346,80 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
 
     const int written = (count < max_out) ? count : max_out;
 
-    /* Shallow pass: rank every play by the network alone. */
-    for (int i = 0; i < count && i < max_out; i++) {
-        out[i].play = plays[i];
+    /* The result has handed the turn over, so everything about it is seen
+     * from the opponent's side -- including the score. */
+    const GnMatchState theirs = swap_sides(state);
 
+    /*
+     * Shallow pass: rank every play by the network alone — the sibling loop
+     * that dominates the whole search's cost, at every depth. It runs in
+     * three sweeps so the network sees its positions in BATCHES (T35):
+     * gather what the exact table and the cache cannot answer, forward those
+     * together (`gn_evaluate_batch`, bit-identical per item — see
+     * gn_infer.h), then value everything. Same evaluations, same answers,
+     * same ranking; the weights are read once per batch instead of once per
+     * position, which is the entire point (bench/bench_batch.c, ×2,21).
+     */
+    int pending[GN_EVAL_BATCH];
+    const GnPosition *batch_pos[GN_EVAL_BATCH];
+    float batch_probs[GN_EVAL_BATCH][GN_NUM_OUTPUTS];
+    int n_pending = 0;
+
+    for (int i = 0; i < written; i++) {
+        out[i].play = plays[i];
         const GnPosition *result = &plays[i].result;
-        /* The result has handed the turn over, so everything about it is seen
-         * from the opponent's side -- including the score. */
-        const GnMatchState theirs = swap_sides(state);
 
         if (gn_position_is_over(result)) {
             /* Computed, never evaluated -- see gn_terminal_equity. */
             memset(out[i].probs, 0, sizeof(out[i].probs));
-            out[i].equity = -terminal_value(result, config, theirs);
             continue;
         }
+        if (evaluate_cheap(result, out[i].probs)) {
+            continue;
+        }
+        pending[n_pending++] = i;
 
-        /* Evaluated ONCE. `probs` keeps the raw distribution -- it describes
-         * the position, not the score -- and only `equity` is score-aware. */
-        if (evaluate_position(net, result, out[i].probs) != 0) {
+        if (n_pending == GN_EVAL_BATCH) {
+            for (int n = 0; n < n_pending; n++) {
+                batch_pos[n] = &out[pending[n]].play.result;
+            }
+            if (gn_evaluate_batch(net, batch_pos, n_pending, batch_probs) != 0) {
+                free(plays);
+                return -1;
+            }
+            for (int n = 0; n < n_pending; n++) {
+                memcpy(out[pending[n]].probs, batch_probs[n],
+                       sizeof(batch_probs[n]));
+                evaluated(batch_pos[n], batch_probs[n]);
+            }
+            n_pending = 0;
+        }
+    }
+    if (n_pending > 0) {
+        for (int n = 0; n < n_pending; n++) {
+            batch_pos[n] = &out[pending[n]].play.result;
+        }
+        if (gn_evaluate_batch(net, batch_pos, n_pending, batch_probs) != 0) {
             free(plays);
             return -1;
+        }
+        for (int n = 0; n < n_pending; n++) {
+            memcpy(out[pending[n]].probs, batch_probs[n],
+                   sizeof(batch_probs[n]));
+            evaluated(batch_pos[n], batch_probs[n]);
+        }
+        n_pending = 0;
+    }
+
+    /* Value sweep: probabilities become equities, from the mover's side.
+     * `probs` keeps the raw distribution -- it describes the position, not
+     * the score -- and only `equity` is score-aware. */
+    for (int i = 0; i < written; i++) {
+        const GnPosition *result = &out[i].play.result;
+
+        if (gn_position_is_over(result)) {
+            out[i].equity = -terminal_value(result, config, theirs);
+            continue;
         }
 
         int failed = 0;

@@ -90,6 +90,10 @@ def eval_fingerprint(model: str) -> str:
     flottante, donc potentiellement des choix de coups. Deux lots d'une même
     campagne doivent évaluer EXACTEMENT pareil ; l'empreinte dans l'en-tête
     du journal refuse toute reprise sous un build numériquement différent.
+
+    Elle couvre LES DEUX chemins d'évaluation : le scalaire et le noyau de lot
+    (T35) — deux objets compilés séparément, aux drapeaux distincts, et un
+    changement de l'un que l'autre ne voit pas doit quand même refuser.
     """
     import hashlib
     import struct
@@ -98,8 +102,12 @@ def eval_fingerprint(model: str) -> str:
     from gammonnet.rules import Position
 
     network = Network.load(ROOT / model if not Path(model).is_absolute() else model)
-    values = network.evaluate(Position.initial()).as_tuple()
-    return hashlib.blake2b(struct.pack("<5f", *values), digest_size=8).hexdigest()
+    initial = Position.initial()
+    values = list(network.evaluate(initial).as_tuple())
+    for evaluation in network.evaluate_batch([initial, initial.swapped_turn()]):
+        values.extend(evaluation.as_tuple())
+    return hashlib.blake2b(struct.pack(f"<{len(values)}f", *values),
+                           digest_size=8).hexdigest()
 
 
 def sampled_score(seed: int, index: int, length: int) -> tuple[int, int, bool]:

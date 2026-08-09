@@ -59,6 +59,14 @@ _LIB.gn_evaluate_features.argtypes = [
 ]
 _LIB.gn_evaluate_features.restype = ctypes.c_int
 
+_LIB.gn_evaluate_batch.argtypes = [
+    ctypes.c_void_p,
+    ctypes.POINTER(ctypes.POINTER(_CPosition)),
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_float),
+]
+_LIB.gn_evaluate_batch.restype = ctypes.c_int
+
 _LIB.gn_money_equity.argtypes = [ctypes.POINTER(ctypes.c_float)]
 _LIB.gn_money_equity.restype = ctypes.c_float
 
@@ -254,3 +262,19 @@ class Network:
         if _LIB.gn_evaluate_features(self._handle, buffer, probs) != 0:
             raise ValueError("vecteur refusé par l'évaluateur")
         return Evaluation(*probs)
+
+    def evaluate_batch(self, positions: Sequence[Position]) -> list[Evaluation]:
+        """Le chemin de lot de la recherche (T35), exposé pour ce qui doit le
+        VOIR : les tests d'identité, et l'empreinte de build du journal de
+        campagne. Pour évaluer une position, `evaluate` suffit."""
+        count = len(positions)
+        if count == 0:
+            return []
+        boards = [position._to_c() for position in positions]
+        pointers = (ctypes.POINTER(_CPosition) * count)(
+            *(ctypes.pointer(board) for board in boards))
+        out = (ctypes.c_float * (NUM_OUTPUTS * count))()
+        if _LIB.gn_evaluate_batch(self._handle, pointers, count, out) != 0:
+            raise ValueError("lot refusé par l'évaluateur")
+        return [Evaluation(*out[i * NUM_OUTPUTS:(i + 1) * NUM_OUTPUTS])
+                for i in range(count)]
