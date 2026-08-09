@@ -27,12 +27,15 @@ score — plausible results, wrong measurement. Workers here are **processes**,
 and every game's dice and engine randomness are derived from the seed and the
 game index, so results do not depend on how work was scheduled.
 
-## What this harness does not do yet
+## What this harness does not do
 
-**Cubeless money games only.** The cube is T34 and match equity is T32; neither
-exists, so neither is offered. The seams are here — a game carries its stake and
-its score — but nothing pretends to double. Building a cubeful mode on an
-unwritten cube model would produce numbers that look like measurements.
+**Cubeless money games only.** When this module was written (T04) the cube was
+T34 and match equity was T32, and neither existed; building a cubeful mode on
+an unwritten cube model would have produced numbers that look like
+measurements. Both exist now, and the cubeful loop lives in `cubeful.py`
+(T35), on top of this module's seeding and duplicate machinery. This one stays
+cubeless on purpose: it is the instrument T04 froze, and the measurements made
+with it are only comparable to itself.
 """
 
 from __future__ import annotations

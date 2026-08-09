@@ -217,3 +217,17 @@ def value(
     if failed.value:
         raise ValueError(f"valeur cubeful refusée ({state})")
     return result
+
+
+_LIB.gn_cube_verdict.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double]
+_LIB.gn_cube_verdict.restype = ctypes.c_int
+
+
+def verdict(e_nd: float, e_dt: float, e_dp: float = 1.0) -> CubeAction:
+    """La table §4 sur trois équités explicites — `gn_cube_verdict`, pas une
+    réécriture.
+
+    Pour les équités qui ne sortent pas de `decide` : la table bilatérale
+    exacte, un rollout. La règle à quatre lignes vit une seule fois, en C.
+    """
+    return CubeAction(_LIB.gn_cube_verdict(e_nd, e_dt, e_dp))

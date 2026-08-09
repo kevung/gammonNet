@@ -49,6 +49,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import gnubg_board as gb
+from .cube import CubeAction, CubeOwner
+from .met import MatchState
 from .rules import Play, Position
 
 #: Le binaire. Surchargeable pour une machine qui l'installe ailleurs.
@@ -235,7 +237,20 @@ class GnubgEngine:
             self._session = GnubgSession()
         return self._session
 
-    def choose(self, position: Position, d1: int, d2: int, rng: random.Random) -> Play | None:
+    def choose(self, position: Position, d1: int, d2: int, rng: random.Random,
+               state: dict | None = None) -> Play | None:
+        """Le meilleur coup, money (`state=None`) ou au score.
+
+        `state` est un dictionnaire `cubeinfo` décrivant **le joueur au trait
+        des positions résultantes** — c'est-à-dire l'adversaire de celui qui
+        choisit, puisque `play.result` a déjà rendu le trait. Sondé (T35,
+        `docs/mesures/2026-08-09-t35-sonde-emg.md`) : sous un `cubeinfo` de
+        match, `evaluate` rend l'équité EMG au score — affine en la MWC du
+        joueur au trait, à pente positive. Comme tous les candidats partagent
+        le même état, `-eval[5]` classe par la MWC de celui qui choisit
+        (`mwc_chooser = 1 - mwc_mover`), et la convention composée de T36 se
+        transporte au score sans changer d'arithmétique.
+        """
         plays = position.legal_plays(d1, d2)
         if not plays:
             return None
@@ -248,23 +263,33 @@ class GnubgEngine:
 
         # Le pré-tri de la racine se fait au 0-ply, comme chez nous : c'est la
         # règle de T31, et l'appliquer des deux côtés est ce qui fait que
-        # « 2-ply, garde 5 » désigne le même joueur des deux côtés.
+        # « 2-ply, garde 5 » désigne le même joueur des deux côtés. Au score,
+        # le pré-tri est lui aussi au score — le point mesuré par T31-match.
         keep = self.filter[self.ply] if len(self.filter) > self.ply else 0
         if self.ply > 0 and keep and len(plays) > keep:
-            shallow = self._evaluate_at(session, position, plays, 0)
+            shallow = self._evaluate_at(session, position, plays, 0, state)
             survivors = sorted(range(len(plays)),
                                key=lambda i: shallow[i], reverse=True)[:keep]
         else:
             survivors = list(range(len(plays)))
 
         candidates = [plays[i] for i in survivors]
-        deep = self._evaluate_at(session, position, candidates, self.ply)
+        deep = self._evaluate_at(session, position, candidates, self.ply, state)
         return plays[survivors[max(range(len(candidates)), key=lambda j: deep[j])]]
 
-    def _evaluate_at(self, session, position, plays, ply) -> list[float]:
+    def _evaluate_at(self, session, position, plays, ply,
+                     state: dict | None = None) -> list[float]:
         # Une position terminale se calcule, elle ne s'évalue pas : donner une
         # partie finie à un réseau, c'est lui poser une question qu'il n'a
         # jamais vue, et il répondra. Voir `gn_terminal_equity`.
+        #
+        # Au score, la valeur en points d'un coup terminal est une
+        # approximation NOMMÉE de l'EMG : un gain simple certain vaut
+        # exactement +1 sur les deux échelles (c'est la définition de l'EMG) ;
+        # un gammon terminal vaut 2 en points contre un EMG dans (1 ; ~1,6] —
+        # l'ordre ne peut s'inverser que si un coup NON terminal dépasse
+        # l'EMG du gammon terminal, ce qui demande des chances de backgammon
+        # au-delà d'un gammon certain, à un score où la différence compte.
         pending, boards = [], []
         equities: list[float] = [0.0] * len(plays)
         for index, play in enumerate(plays):
@@ -275,11 +300,14 @@ class GnubgEngine:
                 boards.append(gb.to_gnubg(play.result))
 
         if boards:
-            values = session.evaluate(boards, plies=ply, prune=self.prune)
+            values = session.evaluate(boards, plies=ply, prune=self.prune,
+                                      state=state)
             for index, value in zip(pending, values):
                 # `value[5]` est l'équité de la position résultante, vue par le
                 # joueur au trait DANS cette position — c'est-à-dire par notre
-                # adversaire. La nôtre en est l'opposée.
+                # adversaire. La nôtre en est l'opposée (au score : l'EMG est
+                # affine en la MWC du mover, donc la négation classe par la
+                # MWC du chooser — même arithmétique).
                 equities[index] = -float(value[5])
 
         return equities
@@ -290,3 +318,71 @@ def _terminal_points(result: Position, mover: int) -> int:
     from .arena import game_value
 
     return game_value(result, mover)
+
+
+# ── Les questions de videau, telles que la sonde de T34 les a établies ──
+#
+# Historique : ces trois définitions vivaient dans `bench/compare_cube.py`, où
+# la sonde qui les a établies est documentée (en-tête du fichier — 4000+ appels
+# `cfevaluate`, les paires (code, texte) observées, les conventions de
+# `cubeinfo`). T35 les fait entrer dans le paquet parce que l'arène cubeful en
+# a besoin ; le banc les réimporte d'ici.
+
+#: La convention de propriétaire de `cubeinfo`, établie par sonde :
+#: -1 centré, 1 le joueur au trait possède, 0 l'adversaire possède.
+_GNUBG_OWNER_OF = {CubeOwner.CENTRED: -1, CubeOwner.OWNED: 1, CubeOwner.OPPONENT: 0}
+
+
+def classify_gnubg_verdict(text: str) -> CubeAction:
+    """Map gnubg's `recommendationtext` to our four-verdict `CubeAction`.
+
+    Order matters: "too good" must be checked before the generic
+    double/pass-or-take rule, since "Too good to double, pass" would
+    otherwise match the DOUBLE_PASS rule. Everything not recognised raises --
+    per `CLAUDE.md` rule 2, an unmapped string is refused, never guessed at.
+    The probe that established the vocabulary lives in
+    `bench/compare_cube.py` (its `_VERDICTS` table).
+    """
+    lowered = text.lower()
+    if "too good" in lowered:
+        return CubeAction.TOO_GOOD
+    if "cube not available" in lowered:
+        return CubeAction.NO_DOUBLE
+    if "never double" in lowered:
+        return CubeAction.NO_DOUBLE
+    if lowered.startswith("no double") or lowered.startswith("no redouble"):
+        return CubeAction.NO_DOUBLE
+    has_double_word = "double" in lowered or "redouble" in lowered
+    if has_double_word and "pass" in lowered:
+        return CubeAction.DOUBLE_PASS
+    if has_double_word and "take" in lowered:
+        return CubeAction.DOUBLE_TAKE
+    raise ValueError(
+        f"gnubg verdict string not in the mapping established by the T34 "
+        f"probe: {text!r}. Refused rather than guessed -- see "
+        f"bench/compare_cube.py for the probe and extend the classifier "
+        f"deliberately."
+    )
+
+
+def gnubg_state(owner: CubeOwner, match: MatchState | None, jacoby: bool,
+                cube: int = 1) -> dict:
+    """Build the `state` dict `GnubgSession.cubeful` forwards to `cubeinfo`.
+
+    `move` is fixed at 1 (established by probe: arbitrary but must be
+    consistent with the score assignment below). For a match state,
+    `score[move]` must be the mover's own score -- also established by probe,
+    against the post-Crawford systematic-double signature. `cube` is the
+    CURRENT cube value, before any double under consideration.
+    """
+    state = {"cube": int(cube), "cube_owner": _GNUBG_OWNER_OF[owner], "move": 1}
+    if match is None:
+        state.update(match_to=0, score=(0, 0), crawford=0, jacoby=int(jacoby))
+    else:
+        match_to = max(match.away_on_roll, match.away_opponent)
+        state.update(
+            match_to=match_to,
+            score=(match_to - match.away_opponent, match_to - match.away_on_roll),
+            crawford=int(match.crawford),
+        )
+    return state

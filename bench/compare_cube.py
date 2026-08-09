@@ -161,7 +161,16 @@ CONTEXTS: tuple[tuple[str, MatchState | None], ...] = (
 
 OWNERS_COMPARED = (CubeOwner.OWNED, CubeOwner.CENTRED)
 
-_GNUBG_OWNER_OF = {CubeOwner.CENTRED: -1, CubeOwner.OWNED: 1, CubeOwner.OPPONENT: 0}
+# T35 moved the three probe-established helpers into the package, where the
+# cubeful arena needs them; this bench keeps importing them under the same
+# names, so its callers (arbitrate_cube.py, rearbitrate_vr.py) see no change.
+from gammonnet.gnubg_engine import (  # noqa: E402
+    _GNUBG_OWNER_OF,
+    classify_gnubg_verdict,
+    gnubg_state,
+)
+
+assert _GNUBG_OWNER_OF is not None  # re-exported; silences the unused-import lint
 
 
 # ── Step 0 — the verdict-string mapping the probe established ─────────
@@ -184,56 +193,6 @@ OBSERVED_GNUBG_VERDICTS: frozenset[tuple[int, str]] = frozenset({
     (13, "Never double, take (dead cube)"),
     (15, "Cube not available"),
 })
-
-
-def classify_gnubg_verdict(text: str) -> CubeAction:
-    """Map gnubg's `recommendationtext` to our four-verdict `CubeAction`.
-
-    Order matters: "too good" must be checked before the generic
-    double/pass-or-take rule, since "Too good to double, pass" would
-    otherwise match the DOUBLE_PASS rule. Everything not recognised raises --
-    per `CLAUDE.md` rule 2, an unmapped string is refused, never guessed at.
-    """
-    lowered = text.lower()
-    if "too good" in lowered:
-        return CubeAction.TOO_GOOD
-    if "cube not available" in lowered:
-        return CubeAction.NO_DOUBLE
-    if "never double" in lowered:
-        return CubeAction.NO_DOUBLE
-    if lowered.startswith("no double") or lowered.startswith("no redouble"):
-        return CubeAction.NO_DOUBLE
-    has_double_word = "double" in lowered or "redouble" in lowered
-    if has_double_word and "pass" in lowered:
-        return CubeAction.DOUBLE_PASS
-    if has_double_word and "take" in lowered:
-        return CubeAction.DOUBLE_TAKE
-    raise ValueError(
-        f"gnubg verdict string not in the mapping established by the T34 "
-        f"probe: {text!r}. Refused rather than guessed -- see the module "
-        f"docstring for the probe and extend the classifier deliberately."
-    )
-
-
-def gnubg_state(owner: CubeOwner, match: MatchState | None, jacoby: bool) -> dict:
-    """Build the `state` dict `GnubgSession.cubeful` forwards to `cubeinfo`.
-
-    `move` is fixed at 1 (established by probe: arbitrary but must be
-    consistent with the score assignment below). For a match state,
-    `score[move]` must be the mover's own score -- also established by probe,
-    against the post-Crawford systematic-double signature.
-    """
-    state = {"cube": 1, "cube_owner": _GNUBG_OWNER_OF[owner], "move": 1}
-    if match is None:
-        state.update(match_to=0, score=(0, 0), crawford=0, jacoby=int(jacoby))
-    else:
-        match_to = max(match.away_on_roll, match.away_opponent)
-        state.update(
-            match_to=match_to,
-            score=(match_to - match.away_opponent, match_to - match.away_on_roll),
-            crawford=int(match.crawford),
-        )
-    return state
 
 
 def load_efficiency() -> dict[CubeOwner, float]:
