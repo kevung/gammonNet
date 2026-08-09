@@ -101,6 +101,32 @@ int gn_evaluate(const GnNetwork *net, const GnPosition *pos,
 int gn_evaluate_features(const GnNetwork *net, const float *features,
                          float probs[GN_NUM_OUTPUTS]);
 
+/* Largest number of positions one gn_evaluate_batch call forwards together.
+ * 32 is where bench/bench_batch.c measured the bandwidth win (×2,21); larger
+ * counts are handled by the caller chunking. */
+#define GN_EVAL_BATCH 32
+
+/*
+ * Evaluate up to `count` positions in one pass over the weights.
+ *
+ * BIT-IDENTICAL to calling gn_evaluate once per position — not merely close.
+ * The batch kernel reorders WHICH position a weight row multiplies next, but
+ * the summation order per (output, position) is exactly the scalar order —
+ * the property bench/bench_batch.c states and T21 verified on the 2000
+ * -position reference (max|Δ| = 0). A speed-up bought with a silent change of
+ * results would be worth nothing here.
+ *
+ * Models the batch kernel was never verified on (activation other than relu,
+ * output mode other than prob5, layers wider than the kernel's buffers) fall
+ * back to the scalar path per item: same answers, no speed-up, no refusal.
+ *
+ * Returns 0 on success, -1 if any position is refused — in which case the
+ * whole call is refused, exactly as the scalar loop would have stopped.
+ */
+int gn_evaluate_batch(const GnNetwork *net,
+                      const GnPosition *const *positions, int count,
+                      float (*probs)[GN_NUM_OUTPUTS]);
+
 /*
  * Cubeless money equity, in points, from a distribution.
  *

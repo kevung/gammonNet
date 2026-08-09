@@ -14,7 +14,9 @@
 
 #include "gn_infer.h"
 
+#include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "nn_eval.h"
 
@@ -101,6 +103,162 @@ int gn_evaluate(const GnNetwork *net, const GnPosition *pos,
     }
 
     return gn_evaluate_features(net, features, probs);
+}
+
+/* ── Batched evaluation (T35) ──────────────────────────────────────────
+ *
+ * The kernel is bench/bench_batch.c's `forward_batch`, moved here verbatim in
+ * everything that matters: activations feature-major (`act[j * B + n]`), each
+ * weight row read once and reused across the batch, and the sum over j per
+ * (output, item) in EXACTLY the scalar order — which is what makes the
+ * results bit-identical to `gn_evaluate`. T21 measured that property on the
+ * 2000-position reference (max|Δ| = 0), and tests/test_batch.py holds it.
+ *
+ * Static buffers, like the scalar path's model-owned ones: this project is
+ * single-threaded per process (parallelism is by process, see arena.py), and
+ * a buffer that pretended to be thread-safe without being tested as such
+ * would be worse than one that is honestly not.
+ */
+
+#define BATCH_MAX_WIDTH 1024
+
+static float g_batch_a[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
+static float g_batch_b[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
+static float g_batch_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
+
+static int batch_kernel_applies(const NNModel *model)
+{
+    if (model->activation != NN_ACTIVATION_RELU ||
+        model->output_mode != NN_OUTPUT_PROB5) {
+        return 0;
+    }
+    for (int L = 0; L <= model->num_hidden; L++) {
+        if (model->layer_in[L] > BATCH_MAX_WIDTH ||
+            model->layer_out[L] > BATCH_MAX_WIDTH) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static float batch_relu(float x) { return x > 0.0f ? x : 0.0f; }
+static float batch_sigmoid(float x) { return 1.0f / (1.0f + expf(-x)); }
+
+/*
+ * Forward EXACTLY GN_EVAL_BATCH lanes, `live` of which carry positions; the
+ * rest are zero-filled and discarded.
+ *
+ * The fixed trip count is not a style choice, it is THE correctness device:
+ * with a variable batch width the compiler emits different vector/epilogue
+ * paths for different widths, and under `-fassociative-math` those paths sum
+ * in different orders — the result of a position then depends on how many
+ * siblings it happened to be batched with, which tests/test_batch.py showed
+ * before this shape and forbids since. One compiled path, one summation
+ * order, whatever the chunk.
+ */
+static void forward_batch(const NNModel *model, const float *in, int live,
+                          float (*out)[GN_NUM_OUTPUTS])
+{
+    const float *current = in;
+    float *next = g_batch_a;
+    const int total_layers = model->num_hidden + 1;
+
+    for (int L = 0; L < total_layers; L++) {
+        const int rows = model->layer_out[L];
+        const int cols = model->layer_in[L];
+        const float *W = model->weight[L];
+        const float *bias = model->bias[L];
+        const int is_output = (L == model->num_hidden);
+
+        for (int i = 0; i < rows; i++) {
+            float acc[GN_EVAL_BATCH];
+            for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                acc[n] = bias[i];
+            }
+
+            /* The weight row is read once and reused across the batch. This
+             * single reordering is the whole speed-up. The order of the sum
+             * over j, per (i, n), is unchanged. */
+            const float *w_row = W + (size_t)i * cols;
+            for (int j = 0; j < cols; j++) {
+                const float w = w_row[j];
+                const float *column = current + (size_t)j * GN_EVAL_BATCH;
+                for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                    acc[n] += w * column[n];
+                }
+            }
+
+            float *row_out = next + (size_t)i * GN_EVAL_BATCH;
+            for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                row_out[n] = is_output ? batch_sigmoid(acc[n]) : batch_relu(acc[n]);
+            }
+        }
+
+        current = next;
+        next = (next == g_batch_a) ? g_batch_b : g_batch_a;
+    }
+
+    /* Un-transpose the five LIVE outputs and apply the nested-event clamp in
+     * the order prob5_reduce applies it (nn_eval.c) — p1 against p0 first, so
+     * the p2 clamp reads the CLAMPED p1. */
+    for (int n = 0; n < live; n++) {
+        float p[GN_NUM_OUTPUTS];
+        for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
+            p[k] = current[(size_t)k * GN_EVAL_BATCH + n];
+        }
+        if (p[1] > p[0]) p[1] = p[0];
+        const float lose = 1.0f - p[0];
+        if (p[3] > lose) p[3] = lose;
+        if (p[2] > p[1]) p[2] = p[1];
+        if (p[4] > p[3]) p[4] = p[3];
+        for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
+            out[n][k] = p[k];
+        }
+    }
+}
+
+int gn_evaluate_batch(const GnNetwork *net,
+                      const GnPosition *const *positions, int count,
+                      float (*probs)[GN_NUM_OUTPUTS])
+{
+    if (net == NULL || positions == NULL || probs == NULL || count < 0) {
+        return -1;
+    }
+
+    if (!batch_kernel_applies(&net->model)) {
+        /* Same answers, no speed-up: the kernel was never verified on this
+         * model shape, and an unverified fast path is how silent wrongness
+         * ships. See gn_infer.h. */
+        for (int n = 0; n < count; n++) {
+            if (gn_evaluate(net, positions[n], probs[n]) != 0) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    for (int base = 0; base < count; base += GN_EVAL_BATCH) {
+        const int chunk = (count - base < GN_EVAL_BATCH) ? count - base
+                                                         : GN_EVAL_BATCH;
+
+        /* Encode row-major first — gn_encode validates and refuses, exactly
+         * as the scalar door does — then transpose to feature-major, at the
+         * FIXED width the kernel forwards (dead lanes zeroed and discarded:
+         * see forward_batch for why the width never varies). */
+        memset(g_batch_in, 0, sizeof(g_batch_in));
+        float features[GN_NUM_FEATURES];
+        for (int n = 0; n < chunk; n++) {
+            if (gn_encode(positions[base + n], features) != 0) {
+                return -1;
+            }
+            for (int j = 0; j < GN_NUM_FEATURES; j++) {
+                g_batch_in[(size_t)j * GN_EVAL_BATCH + n] = features[j];
+            }
+        }
+
+        forward_batch(&net->model, g_batch_in, chunk, probs + base);
+    }
+    return 0;
 }
 
 float gn_money_equity(const float probs[GN_NUM_OUTPUTS])
