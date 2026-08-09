@@ -907,6 +907,63 @@ tables de fin de partie) contre GNU Backgammon à profondeur équivalente, en mo
   désormais pour la configuration cubeful : c'est elle qui a le plus de chances de révéler un
   défaut d'échelle du harnais.
 
+### État au 2026-08-09 — l'instrument de la campagne est prêt, la campagne n'est pas lancée
+
+**Construit et mergé** (`gammonnet/cubeful.py`, `bench/run_t35.py`, `bench/report_t35.py`) :
+
+- **La boucle cubeful**, money et match, chaque camp répondant avec son propre modèle. Contrôle
+  nul A-contre-A **exactement** nul à tout score — obtenu en collant le score au siège dans les
+  paires de matchs (les dés sont attachés aux sièges ; faire voyager le score avec eux casse la
+  propriété, le test l'a montré).
+- **Le pilote segmentable** : journal JSONL une ligne par paire, reprise en sautant les index
+  présents, arrêt par `--minutes`/`--limit`/Ctrl-C/extinction de la machine. Un run segmenté est
+  **identique bit à bit** à un run d'une traite — testé, money et match. L'en-tête fige le
+  protocole (empreinte d'évaluation comprise : un build numériquement différent refuse).
+- **gnubg au score** : sonde EMG du 2026-08-09 (`docs/mesures/2026-08-09-t35-sonde-emg.md`) —
+  `evaluate` sous `cubeinfo` de match rend l'EMG, affine en MWC à pente positive, donc la
+  convention composée de T36 vaut à tout score. Videau gnubg par `cfevaluate` (sonde T34).
+
+**Protocole arrêté le 2026-08-09** (décision utilisateur) :
+
+- **Nous** : pions 2-ply **garde 3** (biais nommé ~0,009 ppg **contre nous** d'après T31 —
+  conservateur pour un verdict « équivalent ou supérieur »), filtre `(0,1,3)`, **videau 2-ply** ;
+  table exacte en domaine, efficacités T34, Jacoby money.
+- **Eux** : gnubg pions 2-ply même garde racine, `prune=1` (son jeu réel), videau `cfevaluate`
+  2-ply.
+- **Build `NATIVE_FP=1`** (4× plus rapide ; sorties déplacées de ~6e-07, tolérance documentée du
+  test de régression ; l'empreinte du journal le verrouille). **Machine : le bureau, 11 ouvriers.**
+- Graine `20260810` ; match : longueur 7, scores échantillonnés uniformes, pile ou face
+  Crawford-joué/derrière quand un seul joueur est à 1-away.
+
+**Dimensionnement mesuré** (2026-08-09) : décision garde 3 = 38 721 évals = 2,9 s ; videau 2-ply
+= 1,7 s ; gnubg ≈ 0,2 s (nous coûtons ~20× eux). **Cache d'évaluation ×3,41** (paire identique,
+bit à bit — activé par défaut). **Le débit agrégé plafonne à ×4,4 à 11 ouvriers** (bande
+passante mémoire, pas les cœurs ; 14 ouvriers retombent à ×3,0). Estimation — hypothèse, la
+répétition tranchera : **~4-6 jours la moitié money** (100 000 parties), autant en match, en
+lots interruptibles.
+
+**Reste à faire, dans l'ordre** :
+
+1. *(Optionnel, recommandé avant le volume)* **l'inférence par lot dans la recherche** : le
+   noyau est mesuré ×2,21 à lot 32, **exact au bit près** (`bench/bench_batch.c`, rapport T21) ;
+   les boucles de coups frères de `gn_search.c` ont la largeur ~15-30 qu'il faut. C'est LE
+   levier restant contre le mur de bande passante.
+2. **La répétition : 2 000 parties money** au réglage arrêté (`--pairs 1000`), qui mesure le
+   débit réel et la variance, et dimensionne les lots et le volume match.
+3. **La campagne money puis match**, en lots (mêmes commandes, relancées).
+4. La métrique **PR** n'est pas branchée dans ce pilote — elle demande le corpus de référence
+   de T30 ; à traiter comme un complément du verdict, pas un préalable.
+
+```bash
+NATIVE_FP=1 make build       # le build de campagne, AVANT tout lot
+GN_REGRESSION_TOLERANCE=1e-6 python -m pytest tests/test_regression.py -q  # sanité du build
+
+# la répétition (lot borné ; relancer la même commande pour reprendre)
+python bench/run_t35.py --mode money --pairs 1000 --journal docs/mesures/t35-repetition.jsonl \
+    --ours-ply 2 --ours-filter 0,1,3 --gnubg-ply 2 --gnubg-filter 0,1,3 --minutes 240
+python bench/report_t35.py --journal docs/mesures/t35-repetition.jsonl
+```
+
 ---
 
 # Phase 4 — Modèle propre au projet *(conditionnel)*
