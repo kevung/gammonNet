@@ -949,22 +949,30 @@ Mesuré : 0,055 ms/éval contre 0,076 (garde 3 : décision 2,13 s contre 2,93, �
 **×1,19 au point de fonctionnement** 11 ouvriers + cache, 3,35 s/décision). Sur build par
 défaut, le lot est bit-identique au scalaire ; l'empreinte du journal couvre les deux chemins.
 
+**La répétition est faite** (2026-08-09, `docs/mesures/2026-08-09-t35-repetition.md`) : aucun
+défaut d'échelle (0 partie bloquée, videau plausible, reprise après SIGINT exercée en vrai).
+Débit **mesuré** : 5,9 s/partie à 11 ouvriers, 8,3 à 9 ouvriers `nice` (le réglage retenu —
+bureau utilisable). **La variance cubeful mesurée (écart-type 2,27/paire) fixe l'IC réel à
+~±0,020 ppg à 100 000 parties** — pas les ±0,0076 extrapolés de la variance cubeless de T11 ;
+si le résultat tombe dans l'intervalle, la fiche prévoit d'augmenter le volume, pas de conclure.
+
 **Reste à faire, dans l'ordre** :
 
-1. **La répétition : 2 000 parties money** au réglage arrêté (`--pairs 1000`), qui mesure le
-   débit réel et la variance, et dimensionne les lots et le volume match.
-2. **La campagne money puis match**, en lots (mêmes commandes, relancées).
-3. La métrique **PR** n'est pas branchée dans ce pilote — elle demande le corpus de référence
+1. **La campagne money** (50 000 paires, journal `t35-money.jsonl`), puis **la moitié match**,
+   en lots (mêmes commandes, relancées ; ~9,6 jours la moitié money à 9 ouvriers `nice`).
+2. La métrique **PR** n'est pas branchée dans ce pilote — elle demande le corpus de référence
    de T30 ; à traiter comme un complément du verdict, pas un préalable.
 
 ```bash
 NATIVE_FP=1 make build       # le build de campagne, AVANT tout lot
 GN_REGRESSION_TOLERANCE=1e-6 python -m pytest tests/test_regression.py -q  # sanité du build
 
-# la répétition (lot borné ; relancer la même commande pour reprendre)
-python bench/run_t35.py --mode money --pairs 1000 --journal docs/mesures/t35-repetition.jsonl \
-    --ours-ply 2 --ours-filter 0,1,3 --gnubg-ply 2 --gnubg-filter 0,1,3 --minutes 240
-python bench/report_t35.py --journal docs/mesures/t35-repetition.jsonl
+# un lot de campagne money (arrêt : Ctrl-C, --minutes, --limit, ou extinction ;
+# reprise : relancer la même commande)
+nice -n 10 python bench/run_t35.py --mode money --pairs 50000 --workers 9 \
+    --journal docs/mesures/t35-money.jsonl \
+    --ours-ply 2 --ours-filter 0,1,3 --gnubg-ply 2 --gnubg-filter 0,1,3
+python bench/report_t35.py --journal docs/mesures/t35-money.jsonl   # à tout moment
 ```
 
 ---
