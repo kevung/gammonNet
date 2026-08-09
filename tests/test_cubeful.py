@@ -37,6 +37,18 @@ from gammonnet.rules import BLACK, NUM_POINTS, WHITE, Position  # noqa: E402
 MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
 DATABASE = ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd"
 
+
+@pytest.fixture(autouse=True, scope="module")
+def _unhook_shared_bearoff():
+    """`GammonNetCubePlayer` branche la table bilatérale PARTAGÉE — un état de
+    processus. La débrancher en sortant, ou les tests suivants de la même
+    session pytest évalueraient avec un autre évaluateur que seuls : le test
+    de rollout à 3σ l'a détecté (échec en suite, succès isolé)."""
+    yield
+    from gammonnet.bearoff import disable_shared
+
+    disable_shared()
+
 needs_model = pytest.mark.skipif(not MODEL.exists(), reason="modèle absent")
 needs_db = pytest.mark.skipif(not DATABASE.exists(),
                               reason="base bilatérale absente")

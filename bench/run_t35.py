@@ -82,6 +82,26 @@ def parse_filter(text: str) -> tuple[int, ...]:
     return tuple(int(k) for k in text.split(",")) if text else ()
 
 
+def eval_fingerprint(model: str) -> str:
+    """L'empreinte numérique du build : les cinq flottants de la position
+    initiale, hachés bit à bit.
+
+    Le build fait partie du protocole — `NATIVE_FP=1` change la réassociation
+    flottante, donc potentiellement des choix de coups. Deux lots d'une même
+    campagne doivent évaluer EXACTEMENT pareil ; l'empreinte dans l'en-tête
+    du journal refuse toute reprise sous un build numériquement différent.
+    """
+    import hashlib
+    import struct
+
+    from gammonnet.infer import Network
+    from gammonnet.rules import Position
+
+    network = Network.load(ROOT / model if not Path(model).is_absolute() else model)
+    values = network.evaluate(Position.initial()).as_tuple()
+    return hashlib.blake2b(struct.pack("<5f", *values), digest_size=8).hexdigest()
+
+
 def sampled_score(seed: int, index: int, length: int) -> tuple[int, int, bool]:
     """Le score de départ de la paire `index` : pur, publié, rejouable."""
     rng = random.Random(derive_seed(seed, "scores", index))
@@ -104,9 +124,17 @@ _A = None
 _B = None
 
 
-def _install(a, b):
+def _install(a, b, evalcache_log2):
     global _A, _B
     _A, _B = a, b
+    if evalcache_log2:
+        # ×3,41 mesuré sur une paire identique (2026-08-09), résultats
+        # vérifiés bit à bit : le cache rejoue les mêmes évaluations, il n'en
+        # invente aucune. La question de videau 2-ply et le coup qui la suit
+        # partagent l'essentiel de leurs sous-arbres.
+        from gammonnet import evalcache
+
+        evalcache.enable(evalcache_log2)
 
 
 def _play(payload):
@@ -178,7 +206,14 @@ def main() -> int:
                              "2 matchs chacune)")
     parser.add_argument("--journal", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=20260810)
-    parser.add_argument("--workers", type=int, default=15)
+    parser.add_argument("--workers", type=int, default=11,
+                        help="11 = le pic de débit agrégé mesuré sur le "
+                             "bureau (x4,4 ; 14 ouvriers RETOMBENT à x3,0 — "
+                             "l'inférence est bornée par la bande passante "
+                             "mémoire, pas par les cœurs)")
+    parser.add_argument("--evalcache-log2", type=int, default=21,
+                        help="taille du cache d'évaluation par ouvrier "
+                             "(2^n entrées ; 0 = désactivé)")
     parser.add_argument("--limit", type=int, default=0,
                         help="taille du lot en paires (0 = jusqu'au bout)")
     parser.add_argument("--minutes", type=float, default=0.0,
@@ -221,6 +256,7 @@ def main() -> int:
         "cube_cap": CUBE_CAP,
         "ours": {"name": ours.name, "model": ours.model, "ply": ours.ply,
                  "filter": list(ours.filter), "cube_ply": ours.cube_ply},
+        "eval_fingerprint": eval_fingerprint(ours.model),
         "theirs": ({"name": theirs.name, "ply": theirs.ply,
                     "filter": list(theirs.filter),
                     "cube_ply": getattr(theirs, "cube_ply", None),
@@ -273,7 +309,8 @@ def main() -> int:
                 pending[pool.submit(_play, payload)] = index
 
         with ProcessPoolExecutor(args.workers, initializer=_install,
-                                 initargs=(ours, theirs)) as pool:
+                                 initargs=(ours, theirs,
+                                           args.evalcache_log2)) as pool:
             try:
                 refill(pool)
                 while pending:
