@@ -132,6 +132,7 @@ qu'une fiche existe. Une étude n'ouvre rien : elle donne à la décision de quo
 | Date | Étude | Question | Statut |
 |---|---|---|---|
 | 2026-08-19 | [Le videau appris sans a priori](2026-08-19-videau-appris-sans-a-priori.md) | Peut-on apprendre la gestion du videau **en match** sans MET ni formule de Janowski, au niveau de gnubg ? | Dossier. Rien d'ouvert ; conditionné à T35 |
+| 2026-08-19 | [Le videau appris — plan détaillé](2026-08-19-plan-videau-appris.md) | Quel programme, et l'architecture du réseau est-elle en cause ? | Plan conditionnel, fiches T60-T69. Rien d'ouvert |
 
 ## Sources
 

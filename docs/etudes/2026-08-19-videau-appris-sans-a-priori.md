@@ -236,6 +236,12 @@ l'artefact : rien de la table n'entre dans les poids ni dans le paquet distribu�
 
 ## 7. Le plan — six fiches, format `PLAN.md`
 
+> **Remplacé le 2026-08-19 au soir** par le plan détaillé :
+> [`2026-08-19-plan-videau-appris.md`](2026-08-19-plan-videau-appris.md), qui renumérote ces
+> fiches **T60-T69** et ajoute le volet d'architecture que ce croquis n'avait pas. Ce qui suit
+> reste comme trace de l'esquisse — elle disait déjà l'échelle d'architectures, elle ne disait
+> pas encore que le point structurant est **par où entre le score**.
+
 L'ordre est un ordre de **dérisquage croissant** : chaque fiche a une porte de sortie, et coûte
 plus cher que la précédente. On n'entre dans la suivante que si la précédente passe.
 
