@@ -124,6 +124,15 @@ avons lu, puis réécrit de mémoire » ne se vérifie pas.
 La règle à retenir avant d'ouvrir le niveau 3 la prochaine fois : **chercher d'abord si le
 programme peut répondre lui-même à la question.** Il est livré avec des outils faits pour cela.
 
+## Études d'opportunité
+
+Ce répertoire accueille aussi les **études** — des dossiers qui instruisent une question avant
+qu'une fiche existe. Une étude n'ouvre rien : elle donne à la décision de quoi se prendre.
+
+| Date | Étude | Question | Statut |
+|---|---|---|---|
+| 2026-08-19 | [Le videau appris sans a priori](2026-08-19-videau-appris-sans-a-priori.md) | Peut-on apprendre la gestion du videau **en match** sans MET ni formule de Janowski, au niveau de gnubg ? | Dossier. Rien d'ouvert ; conditionné à T35 |
+
 ## Sources
 
 - Directive 2009/24/CE, art. 1(2) — <https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32009L0024>
