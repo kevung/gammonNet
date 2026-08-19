@@ -406,19 +406,86 @@ retenir ce chiffre.
   sa mesure de force propre.
 - Le rapport dit, pour chaque chiffre, s'il énonce une mesure ou une hypothèse.
 
-## 8. Ce que ça coûte — récapitulatif
+## 8. Ce que ça coûte — des semaines de machine, pas des années
 
-| Fiche | Nature | Ordre de grandeur | Statut du chiffre |
+*Section réécrite le 2026-08-19 au soir : la campagne money de T35 a fini, elle donne des
+ancres **mesurées** là où cette section n'avait que des hypothèses.*
+
+### 8.1 Les ancres mesurées
+
+| Ancre | Valeur | Source |
+|---|---|---|
+| Campagne money 2-ply cubeful, 100 000 parties | **45 h 18** (30 ouvriers, la machine de calcul) | horodatage du journal `t35-money.jsonl`, 17/08 11:36 → 19/08 08:54 |
+| Campagne match 2-ply cubeful, 100 000 matchs de 7 points | **~4,7 jours** | 1 083 paires en 8 736 s, journal `t35-match.jsonl` |
+| Décision pions 2-ply garde 3 | **38 721 évaluations** | T30, T35 |
+| Cache d'évaluation | **×3,41**, bit-exact | T3A |
+| Une évaluation | ~527 000 MACs ≈ **1,05 MFLOP** | comptage d'architecture |
+
+Débit agrégé qui s'en déduit — *arithmétique à partir des totaux mesurés, pas une mesure directe*
+(gnubg partage le processeur, sa part n'est pas isolée) : 4 175 162 tours × 38 721 ≈ 1,6×10¹¹
+évaluations logiques en 163 100 s, soit ~1,2×10⁶ évaluations logiques/s, ~3,5×10⁵ passes avant
+réelles après cache, soit **~370 GFLOP/s agrégés** sur les 16 cœurs.
+
+### 8.2 L'asymétrie qui décide de tout
+
+> **Une décision en 2-ply coûte 38 721 évaluations. Un match complet de self-play en 0-ply en
+> coûte ~2 000.** Une seule décision profonde vaut donc **une vingtaine de matchs entiers**
+> d'entraînement.
+
+C'est contre-intuitif et c'est la clé du budget : **apprendre est bon marché, comparer à
+profondeur est cher.** Tout plan qui inverse cet ordre — entraîner longtemps, mesurer peu —
+dépense au mauvais endroit.
+
+### 8.3 Le budget, poste par poste
+
+*Colonne CPU : extrapolée du débit mesuré au §8.1. Colonne GPU : **arithmétique de plafond**
+(une 4090 en fp32 strict culmine à 82,6 TFLOP/s ; à 20 % du pic, ~45× le débit CPU agrégé),
+donc une borne optimiste tant que le profil génération/encodage/matmul n'est pas mesuré.*
+
+| Poste | Volume | CPU (30 ouvriers) | 2 GPU, plafond |
 |---|---|---|---|
-| T43 | instruments | jours-homme, calcul négligeable | — |
-| T44 | entraînement money | jours-machine | **hypothèse**, à mesurer en ouverture de fiche |
-| T45 | entraînement match | semaines-machine | **hypothèse** |
-| T46 | intégration | jours-homme | — |
-| T47 | mesure | ~6 jours-machine par point de comparaison | **extrapolation** du débit T35 |
+| **B0** — entraînement, réseau de pions gelé, 10 M matchs 0-ply | 2×10¹⁰ évals | **~16 h** | ~1 h |
+| **B** — idem, la tête voit la position | idem | ~16 h | ~1 h |
+| **Borne pessimiste** — MET par force brute à la précision d'un rollout, 10⁸ matchs | 2×10¹¹ évals | **~6,6 jours** | ~4 h |
+| **C** — bout-en-bout, échelle Strehl avec raffinement 1-ply | ~4×10¹¹ évals | ~2 semaines | ~1 jour |
+| Diagnostics (MET extraite, points de prise, DMP, antisymétrie) | ~10⁴ évals | **minutes** | — |
+| Arbitrage par rollout, 3 000 décisions de match | ~1 000-1 600 proc-h | **1,5-2,5 jours** | ~heures |
+| **Campagne de matchs confirmatoire** | 100 000 matchs | **4,7 jours — mesuré** | ~1 jour (Amdahl : gnubg reste sur CPU) |
 
-**Le poste dominant est T47, pas l'entraînement.** C'est contre-intuitif et c'est la raison d'être
-de l'ordre choisi : la métrique par décision (T47.1) doit porter l'essentiel des conclusions, la
-campagne de matchs ne servant qu'à confirmer.
+**Un passage complet — entraîner, diagnostiquer, arbitrer, confirmer — vaut donc de l'ordre de
+deux semaines de machine aujourd'hui, et de l'ordre de deux jours si le travail de lot et de GPU
+est fait d'abord.**
+
+### 8.4 Le vrai multiplicateur, c'est le nombre d'itérations
+
+Une campagne de recherche ne fait pas un passage, elle en fait cinq à vingt. À deux semaines le
+passage : **trois à six mois de machine**. Avec le lot élargi et les GPU : **des semaines**.
+
+Deux choses bornent ce multiplicateur, et elles sont dans la conception du §6 :
+
+1. **Une idée fausse se détecte en minutes, pas en campagne.** La MET implicite s'extrait en
+   quelques secondes et se compare à Kazaross-XG2 cellule par cellule. Un modèle qui a mal appris
+   la valeur du score le dit là, avant qu'on ait payé un seul rollout. **On ne paie la campagne
+   que sur un modèle qui a déjà passé les instruments gratuits.**
+2. **La campagne de matchs ne se paie qu'à la fin**, une ou deux fois, pas à chaque itération.
+
+### 8.5 Ce qui ferait basculer dans « des années »
+
+Aucun poste ci-dessus n'est en années. Trois manières de l'y faire basculer, toutes évitables :
+
+- **Faire de la confrontation par matchs l'instrument de chaque itération** (4,7 jours × 20 = 3
+  mois de machine pour de l'information qu'une métrique par décision donne en heures).
+- **Réapprendre le jeu de pions sous cibles de recherche** à chaque essai de videau : distiller
+  du 2-ply sur 10 M positions coûte ~3,9×10¹¹ évaluations, ~13 jours. C'est T41, un autre
+  chantier ; le mélanger à celui-ci multiplie les deux.
+- **Arbitrer par rollout à grande échelle sur CPU.** Le rollout est le calcul le plus
+  massivement parallélisable du dépôt (des milliers d'essais indépendants) : c'est précisément
+  celui qu'il faut porter sur GPU en premier, et le seul dont le portage soit sans effet de bord
+  sur l'artefact livré.
+
+**Conclusion de budget : la faisabilité de cet axe n'est pas limitée par le calcul.** Elle est
+limitée par le nombre de décisions de conception à prendre, et par la discipline de mesure entre
+chacune.
 
 ## 9. Le bénéfice qui n'est pas de la force — et qui compte
 
