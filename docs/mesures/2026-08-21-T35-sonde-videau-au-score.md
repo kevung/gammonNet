@@ -162,6 +162,14 @@ devrait. La signature est dans les données de la campagne elle-même.
   match, take/pass. La sonde a fait son travail : elle a séparé les deux
   lectures, et c'est la seconde.
 
+> **Note sur le journal `t35-match.jsonl`.** Il est conservé comme pièce à
+> conviction, arrêté à ses 25 178 paires d'avant correctif. Une session voisine
+> a relancé la campagne sur ce même journal une trentaine de secondes après son
+> arrêt, y ajoutant 299 paires jouées, elles, avec le correctif ; ces 299 lignes
+> ont été retirées pour que le journal reste homogène — un journal qui mêlerait
+> deux adversaires sans le dire serait exactement l'erreur silencieuse qu'on
+> traque ici. Le 84,1 % ci-dessus est calculé sur le journal ainsi rétabli.
+
 ## 6. Le correctif
 
 `classify_gnubg_verdict` traite désormais `never …` et tout verdict marqué
@@ -178,11 +186,11 @@ inconnue.
   campagne.
 - La comparaison d'équité est bornée par les trois décimales que `hint`
   imprime.
-- **Le jeu de pions au score n'est pas sondé** — seulement le videau. La
-  cellule DMP (50,94 %) et la moitié money sont les deux indices qu'il va bien,
-  ce ne sont pas des mesures de la convention EMG à un score quelconque. La
-  même instrumentation le permettrait (`Gnubg.hints` sous un match posé) ; c'est
-  la sonde suivante si elle est jugée nécessaire.
+- ~~Le jeu de pions au score n'est pas sondé~~ — **levée le jour même** :
+  `docs/mesures/2026-08-21-T35-sonde-coups-au-score.md`, 20 528 décisions.
+  L'accord au score est celui du money (97,8 % contre 98,0 %) et tous les
+  désaccords sont des égalités d'équité **exactement nulles**. Le chemin de jeu
+  de pions au score est fidèle.
 - La **taille** de l'effet sur la MWC n'est pas mesurée ici. La campagne match
   relancée la mesurera par différence.
 

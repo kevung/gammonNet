@@ -56,6 +56,9 @@ GNUBG = "/usr/local/bin/gnubg"
 #: phrase ne puisse leur ressembler.
 _PROMPT = re.compile(r"\n\(([^)\n]*)\) $")
 _PLAYER_TOKENS = ("gnubgP0", "gnubgP1")
+#: `gnubg_state` met le joueur au trait sur `move = 1` : la ligne de
+#: commande doit donc mettre le joueur au trait sur le joueur 1.
+CLI_MOVER = 1
 _POSITION_ID = re.compile(r"Position ID:\s*(\S+)")
 #: Le videau tel que le plateau l'affiche : sur la ligne du match quand il est
 #: centré, sur la ligne d'un joueur quand il lui appartient.
@@ -122,8 +125,13 @@ class Gnubg:
         # « (kunger) » au premier match.
         self._send(f"set defaultnames {_PLAYER_TOKENS[0]} {_PLAYER_TOKENS[1]}")
         self._names = _PLAYER_TOKENS
+        # « No game », « Game over » et « Match over » sont les invites hors
+        # partie ; les deux noms de joueurs sont les invites en partie. Une
+        # invite non prévue lèverait au bout de `READ_TIMEOUT` au lieu de
+        # bloquer pour toujours — c'est ainsi que « Game over » a été trouvée.
         self._prompt = re.compile(
-            r"\((No game|" + "|".join(_PLAYER_TOKENS) + r")\) $")
+            r"\((No game|Game over|Match over|"
+            + "|".join(_PLAYER_TOKENS) + r")\) $")
 
         if manual:
             # `manual` sert les sondes : on veut poser des questions à gnubg
@@ -133,6 +141,11 @@ class Gnubg:
         else:
             # Les deux joueurs sont gnubg lui-même : `play` doit jouer, pas demander.
             self._send("set player 0 gnubg", "set player 1 gnubg")
+
+        # gnubg ne doit jamais agir sans qu'on le lui demande : ni lancer les
+        # dés, ni enchaîner une partie. Une sonde qui mesure « le coup que
+        # gnubg joue » doit être seule à décider quand il joue.
+        self._send("set automatic roll off", "set automatic game off")
 
         if cube_ply is not None:
             # `hint` ne lit PAS les réglages des joueurs — sondé : ils ne
@@ -453,3 +466,54 @@ class Gnubg:
             cubeless=float(cubeless.group(1)) if cubeless else None,
             text=text,
         )
+
+    def best_play_at_score(self, position: Position, d1: int, d2: int) -> Play | None:
+        """Le coup que gnubg joue **au score déjà posé**.
+
+        `best_play` repart d'une `new game`, qui remettrait le match à plat.
+        Ici le score, le Crawford et le trait ont été posés une fois pour
+        toutes par l'appelant ; seuls le plateau et les dés changent.
+
+        Le videau est donné à l'ADVERSAIRE : gnubg ne peut alors pas doubler,
+        et `play` joue forcément un coup. C'est sans effet sur la comparaison
+        — le propriétaire du videau ne change pas une évaluation cubeless
+        (sondé en T35, `eval[5]` identique au millionième pour les trois
+        propriétaires) — et cela retire la seule façon dont `play` pourrait
+        rendre autre chose qu'un coup.
+
+        L'appariement se fait par RÉSULTAT, comme `best_play` : le seul format
+        traversé reste l'identifiant de position, déjà croisé en T02.
+
+        Rend `None` quand gnubg **abandonne** au lieu de jouer — voir plus bas.
+        L'appelant n'appelant cette méthode qu'avec au moins deux coups
+        légaux, `None` n'a pas d'autre sens ici.
+        """
+        ours = position.legal_plays(d1, d2)
+        if not ours:
+            return None
+        if len(ours) == 1:
+            return ours[0]
+
+        self.set_turn(CLI_MOVER)
+        self._send(f"set board {codec.position_id(position)}")
+        self.set_cube(1, 1 - CLI_MOVER)
+        self._send(f"set dice {d1} {d2}")
+        reply = self._send("play")
+        if "resigns" in reply:
+            # Dans une course désespérée, `play` ABANDONNE au lieu de jouer —
+            # il n'y a pas de réglage pour l'en empêcher (`help set player`,
+            # `help set automatic` : aucun n'en parle). L'abandon est refusé
+            # pour que la partie reste dans un état propre, et la position est
+            # rendue INCOMPARABLE plutôt que devinée : c'est à l'appelant de la
+            # compter à part.
+            self._send("decline")
+            return None
+        reached = self.current_position_id()
+
+        by_id = {codec.position_id(play.result): play for play in ours}
+        chosen = by_id.get(reached)
+        if chosen is None:
+            raise RuntimeError(
+                f"GNU Backgammon a joué un coup que nous ne générons pas "
+                f"({reached}) depuis {position!r} avec {d1}-{d2}")
+        return chosen

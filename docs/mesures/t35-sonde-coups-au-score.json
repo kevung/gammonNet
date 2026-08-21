@@ -1,0 +1,754 @@
+{
+ "task": "T35",
+ "probe": "chequer play at score: API path vs gnubg's own CLI",
+ "setting": {
+  "ply": 2,
+  "prune": 1,
+  "cubeful": false,
+  "match_length": 7,
+  "dice_seed": 20260821,
+  "root_filter": null
+ },
+ "corpus": {
+  "contact": 2000,
+  "bearoff": 1000,
+  "usable": 2566
+ },
+ "elapsed_s": 1134.519307413022,
+ "summary": {
+  "money": {
+   "n": 2521,
+   "agree": 2470,
+   "rate": 0.9797699325664418,
+   "median_gap": 0.0,
+   "max_gap": 0.0,
+   "gaps_over_0.01": 0,
+   "resigned": 45
+  },
+  "2a2a": {
+   "n": 2521,
+   "agree": 2470,
+   "rate": 0.9797699325664418,
+   "median_gap": 0.0,
+   "max_gap": 0.0,
+   "gaps_over_0.01": 0,
+   "resigned": 45
+  },
+  "3a5a": {
+   "n": 2521,
+   "agree": 2470,
+   "rate": 0.9797699325664418,
+   "median_gap": 0.0,
+   "max_gap": 0.0,
+   "gaps_over_0.01": 0,
+   "resigned": 45
+  },
+  "5a3a": {
+   "n": 2521,
+   "agree": 2470,
+   "rate": 0.9797699325664418,
+   "median_gap": 0.0,
+   "max_gap": 0.0,
+   "gaps_over_0.01": 0,
+   "resigned": 45
+  },
+  "4a4a": {
+   "n": 2521,
+   "agree": 2470,
+   "rate": 0.9797699325664418,
+   "median_gap": 0.0,
+   "max_gap": 0.0,
+   "gaps_over_0.01": 0,
+   "resigned": 45
+  },
+  "7a7a": {
+   "n": 2521,
+   "agree": 2470,
+   "rate": 0.9797699325664418,
+   "median_gap": 0.0,
+   "max_gap": 0.0,
+   "gaps_over_0.01": 0,
+   "resigned": 45
+  },
+  "postcrawford_2a1a": {
+   "n": 2521,
+   "agree": 2466,
+   "rate": 0.9781832606108687,
+   "median_gap": 0.0,
+   "max_gap": 0.0,
+   "gaps_over_0.01": 0,
+   "resigned": 45
+  },
+  "postcrawford_4a1a": {
+   "n": 2521,
+   "agree": 2466,
+   "rate": 0.9781832606108687,
+   "median_gap": 0.0,
+   "max_gap": 0.0,
+   "gaps_over_0.01": 0,
+   "resigned": 45
+  }
+ },
+ "disagreements": [
+  {
+   "context": "money",
+   "position_id": "CAAAtFwAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 41,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "money",
+   "position_id": "CQAAaBMAAAAAAA",
+   "dice": [
+    2,
+    4
+   ],
+   "plays": 3,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "2a2a",
+   "position_id": "CAAAtFwAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 41,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "2a2a",
+   "position_id": "CQAAaBMAAAAAAA",
+   "dice": [
+    2,
+    4
+   ],
+   "plays": 3,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "3a5a",
+   "position_id": "CAAAtFwAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 41,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "3a5a",
+   "position_id": "CQAAaBMAAAAAAA",
+   "dice": [
+    2,
+    4
+   ],
+   "plays": 3,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "5a3a",
+   "position_id": "CAAAtFwAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 41,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "5a3a",
+   "position_id": "CQAAaBMAAAAAAA",
+   "dice": [
+    2,
+    4
+   ],
+   "plays": 3,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "4a4a",
+   "position_id": "CAAAtFwAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 41,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "4a4a",
+   "position_id": "CQAAaBMAAAAAAA",
+   "dice": [
+    2,
+    4
+   ],
+   "plays": 3,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "7a7a",
+   "position_id": "CAAAtFwAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 41,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "7a7a",
+   "position_id": "CQAAaBMAAAAAAA",
+   "dice": [
+    2,
+    4
+   ],
+   "plays": 3,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_2a1a",
+   "position_id": "CAAAtFwAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 41,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_2a1a",
+   "position_id": "CQAAaBMAAAAAAA",
+   "dice": [
+    2,
+    4
+   ],
+   "plays": 3,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_4a1a",
+   "position_id": "CAAAtFwAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 41,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_4a1a",
+   "position_id": "CQAAaBMAAAAAAA",
+   "dice": [
+    2,
+    4
+   ],
+   "plays": 3,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "money",
+   "position_id": "AgAAhAIAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 6,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "money",
+   "position_id": "EgAA6LEAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 28,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "money",
+   "position_id": "CAAAmDoAAAAAAA",
+   "dice": [
+    2,
+    3
+   ],
+   "plays": 10,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "2a2a",
+   "position_id": "AgAAhAIAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 6,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "2a2a",
+   "position_id": "EgAA6LEAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 28,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "2a2a",
+   "position_id": "CAAAmDoAAAAAAA",
+   "dice": [
+    2,
+    3
+   ],
+   "plays": 10,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "3a5a",
+   "position_id": "AgAAhAIAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 6,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "3a5a",
+   "position_id": "EgAA6LEAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 28,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "3a5a",
+   "position_id": "CAAAmDoAAAAAAA",
+   "dice": [
+    2,
+    3
+   ],
+   "plays": 10,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "5a3a",
+   "position_id": "AgAAhAIAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 6,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "5a3a",
+   "position_id": "EgAA6LEAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 28,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "5a3a",
+   "position_id": "CAAAmDoAAAAAAA",
+   "dice": [
+    2,
+    3
+   ],
+   "plays": 10,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "4a4a",
+   "position_id": "AgAAhAIAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 6,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "4a4a",
+   "position_id": "EgAA6LEAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 28,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "4a4a",
+   "position_id": "CAAAmDoAAAAAAA",
+   "dice": [
+    2,
+    3
+   ],
+   "plays": 10,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "7a7a",
+   "position_id": "AgAAhAIAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 6,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "7a7a",
+   "position_id": "EgAA6LEAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 28,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "7a7a",
+   "position_id": "CAAAmDoAAAAAAA",
+   "dice": [
+    2,
+    3
+   ],
+   "plays": 10,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_2a1a",
+   "position_id": "7x4AAAA+Dx4IBA",
+   "dice": [
+    6,
+    2
+   ],
+   "plays": 4,
+   "equity_gap": 0.0,
+   "origin": "contact"
+  },
+  {
+   "context": "postcrawford_2a1a",
+   "position_id": "vw0AALBtgwAHAg",
+   "dice": [
+    4,
+    4
+   ],
+   "plays": 37,
+   "equity_gap": 0.0,
+   "origin": "contact"
+  },
+  {
+   "context": "postcrawford_2a1a",
+   "position_id": "AgAAhAIAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 6,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_2a1a",
+   "position_id": "EgAA6LEAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 28,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_2a1a",
+   "position_id": "CAAAmDoAAAAAAA",
+   "dice": [
+    2,
+    3
+   ],
+   "plays": 10,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_4a1a",
+   "position_id": "7x4AAAA+Dx4IBA",
+   "dice": [
+    6,
+    2
+   ],
+   "plays": 4,
+   "equity_gap": 0.0,
+   "origin": "contact"
+  },
+  {
+   "context": "postcrawford_4a1a",
+   "position_id": "vw0AALBtgwAHAg",
+   "dice": [
+    4,
+    4
+   ],
+   "plays": 37,
+   "equity_gap": 0.0,
+   "origin": "contact"
+  },
+  {
+   "context": "postcrawford_4a1a",
+   "position_id": "AgAAhAIAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 6,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_4a1a",
+   "position_id": "EgAA6LEAAAAAAA",
+   "dice": [
+    1,
+    1
+   ],
+   "plays": 28,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_4a1a",
+   "position_id": "CAAAmDoAAAAAAA",
+   "dice": [
+    2,
+    3
+   ],
+   "plays": 10,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "money",
+   "position_id": "mwMAAIoAAAAAAA",
+   "dice": [
+    4,
+    1
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "money",
+   "position_id": "lxYAAAoBAAAAAA",
+   "dice": [
+    5,
+    6
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "2a2a",
+   "position_id": "mwMAAIoAAAAAAA",
+   "dice": [
+    4,
+    1
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "2a2a",
+   "position_id": "lxYAAAoBAAAAAA",
+   "dice": [
+    5,
+    6
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "3a5a",
+   "position_id": "mwMAAIoAAAAAAA",
+   "dice": [
+    4,
+    1
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "3a5a",
+   "position_id": "lxYAAAoBAAAAAA",
+   "dice": [
+    5,
+    6
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "5a3a",
+   "position_id": "mwMAAIoAAAAAAA",
+   "dice": [
+    4,
+    1
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "5a3a",
+   "position_id": "lxYAAAoBAAAAAA",
+   "dice": [
+    5,
+    6
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "4a4a",
+   "position_id": "mwMAAIoAAAAAAA",
+   "dice": [
+    4,
+    1
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "4a4a",
+   "position_id": "lxYAAAoBAAAAAA",
+   "dice": [
+    5,
+    6
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "7a7a",
+   "position_id": "mwMAAIoAAAAAAA",
+   "dice": [
+    4,
+    1
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "7a7a",
+   "position_id": "lxYAAAoBAAAAAA",
+   "dice": [
+    5,
+    6
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_2a1a",
+   "position_id": "mwMAAIoAAAAAAA",
+   "dice": [
+    4,
+    1
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_2a1a",
+   "position_id": "lxYAAAoBAAAAAA",
+   "dice": [
+    5,
+    6
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_4a1a",
+   "position_id": "mwMAAIoAAAAAAA",
+   "dice": [
+    4,
+    1
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  },
+  {
+   "context": "postcrawford_4a1a",
+   "position_id": "lxYAAAoBAAAAAA",
+   "dice": [
+    5,
+    6
+   ],
+   "plays": 2,
+   "equity_gap": 0.0,
+   "origin": "bearoff"
+  }
+ ]
+}
