@@ -161,3 +161,34 @@ def test_terminal_positions_are_computed_not_evaluated():
     play = engine.choose(position, 1, 3, random.Random(0))
     assert play is not None
     assert play.result.is_over()
+
+
+# ── Le vocabulaire de videau, et le trou que T35 a payé ────────────────
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("Double, take", "DOUBLE_TAKE"),
+    ("Double, pass", "DOUBLE_PASS"),
+    ("Redouble, take", "DOUBLE_TAKE"),
+    ("Redouble, pass", "DOUBLE_PASS"),
+    ("No double, take", "NO_DOUBLE"),
+    ("No redouble, take", "NO_DOUBLE"),
+    ("Too good to double, pass", "TOO_GOOD"),
+    ("Too good to redouble, pass", "TOO_GOOD"),
+    ("Cube not available", "NO_DOUBLE"),
+    ("Never double, take (dead cube)", "NO_DOUBLE"),
+    # Le trou : « redouble » contient « double » et la chaîne contient
+    # « take », donc la règle générique en faisait un DOUBLE_TAKE — la
+    # campagne T35 faisait ainsi redoubler gnubg là où gnubg dit de ne jamais
+    # le faire, et seulement lui (notre modèle, lui, refuse). Trouvé par
+    # `bench/probe_gnubg_at_score.py` le 2026-08-21, en comparant le chemin
+    # `cfevaluate` à l'interface de gnubg elle-même.
+    ("Never redouble, take (dead cube)", "NO_DOUBLE"),
+])
+def test_dead_cube_verdicts_are_never_read_as_a_double(text, expected):
+    assert gnubg_engine.classify_gnubg_verdict(text).name == expected
+
+
+def test_an_unknown_verdict_is_refused_not_guessed():
+    with pytest.raises(ValueError):
+        gnubg_engine.classify_gnubg_verdict("Shrug, maybe")

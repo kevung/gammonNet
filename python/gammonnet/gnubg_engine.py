@@ -348,7 +348,15 @@ def classify_gnubg_verdict(text: str) -> CubeAction:
         return CubeAction.TOO_GOOD
     if "cube not available" in lowered:
         return CubeAction.NO_DOUBLE
-    if "never double" in lowered:
+    # « Never double » ET « Never redouble », et plus généralement tout verdict
+    # que gnubg marque « (dead cube) ». La sonde du 2026-08-21
+    # (`bench/probe_gnubg_at_score.py`) a payé cher l'absence du second : la
+    # règle générique en dessous lisait « Never redouble, take (dead cube) »
+    # comme DOUBLE_TAKE — « redouble » contient « double », et la chaîne
+    # contient « take » — c'est-à-dire qu'elle faisait redoubler gnubg
+    # exactement là où gnubg dit de ne jamais le faire. Le videau à 1 de la
+    # sonde de T34 n'atteignait aucun redoublement, d'où le trou.
+    if lowered.startswith("never ") or "dead cube" in lowered:
         return CubeAction.NO_DOUBLE
     if lowered.startswith("no double") or lowered.startswith("no redouble"):
         return CubeAction.NO_DOUBLE

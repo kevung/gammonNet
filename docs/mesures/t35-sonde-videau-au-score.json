@@ -1,0 +1,914 @@
+{
+ "task": "T35",
+ "probe": "cube decisions at score: API path vs gnubg's own CLI",
+ "corpus": {
+  "contact": 600,
+  "bearoff": 300,
+  "contact_seed": 20260807,
+  "bearoff_seed": 20260808
+ },
+ "setting": {
+  "cube_ply": 2,
+  "prune": 1,
+  "match_length": 7,
+  "cube_by_owner": {
+   "CENTRED": 1,
+   "OWNED": 2
+  }
+ },
+ "contexts": [
+  "money",
+  "2a2a",
+  "3a5a",
+  "5a3a",
+  "4a4a",
+  "7a7a",
+  "postcrawford_2a1a",
+  "postcrawford_4a1a",
+  "postcrawford_6a1a",
+  "postcrawford_leader_1a3a",
+  "crawford_2a1a",
+  "crawford_leader_1a2a"
+ ],
+ "elapsed_s": 401.8417866679956,
+ "summary": {
+  "cli_true": {
+   "2a2a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 900,
+    "take_comparable": 900,
+    "max_equity_gap": 0.0004989795684813281,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       0.04927170276641846,
+       0.04927170276641846,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       -0.05332767963409424,
+       -0.05332767963409424,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       0.12748980522155762,
+       0.12748980522155762,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   "3a5a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004997415542602468,
+    "disagreements": []
+   },
+   "5a3a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004998621940612846,
+    "disagreements": []
+   },
+   "4a4a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004998807907103942,
+    "disagreements": []
+   },
+   "7a7a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004998307228088472,
+    "disagreements": []
+   },
+   "postcrawford_2a1a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 900,
+    "take_comparable": 900,
+    "max_equity_gap": 0.0004999618530272532,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       0.04927170276641846,
+       0.04927170276641846,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       -0.05332767963409424,
+       -0.05332767963409424,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       0.12748980522155762,
+       0.12748980522155762,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   "postcrawford_4a1a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.000499920368194573,
+    "disagreements": []
+   },
+   "postcrawford_6a1a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004999752044677619,
+    "disagreements": []
+   },
+   "postcrawford_leader_1a3a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 0,
+    "take_comparable": 0,
+    "max_equity_gap": 0.0,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       -0.2026677131652832,
+       -0.8997209072113037,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       -0.3300957679748535,
+       -1.0971100330352783,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       -0.0763850212097168,
+       -0.748924732208252,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   "crawford_2a1a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 0,
+    "take_comparable": 0,
+    "max_equity_gap": 0.0,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       0.04927170276641846,
+       0.04927170276641846,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       -0.05332767963409424,
+       -0.05332767963409424,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       0.12748980522155762,
+       0.12748980522155762,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   "crawford_leader_1a2a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 0,
+    "take_comparable": 0,
+    "max_equity_gap": 0.0,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       0.04927170276641846,
+       0.04927170276641846,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       -0.05332767963409424,
+       -0.05332767963409424,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_true": "Cube not available",
+      "api_equities": [
+       0.12748980522155762,
+       0.12748980522155762,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   }
+  },
+  "cli_compressed": {
+   "2a2a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 900,
+    "take_comparable": 900,
+    "max_equity_gap": 0.0004989795684813281,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       0.04927170276641846,
+       0.04927170276641846,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       -0.05332767963409424,
+       -0.05332767963409424,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       0.12748980522155762,
+       0.12748980522155762,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   "3a5a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004997415542602468,
+    "disagreements": []
+   },
+   "5a3a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004998621940612846,
+    "disagreements": []
+   },
+   "4a4a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004998807907103942,
+    "disagreements": []
+   },
+   "postcrawford_2a1a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 900,
+    "take_comparable": 900,
+    "max_equity_gap": 0.0004999618530272532,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       0.04927170276641846,
+       0.04927170276641846,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       -0.05332767963409424,
+       -0.05332767963409424,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       0.12748980522155762,
+       0.12748980522155762,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   "postcrawford_4a1a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.000499920368194573,
+    "disagreements": []
+   },
+   "postcrawford_6a1a": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004999752044677619,
+    "disagreements": []
+   },
+   "postcrawford_leader_1a3a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 0,
+    "take_comparable": 0,
+    "max_equity_gap": 0.0,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       -0.2026677131652832,
+       -0.8997209072113037,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       -0.3300957679748535,
+       -1.0971100330352783,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       -0.0763850212097168,
+       -0.748924732208252,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   "crawford_2a1a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 0,
+    "take_comparable": 0,
+    "max_equity_gap": 0.0,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       0.04927170276641846,
+       0.04927170276641846,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       -0.05332767963409424,
+       -0.05332767963409424,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       0.12748980522155762,
+       0.12748980522155762,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   },
+   "crawford_leader_1a2a": {
+    "positions": 1800,
+    "verdict_agree": 900,
+    "take_agree": 0,
+    "take_comparable": 0,
+    "max_equity_gap": 0.0,
+    "disagreements": [
+     {
+      "position_id": "4HPwATDgc/ABMA",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       0.04927170276641846,
+       0.04927170276641846,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "cGfwASLgc+EBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       -0.05332767963409424,
+       -0.05332767963409424,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     },
+     {
+      "position_id": "sDP4gDDWTOEBIg",
+      "owner": "OWNED",
+      "cube": 2,
+      "api": "Never redouble, take (dead cube)",
+      "cli_compressed": "Cube not available",
+      "api_equities": [
+       0.12748980522155762,
+       0.12748980522155762,
+       1.0
+      ],
+      "cli_equities": [
+       null,
+       null,
+       null
+      ]
+     }
+    ]
+   }
+  },
+  "cli_nobeaver": {
+   "money": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 1800,
+    "take_comparable": 1800,
+    "max_equity_gap": 0.0004999923706054954,
+    "disagreements": []
+   }
+  },
+  "cli_beaver": {
+   "money": {
+    "positions": 1800,
+    "verdict_agree": 1800,
+    "take_agree": 981,
+    "take_comparable": 981,
+    "max_equity_gap": 0.0004999923706054954,
+    "disagreements": []
+   }
+  }
+ },
+ "compression": {
+  "2a2a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  },
+  "3a5a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  },
+  "5a3a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  },
+  "4a4a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  },
+  "postcrawford_2a1a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  },
+  "postcrawford_4a1a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  },
+  "postcrawford_6a1a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  },
+  "postcrawford_leader_1a3a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  },
+  "crawford_2a1a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  },
+  "crawford_leader_1a2a": {
+   "positions": 1800,
+   "verdict_agree": 1800
+  }
+ },
+ "disagreement_families": [
+  {
+   "api_action": "Never redouble, take (dead cube)",
+   "cli_true_action": "Cube not available",
+   "api_verdict": "DOUBLE_TAKE",
+   "cli_true_verdict": "NO_DOUBLE",
+   "count": 4500,
+   "contexts": [
+    "2a2a",
+    "crawford_2a1a",
+    "crawford_leader_1a2a",
+    "postcrawford_2a1a",
+    "postcrawford_leader_1a3a"
+   ],
+   "sample": [
+    {
+     "context": "2a2a",
+     "owner": "OWNED",
+     "cube": 2,
+     "position_id": "4HPwATDgc/ABMA",
+     "origin": "contact",
+     "api_no_double": 0.04927170276641846,
+     "api_take": 0.04927170276641846,
+     "api_drop": 1.0,
+     "api_state": {
+      "cube": 2,
+      "cube_owner": 1,
+      "move": 1,
+      "match_to": 2,
+      "score": [
+       0,
+       0
+      ],
+      "crawford": 0
+     }
+    },
+    {
+     "context": "2a2a",
+     "owner": "OWNED",
+     "cube": 2,
+     "position_id": "cGfwASLgc+EBIg",
+     "origin": "contact",
+     "api_no_double": -0.05332767963409424,
+     "api_take": -0.05332767963409424,
+     "api_drop": 1.0,
+     "api_state": {
+      "cube": 2,
+      "cube_owner": 1,
+      "move": 1,
+      "match_to": 2,
+      "score": [
+       0,
+       0
+      ],
+      "crawford": 0
+     }
+    },
+    {
+     "context": "2a2a",
+     "owner": "OWNED",
+     "cube": 2,
+     "position_id": "sDP4gDDWTOEBIg",
+     "origin": "contact",
+     "api_no_double": 0.12748980522155762,
+     "api_take": 0.12748980522155762,
+     "api_drop": 1.0,
+     "api_state": {
+      "cube": 2,
+      "cube_owner": 1,
+      "move": 1,
+      "match_to": 2,
+      "score": [
+       0,
+       0
+      ],
+      "crawford": 0
+     }
+    },
+    {
+     "context": "2a2a",
+     "owner": "OWNED",
+     "cube": 2,
+     "position_id": "sDPmASG2GfAASQ",
+     "origin": "contact",
+     "api_no_double": -0.10458338260650635,
+     "api_take": -0.10458338260650635,
+     "api_drop": 1.0,
+     "api_state": {
+      "cube": 2,
+      "cube_owner": 1,
+      "move": 1,
+      "match_to": 2,
+      "score": [
+       0,
+       0
+      ],
+      "crawford": 0
+     }
+    },
+    {
+     "context": "2a2a",
+     "owner": "OWNED",
+     "cube": 2,
+     "position_id": "thnwAEPiZswBAw",
+     "origin": "contact",
+     "api_no_double": 0.19688189029693604,
+     "api_take": 0.19688189029693604,
+     "api_drop": 1.0,
+     "api_state": {
+      "cube": 2,
+      "cube_owner": 1,
+      "move": 1,
+      "match_to": 2,
+      "score": [
+       0,
+       0
+      ],
+      "crawford": 0
+     }
+    }
+   ]
+  }
+ ],
+ "rows_note": "Les 21 600 lignes brutes ne sont pas versionn\u00e9es : le corpus se r\u00e9g\u00e9n\u00e8re de ses graines et la commande est en \u00a78 de la fiche. R\u00e9sum\u00e9s, familles de d\u00e9saccord et \u00e9chantillons suffisent \u00e0 relire la mesure."
+}
