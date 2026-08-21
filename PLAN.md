@@ -975,6 +975,40 @@ nice -n 10 python bench/run_t35.py --mode money --pairs 50000 --workers 9 \
 python bench/report_t35.py --journal docs/mesures/t35-money.jsonl   # à tout moment
 ```
 
+### État au 2026-08-21 — money faite, match à refaire
+
+**La moitié money est faite** : 50 000 paires, **−0,0119 ppg** [−0,0310 ; +0,0074].
+L'écart de +0,0400 ppg que T11 mesurait en cubeless **ne se reproduit pas** en cubeful ;
+le résultat tombe *dans* l'intervalle, ce que la fiche prévoit de traiter par plus de
+volume et non par une conclusion.
+
+**La moitié match est invalide et à refaire.** Elle contredisait la money — 56,4 % de MWC
+contre l'égalité, tout l'écart concentré là où le videau vit, culminant à 60,3 % en
+post-Crawford. La sonde du 2026-08-21
+(`docs/mesures/2026-08-21-T35-sonde-videau-au-score.md`, 21 600 décisions) a séparé les
+deux lectures possibles : le pilotage de gnubg au score est **mesuré correct** partout —
+conventions de `cubeinfo`, orientation du score, propriétaire, take/pass, et la
+compression `match_to = max(away)` est exactement gratuite — **sauf un mot**.
+`classify_gnubg_verdict` lisait « Never redouble, take (dead cube) » comme *double, et
+l'autre prend* : la campagne faisait redoubler gnubg là où gnubg dit de ne jamais
+redoubler, dans les états où le videau n'est mort que pour le joueur au trait
+(`away_mover <= cube < away_opponent`) — que la garde de `cubeful.py` ne filtre pas. À
+sens unique : notre modèle, au même état, refuse correctement. Signature dans le journal
+lui-même : **84,1 % des paires post-Crawford atteignent un videau de 4 ou 8**, là où le
+jeu correct ne peut pas dépasser 2.
+
+Corrigé et couvert par test (`tests/test_gnubg_engine.py`). La moitié money n'est pas
+touchée — en money le videau n'est jamais mort, et la sonde le confirme à 100 %.
+
+**Reste à faire** : relancer la moitié match sur un journal neuf, avec le correctif.
+
+```bash
+# la moitié match, journal NEUF — l'ancien mesure un gnubg estropié
+nice -n 5 python bench/run_t35.py --mode match --pairs 50000 --workers 30 \
+    --journal docs/mesures/t35-match-v2.jsonl \
+    --ours-ply 2 --ours-filter 0,1,3 --gnubg-ply 2 --gnubg-filter 0,1,3
+```
+
 ---
 
 # Phase 4 — Modèle propre au projet *(conditionnel)*
