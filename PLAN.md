@@ -1003,11 +1003,19 @@ touchée — en money le videau n'est jamais mort, et la sonde le confirme à 10
 **Reste à faire** : relancer la moitié match sur un journal neuf, avec le correctif.
 
 ```bash
-# la moitié match, journal NEUF — l'ancien mesure un gnubg estropié
-nice -n 5 python bench/run_t35.py --mode match --pairs 50000 --workers 30 \
-    --journal docs/mesures/t35-match-v2.jsonl \
-    --ours-ply 2 --ours-filter 0,1,3 --gnubg-ply 2 --gnubg-filter 0,1,3
+# la moitié match, journal NEUF — l'ancien mesure un gnubg estropié.
+# `setsid` : la campagne dure des jours et doit survivre à la session qui
+# la lance. Vérifier `pgrep -f run_t35` AVANT de relancer : deux campagnes
+# concurrentes divisent le débit par trois, et c'est arrivé.
+setsid nohup env PYTHONUNBUFFERED=1 python3 bench/run_t35.py --mode match \
+    --pairs 50000 --workers 30 --journal docs/mesures/t35-match-v2.jsonl \
+    --ours-ply 2 --ours-filter 0,1,3 --gnubg-ply 2 --gnubg-filter 0,1,3 \
+    > ~/t35-match-v2.log 2>&1 < /dev/null &
 ```
+
+**Lancée le 2026-08-21 à 17:26**, empreinte d'évaluation `1d92f0d39fb70cb4` — la même
+que la moitié money, donc le même moteur. Débit mesuré ~430 paires/h à 30 ouvriers :
+**~4,8 jours**.
 
 ---
 
