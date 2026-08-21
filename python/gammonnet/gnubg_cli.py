@@ -27,7 +27,9 @@ compte de pips avant que quoi que ce soit ne soit mesuré.
 from __future__ import annotations
 
 import re
+import select
 import subprocess
+import time
 from dataclasses import dataclass
 
 from . import codec
@@ -35,9 +37,30 @@ from .rules import BLACK, WHITE, Play, Position
 
 GNUBG = "/usr/local/bin/gnubg"
 
-#: gnubg termine chaque réponse par une invite entre parenthèses.
-_PROMPT = re.compile(r"\n\([^)\n]*\)\s*$")
+#: gnubg termine chaque réponse par une invite entre parenthèses. Elle porte le
+#: nom du joueur au trait — c'est la sentinelle de trait la moins chère qui soit.
+#:
+#: Reconnaître cette invite est plus délicat qu'il n'y paraît, et les deux
+#: pièges ont été payés :
+#:
+#: * plusieurs réglages répondent par une note entre parenthèses en fin de
+#:   ligne (« (Note that this setting...) ») — d'où l'espace final exigé ;
+#: * `set score` répond « ... (match to 7 points) » puis l'invite **sans
+#:   passer à la ligne** : « ...points)(gnubg) ». Exiger un saut de ligne
+#:   devant l'invite fait alors attendre indéfiniment, et se contenter de
+#:   « ) » prend « (after 0 games) » pour une invite.
+#:
+#: La règle retenue : l'invite est une parenthèse en fin de tampon dont le
+#: contenu est un jeton CONNU — « No game » ou l'un des deux noms de joueurs,
+#: que le constructeur fixe lui-même à `_PLAYER_TOKENS` pour qu'aucun mot de
+#: phrase ne puisse leur ressembler.
+_PROMPT = re.compile(r"\n\(([^)\n]*)\) $")
+_PLAYER_TOKENS = ("gnubgP0", "gnubgP1")
 _POSITION_ID = re.compile(r"Position ID:\s*(\S+)")
+#: Le videau tel que le plateau l'affiche : sur la ligne du match quand il est
+#: centré, sur la ligne d'un joueur quand il lui appartient.
+_BOARD_CUBE = re.compile(r"\(Cube: (\d+)\)")
+_BOARD_CUBE_OWNER = re.compile(r"([OX]): (\S+) \(Cube: (\d+)\)")
 
 
 @dataclass(frozen=True)
@@ -49,6 +72,24 @@ class Hint:
     probabilities: tuple[float, float, float, float, float] | None
 
 
+@dataclass(frozen=True)
+class CubeHint:
+    """Une décision de videau, telle que `hint` la rend au score.
+
+    `available` est faux quand gnubg répond « You cannot double » — un videau
+    mort (post-Crawford côté meneur, Crawford, ou videau déjà à l'adversaire).
+    Les trois équités sont alors nulles : gnubg n'en imprime aucune.
+    """
+
+    action: str
+    available: bool
+    no_double: float | None
+    double_take: float | None
+    double_pass: float | None
+    cubeless: float | None
+    text: str
+
+
 class Gnubg:
     """Un processus GNU Backgammon persistant, piloté par tube.
 
@@ -56,21 +97,59 @@ class Gnubg:
     relancer par décision coûterait bien plus que la décision elle-même.
     """
 
-    def __init__(self, ply: int = 0, path: str = GNUBG, cubeful: bool = False):
+    def __init__(self, ply: int = 0, path: str = GNUBG, cubeful: bool = False,
+                 *, manual: bool = False, cube_ply: int | None = None,
+                 cube_prune: bool = True):
         self.ply = ply
         self.cubeful = cubeful
+        # Tubes binaires NON tamponnés : `select` ne voit que ce que le noyau
+        # a, et un tampon Python entre les deux rendrait le délai de garde
+        # aveugle. Le décodage se fait ici, caractère par caractère.
         self._process = subprocess.Popen(
             [path, "--tty", "--quiet", "--no-rc"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
+            bufsize=0,
         )
+        self._prompt = _PROMPT
         self._read_until_prompt()
 
-        # Les deux joueurs sont gnubg lui-même : `play` doit jouer, pas demander.
-        self._send("set player 0 gnubg", "set player 1 gnubg")
+        # Les noms deviennent des jetons que nulle phrase de gnubg ne porte :
+        # c'est ce qui rend l'invite reconnaissable sans ambiguïté. Par
+        # `defaultnames` et non par `set player N name` : sondé, `new match`
+        # rend aux joueurs leurs noms par défaut, et l'invite redevenait alors
+        # « (kunger) » au premier match.
+        self._send(f"set defaultnames {_PLAYER_TOKENS[0]} {_PLAYER_TOKENS[1]}")
+        self._names = _PLAYER_TOKENS
+        self._prompt = re.compile(
+            r"\((No game|" + "|".join(_PLAYER_TOKENS) + r")\) $")
+
+        if manual:
+            # `manual` sert les sondes : on veut poser des questions à gnubg
+            # sans qu'il joue de lui-même. Deux joueurs humains ne bougent
+            # jamais tout seuls, et `hint` répond quand même.
+            self._send("set player 0 human", "set player 1 human")
+        else:
+            # Les deux joueurs sont gnubg lui-même : `play` doit jouer, pas demander.
+            self._send("set player 0 gnubg", "set player 1 gnubg")
+
+        if cube_ply is not None:
+            # `hint` ne lit PAS les réglages des joueurs — sondé : ils ne
+            # s'appliquent qu'à un joueur de type `gnu`. Il lit ceux de
+            # `set evaluation cubedecision`, et c'est donc là qu'on nomme le
+            # réglage de videau de l'adversaire.
+            self._set_checked(f"set evaluation cubedecision eval plies {cube_ply}",
+                              f"cube decisions will use {cube_ply} ply")
+            self._set_checked(
+                f"set evaluation cubedecision eval prune "
+                f"{'on' if cube_prune else 'off'}",
+                "cube decisions will use pruning" if cube_prune
+                else "cube decisions will not use pruning")
+            self._set_checked("set evaluation cubedecision eval cubeful on",
+                              "cube decisions will use cubeful evaluation")
+            self._set_checked("set evaluation cubedecision eval noise 0.0",
+                              "cube decisions will use noiseless evaluations")
         for player in (0, 1):
             self._send(
                 f"set player {player} chequer evaluation plies {ply}",
@@ -84,28 +163,41 @@ class Gnubg:
 
     # ── Tuyauterie ──────────────────────────────────────────────────
 
+    #: Un 2-ply cubeful sur une machine chargée reste très en deçà ; au-delà,
+    #: c'est que l'invite n'a pas été reconnue, et attendre pour toujours
+    #: serait la pire façon de le découvrir.
+    READ_TIMEOUT = 600.0
+
     def _read_until_prompt(self) -> str:
         chunks: list[str] = []
+        deadline = time.monotonic() + self.READ_TIMEOUT
         while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not select.select(
+                    [self._process.stdout], [], [], remaining)[0]:
+                raise RuntimeError(
+                    f"GNU Backgammon n'a pas rendu l'invite en "
+                    f"{self.READ_TIMEOUT:.0f} s ; fin du tampon : "
+                    f"{''.join(chunks)[-300:]!r}")
             char = self._process.stdout.read(1)
             if not char:
                 raise RuntimeError("GNU Backgammon s'est arrêté")
-            chunks.append(char)
-            if char == ")" or char == " ":
+            chunks.append(char.decode("utf-8", "replace"))
+            if char in (b")", b" "):
                 text = "".join(chunks)
-                if _PROMPT.search(text):
+                if self._prompt.search(text):
                     return text
 
     def _send(self, *commands: str) -> str:
         for command in commands:
-            self._process.stdin.write(command + "\n")
+            self._process.stdin.write((command + "\n").encode())
         self._process.stdin.flush()
         return "".join(self._read_until_prompt() for _ in commands)
 
     def close(self) -> None:
         if self._process.poll() is None:
             try:
-                self._process.stdin.write("quit\n")
+                self._process.stdin.write(b"quit\n")
                 self._process.stdin.flush()
             except (BrokenPipeError, ValueError):
                 pass
@@ -200,3 +292,164 @@ class Gnubg:
                 probs = (win, wg, wbg, lg, lbg)
             out.append(Hint(move.strip(), float(equity), probs))
         return out
+
+    # ── Le match, le score, le videau ────────────────────────────────
+    #
+    # Tout ce qui suit sert la sonde de T35 : rejouer par l'interface de gnubg
+    # lui-même les décisions de videau que la campagne lui demande par
+    # `cfevaluate`, pour établir — et non supposer — que les deux chemins
+    # disent la même chose au score.
+    #
+    # Chaque réglage est VÉRIFIÉ sur l'accusé de réception de gnubg. Une
+    # commande refusée ne lève pas d'exception ici sans cela : elle imprime
+    # « Unknown keyword » et la sonde mesurerait alors un score qui n'a jamais
+    # été posé — exactement le mode de défaillance silencieux que le dépôt
+    # refuse.
+
+    def _set_checked(self, command: str, expected: str) -> str:
+        reply = self._send(command)
+        if expected not in reply:
+            raise RuntimeError(
+                f"gnubg n'a pas accusé réception de {command!r} : attendu "
+                f"{expected!r}, reçu {reply.strip()[:200]!r}")
+        return reply
+
+    @staticmethod
+    def _prompt_name(reply: str) -> str | None:
+        match = _PROMPT.search(reply)
+        return match.group(1) if match else None
+
+    def new_match(self, length: int) -> None:
+        self._set_checked(f"new match {length}", f"new {length} points match")
+
+    def new_money_session(self, jacoby: bool = True, beavers: bool = False) -> None:
+        self._set_checked("new session", "A new session has been started")
+        self._set_checked(f"set jacoby {'on' if jacoby else 'off'}",
+                          "Jacoby rule" )
+        self._set_checked(f"set beavers {1 if beavers else 0}", "beaver")
+
+    def set_score(self, score0: int, score1: int, length: int) -> None:
+        reply = self._send(f"set score {score0} {score1}")
+        expected = f"{self._names[0]} {score0}, {self._names[1]} {score1}"
+        if expected not in reply or f"match to {length} points" not in reply:
+            raise RuntimeError(
+                f"score refusé : attendu {expected!r} dans un match de "
+                f"{length} points, reçu {reply.strip()[:200]!r}")
+
+    def set_crawford(self, crawford: bool) -> None:
+        self._set_checked(
+            f"set crawford {'on' if crawford else 'off'}",
+            "This game is the Crawford game" if crawford
+            else "This game is not the Crawford game")
+
+    def set_turn(self, player: int) -> None:
+        """Donner le trait au joueur 0 ou 1 — vérifié sur l'invite qui suit."""
+        reply = self._send(f"set turn {player}")
+        if self._prompt_name(reply) != self._names[player]:
+            raise RuntimeError(
+                f"le trait n'est pas passé à {self._names[player]!r} : "
+                f"invite {self._prompt_name(reply)!r}")
+
+    def set_cube(self, value: int, owner: int | None) -> bool:
+        """Valeur puis propriétaire — l'ordre est celui que gnubg accepte.
+
+        Rend **faux** quand gnubg refuse de poser un videau parce qu'il n'y en
+        a pas : « The cube is disabled during the Crawford game. » C'est une
+        réponse, pas une panne — la partie de Crawford se joue sans videau, et
+        c'est précisément ce que la sonde veut vérifier des deux côtés.
+        """
+        reply = self._send(f"set cube value {value}")
+        if "disabled" in reply:
+            return False
+        if owner is None:
+            self._set_checked("set cube centre", "cube has been centred")
+        else:
+            self._set_checked(f"set cube owner {self._names[owner]}",
+                              f"{self._names[owner]}")
+        return True
+
+    def verify_board(self, position: Position, cube: int,
+                     owner: int | None, check_cube: bool = True) -> None:
+        """La sentinelle : le plateau que gnubg tient est bien celui qu'on pose.
+
+        L'identifiant de position est relatif au joueur au trait — le relire
+        égal à celui qu'on a envoyé contrôle donc la position ET le trait d'un
+        seul coup. Le videau se lit sur la ligne où gnubg l'imprime : celle du
+        match s'il est centré, celle d'un joueur s'il lui appartient.
+        """
+        text = self._send("show board")
+        found = _POSITION_ID.search(text)
+        wanted = codec.position_id(position)
+        if not found or found.group(1) != wanted:
+            raise RuntimeError(
+                f"gnubg tient une autre position que celle posée : "
+                f"{found.group(1) if found else None!r} au lieu de {wanted!r}")
+
+        if not check_cube:
+            return
+
+        owned = _BOARD_CUBE_OWNER.search(text)
+        value = _BOARD_CUBE.search(text)
+        if not value or int(value.group(1)) != cube:
+            raise RuntimeError(
+                f"videau à {value.group(1) if value else None} au lieu de {cube}")
+        owner_name = None if owner is None else self._names[owner]
+        seen_owner = owned.group(2) if owned else None
+        if seen_owner != owner_name:
+            raise RuntimeError(
+                f"videau possédé par {seen_owner!r} au lieu de {owner_name!r}")
+
+    # ── La décision de videau ────────────────────────────────────────
+
+    _CUBEFUL_LINE = re.compile(r"^\s*\d+\.\s+(.+?)\s\s+([-+]?\d+\.\d+)",
+                               re.MULTILINE)
+    _PROPER = re.compile(r"Proper cube action:\s*(.+?)\s*$", re.MULTILINE)
+    _CUBELESS = re.compile(r"cubeless equity\s+([-+]?\d+\.\d+)")
+
+    def cube_hint(self, position: Position, cube: int = 1,
+                  owner: int | None = None) -> CubeHint:
+        """Ce que GNU Backgammon fait du videau sur cette position, à ce score.
+
+        Le score, lui, a été posé avant par `new_match`/`set_score`/`set_turn`
+        — il vaut pour toutes les positions du même contexte.
+        """
+        self._send(f"set board {codec.position_id(position)}")
+        # `set board` ne remet pas le videau (sondé), mais le reposer coûte
+        # deux commandes et retire la question.
+        live = self.set_cube(cube, owner)
+        self.verify_board(position, cube, owner, check_cube=live)
+        if not live:
+            return CubeHint("Cube not available", False, None, None, None,
+                            None, "cube disabled (Crawford)")
+
+        text = self._send("hint")
+        if "cannot double" in text or "Cube not available" in text:
+            return CubeHint("Cube not available", False, None, None, None,
+                            None, text)
+
+        proper = self._PROPER.search(text)
+        if not proper:
+            raise RuntimeError(
+                f"pas de « Proper cube action » dans la réponse de gnubg : "
+                f"{text.strip()[:400]!r}")
+
+        equities: dict[str, float] = {}
+        for label, value in self._CUBEFUL_LINE.findall(text):
+            lowered = label.lower()
+            if lowered.startswith("no double") or lowered.startswith("no redouble"):
+                equities["no_double"] = float(value)
+            elif "pass" in lowered:
+                equities["double_pass"] = float(value)
+            elif "take" in lowered:
+                equities["double_take"] = float(value)
+        cubeless = self._CUBELESS.search(text)
+
+        return CubeHint(
+            action=proper.group(1),
+            available=True,
+            no_double=equities.get("no_double"),
+            double_take=equities.get("double_take"),
+            double_pass=equities.get("double_pass"),
+            cubeless=float(cubeless.group(1)) if cubeless else None,
+            text=text,
+        )
