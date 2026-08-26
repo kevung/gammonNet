@@ -8,14 +8,13 @@ seul endroit où le produit vit — et jusqu'où le 3-ply devient concevable sur
 
 ## À injecter avant de lancer — ne pas coller cette section
 
-| Marqueur | À remplir depuis |
-|---|---|
-| `⟨ARCHITECTURE⟩` | DS-04, section « L'architecture d'inférence que je recommanderais » — tailles, types, disposition mémoire |
-| `⟨NOYAUX⟩` | DS-04, sous-question 5 — les formes de noyau retenues (int8 SIMD128 ? f32 ? accumulation incrémentale ?) |
+**Injections faites le 2026-08-27**, depuis le retour DS-04. **Le prompt est prêt à lancer tel
+quel.**
 
-**Ne lance pas cette recherche avant d'avoir ces deux valeurs.** Une question posée sur « la
-performance du WebAssembly en général » rendra un rapport générique et inutile ; la même question
-posée sur un noyau précis rendra des chiffres.
+| Marqueur | Rempli depuis |
+|---|---|
+| `ARCHITECTURE` | DS-04, Recommendations : réseau distillé ~60–100k MACs, QAT int8 per-channel, accumulation int32, ClippedReLU, échelles en puissances de 2 |
+| `NOYAUX` | DS-04, sous-question 2 : GEMM int8 par lots de 32 sur produit scalaire fusionné ; deux chemins Wasm (SIMD128 déterministe / relaxed-SIMD à poids 7 bits) ; pas d'accumulation incrémentale NNUE |
 
 ---
 
@@ -42,7 +41,17 @@ l'équilibre y est différent, et c'est un fait que je ne sais pas expliquer.
 
 **Le réseau, et ce qui va changer.** Aujourd'hui : 196 entrées denses en `float32`, 512 → 512 →
 256 → 128 → 5, ~527 000 MACs par évaluation, noyau par lots de 32. Une étude d'architecture
-d'inférence recommande de passer à : ⟨ARCHITECTURE⟩, avec des noyaux de la forme ⟨NOYAUX⟩.
+d'inférence recommande de passer à : **un réseau distillé 2–4× plus étroit (cible 60 000–100 000
+MACs), quantifié par entraînement conscient de la quantification (QAT) — poids et activations
+int8 per-channel, accumulation int32, accumulateur int16 là où la dynamique des entrées denses
+l'exige, activation ClippedReLU (écrêtage 0..127), facteurs d'échelle en puissances de 2 (la
+remise à l'échelle devient un simple décalage), poids pré-empaquetés hors ligne en tuiles
+adaptées au produit scalaire** — avec des noyaux de la forme : **GEMM int8 par lots de 32 sur
+produit scalaire fusionné (VPDPBUSD / AVX-VNNI en natif x86, SDOT sur ARM) ; en WebAssembly,
+deux chemins — SIMD128 standard (`i32x4.dot_i16x8_s`, déterministe, pour le bit-à-bit) et
+relaxed-SIMD (`i32x4.relaxed_dot_i8x16_i7x16_add_s`, avec poids contraints à 7 bits pour que le
+résultat reste défini). Pas d'accumulation incrémentale de type NNUE : l'étude l'a écartée pour
+nos entrées denses évaluées par lots.**
 
 ## La question
 

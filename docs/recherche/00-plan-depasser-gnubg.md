@@ -1,8 +1,9 @@
 # Dépasser franchement GNU Backgammon — le plan de recherche
 
-**Date** : 2026-08-26 · **Statut** : plan de recherche, **vague 1 rentrée le 2026-08-27** — voir
-§11. **Aucune fiche de `PLAN.md` n'est ouverte par ce document.** Il instruit une question,
-organise quatorze recherches approfondies, et dit ce que chacune décide.
+**Date** : 2026-08-26 · **Statut** : plan de recherche, **vague 1 rentrée le 2026-08-27** (§11),
+**vague 2 rentrée le 2026-08-27 sauf DS-09** (§12). **Aucune fiche de `PLAN.md` n'est ouverte par
+ce document.** Il instruit une question, organise quatorze recherches approfondies, et dit ce que
+chacune décide.
 
 ---
 
@@ -229,3 +230,87 @@ négatif ; la sous-question 1 de DS-06 remplacée par la reproduction du protoco
 PR-cube par classe (étape 1 de DS-08) qui dira si la course pèse ; DS-14 attend qu'une
 architecture soit désignée. Le tableau « programme retenu » de §9 ne s'écrit qu'une fois la
 vague 2 rentrée.
+
+## 12. La vague 2, rentrée sauf DS-09 — ce qu'elle change (2026-08-27)
+
+Les retours DS-04, DS-06, DS-11 et DS-12 sont classés dans `retours/`. Même rappel qu'en §11 :
+un retour de recherche n'est pas une mesure de ce dépôt.
+
+### Le fait central : trois retours convergent sur la même recette
+
+DS-06 (entraînement) et DS-12 (spécialisation) désignent **indépendamment le même premier
+test** : la **distillation de notre propre recherche expectiminimax 2-ply distributionnelle**
+— les 5 probabilités, pas l'équité seule — dans un réseau à architecture constante. C'est la
+seule recette dont la survie sous recherche est prouvée par une mesure publiée (Whittington
+v1.9.0 : ~52 % contre son propre champion à 1-ply ; « l'arête est petite mais ne se lave pas
+sous la recherche »), et DS-12 y ajoute que c'est aussi le seul mécanisme au gain prouvé **à
+coût par évaluation strictement constant** (distillation d'un enseignant fort : 53,4 % sur
+40 000 parties, même 256×128). DS-04 complète le triangle : la même distillation est le premier
+levier de **vitesse** (réduire vers ~60–100k MACs). **Un seul chantier sert donc les deux
+exigences de la question initiale — qualité sous recherche et vitesse.**
+
+### Les quatre hypothèses, mises à jour
+
+| # | État après vague 2 | Ce qui a bougé |
+|---|---|---|
+| **H1** (entraîner pour la recherche) | **Confirmée, et munie d'un protocole exécutable.** | DS-06 : 1,0–1,5 M labels 2-ply auto-générés (~heures sur notre machine, rendement décroissant au-delà de ~2,5 M), cibles = les 5 composantes, tête auxiliaire de **volatilité exacte sur les 21 jets** (étiquetage gratuit — sous-produit du backup exact ; analogue mesuré : têtes KataGo), entraînement **from scratch** (le warm-start nuit), et le juge est **l'intervalle 2-ply par décision** — succès si [−0,00005 ; +0,00019] se déplace au-dessus de zéro. Plafond : l'élève ne dépasse pas le maître ; échappatoires non bornées = SPSA sur la tête de sortie, têtes auxiliaires. Lecture secondaire : si le taux de désaccord 2-ply cesse de tomber **et** que l'équité monte, on a ajouté de l'information que la recherche ne récupère pas. |
+| **H2** (encodage) | **Encore affaiblie.** | DS-06 recense un troisième négatif mesuré (Whittington : features expertes neutres au mieux, ~5 pts derrière en NNUE). L'ablation maison au différentiel 2-ply reste la seule qui trancherait, mais rien ne la justifie avant le résultat de la distillation. |
+| **H3** (videau et match) | Inchangée depuis §11 — voie DS-08, indépendante de ce qui précède. | Rien de neuf en vague 2 ; DS-13 attend toujours le benchmark PR-cube par classe. |
+| **H4** (largeur à budget égal) | **Fermée de fait.** | Deuxième mesure négative (Whittington : fenêtre ×3 → 50,5 % sur 2 600 parties). La vitesse se justifie par le coût client, pas par un espoir de force. |
+
+### La spécialisation, tranchée
+
+DS-12 : l'aiguillage dur race/crashed/contact est **mesuré neutre** à entraînement égal — le
+gain apparent de Whittington venait du recuit du taux d'apprentissage, pas du routage. L'ordre
+retenu : (1) distillation dans le réseau unique ; (2) si elle plafonne, **tronc partagé + têtes
+de sortie par bucket de pip-count** façon NNUE (52,6 %, search-robuste, aucune classe affamée de
+données) — jamais des réseaux séparés ; (3) en préalable à toute tête spécialisée, produire la
+**carte d'erreur par classe de position** contre nos rollouts profonds (« Test C ») — personne
+ne l'a jamais publiée, et sans elle le choix des classes est aveugle. Toute comparaison varie
+**une seule chose à la fois** et se juge en head-to-head à dés miroirs, survie au 2-ply exigée.
+
+### La vitesse, architecturée
+
+DS-04 : le ×10 se **compose** — distillation ×2,5–5 (qualité quasi intacte si le maître est
+sur-paramétré), **QAT int8/int16 obligatoire** (la PTQ s'effondre sur petit réseau) pour ×2–3
+mesurés (pas ×4), noyau GEMM par lots sur produit scalaire fusionné (VPDPBUSD / SDOT /
+relaxed-SIMD), SVD ou élagage structuré pour le reste. **NNUE incrémental écarté** : entrées
+denses, évaluation par lots, aucun précédent sur un jeu à dés — le lot dense de 32 est jugé
+gagnant (hypothèse argumentée, pas mesure). Le bit-à-bit natif↔Wasm **se renforce** en entier,
+à trois conditions : ordre de sommation figé, accumulateur int32 sans débordement, arrondi
+unique ; et relaxed-SIMD seulement avec poids contraints à 7 bits (sinon non déterminisme
+spécifié). Briques permissives : XNNPACK (BSD-3), ruy (Apache-2.0), ggml (MIT) ; **Stockfish
+NNUE est GPL-3, inutilisable**. En recherche : mini-réseau d'élagage façon gnubg aux nœuds
+internes, Star2 en expérience (déjà noté en §11).
+
+### La comparaison à XG, réglée sans l'exécuter
+
+DS-11 : XG n'a **ni API, ni CLI** — seulement Batch Analysis/Rollout en GUI (Windows ou Wine,
+endossé par l'éditeur), verdicts extraits en parsant les `.xg` (format officiellement public,
+parseurs libres `xgdatatools`). La voie principale est **indirecte** : composer notre
+équivalence gnubg 2-ply, déjà mesurée, avec le calage tiers gnubg↔XG (bgsage « Méthode 3 » : PR
+moyen identique 4,36 sur 580 notations de matchs humains, différence +0,002 ±0,03, r = 0,98 —
+auto-étude d'un concurrent, non répliquée, à citer avec cette réserve). XG en **contrôle
+ponctuel** sur sous-échantillon disputé, jamais en oracle systématique. Toujours **deux
+chiffres** : erreur d'équité par décision ×500 à filtre identique, et « PR façon XG »
+(exclusion des coups « non obvious ») — jamais un mEMG gnubg ÷ 2. Correspondance de plies :
+**XG n-ply ≈ gnubg (n−1)-ply**. Licence : aucun EULA desktop publié — vide documentaire, géré
+par prudence (jamais de binaire ni de données XG dans l'artefact) ; les chiffres Depreli 2012
+sont arbitrés par XG lui-même, inutilisables comme oracle neutre.
+
+### Les conditions de vague 3, tranchées
+
+- **DS-10 : non déclenchée.** DS-06 retient des labels auto-générés par notre propre recherche ;
+  aucun corpus externe n'est requis.
+- **DS-13 : toujours en attente** du benchmark PR-cube par classe (étape 1 de DS-08) — une
+  mesure du dépôt, pas une recherche web.
+- **DS-14 : presque déclenchée.** DS-04 + DS-06 + DS-12 désignent une architecture (réseau
+  distillé 2-ply, ~60–100k MACs, QAT int8, tête volatilité, buckets pip en option). Attendre le
+  retour de DS-09, qui la confirme ou l'amende pour le navigateur, avant de chiffrer le budget.
+
+### La suite
+
+**Une seule recherche à lancer : DS-09** (injectée le 2026-08-27 depuis DS-04, prête). À son
+retour, la vague 2 est complète : écrire alors le tableau **« programme retenu »** de §9 — pour
+chaque changement, le gain attendu, le coût, le risque, la licence et la mesure qui le tranche —
+et le convertir en fiches `PLAN.md` (série T7x). Rien ne s'engage avant.
