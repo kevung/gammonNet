@@ -1,9 +1,10 @@
 # Dépasser franchement GNU Backgammon — le plan de recherche
 
-**Date** : 2026-08-26 · **Statut** : plan de recherche, **vague 1 rentrée le 2026-08-27** (§11),
-**vague 2 rentrée en entier le 2026-08-27** (§12), **programme retenu écrit** (§14). **Aucune
-fiche de `PLAN.md` n'est ouverte par ce document.** Il instruit une question, organise quatorze
-recherches approfondies, et dit ce que chacune décide.
+**Date** : 2026-08-26 · **Statut** : plan de recherche, **terminé le 2026-08-27** — vagues 1 et
+2 rentrées (§11, §12), programme retenu écrit (§14), budget chiffré (§15). Onze retours sur
+quatorze prompts ; DS-10 non déclenchée, DS-13 attend une mesure du dépôt, plus aucune recherche
+planifiée (§13). **Aucune fiche de `PLAN.md` n'est ouverte par ce document** — la conversion du
+§14 en fiches T7x est la décision d'engagement qui reste à prendre.
 
 ---
 
@@ -395,3 +396,52 @@ par classe (neutre, Whittington), la largeur de recherche (nulle, deux mesures),
 dormante), NNUE incrémental (entrées denses, lots), WebGPU pour l'évaluateur (dispatch-bound),
 les bibliothèques d'inférence génériques, les corpus externes et tout professeur non libre
 (gnubg, XG, HedgeHog — règle de licence).
+
+## 15. Le budget et les paliers (DS-14, rentré le 2026-08-27)
+
+Le chiffrage du programme (retour classé dans `retours/DS-14-retour.md`), sur notre machine
+(16 cœurs / 32 fils, 30 processus). Une réserve de conformité d'abord : le retour recommande
+d'étiqueter par gnubg 2-ply (~100 000× moins cher qu'un rollout) — **rejeté**, la règle du dépôt
+fait de gnubg un instrument de mesure, jamais une source d'apprentissage (§10). On paie donc nos
+propres coûts d'étiquetage ; ils restent de l'ordre d'heures.
+
+### Les trois scénarios
+
+| Scénario | Génération | Entraînement | Mesure | Total mur |
+|---|---|---|---|---|
+| **Minimal** — le signal qui dit si l'idée marche | 400–500 k positions, self-play 0-ply : minutes | étiquetage 2-ply réduit + QAT : ~1–2 h | par décision contre gnubg 3-ply, sans rollout : dizaines de minutes | **~1–3 h** |
+| **Nominal** — la recette P2 complète | 1,0–1,5 M positions : ~1 h | étiquetage 2-ply ~3–8 h de mur + QAT ~1 h (seul usage utile du GPU) | arbitre escaladé (heures/point) + un match dupliqué | **~6–8 jours**, dont 4,9 de match |
+| **« Ça a mal tourné »** — trois itérations | ré-encodage + réétiquetage à chaque tour | 3× | campagnes à refaire + 1–3 matchs dupliqués | **~3–5 semaines** |
+
+Le scénario noir est dominé par **la mesure répétée**, pas par l'entraînement — la signature de
+notre problème historique (§5), et la raison d'être des paliers.
+
+### La règle d'or, et les paliers d'arrêt
+
+**Mesurer le professeur avant d'étiqueter en volume** : le piège n°1 documenté est le plafond du
+professeur — un élève distillé converge à la force de son maître quelle que soit la quantité de
+données. Avant tout étiquetage massif, vérifier que notre 2-ply distributionnel bat le réseau
+actuel au ply de jeu : **z > 3 sur ≥ 10 000 décisions appariées** — un contrôle qui coûte des
+minutes et peut économiser des semaines.
+
+| Palier | Ce qu'on fait | Coût | On arrête si |
+|---|---|---|---|
+| **B0** | Banc de positions de référence + bases exactes, aucun rollout | minutes | le candidat est nettement pire que l'incumbent — filtre grossier |
+| **B1** | Prototype : distillation sur 400–500 k labels (notre 2-ply), QAT comprise | ~1–2 h | à ce volume, le candidat ne bat pas l'incumbent par décision (z < ~1 sur ≥ 10 000 décisions appariées) — la donnée supplémentaire ne sauve pas une idée neutre |
+| **B2** | Tronc gelé, tête seule réentraînée | fraction d'un entraînement | isole tête vs corps — diagnostic, pas un verdict |
+| **B3** | Mesure **par décision** contre gnubg 3-ply seul, corpus figé | dizaines de minutes | le gain par décision disparaît au ply de jeu (non-transitivité) — arrêt avant tout rollout |
+| **B4** | Arbitre escaladé complet (P1 du §14), IC < 0,005 | heures/point | réservé aux candidats ayant passé B3 |
+| **B5** | Match dupliqué ≥ 100, test apparié | 4,9 jours | un événement rare, jamais une routine — ne jamais le lancer pour départager du bruit |
+
+Deux garde-fous chiffrés du retour, à retenir : la validation-loss peut continuer de baisser
+sans plus se traduire en force (seuls les head-to-heads voient le genou) ; et un affrontement
+partiel erre plus que l'effet mesuré (54,8 % lus à 7 000 parties pour 53,6 % finaux sur 40 000).
+Les recettes à parc de machines (fishtest, ELF, KataGo) sont écartées franchement ; le GPU ne
+sert qu'à la QAT.
+
+### Le verdict
+
+Le programme du §14 est **engageable sur la machine du projet** : un candidat se produit en
+heures, se qualifie en heures par les paliers, et le match dupliqué ne se paie qu'une fois par
+candidat retenu. La suite n'est plus de la recherche : c'est la **conversion du §14 en fiches
+`PLAN.md` (série T7x)** — une décision d'engagement qui appartient au dépôt, pas à ce document.
