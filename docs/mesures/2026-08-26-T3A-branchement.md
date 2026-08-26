@@ -2,6 +2,14 @@
 
 **Date** : 2026-08-26 · **Machine** : la machine de calcul · **Branche** : `t3a-branchement`
 
+> ⚠️ **Le verdict de cette fiche est périmé — voir
+> [`2026-08-26-T3A-regroupement.md`](2026-08-26-T3A-regroupement.md).** Elle conclut « ne pas
+> activer » parce que le gain (×1,36) ne dépendait pas de `k`. La cause du plafond a été trouvée
+> depuis : le noyau calcule 32 voies quoi qu'il arrive, et l'élagage vidait les lots du grand
+> réseau au lieu de les supprimer. Lots remplis, le gain passe à **×3,9 à ×9,3** et dépend de `k`.
+> **Les mesures de cette fiche restent exactes** ; c'est la conclusion qu'on en tirait qui ne l'est
+> plus.
+
 > **La question.** La fiche du 2026-08-07 a construit le petit réseau et l'a mesuré **au tri** :
 > 92,5× moins cher par évaluation, top-1 du grand dans son top-5 dans 94,2 % des décisions de
 > contact. Elle en tirait une **projection** — ×4,3 sur la facture à `k=5` — en la marquant comme

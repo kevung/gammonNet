@@ -144,6 +144,25 @@ int main(int argc, char **argv)
         printf("\n");
     }
 #endif
+#ifdef GN_BATCH_FILL_STATS
+    {
+        extern unsigned long gn_fill_calls[2], gn_fill_live[2];
+        static const char *label[2] = {"grand", "petit"};
+        printf("\nremplissage par réseau (le noyau calcule toujours %d voies) :\n",
+               GN_EVAL_BATCH);
+        for (int s = 0; s < 2; s++) {
+            if (!gn_fill_calls[s]) continue;
+            printf("  %-6s %8lu appels, %9lu voies vivantes, "
+                   "remplissage %.1f/%d = %.1f %%  → %lu voies calculées\n",
+                   label[s], gn_fill_calls[s], gn_fill_live[s],
+                   (double)gn_fill_live[s] / (double)gn_fill_calls[s],
+                   GN_EVAL_BATCH,
+                   100.0 * (double)gn_fill_live[s]
+                       / ((double)gn_fill_calls[s] * GN_EVAL_BATCH),
+                   gn_fill_calls[s] * GN_EVAL_BATCH);
+        }
+    }
+#endif
     printf("%d décisions 2-ply filtre (0,1,3)%s\n", decisions,
            (prune != NULL) ? ", élagage actif" : "");
     printf("  %.4f s/décision\n", total / decisions);

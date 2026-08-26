@@ -120,6 +120,27 @@ BATCH_CFLAGS := $(filter-out -O2,$(CFLAGS)) -O3
 ifeq ($(NATIVE_FP),1)
 BATCH_CFLAGS += -fassociative-math -fno-signed-zeros -fno-trapping-math -fno-math-errno
 endif
+# La recherche, et elle seule, sans contraction FMA.
+#
+# gcc contracte `a*b + c` en un FMA par défaut (-ffp-contract=fast), avec UN
+# arrondi au lieu de deux — et il le fait ou non selon la FORME du code autour.
+# Mesuré le 2026-08-26 : regrouper les passes d'élagage, à entrées et à ordre
+# de sommation identiques, déplaçait l'équité de ~3e-9, et la contraction était
+# la seule différence (docs/mesures/2026-08-26-T3A-regroupement.md).
+#
+# Ce dépôt fait reposer beaucoup sur l'exactitude bit à bit ; la laisser
+# dépendre de la forme du code, c'est la perdre au premier refactor, sans un
+# signe. Coût mesuré : 1 %.
+#
+# `gn_search.c` SEULEMENT, et c'est délibéré : appliquer le drapeau à
+# l'inférence déplacerait les sorties du réseau, donc l'empreinte d'évaluation
+# qui verrouille les journaux T35 (mesuré : 1d92f0d39fb70cb4 → 3f5f3c8a1ffad278).
+# Les campagnes closes resteraient lisibles mais plus reprenables, pour un
+# bénéfice nul : la divergence n'était pas dans le réseau.
+$(BUILD)/gn_search.o: src/gn_search.c $(HEADERS)
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) -ffp-contract=off $(INCLUDES) -c $< -o $@
+
 $(BUILD)/gn_infer_reference.o: src/gn_infer_reference.c $(HEADERS)
 	@mkdir -p $(BUILD)
 	$(CC) $(BATCH_CFLAGS) $(INCLUDES) -c $< -o $@
