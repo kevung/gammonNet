@@ -58,10 +58,13 @@ retenu** — le tableau annoncé en §9 — est écrit en **§14**.
 |---|---|---|---|
 | DS-10 | [`DS-10-corpus-et-donnees-libres.md`](DS-10-corpus-et-donnees-libres.md) | DS-06 retient un entraînement supervisé sur corpus externe | **Non déclenchée** — DS-06 retient la distillation de notre propre recherche 2-ply : les labels sont auto-générés, aucun corpus externe n'est requis |
 | DS-13 | [`DS-13-exactitude-course-et-fin-de-partie.md`](DS-13-exactitude-course-et-fin-de-partie.md) | La course pèse dans l'erreur totale | En attente du benchmark PR-cube par classe (étape 1 de DS-08, ligne P6 du programme) — c'est une mesure du dépôt, pas une recherche |
-| DS-14 | [`DS-14-budget-de-calcul.md`](DS-14-budget-de-calcul.md) | La vague 2 a désigné **une** architecture | **Déclenchée — injectée le 2026-08-27, prête à lancer.** C'est la seule recherche restante ; son retour alimente la décision de convertir le programme retenu en fiches `PLAN.md` (série T7x) |
+| DS-14 | [`DS-14-budget-de-calcul.md`](DS-14-budget-de-calcul.md) | La vague 2 a désigné **une** architecture | [rentré](retours/DS-14-retour.md) **le 2026-08-27** — budget et paliers d'arrêt en **§15 du plan** ; sa recommandation « étiqueter par gnubg 2-ply » est rejetée (règle du dépôt), le reste tient |
 
-Après DS-14, plus aucune recherche n'est planifiée : voir **§13 du plan** — les passes suivantes
-ne s'écrivent que sur déclencheur, injectées avec la mesure qui les motive.
+**Le programme de recherche est terminé** : onze retours sur quatorze prompts, DS-10 non
+déclenchée, DS-13 en attente d'une mesure du dépôt. Plus aucune recherche n'est planifiée :
+voir **§13 du plan** — les passes suivantes ne s'écrivent que sur déclencheur, injectées avec la
+mesure qui les motive. La suite n'est plus de la recherche : c'est la conversion du **programme
+retenu (§14)** en fiches `PLAN.md` (série T7x), éclairée par le **budget (§15)**.
 
 ## Ce qui vaut pour les quatorze
 
