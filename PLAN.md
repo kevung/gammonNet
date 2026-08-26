@@ -1042,10 +1042,13 @@ passent de 84,1 % à 2,2 %, le videau 8 disparaît, et l'avantage n'est plus con
 post-Crawford (+0,0099 par match hors Crawford, −0,0020 dedans).
 
 **Un défaut résiduel est nommé, et il est de notre côté** : dans un videau mort pour le seul
-joueur au trait (`away_mover <= cube < away_opponent`), notre modèle redoublait — **3,1 %** des
-positions sondées, là où le seul taux correct est zéro. Trois paires rejouées, trois fois nous,
-zéro fois gnubg. Il pèse +0,0003 sur les +0,0085 publiés, **contre nous**. Correctif en une
-garde + son test ; il ne justifie pas de relancer 4,9 jours de calcul.
+joueur au trait (`away_mover <= cube < away_opponent`), notre modèle redouble — **3,1 %** des
+positions sondées, là où gnubg dit « never redouble ». Trois paires rejouées, trois fois nous,
+zéro fois gnubg. **Son coût en équité est nul** (enquête du 2026-08-26 : toutes les positions
+fautives sont des bearoffs à P(gain) = 1,0, où `gn_cube_verdict` tranche une égalité au sommet de
+l'échelle vers `DOUBLE_PASS` ; le modèle de videau seul, hors réseau, ne double jamais en videau
+mort sur 495 distributions). L'effet est comportemental, pas d'équité, et ne justifie pas de
+relancer 4,9 jours de calcul.
 
 **Ce que T35 ne clôt pas** : la métrique **PR** n'a jamais tourné, et la condition de sortie de
 la phase 3 est libellée en PR (1,06 → 0,50 → 0,22).
