@@ -1,0 +1,187 @@
+{
+ "task": "T3A",
+ "bench": "pruning network wired into gn_search",
+ "setting": {
+  "ply": 2,
+  "filter": [
+   0,
+   1,
+   3
+  ],
+  "ks": [
+   2,
+   3,
+   5,
+   8,
+   12
+  ],
+  "seed": 20260826,
+  "workers": 26,
+  "grand": "/home/kunger/dev/gammonNet-elagage/models/cubeless_prob5_512_512_256_128.bin",
+  "small": "/home/kunger/dev/gammonNet-elagage/models/prune_32.bin",
+  "native_fp": ""
+ },
+ "elapsed_s": 278.2117705345154,
+ "results": {
+  "contact": {
+   "decisions": 300,
+   "legal_mean": 20.43,
+   "plain": {
+    "seconds_per_decision": 3.1347956233149548,
+    "big_per_decision": 31390.753333333334
+   },
+   "ks": {
+    "2": {
+     "seconds_per_decision": 2.36232302145916,
+     "big_per_decision": 2579.4933333333333,
+     "small_per_decision": 31088.766666666666,
+     "speedup_time": 1.326997025740643,
+     "speedup_big_evals": 12.169348502548305,
+     "agreement": 0.7933333333333333,
+     "loss_per_decision": 0.004059535469169981,
+     "loss_ci": [
+      0.002449245722849437,
+      0.006079332639037842
+     ],
+     "disagreements": 62
+    },
+    "3": {
+     "seconds_per_decision": 2.3482062482488497,
+     "big_per_decision": 3731.963333333333,
+     "small_per_decision": 30958.66,
+     "speedup_time": 1.3349745686319914,
+     "speedup_big_evals": 8.411324155560656,
+     "agreement": 0.8,
+     "loss_per_decision": 0.0038945844680561585,
+     "loss_ci": [
+      0.002316475833762353,
+      0.00585360790476389
+     ],
+     "disagreements": 60
+    },
+    "5": {
+     "seconds_per_decision": 2.33745669083825,
+     "big_per_decision": 5874.056666666666,
+     "small_per_decision": 30801.663333333334,
+     "speedup_time": 1.3411138848483932,
+     "speedup_big_evals": 5.343965016794186,
+     "agreement": 0.9066666666666666,
+     "loss_per_decision": 0.0018216095410992605,
+     "loss_ci": [
+      0.0006138988806571009,
+      0.0035306833972656364
+     ],
+     "disagreements": 28
+    },
+    "8": {
+     "seconds_per_decision": 2.3227615883015096,
+     "big_per_decision": 8761.003333333334,
+     "small_per_decision": 29829.913333333334,
+     "speedup_time": 1.349598529226254,
+     "speedup_big_evals": 3.583008947605316,
+     "agreement": 0.9633333333333334,
+     "loss_per_decision": 0.00031347445760367316,
+     "loss_ci": [
+      1.5446608847794105e-05,
+      0.0008290148029724842
+     ],
+     "disagreements": 11
+    },
+    "12": {
+     "seconds_per_decision": 2.300523007582718,
+     "big_per_decision": 12060.546666666667,
+     "small_per_decision": 27973.446666666667,
+     "speedup_time": 1.3626447607706613,
+     "speedup_big_evals": 2.6027637221530036,
+     "agreement": 0.9833333333333333,
+     "loss_per_decision": 0.0002255510150957037,
+     "loss_ci": [
+      -1.4807903227002465e-06,
+      0.0006661071628332193
+     ],
+     "disagreements": 5
+    }
+   }
+  },
+  "course": {
+   "decisions": 150,
+   "legal_mean": 17.813333333333333,
+   "plain": {
+    "seconds_per_decision": 2.6292141947406344,
+    "big_per_decision": 19993.793333333335
+   },
+   "ks": {
+    "2": {
+     "seconds_per_decision": 2.212065958881285,
+     "big_per_decision": 2298.5066666666667,
+     "small_per_decision": 19592.426666666666,
+     "speedup_time": 1.1885785702657417,
+     "speedup_big_evals": 8.698601410771051,
+     "agreement": 0.7,
+     "loss_per_decision": 0.0017499200521427876,
+     "loss_ci": [
+      0.0009292640003525158,
+      0.002709895836902249
+     ],
+     "disagreements": 45
+    },
+    "3": {
+     "seconds_per_decision": 2.1995328623157304,
+     "big_per_decision": 3239.806666666667,
+     "small_per_decision": 19293.206666666665,
+     "speedup_time": 1.195351176509599,
+     "speedup_big_evals": 6.171292114138498,
+     "agreement": 0.7066666666666667,
+     "loss_per_decision": 0.0016183001143328926,
+     "loss_ci": [
+      0.0008406174857430097,
+      0.002498753717161498
+     ],
+     "disagreements": 44
+    },
+    "5": {
+     "seconds_per_decision": 2.1833155941939912,
+     "big_per_decision": 4864.326666666667,
+     "small_per_decision": 18757.566666666666,
+     "speedup_time": 1.2042300259900147,
+     "speedup_big_evals": 4.110290016158454,
+     "agreement": 0.7733333333333333,
+     "loss_per_decision": 0.0012579556168229504,
+     "loss_ci": [
+      0.0005976935819465931,
+      0.0020670103664996746
+     ],
+     "disagreements": 34
+    },
+    "8": {
+     "seconds_per_decision": 2.1425933242527146,
+     "big_per_decision": 6849.526666666667,
+     "small_per_decision": 18080.16,
+     "speedup_time": 1.2271177012360204,
+     "speedup_big_evals": 2.9190036489139395,
+     "agreement": 0.84,
+     "loss_per_decision": 0.0008520183276860344,
+     "loss_ci": [
+      0.00027725557087625665,
+      0.0015938325793532222
+     ],
+     "disagreements": 24
+    },
+    "12": {
+     "seconds_per_decision": 2.0937734126066787,
+     "big_per_decision": 8922.713333333333,
+     "small_per_decision": 16275.553333333333,
+     "speedup_time": 1.2557300512605847,
+     "speedup_big_evals": 2.2407750407760867,
+     "agreement": 0.9133333333333333,
+     "loss_per_decision": 0.00022710710058732343,
+     "loss_ci": [
+      5.6436598116971674e-05,
+      0.0004582906180203287
+     ],
+     "disagreements": 13
+    }
+   }
+  }
+ }
+}

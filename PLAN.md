@@ -138,7 +138,12 @@ En contact, il faut des rollouts — donc **T39 remonte au chemin critique**, et
 `T39 → T36 → T34`.
 
 **3. Notre moteur est ~330 fois plus lent que gnubg au 2-ply.** 3,29 s contre ~10 ms, entièrement
-expliqué par 38 244 évaluations à 86 µs — pas de gaspillage caché. Ses réseaux d'élagage rendent son
+expliqué par 38 244 évaluations à 86 µs — ~~pas de gaspillage caché~~ **amendé le 2026-08-26 : cette
+comptabilité datait d'avant l'inférence par lot.** Le lot a rendu une évaluation ~8,5× moins chère,
+et « pas de gaspillage caché » n'y a pas survécu — à ce point de fonctionnement, retirer 4,7× des
+évaluations chères déplace le temps par décision de moins de 3 %
+(`docs/mesures/2026-08-26-T3A-branchement.md`). Ce qui borne une décision est désormais la recherche
+elle-même : génération des coups légaux, copies, tris, récursion. Ses réseaux d'élagage rendent son
 coût quasi plat avec la profondeur. Cela engage la faisabilité de T35 **et** le budget navigateur,
 et ouvre une fiche à part : cache d'évaluation, inférence par lots, réseaux d'élagage distillés de
 **notre** réseau.
@@ -181,7 +186,7 @@ Le chemin vers l'objectif est donc :
 | Jeu de pions en contact, parité 2-ply | **mesurée** | rien |
 | Fin de partie | déficit chiffré (0,00028/déc.) | **brancher** le lecteur natif dans la recherche — gain certain |
 | Videau, money et match | absent | **T34**, avec sa référence exacte de validation |
-| Vitesse 3-ply navigateur | 60–96 s/déc. natif | **T3A** — cache, inférence par lots, réseaux d'élagage distillés |
+| Vitesse 3-ply navigateur | 60–96 s/déc. natif | **T3A** — cache, inférence par lots, réseaux d'élagage distillés *(les trois faits ; l'élagage rend ×1,36, voir le 2026-08-26)* |
 | Verdict | — | **T35**, en match, cubeful, réglage nommé |
 
 **La phase 4 redevient ce que le plan voulait qu'elle soit** : un chantier de différenciation
