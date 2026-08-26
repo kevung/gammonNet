@@ -8,11 +8,14 @@ cible — un budget se chiffre pour un programme, pas pour un éventail.
 
 ## À injecter avant de lancer — ne pas coller cette section
 
-| Marqueur | À remplir depuis |
+**Injections faites le 2026-08-27**, depuis le programme retenu (§14 du plan). **Le prompt est
+prêt à lancer tel quel.**
+
+| Marqueur | Rempli depuis |
 |---|---|
-| `⟨ARCHITECTURE⟩` | DS-04 et DS-12 — l'architecture retenue : encodage, tailles, nombre d'experts, arithmétique |
-| `⟨RECETTE⟩` | DS-06 — la recette d'entraînement retenue, avec le nombre de positions à étiqueter |
-| `⟨PROTOCOLE⟩` | DS-07 — le protocole de mesure retenu, avec son coût par point de comparaison |
+| `ARCHITECTURE` | §14 P2–P4 : réseau unique dense distillé ~60–100k MACs, QAT int8, tête volatilité, SIMD128 déterministe |
+| `RECETTE` | DS-06 : distillation 2-ply distributionnelle, 1,0–1,5 M labels auto-générés, from scratch |
+| `PROTOCOLE` | DS-07 : arbitre escaladé trois passes, corpus figé 10⁴–10⁵ décisions ; match dupliqué en confirmation |
 
 ---
 
@@ -22,8 +25,24 @@ Tu m'aides à chiffrer un programme d'entraînement pour **gammonNet**, un éval
 de backgammon (réseau de neurones, recherche expectiminimax, tables de fin de partie exactes),
 distribué en WebAssembly pour le navigateur.
 
-**Le programme que je veux chiffrer.** Architecture cible : ⟨ARCHITECTURE⟩. Recette
-d'entraînement : ⟨RECETTE⟩. Protocole de mesure : ⟨PROTOCOLE⟩.
+**Le programme que je veux chiffrer.** Architecture cible : **un réseau unique dense (196
+entrées, pas d'aiguillage par classe — mesuré neutre ailleurs), distillé depuis notre réseau
+actuel 512→512→256→128→5 (~527 000 MACs) vers ~60 000–100 000 MACs, 5 sorties de probabilités
+plus une tête auxiliaire de volatilité, quantifié en int8 par entraînement conscient de la
+quantification (QAT, accumulation int32), servi par un noyau GEMM par lots de 32 en SIMD128
+déterministe (natif et WebAssembly, bit-à-bit exigé)**. Recette d'entraînement : **distillation
+de notre propre recherche expectiminimax 2-ply distributionnelle — 1,0 à 1,5 million de
+positions de contact auto-générées par self-play (biaisées vers les désaccords 0-ply/2-ply),
+chacune étiquetée par le vecteur des 5 probabilités rendu par le 2-ply, plus la volatilité
+exacte sur les 21 jets (sous-produit gratuit du backup) ; entraînement from scratch,
+cross-entropy sur les 5 probabilités + MSE sur la volatilité ; le rendement décroît au-delà de
+~2,5 M de labels ; en cas de plafond, SPSA sur la tête de sortie, scoré sur un banc de parties
+à dés miroirs**. Protocole de mesure : **perte d'équité appariée par position contre un arbitre
+externe escaladé en trois passes (gnubg 3-ply → rollout tronqué à variance réduite → rollout
+complet, IC < 0,005), sur un corpus figé, stratifié et versionné de 10⁴ à 10⁵ décisions
+disputées, ancré sur les bases exactes partout où c'est résoluble — un point de comparaison
+coûte des heures ; la confirmation finale est un match dupliqué (≥ 100 matchs, test apparié),
+et une campagne complète de ce type nous coûte 4,9 jours**.
 
 **Ma machine** : 16 cœurs / 32 fils, 94 Gio de mémoire, un GPU CUDA optionnel. Une seule machine,
 pas un parc. Les campagnes tournent en détaché et peuvent durer des jours — la dernière a pris
