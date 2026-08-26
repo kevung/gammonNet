@@ -39,28 +39,29 @@ rapide ou plus rapide », et **quatorze prompts** prêts à être lancés en rec
 Le bilan de la vague — hypothèses réévaluées, contradictions, corrections — est en **§11 du
 [plan](00-plan-depasser-gnubg.md)**.
 
-### Vague 2 — **rentrée le 2026-08-27, sauf DS-09** — retours dans [`retours/`](retours/)
+### Vague 2 — **rentrée en entier le 2026-08-27** — retours dans [`retours/`](retours/)
 
-| | Fichier | Dépend de | État |
+| | Fichier | Dépend de | Retour |
 |---|---|---|---|
 | DS-04 | [`DS-04-nnue-creux-quantification.md`](DS-04-nnue-creux-quantification.md) | DS-02, DS-03 | [rentré](retours/DS-04-retour.md) |
 | DS-06 | [`DS-06-entrainer-pour-la-recherche.md`](DS-06-entrainer-pour-la-recherche.md) | DS-01, DS-02 | [rentré](retours/DS-06-retour.md) |
-| DS-09 | [`DS-09-webassembly-et-webgpu.md`](DS-09-webassembly-et-webgpu.md) | DS-04 | **injecté le 2026-08-27, prêt à lancer** |
+| DS-09 | [`DS-09-webassembly-et-webgpu.md`](DS-09-webassembly-et-webgpu.md) | DS-04 | [rentré](retours/DS-09-retour.md) |
 | DS-11 | [`DS-11-extreme-gammon-comme-reference.md`](DS-11-extreme-gammon-comme-reference.md) | DS-07 | [rentré](retours/DS-11-retour.md) |
 | DS-12 | [`DS-12-specialisation-et-melange-dexperts.md`](DS-12-specialisation-et-melange-dexperts.md) | DS-02, DS-03 | [rentré](retours/DS-12-retour.md) |
 
-Le bilan des quatre premiers retours — hypothèses réévaluées, convergences, décisions — est en
-**§12 du [plan](00-plan-depasser-gnubg.md)**. Les substitutions de DS-09 **sont faites** (depuis
-le retour DS-04) : copier le texte entre les démarcations, tel quel. **C'est la seule recherche
-restant à lancer avant que le « programme retenu » (§9 du plan) puisse s'écrire.**
+Le bilan de la vague est en **§12 du [plan](00-plan-depasser-gnubg.md)**, et le **programme
+retenu** — le tableau annoncé en §9 — est écrit en **§14**.
 
 ### Vague 3 — conditionnelles, tranchées par la vague 2
 
 | | Fichier | Condition | État après vague 2 |
 |---|---|---|---|
 | DS-10 | [`DS-10-corpus-et-donnees-libres.md`](DS-10-corpus-et-donnees-libres.md) | DS-06 retient un entraînement supervisé sur corpus externe | **Non déclenchée** — DS-06 retient la distillation de notre propre recherche 2-ply : les labels sont auto-générés, aucun corpus externe n'est requis |
-| DS-13 | [`DS-13-exactitude-course-et-fin-de-partie.md`](DS-13-exactitude-course-et-fin-de-partie.md) | La course pèse dans l'erreur totale | En attente du benchmark PR-cube par classe (étape 1 de DS-08) — c'est une mesure du dépôt, pas une recherche |
-| DS-14 | [`DS-14-budget-de-calcul.md`](DS-14-budget-de-calcul.md) | La vague 2 a désigné **une** architecture | **Presque déclenchée** — DS-04, DS-06 et DS-12 convergent sur une architecture (réseau distillé 2-ply ~60–100k MACs, QAT int8, tête volatilité) ; attendre le retour de DS-09 qui la confirme ou l'amende pour le navigateur |
+| DS-13 | [`DS-13-exactitude-course-et-fin-de-partie.md`](DS-13-exactitude-course-et-fin-de-partie.md) | La course pèse dans l'erreur totale | En attente du benchmark PR-cube par classe (étape 1 de DS-08, ligne P6 du programme) — c'est une mesure du dépôt, pas une recherche |
+| DS-14 | [`DS-14-budget-de-calcul.md`](DS-14-budget-de-calcul.md) | La vague 2 a désigné **une** architecture | **Déclenchée — injectée le 2026-08-27, prête à lancer.** C'est la seule recherche restante ; son retour alimente la décision de convertir le programme retenu en fiches `PLAN.md` (série T7x) |
+
+Après DS-14, plus aucune recherche n'est planifiée : voir **§13 du plan** — les passes suivantes
+ne s'écrivent que sur déclencheur, injectées avec la mesure qui les motive.
 
 ## Ce qui vaut pour les quatorze
 

@@ -1,9 +1,9 @@
 # Dépasser franchement GNU Backgammon — le plan de recherche
 
 **Date** : 2026-08-26 · **Statut** : plan de recherche, **vague 1 rentrée le 2026-08-27** (§11),
-**vague 2 rentrée le 2026-08-27 sauf DS-09** (§12). **Aucune fiche de `PLAN.md` n'est ouverte par
-ce document.** Il instruit une question, organise quatorze recherches approfondies, et dit ce que
-chacune décide.
+**vague 2 rentrée en entier le 2026-08-27** (§12), **programme retenu écrit** (§14). **Aucune
+fiche de `PLAN.md` n'est ouverte par ce document.** Il instruit une question, organise quatorze
+recherches approfondies, et dit ce que chacune décide.
 
 ---
 
@@ -231,10 +231,11 @@ PR-cube par classe (étape 1 de DS-08) qui dira si la course pèse ; DS-14 atten
 architecture soit désignée. Le tableau « programme retenu » de §9 ne s'écrit qu'une fois la
 vague 2 rentrée.
 
-## 12. La vague 2, rentrée sauf DS-09 — ce qu'elle change (2026-08-27)
+## 12. La vague 2, rentrée — ce qu'elle change (2026-08-27)
 
-Les retours DS-04, DS-06, DS-11 et DS-12 sont classés dans `retours/`. Même rappel qu'en §11 :
-un retour de recherche n'est pas une mesure de ce dépôt.
+Les retours DS-04, DS-06, DS-11 et DS-12 sont classés dans `retours/` ; **DS-09 est rentré à son
+tour le même jour** (voir sa sous-section plus bas) — la vague 2 est complète. Même rappel qu'en
+§11 : un retour de recherche n'est pas une mesure de ce dépôt.
 
 ### Le fait central : trois retours convergent sur la même recette
 
@@ -298,22 +299,40 @@ chiffres** : erreur d'équité par décision ×500 à filtre identique, et « PR
 par prudence (jamais de binaire ni de données XG dans l'artefact) ; les chiffres Depreli 2012
 sont arbitrés par XG lui-même, inutilisables comme oracle neutre.
 
+### Le navigateur, tranché (DS-09, rentré le 2026-08-27)
+
+Le socle est un **noyau int8 maison en SIMD128 déterministe** (`i32x4.dot_i16x8_s`) — le seul
+chemin universel (Safari iOS 16.4+ compris) qui préserve le bit-à-bit ; gain int8 attendu
+modeste en Wasm (~1,3–2×, surtout bande passante — le sous-ensemble déterministe n'a pas de
+produit scalaire int8 4-voies). Le **relaxed-dot 7 bits** est relégué en accélération **opt-in**
+détectée à l'exécution : absent de Safari stable en août 2026 (Technology Preview 250
+seulement), non déterministe par spécification — jamais sur le chemin critique ni dans le repère
+bit-à-bit. **WebGPU est écarté** pour l'évaluateur : régime dispatch-bound (24–36 µs par
+lancement, gain < 2× sous 512×512) et non bit-exact par la spécification WGSL. Bibliothèques
+génériques battues par le noyau maison (repli licence-sûr : ONNX Runtime Web, MIT). Deux
+énigmes du dépôt reçoivent une explication : les **3,3 ouvriers effectifs**
+(`hardwareConcurrency` plafonné à 4 sur iOS, throttling thermique qui retire les grands cœurs
+vers ~50 °C) et le **lot ×2,21 en Wasm contre ×8,5 en natif** (pas de VNNI/FMA en Wasm
+déterministe, plafond 128 bits) — avec un test décisif : refaire le banc natif en SSE2 sans
+FMA/VNNI. Projection : ~9 400 éval/s → **~60 000–120 000** après distillation + int8
+[HYPOTHÈSE — le micro-banc GEMM int8/f32 sur nos sept plateformes serait la première mesure
+publiée du genre]. Artefact : int8 + Brotli → sous ~300 Kio, hors chemin critique.
+
 ### Les conditions de vague 3, tranchées
 
 - **DS-10 : non déclenchée.** DS-06 retient des labels auto-générés par notre propre recherche ;
   aucun corpus externe n'est requis.
 - **DS-13 : toujours en attente** du benchmark PR-cube par classe (étape 1 de DS-08) — une
   mesure du dépôt, pas une recherche web.
-- **DS-14 : presque déclenchée.** DS-04 + DS-06 + DS-12 désignent une architecture (réseau
-  distillé 2-ply, ~60–100k MACs, QAT int8, tête volatilité, buckets pip en option). Attendre le
-  retour de DS-09, qui la confirme ou l'amende pour le navigateur, avant de chiffrer le budget.
+- **DS-14 : déclenchée.** La vague 2 complète désigne une architecture unique (réseau distillé
+  2-ply ~60–100k MACs, QAT int8, tête volatilité, socle SIMD128 déterministe) ; le prompt est
+  injecté le 2026-08-27 depuis DS-04, DS-06, DS-07, DS-09 et DS-12 — **prêt à lancer**.
 
 ### La suite
 
-**Une seule recherche à lancer : DS-09** (injectée le 2026-08-27 depuis DS-04, prête). À son
-retour, la vague 2 est complète : écrire alors le tableau **« programme retenu »** de §9 — pour
-chaque changement, le gain attendu, le coût, le risque, la licence et la mesure qui le tranche —
-et le convertir en fiches `PLAN.md` (série T7x). Rien ne s'engage avant.
+La vague 2 est complète : le tableau **« programme retenu »** annoncé en §9 est écrit — c'est le
+**§14**. Sa conversion en fiches `PLAN.md` (série T7x) est l'étape d'engagement suivante ; le
+chiffrage préalable est l'objet de **DS-14**, seule recherche restant à lancer.
 
 ## 13. Après les quatorze : les passes déclenchées
 
@@ -347,3 +366,32 @@ restantes de vague 3 (DS-13, DS-14) sont déjà couvertes par leurs prompts exis
 Chaque prompt déclenché suit le format des quatorze : autonome, ses contraintes et garde-fous
 répétés (§10), son tableau « À injecter » rempli depuis la mesure déclenchante, et son retour
 classé dans `retours/` selon le modèle.
+
+## 14. Le programme retenu (2026-08-27)
+
+C'est le tableau annoncé en §9, écrit une fois la vague 2 complète. Rappel de son statut : il
+synthétise des retours de recherche, pas des mesures de ce dépôt — chaque ligne porte la mesure
+qui la tranche, et **rien ne s'affirme avant qu'elle ait tourné**. Sa conversion en fiches
+`PLAN.md` (série T7x) est une décision d'engagement distincte, à prendre après le chiffrage
+DS-14.
+
+| # | Changement | Gain attendu | Coût | Risque | Licence | La mesure qui tranche |
+|---|---|---|---|---|---|---|
+| **P1** | **Arbitre externe escaladé** (gnubg 3-ply → rollout tronqué VR → rollout complet, IC < 0,005) sur corpus figé, stratifié, versionné de 10⁴–10⁵ décisions disputées, ancré sur les bases exactes (DS-07) | Instrument sensible en heures et non en jours ; remplace notre arbitre structurellement complaisant | Implémentation + calcul de l'étalon (une fois) | Faible — biais gnubg connu, contrôlé par l'escalade | gnubg = oracle de mesure, jamais source (règle du dépôt) | L'IC de l'étalon lui-même ; **prérequis de tout le reste** |
+| **P2** | **Distillation 2-ply distributionnelle** de notre propre recherche (les 5 probabilités) + **tête auxiliaire de volatilité exacte** sur les 21 jets, from scratch, architecture d'abord constante (DS-06, DS-12) | Un avantage qui **survit au 2-ply** (réf. Whittington : ~52 % à 1-ply, « ne se lave pas ») | 1,0–1,5 M labels ≈ heures sur notre machine ; entraînement en minutes/heures | Plafond élève ≤ maître ; gain petit (~1–2 %) ; rendement décroissant > 2,5 M labels | Aucune contrainte — labels auto-générés | L'intervalle 2-ply par décision [−0,00005 ; +0,00019] **se déplace au-dessus de zéro** (banc P1) ; lecture secondaire : le taux de désaccord cesse de tomber |
+| **P3** | **Réduction du réseau par distillation** : 527k → ~60–100k MACs (DS-04, DS-09) | ×2,5–6,6 sur toute décision, natif et Wasm — le premier levier de vitesse | Entraînement + banc | Perte de qualité si trop agressif (seuil DS-04 : > 1 pt d'équité → réduire moins) | La nôtre | Équité par décision inchangée dans l'IC (P1) **et** éval/s sur le banc sept plateformes |
+| **P4** | **QAT int8/int16 + noyau GEMM par lots SIMD128 déterministe**, relaxed-dot 7 bits en opt-in hors iOS (DS-04, DS-09) | ~1,3–2× en Wasm, 2–3× en natif ; artefact ~500 Kio → < 300 Kio avec Brotli | Noyau maison (quelques centaines de lignes) + pipeline QAT | Falaise de qualité si PTQ (d'où QAT obligatoire) ; seuil d'abandon DS-09 : gain < 1,3× au micro-banc | Maison, ou XNNPACK BSD-3 ; Stockfish NNUE GPL-3 exclu | **Micro-banc GEMM int8 vs f32** sur les sept plateformes (première mesure publiée du genre) + test bit-à-bit natif↔Wasm |
+| **P5** | **Mini-réseau d'élagage** aux nœuds internes (~10–20 neurones, façon gnubg) ; **Star2** en expérience (DS-02, DS-04, DS-05) | Resserrer k sans payer les +0,0039/décision de `k=3` ; Star2 : −75–95 % de nœuds mais sérialise | Distillation d'un petit réseau (déjà pratiquée) ; Star2 : réécriture de la boucle | Star2 peut casser le gain du noyau par lots — à traiter en expérience, pas en évidence | La nôtre | Qualité **à budget de temps égal** contre le réglage actuel |
+| **P6** | **Videau** : benchmark PR-cube par classe → modèle x1/x2 → recalibrage x = f(pip) en course → surcouche volatilité (DS-08 ; la tête P2 fournit le signal) | L'erreur de videau vaut plus du double d'une erreur de coup — le gain le moins cher en qualité | Benchmark + calibrages successifs | La corrélation volatilité ↔ efficacité n'a jamais été publiée — à établir nous-mêmes | MET maison à régénérer ; Kazaross-XG2 attribuée | **PR-cube par classe** avant/après chaque étape ; déclenche DS-13 si la course pèse |
+| **P7** | **Comparaison à XG par voie indirecte** : équivalence gnubg 2-ply (mesurée) × calage tiers gnubg↔XG (bgsage, +0,002 ±0,03, r = 0,98) ; XG en contrôle ponctuel Batch Analysis sous Wine (DS-11) | La moitié « XG » de l'objectif, sans exécuter XG en routine | Faible (voie indirecte) ; banc Wine ponctuel | Calage bgsage non répliqué — à citer avec sa réserve ; jamais de données XG dans l'artefact | Aucun EULA XG publié — prudence documentée | **Deux chiffres** : erreur/décision ×500 à filtre identique, et « PR façon XG » — jamais un mEMG ÷ 2 |
+| **P8** | **Carte d'erreur par classe de position** contre rollouts profonds — le « Test C » de DS-12 | Diagnostic : dit **où** une tête spécialisée paierait ; jamais publiée nulle part | Faible — une passe de banc stratifié | Aucun | La nôtre | Si une classe concentre > 2× l'erreur moyenne **et** pèse dans les décisions réelles → tête dédiée sur tronc partagé (sinon : rien) |
+
+**L'ordre.** P1 d'abord (l'instrument, comme toujours) ; puis P2 (la qualité) et P4 (le
+micro-banc de vitesse) peuvent courir en parallèle — P2 est jugée par P1 ; P3 vient après P2
+(on distille le réseau **déjà** entraîné pour la recherche, pas l'actuel) ; P5–P8 s'ordonnent
+selon les résultats. **Ce qui est écarté**, avec la mesure qui l'a écarté : l'aiguillage dur
+par classe (neutre, Whittington), la largeur de recherche (nulle, deux mesures), la profondeur
+(fermée trois fois), les caractéristiques expertes en entrée (trois négatifs mesurés — H2
+dormante), NNUE incrémental (entrées denses, lots), WebGPU pour l'évaluateur (dispatch-bound),
+les bibliothèques d'inférence génériques, les corpus externes et tout professeur non libre
+(gnubg, XG, HedgeHog — règle de licence).
