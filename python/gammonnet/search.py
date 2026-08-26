@@ -41,6 +41,8 @@ class _CSearchConfig(ctypes.Structure):
         ("use_cube", ctypes.c_int),
         ("cube_owner", ctypes.c_int),
         ("cube_x", ctypes.c_double),
+        ("prune_net", ctypes.c_void_p),
+        ("prune_k", ctypes.c_int),
     ]
 
 
@@ -87,6 +89,9 @@ _LIB.gn_search_evaluations.restype = ctypes.c_ulong
 _LIB.gn_search_reset_evaluations.argtypes = []
 _LIB.gn_search_reset_evaluations.restype = None
 
+_LIB.gn_search_prune_evaluations.argtypes = []
+_LIB.gn_search_prune_evaluations.restype = ctypes.c_ulong
+
 _MAX_CANDIDATES = 2048
 _CandidateArray = _CCandidate * _MAX_CANDIDATES
 
@@ -123,6 +128,18 @@ class SearchConfig:
     par le joueur au trait **à la racine** ; la recherche le met en miroir en
     descendant, comme elle bascule le score. Dans le domaine de la table
     bilatérale, les feuilles money sont **exactes** (lues, pas modélisées).
+
+    `prune_net` / `prune_k` (T3A) branchent le **réseau d'élagage** : le petit
+    réseau classe tous les coups légaux, et seuls les `prune_k` meilleurs sont
+    montrés au grand. `prune_k = 0` ou `prune_net = None` laisse la recherche
+    **exactement** comme avant, bit pour bit — le défaut, parce que ce
+    mécanisme change ce que le moteur joue et doit donc être choisi, puis
+    mesuré contre la recherche non élaguée.
+
+    **Ce que la recherche rend alors** : au plus `prune_k` candidats, pas tous
+    les coups légaux. Les recalés portent les probabilités du **petit** réseau,
+    et cinq nombres plausibles venus du mauvais réseau sont exactement le mode
+    de défaillance de la règle 2 de `CLAUDE.md` : ils ne sortent pas.
     """
 
     ply: int = 0
@@ -132,6 +149,8 @@ class SearchConfig:
     use_cube: bool = False
     cube_owner: int = 0
     cube_x: float = 0.0
+    prune_net: object | None = None
+    prune_k: int = 0
 
     def _to_c(self) -> _CSearchConfig:
         c = _CSearchConfig()
@@ -147,6 +166,12 @@ class SearchConfig:
             c.use_cube = 1
             c.cube_owner = int(self.cube_owner)
             c.cube_x = self.cube_x
+        if self.prune_net is not None and self.prune_k > 0:
+            handle = getattr(self.prune_net, "_handle", None)
+            if not handle:
+                raise ValueError("prune_net n'est pas un Network chargé")
+            c.prune_net = ctypes.c_void_p(handle)
+            c.prune_k = int(self.prune_k)
         return c
 
 
@@ -173,7 +198,18 @@ def evaluations() -> int:
     return _LIB.gn_search_evaluations()
 
 
+def prune_evaluations() -> int:
+    """Évaluations du **petit** réseau depuis la dernière remise à zéro.
+
+    Compteur séparé exprès : tous les coûts publiés par ce projet sont en
+    évaluations du grand réseau, et confondre deux unités distantes d'un
+    facteur 92,5 les rendrait toutes incomparables.
+    """
+    return _LIB.gn_search_prune_evaluations()
+
+
 def reset_evaluations() -> None:
+    """Remet à zéro les deux compteurs, le grand réseau et l'élagage."""
     _LIB.gn_search_reset_evaluations()
 
 

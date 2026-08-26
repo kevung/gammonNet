@@ -116,7 +116,51 @@ typedef struct {
     int use_cube;
     int cube_owner;
     double cube_x;
+
+    /*
+     * The pruning network (T3A), and how many candidates it lets through.
+     *
+     * The shallow pass of `rank_plays` is where a filtered search spends
+     * almost everything: at every depth it asks the BIG network about every
+     * legal play, only to keep `filter[depth]` of them. A pruning network is
+     * a small network -- 196->32->5, distilled from the big one, MEASURED at
+     * 92.5x cheaper per evaluation -- that does the sorting, so the big one
+     * only ever scores the `prune_k` survivors.
+     *
+     * `prune_k == 0`, or a NULL `prune_net`, means the mechanism is OFF and
+     * the search runs exactly as it did before -- bit for bit. That default
+     * is deliberate: this changes what the engine plays, so it must be opted
+     * into, and measured against the unpruned search rather than assumed.
+     *
+     * WHAT IT COSTS IN QUALITY, AND WHY k IS NOT FREE
+     *
+     * The small network is an approximation of the big one's ordering, not of
+     * its values. Measured (docs/mesures/2026-08-07-T3A-elagage.md): the big
+     * network's own best play is inside the small one's top 5 in 94.2% of
+     * contact decisions and 83.6% of race decisions. The other 5.8% / 16.4%
+     * are plays the search can no longer choose, at any depth, because they
+     * never reach it. Lowering k buys speed with exactly that currency.
+     *
+     * WHAT `rank_plays` RETURNS WHEN THIS IS ON
+     *
+     * Only the survivors -- at most `prune_k` candidates, never all the legal
+     * plays. The alternative was to return the rest carrying the SMALL
+     * network's probabilities, and five plausible numbers from the wrong
+     * network is the exact failure `CLAUDE.md` rule 2 is about. A caller that
+     * needs every legal play scored by the big network must turn pruning off.
+     *
+     * `prune_k` is raised to `filter[depth]` where that is larger: pruning
+     * below the filter would silently search fewer candidates than the caller
+     * asked for, and no test would see it.
+     */
+    const GnNetwork *prune_net;
+    int prune_k;
 } GnSearchConfig;
+
+/* Add pruning to a config. `k` is the number of candidates the small network
+ * lets through to the big one; `k <= 0` or `net == NULL` turns it off. */
+void gn_search_use_prune(GnSearchConfig *config, const GnNetwork *prune_net,
+                         int k);
 
 /* Add cubeful leaf valuation to a config (money or match, per `use_match`).
  * `owner` is the cube as the ROOT player sees it. `efficiency` is MEASURED
@@ -211,6 +255,13 @@ double gn_terminal_equity(const GnPosition *pos);
  * evaluation, and having it makes that a measurement rather than a guess. */
 unsigned long gn_search_evaluations(void);
 void gn_search_reset_evaluations(void);
+
+/* Number of PRUNING-network evaluations consumed by the last search on this
+ * thread. Kept separate from `gn_search_evaluations` on purpose: every cost
+ * figure this project has published is in big-network evaluations, and
+ * folding two units 92.5x apart into one counter would make all of them
+ * incomparable. `gn_search_reset_evaluations` resets both. */
+unsigned long gn_search_prune_evaluations(void);
 
 #ifdef __cplusplus
 }
