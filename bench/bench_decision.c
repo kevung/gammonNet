@@ -123,6 +123,27 @@ int main(int argc, char **argv)
         }
     }
 
+#ifdef GN_BATCH_FILL_STATS
+    {
+        extern unsigned long gn_batch_fill_calls, gn_batch_fill_live;
+        extern unsigned long gn_batch_fill_hist[];
+        printf("\ntaille des demandes de lot (le noyau calcule toujours %d voies) :\n",
+               GN_EVAL_BATCH);
+        printf("  %lu appels, %lu voies vivantes, remplissage moyen %.1f/%d "
+               "= %.1f %%\n", gn_batch_fill_calls, gn_batch_fill_live,
+               (double)gn_batch_fill_live / (double)gn_batch_fill_calls,
+               GN_EVAL_BATCH,
+               100.0 * (double)gn_batch_fill_live
+                   / ((double)gn_batch_fill_calls * GN_EVAL_BATCH));
+        printf("  histogramme :");
+        for (int i = 1; i <= 256; i++) {
+            if (gn_batch_fill_hist[i]) {
+                printf(" %d:%lu", i, gn_batch_fill_hist[i]);
+            }
+        }
+        printf("\n");
+    }
+#endif
     printf("%d décisions 2-ply filtre (0,1,3)%s\n", decisions,
            (prune != NULL) ? ", élagage actif" : "");
     printf("  %.4f s/décision\n", total / decisions);

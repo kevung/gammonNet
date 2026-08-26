@@ -217,6 +217,17 @@ static void forward_batch(const NNModel *model, const float *in, int live,
     }
 }
 
+#ifdef GN_BATCH_FILL_STATS
+#define GN_BATCH_STATS_MAX 256
+/* Instrumentation temporaire (T3A, largeur de lot) : combien de voies sur
+ * GN_EVAL_BATCH portent réellement une position. Le noyau en calcule toujours
+ * GN_EVAL_BATCH — voir forward_batch — donc tout ce qui manque ici est du
+ * travail jeté. Compilée seulement sous -DGN_BATCH_FILL_STATS. */
+unsigned long gn_batch_fill_calls = 0;
+unsigned long gn_batch_fill_live = 0;
+unsigned long gn_batch_fill_hist[GN_BATCH_STATS_MAX + 1] = {0};
+#endif
+
 int gn_evaluate_batch(const GnNetwork *net,
                       const GnPosition *const *positions, int count,
                       float (*probs)[GN_NUM_OUTPUTS])
@@ -224,6 +235,18 @@ int gn_evaluate_batch(const GnNetwork *net,
     if (net == NULL || positions == NULL || probs == NULL || count < 0) {
         return -1;
     }
+
+#ifdef GN_BATCH_FILL_STATS
+    /* La taille de la DEMANDE, pas du tronçon : c'est elle qui permet de
+     * calculer, hors ligne, le gâchis qu'une autre largeur fixe donnerait. */
+    gn_batch_fill_calls++;
+    gn_batch_fill_live += (unsigned long)count;
+    if (count >= 1 && count <= GN_BATCH_STATS_MAX) {
+        gn_batch_fill_hist[count]++;
+    } else if (count > GN_BATCH_STATS_MAX) {
+        gn_batch_fill_hist[0]++;
+    }
+#endif
 
     if (!batch_kernel_applies(&net->model)) {
         /* Same answers, no speed-up: the kernel was never verified on this
