@@ -20,7 +20,7 @@ from .infer import NUM_OUTPUTS, Evaluation, Network
 from .met import MatchState, _CMatchState
 from .rules import _LIB, Move, Play, Position, _CPlay, _CPosition
 
-MAX_PLY = 3
+MAX_PLY = 4
 NUM_ROLLS = 21
 
 #: Les 21 jets distincts, avec leur probabilité. (1,2) et (2,1) sont le même

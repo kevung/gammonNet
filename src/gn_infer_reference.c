@@ -157,11 +157,24 @@ static float batch_sigmoid(float x) { return 1.0f / (1.0f + expf(-x)); }
  * order, whatever the chunk.
  */
 static void forward_batch(const NNModel *model, const float *in, int live,
+                          const int *nonzero, int n_nonzero,
                           float (*out)[GN_NUM_OUTPUTS])
 {
     const float *current = in;
     float *next = g_batch_a;
     const int total_layers = model->num_hidden + 1;
+
+    /* Les colonnes vivantes, rassemblées une fois : le noyau les relira
+     * `rows` fois (512 pour le grand réseau), donc la compaction s'amortit
+     * immédiatement. */
+    static float packed_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
+    if (nonzero != NULL) {
+        for (int idx = 0; idx < n_nonzero; idx++) {
+            memcpy(packed_in + (size_t)idx * GN_EVAL_BATCH,
+                   in + (size_t)nonzero[idx] * GN_EVAL_BATCH,
+                   sizeof(float) * GN_EVAL_BATCH);
+        }
+    }
 
     for (int L = 0; L < total_layers; L++) {
         const int rows = model->layer_out[L];
@@ -180,11 +193,32 @@ static void forward_batch(const NNModel *model, const float *in, int live,
              * single reordering is the whole speed-up. The order of the sum
              * over j, per (i, n), is unchanged. */
             const float *w_row = W + (size_t)i * cols;
-            for (int j = 0; j < cols; j++) {
-                const float w = w_row[j];
-                const float *column = current + (size_t)j * GN_EVAL_BATCH;
-                for (int n = 0; n < GN_EVAL_BATCH; n++) {
-                    acc[n] += w * column[n];
+            if (L == 0 && nonzero != NULL) {
+                /* Compacted: the weights of the live features gathered once
+                 * into a contiguous row, so the inner loop streams instead of
+                 * jumping. The first attempt indexed `w_row[nonzero[idx]]`
+                 * directly and was SLOWER than the dense loop despite doing a
+                 * fifth of the multiplications -- the access pattern beat the
+                 * operation count. */
+                float packed_w[GN_NUM_FEATURES];
+                for (int idx = 0; idx < n_nonzero; idx++) {
+                    packed_w[idx] = w_row[nonzero[idx]];
+                }
+                for (int idx = 0; idx < n_nonzero; idx++) {
+                    const float w = packed_w[idx];
+                    const float *column = packed_in
+                        + (size_t)idx * GN_EVAL_BATCH;
+                    for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                        acc[n] += w * column[n];
+                    }
+                }
+            } else {
+                for (int j = 0; j < cols; j++) {
+                    const float w = w_row[j];
+                    const float *column = current + (size_t)j * GN_EVAL_BATCH;
+                    for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                        acc[n] += w * column[n];
+                    }
                 }
             }
 
@@ -269,6 +303,8 @@ int gn_evaluate_batch(const GnNetwork *net,
          * FIXED width the kernel forwards (dead lanes zeroed and discarded:
          * see forward_batch for why the width never varies). */
         memset(g_batch_in, 0, sizeof(g_batch_in));
+        unsigned char seen[GN_NUM_FEATURES];
+        memset(seen, 0, sizeof(seen));
         float features[GN_NUM_FEATURES];
         for (int n = 0; n < chunk; n++) {
             if (gn_encode(positions[base + n], features) != 0) {
@@ -276,10 +312,23 @@ int gn_evaluate_batch(const GnNetwork *net,
             }
             for (int j = 0; j < GN_NUM_FEATURES; j++) {
                 g_batch_in[(size_t)j * GN_EVAL_BATCH + n] = features[j];
+                if (features[j] != 0.0f) {
+                    seen[j] = 1;
+                }
+            }
+        }
+        /* Which features the input layer has to look at at all -- noted while
+         * transposing, which already walks all 196. See forward_batch. */
+        int nonzero[GN_NUM_FEATURES];
+        int n_nonzero = 0;
+        for (int j = 0; j < GN_NUM_FEATURES; j++) {
+            if (seen[j]) {
+                nonzero[n_nonzero++] = j;
             }
         }
 
-        forward_batch(&net->model, g_batch_in, chunk, probs + base);
+        forward_batch(&net->model, g_batch_in, chunk, nonzero, n_nonzero,
+                      probs + base);
     }
     return 0;
 }
