@@ -390,20 +390,31 @@ static int compare_candidates(const void *a, const void *b)
  * Terminal positions are computed, never evaluated (see gn_terminal_equity);
  * their `probs` are zeroed and the value sweep handles them.
  *
- * WHY THE PRUNING PASS DOES NOT BATCH, AND IT IS NOT AN OVERSIGHT
+ * WHY BOTH NETWORKS BATCH, AGAINST WHAT THE MICRO-BENCHMARK SAID
  *
- * Batching exists to read the weights once for many positions. That is worth
- * a great deal for 2 MiB of big-network weights and nothing at all for 25 KiB
- * of small-network weights, which never leave cache. MEASURED on this build
- * (`make bench-encoding`, 20 000 real positions):
+ * Batching exists to read the weights once for many positions -- worth a great
+ * deal for 2 MiB of big-network weights, and seemingly nothing for 25 KiB of
+ * small-network weights that never leave cache. Isolated, that shows up
+ * clearly (`make bench-encoding`, 20 000 real positions, this build):
  *
  *     big network    scalar 0.35026 ms   batched 0.04119 ms   x8.5 faster
  *     small network  scalar 0.00426 ms   batched 0.00641 ms   x1.5 SLOWER
  *
- * So the pruning pass runs scalar. This also fixes the pruning ranking to one
- * path for good: under NATIVE_FP the two paths are reassociated differently,
- * and a ranking that depended on which one ran would be a reproducibility bug
- * that only ever showed up as a different move.
+ * So the pruning pass was written scalar. Then it was measured IN THE SEARCH,
+ * same corpus, same 8 workers, identical evaluation counts either way
+ * (bench/prune_search.py, 48 contact decisions, k=5):
+ *
+ *     scalar pruning pass    1.720 s/decision
+ *     batched pruning pass   1.582 s/decision   <- 8% faster
+ *
+ * The isolated number predicted the wrong direction. It measures a tight loop
+ * over one array; the search interleaves the pass with move generation and
+ * recursion, and the batch path evidently keeps its locality better there.
+ * The in-situ measurement decides, so both networks batch.
+ *
+ * Worth keeping in mind before the next per-evaluation figure is turned into
+ * a search-level conclusion: this file has now produced two of them that did
+ * not survive contact with the real search.
  */
 static int shallow_fill(const GnNetwork *net, GnCandidate *out, int n,
                         int is_prune)
