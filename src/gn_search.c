@@ -355,6 +355,9 @@ double gn_terminal_equity(const GnPosition *pos)
 static double position_equity(const GnNetwork *net, const GnPosition *pos,
                               const GnSearchConfig *config, int depth,
                               GnMatchState state, int owner);
+static int rank_plays_deepen(const GnNetwork *net, const GnSearchConfig *config,
+                             int depth, GnMatchState state, int owner,
+                             GnCandidate *out, int written);
 
 static int compare_candidates(const void *a, const void *b)
 {
@@ -416,6 +419,15 @@ static int compare_candidates(const void *a, const void *b)
  * a search-level conclusion: this file has now produced two of them that did
  * not survive contact with the real search.
  */
+#ifdef GN_BATCH_FILL_STATS
+/* Le remplissage PAR RÉSEAU. `gn_evaluate_batch` ne sait pas lequel on lui
+ * donne ; ici on le sait. Le noyau calcule toujours GN_EVAL_BATCH voies, donc
+ * ce qui manque au remplissage est du travail jeté — et l'élagage change le
+ * remplissage du grand réseau, ce qui est précisément la question. */
+unsigned long gn_fill_calls[2] = {0, 0};
+unsigned long gn_fill_live[2] = {0, 0};
+#endif
+
 static int shallow_fill(const GnNetwork *net, GnCandidate *out, int n,
                         int is_prune)
 {
@@ -448,6 +460,10 @@ static int shallow_fill(const GnNetwork *net, GnCandidate *out, int n,
         for (int b = 0; b < n_pending; b++) {
             batch_pos[b] = &out[pending[b]].play.result;
         }
+#ifdef GN_BATCH_FILL_STATS
+        gn_fill_calls[is_prune ? 1 : 0]++;
+        gn_fill_live[is_prune ? 1 : 0] += (unsigned long)n_pending;
+#endif
         if (gn_evaluate_batch(net, batch_pos, n_pending, batch_probs) != 0) {
             return -1;
         }
@@ -508,12 +524,43 @@ static int value_sweep(GnCandidate *out, int n, const GnSearchConfig *config,
  * big one -- which is also why this function then returns at most `prune_k`
  * candidates rather than every legal play. See `GnSearchConfig::prune_net`.
  */
-static int rank_plays(const GnNetwork *net, const GnPosition *pos,
-                      int d1, int d2, const GnSearchConfig *config, int depth,
-                      GnMatchState state, int owner, GnCandidate *out,
-                      int max_out)
+/* How many candidates the pruning pass lets through at `depth`, or 0 when
+ * pruning is off. Never below `filter[depth]`: pruning under the filter would
+ * search fewer candidates than the caller asked for, and the ranking would
+ * look perfectly normal while doing it. */
+static int prune_keep(const GnSearchConfig *config, int depth)
 {
-    if (net == NULL || pos == NULL || out == NULL || max_out <= 0) {
+    if (config->prune_net == NULL || config->prune_k <= 0) {
+        return 0;
+    }
+    int keep = config->prune_k;
+    if (depth >= 0 && depth <= GN_MAX_PLY && config->filter[depth] > keep) {
+        keep = config->filter[depth];
+    }
+    return keep;
+}
+
+/*
+ * PHASE ONE -- the legal plays, and the pruning pass over them.
+ *
+ * Split out from `rank_plays` so a caller enumerating 21 rolls can run all
+ * twenty-one pruning passes back to back before any of the big network's.
+ * That is not a tidiness refactor; it is the whole point, and the number
+ * behind it is measured (docs/mesures/2026-08-26-T3A-regroupement.md):
+ * interleaved with the big network the small one costs 0.0227 ms per
+ * evaluation, and running alone in the same search 0.00199 ms -- eleven times
+ * less. Its 25 KiB of weights are its entire advantage, and 2 MiB of big
+ * network between two calls evicts them every time.
+ *
+ * Leaves `out[0..returned)` carrying the SMALL network's probabilities when
+ * pruning fired. They are not an answer; `rank_plays_finish` overwrites them.
+ */
+static int rank_plays_prune(const GnPosition *pos, int d1, int d2,
+                            const GnSearchConfig *config, int depth,
+                            GnMatchState state, int owner, GnCandidate *out,
+                            int max_out)
+{
+    if (pos == NULL || out == NULL || max_out <= 0) {
         return -1;
     }
 
@@ -529,49 +576,50 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
     }
 
     int written = (count < max_out) ? count : max_out;
-
-    /* The result has handed the turn over, so everything about it is seen
-     * from the opponent's side -- including the score. */
-    const GnMatchState theirs = swap_sides(state);
-
     for (int i = 0; i < written; i++) {
         out[i].play = plays[i];
     }
     free(plays);
 
-    /*
-     * The pruning pass (T3A), when a pruning network is configured: the small
-     * network ranks every play, and only the best `keep` of them are ever
-     * shown to the big one. This is where a filtered search's cost actually
-     * goes -- the big network is asked about every legal play at every depth,
-     * to keep a handful.
-     *
-     * `keep` is never allowed below `filter[depth]`: pruning below the filter
-     * would search fewer candidates than the caller asked for, and the
-     * ranking would look perfectly normal while doing it.
-     */
-    if (config->prune_net != NULL && config->prune_k > 0) {
-        int keep = config->prune_k;
-        if (depth >= 0 && depth <= GN_MAX_PLY && config->filter[depth] > keep) {
-            keep = config->filter[depth];
+    const int keep = prune_keep(config, depth);
+    if (keep > 0 && written > keep) {
+        /* The result has handed the turn over, so everything about it is seen
+         * from the opponent's side -- including the score. */
+        const GnMatchState theirs = swap_sides(state);
+
+        if (shallow_fill(config->prune_net, out, written, 1) != 0) {
+            return -1;
         }
-        if (written > keep) {
-            if (shallow_fill(config->prune_net, out, written, 1) != 0) {
-                return -1;
-            }
-            if (value_sweep(out, written, config, theirs, owner) != 0) {
-                return -1;
-            }
-            qsort(out, (size_t)written, sizeof(GnCandidate),
-                  compare_candidates);
-            /* The survivors, and nothing else: what is dropped here carries
-             * the SMALL network's probabilities, and no caller may see
-             * those. gn_search.h states the contract. */
-            written = keep;
+        if (value_sweep(out, written, config, theirs, owner) != 0) {
+            return -1;
         }
+        qsort(out, (size_t)written, sizeof(GnCandidate), compare_candidates);
+        /* The survivors, and nothing else: what is dropped here carries the
+         * SMALL network's probabilities, and no caller may see those.
+         * gn_search.h states the contract. */
+        written = keep;
+    }
+    return written;
+}
+
+/*
+ * PHASE TWO -- the big network over what survived, then the deep pass.
+ *
+ * `written` is what phase one returned. Everything here is exactly what
+ * `rank_plays` always did after the pruning pass, moved verbatim so the two
+ * orders -- interleaved and grouped -- cannot drift apart.
+ */
+static int rank_plays_finish(const GnNetwork *net,
+                             const GnSearchConfig *config, int depth,
+                             GnMatchState state, int owner, GnCandidate *out,
+                             int written)
+{
+    if (net == NULL || out == NULL || written <= 0) {
+        return (written < 0) ? -1 : written;
     }
 
-    /* The big network's own pass over what is left. */
+    const GnMatchState theirs = swap_sides(state);
+
     if (shallow_fill(net, out, written, 0) != 0) {
         return -1;
     }
@@ -581,6 +629,20 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
 
     qsort(out, (size_t)written, sizeof(GnCandidate), compare_candidates);
 
+    return rank_plays_deepen(net, config, depth, state, owner, out, written);
+}
+
+/*
+ * PHASE THREE -- the deep pass over the best `filter[depth]` candidates.
+ *
+ * Split out so the grouped path can reach it after doing the big network's
+ * shallow pass its own way. `rank_plays_finish` is now this plus the shallow
+ * pass in front of it, so the two orders cannot drift apart.
+ */
+static int rank_plays_deepen(const GnNetwork *net, const GnSearchConfig *config,
+                             int depth, GnMatchState state, int owner,
+                             GnCandidate *out, int written)
+{
     if (depth <= 0) {
         return written;
     }
@@ -618,6 +680,22 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
     return written;
 }
 
+static int rank_plays(const GnNetwork *net, const GnPosition *pos,
+                      int d1, int d2, const GnSearchConfig *config, int depth,
+                      GnMatchState state, int owner, GnCandidate *out,
+                      int max_out)
+{
+    if (net == NULL) {
+        return -1;
+    }
+    const int written = rank_plays_prune(pos, d1, d2, config, depth, state,
+                                         owner, out, max_out);
+    if (written <= 0) {
+        return written;
+    }
+    return rank_plays_finish(net, config, depth, state, owner, out, written);
+}
+
 static double position_equity(const GnNetwork *net, const GnPosition *pos,
                               const GnSearchConfig *config, int depth,
                               GnMatchState state, int owner)
@@ -635,6 +713,129 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
     GnCandidate *candidates = malloc(sizeof(GnCandidate) * MAX_PLAYS);
     if (candidates == NULL) {
         return 0.0;
+    }
+
+    /*
+     * THE GROUPING, AND WHY IT IS WORTH A SEPARATE CODE PATH
+     *
+     * With pruning on, the twenty-one rolls below would otherwise alternate
+     * small network, big network, small, big -- about 1 400 times per
+     * decision. The small network's whole advantage is that its 25 KiB of
+     * weights stay in cache, and 2 MiB of big network between two of its
+     * calls evicts them every time. MEASURED: 0.00199 ms per evaluation when
+     * it runs alone in this same search, 0.0227 ms interleaved -- eleven
+     * times more.
+     *
+     * So when pruning is on, phase one runs for ALL rolls first, then phase
+     * two. The results are IDENTICAL either way, and not by luck: the pruning
+     * pass neither reads nor writes the evaluation cache (see
+     * `evaluate_exact`), so nothing it does can depend on, or change, what
+     * the big passes have done. `tests/test_search_prune.py` holds that
+     * equality bit for bit rather than trusting this paragraph.
+     */
+    const int keep = prune_keep(config, depth - 1);
+    if (keep > 0) {
+        GnCandidate *grouped = malloc(sizeof(GnCandidate) * GN_NUM_ROLLS
+                                      * (size_t)keep);
+        int *counts = malloc(sizeof(int) * GN_NUM_ROLLS);
+        if (grouped == NULL || counts == NULL) {
+            free(grouped);
+            free(counts);
+            free(candidates);
+            return 0.0;
+        }
+
+        /* Phase one, twenty-one times over: the small network stays hot. */
+        for (int r = 0; r < GN_NUM_ROLLS; r++) {
+            const int n = rank_plays_prune(pos, g_rolls[r].d1, g_rolls[r].d2,
+                                           config, depth - 1, state, owner,
+                                           candidates, MAX_PLAYS);
+            counts[r] = (n < 0) ? 0 : ((n > keep) ? keep : n);
+            if (counts[r] > 0) {
+                memcpy(grouped + (size_t)r * keep, candidates,
+                       sizeof(GnCandidate) * (size_t)counts[r]);
+            }
+        }
+
+        /*
+         * PHASE TWO, AND THE REASON THE GROUPING EARNS ITS KEEP
+         *
+         * The big network's shallow pass is run ONCE over the survivors of
+         * all twenty-one rolls, not once per roll. That is where the win is,
+         * and the measurement that found it is blunt: with pruning at k=5 the
+         * big network's batches carry 4.7 positions out of 32 -- a 14.5 %
+         * fill -- so it still computed 831 136 lanes to deliver 120 834
+         * evaluations. Pruning removed 82 % of the evaluations and 26 % of
+         * the work. Twenty-one rolls' survivors put together fill the batches
+         * instead.
+         *
+         * Safe because `gn_evaluate_batch` is bit-identical per item however
+         * the positions are grouped (gn_infer.h, tests/test_batch.py): which
+         * neighbours a position travels with cannot change its answer.
+         *
+         * The match state does not depend on the roll -- `theirs` is the same
+         * for all twenty-one -- so one value sweep per roll is still correct,
+         * and each roll keeps its own ranking.
+         */
+        int total_live = 0;
+        for (int r = 0; r < GN_NUM_ROLLS; r++) {
+            total_live += counts[r];
+        }
+        if (total_live > 0) {
+            GnCandidate *dense = malloc(sizeof(GnCandidate) * (size_t)total_live);
+            if (dense == NULL) {
+                free(grouped); free(counts); free(candidates);
+                return 0.0;
+            }
+            int at = 0;
+            for (int r = 0; r < GN_NUM_ROLLS; r++) {
+                for (int i = 0; i < counts[r]; i++) {
+                    dense[at++] = grouped[(size_t)r * keep + i];
+                }
+            }
+            if (shallow_fill(net, dense, total_live, 0) != 0) {
+                free(dense); free(grouped); free(counts); free(candidates);
+                return 0.0;
+            }
+            at = 0;
+            for (int r = 0; r < GN_NUM_ROLLS; r++) {
+                for (int i = 0; i < counts[r]; i++) {
+                    grouped[(size_t)r * keep + i] = dense[at++];
+                }
+            }
+            free(dense);
+        }
+
+        const GnMatchState theirs = swap_sides(state);
+        double sum = 0.0;
+        for (int r = 0; r < GN_NUM_ROLLS; r++) {
+            GnCandidate *slot = grouped + (size_t)r * keep;
+            double best;
+            if (counts[r] > 0) {
+                /* The probabilities are already in place; only the valuation,
+                 * the ranking and the deep pass remain. */
+                if (value_sweep(slot, counts[r], config, theirs, owner) != 0) {
+                    free(grouped); free(counts); free(candidates);
+                    return 0.0;
+                }
+                qsort(slot, (size_t)counts[r], sizeof(GnCandidate),
+                      compare_candidates);
+                const int n = rank_plays_deepen(net, config, depth - 1, state,
+                                                owner, slot, counts[r]);
+                best = (n > 0) ? slot[0].equity : 0.0;
+            } else {
+                GnPosition passed = *pos;
+                gn_position_swap_turn(&passed);
+                best = -position_equity(net, &passed, config, depth - 1,
+                                        swap_sides(state), mirror_owner(owner));
+            }
+            sum += g_rolls[r].weight * best;
+        }
+
+        free(grouped);
+        free(counts);
+        free(candidates);
+        return sum;
     }
 
     double total = 0.0;
