@@ -36,7 +36,7 @@ Un module WebAssembly servi à un navigateur **est une distribution**. Donc :
 | Poids GNU Backgammon, ou tout dérivé de ceux-ci | GPL-3 |
 | Code GNU Backgammon copié dans le pipeline | Œuvre dérivée |
 | Réseaux HedgeHog, ou un fine-tuning de ceux-ci | Clause non commerciale — hors du périmètre de licence de ce dépôt |
-| bgsage et ses dérivés | AGPL-3.0-or-later |
+| Copier du code bgsage | MPL-2.0 vérifiée (et non AGPL-3 comme d'abord noté) — copyleft de fichier ; lecture et réimplémentation d'idées permises, voir `BRIEF.md` §3.5 |
 
 | Autorisé | Fondement |
 |---|---|

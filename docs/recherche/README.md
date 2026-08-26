@@ -25,30 +25,34 @@ rapide ou plus rapide », et **quatorze prompts** prêts à être lancés en rec
 
 ## Les quatorze, dans l'ordre où les lancer
 
-### Vague 1 — sans dépendance, à lancer ensemble
+### Vague 1 — **rentrée le 2026-08-27**, retours dans [`retours/`](retours/)
 
-| | Fichier | Ce qu'elle décide |
-|---|---|---|
-| DS-01 | [`DS-01-etat-de-lart-des-moteurs.md`](DS-01-etat-de-lart-des-moteurs.md) | Où est réellement la barre, et si quelqu'un l'a déjà franchie |
-| DS-02 | [`DS-02-anatomie-de-gnubg.md`](DS-02-anatomie-de-gnubg.md) | La cible de vitesse chiffrée, et où gnubg est documenté comme faible |
-| DS-03 | [`DS-03-encodage-des-entrees.md`](DS-03-encodage-des-entrees.md) | Si l'encodage à 196 entrées plafonne ce que le réseau peut savoir |
-| DS-05 | [`DS-05-recherche-stochastique.md`](DS-05-recherche-stochastique.md) | D'où viennent les évaluations économisables |
-| DS-07 | [`DS-07-instrument-de-mesure.md`](DS-07-instrument-de-mesure.md) | Le protocole. **Prérequis, pas un choix** |
-| DS-08 | [`DS-08-videau-au-dela-de-janowski.md`](DS-08-videau-au-dela-de-janowski.md) | Si le gain le moins cher est dans le videau |
+| | Fichier | Ce qu'elle décide | Retour |
+|---|---|---|---|
+| DS-01 | [`DS-01-etat-de-lart-des-moteurs.md`](DS-01-etat-de-lart-des-moteurs.md) | Où est réellement la barre, et si quelqu'un l'a déjà franchie | [rentré](retours/DS-01-retour.md) |
+| DS-02 | [`DS-02-anatomie-de-gnubg.md`](DS-02-anatomie-de-gnubg.md) | La cible de vitesse chiffrée, et où gnubg est documenté comme faible | [rentré](retours/DS-02-retour.md) |
+| DS-03 | [`DS-03-encodage-des-entrees.md`](DS-03-encodage-des-entrees.md) | Si l'encodage à 196 entrées plafonne ce que le réseau peut savoir | [rentré](retours/DS-03-retour.md) |
+| DS-05 | [`DS-05-recherche-stochastique.md`](DS-05-recherche-stochastique.md) | D'où viennent les évaluations économisables | [rentré](retours/DS-05-retour.md) |
+| DS-07 | [`DS-07-instrument-de-mesure.md`](DS-07-instrument-de-mesure.md) | Le protocole. **Prérequis, pas un choix** | [rentré](retours/DS-07-retour.md) |
+| DS-08 | [`DS-08-videau-au-dela-de-janowski.md`](DS-08-videau-au-dela-de-janowski.md) | Si le gain le moins cher est dans le videau | [rentré](retours/DS-08-retour.md) |
+
+Le bilan de la vague — hypothèses réévaluées, contradictions, corrections — est en **§11 du
+[plan](00-plan-depasser-gnubg.md)**.
 
 ### Vague 2 — après les retours dont chacune dépend
 
-| | Fichier | Dépend de |
-|---|---|---|
-| DS-04 | [`DS-04-nnue-creux-quantification.md`](DS-04-nnue-creux-quantification.md) | DS-02, DS-03 |
-| DS-06 | [`DS-06-entrainer-pour-la-recherche.md`](DS-06-entrainer-pour-la-recherche.md) | DS-01, DS-02 |
-| DS-09 | [`DS-09-webassembly-et-webgpu.md`](DS-09-webassembly-et-webgpu.md) | DS-04 |
-| DS-11 | [`DS-11-extreme-gammon-comme-reference.md`](DS-11-extreme-gammon-comme-reference.md) | DS-07 |
-| DS-12 | [`DS-12-specialisation-et-melange-dexperts.md`](DS-12-specialisation-et-melange-dexperts.md) | DS-02, DS-03 |
+| | Fichier | Dépend de | État |
+|---|---|---|---|
+| DS-04 | [`DS-04-nnue-creux-quantification.md`](DS-04-nnue-creux-quantification.md) | DS-02, DS-03 | **injecté le 2026-08-27, prêt à lancer** |
+| DS-06 | [`DS-06-entrainer-pour-la-recherche.md`](DS-06-entrainer-pour-la-recherche.md) | DS-01, DS-02 | **injecté le 2026-08-27, prêt à lancer** |
+| DS-09 | [`DS-09-webassembly-et-webgpu.md`](DS-09-webassembly-et-webgpu.md) | DS-04 | attend le retour de DS-04 |
+| DS-11 | [`DS-11-extreme-gammon-comme-reference.md`](DS-11-extreme-gammon-comme-reference.md) | DS-07 | **injecté le 2026-08-27, prêt à lancer** |
+| DS-12 | [`DS-12-specialisation-et-melange-dexperts.md`](DS-12-specialisation-et-melange-dexperts.md) | DS-02, DS-03 | **injecté le 2026-08-27, prêt à lancer** |
 
 Chacune porte, en tête, un tableau **« À injecter avant de lancer »** : les valeurs à substituer
-dans le prompt aux endroits marqués `⟨…⟩`. Une recherche de vague 2 lancée sans ces substitutions
-rendra un rapport générique.
+dans le prompt aux endroits marqués `⟨…⟩`. Pour DS-04, DS-06, DS-11 et DS-12, ces substitutions
+**sont faites** — copier le texte entre les démarcations, tel quel. DS-09 attend encore les
+siennes.
 
 ### Vague 3 — conditionnelles
 
@@ -63,8 +67,10 @@ rendra un rapport générique.
 Chaque prompt répète ces contraintes, parce qu'il doit tenir seul. Elles sont ici pour mémoire :
 
 - **Licence.** Le module WebAssembly servi à un navigateur **est une distribution**. Poids de GNU
-  Backgammon (GPL-3), réseaux HedgeHog (clause non commerciale), bgsage (AGPL-3) sont hors
-  périmètre — y compris comme source d'entraînement.
+  Backgammon (GPL-3) et réseaux HedgeHog (licence non confirmée, réputée non commerciale) sont
+  hors périmètre — y compris comme source d'entraînement. bgsage est en réalité sous **MPL-2.0**
+  (vérifié le 2026-08-27, et non AGPL-3 comme d'abord noté) : idées et benchmark réétudiables,
+  pas de copie de code sans décision.
 - **gnubg est un instrument de mesure, jamais une source d'apprentissage.** Règle interne, plus
   stricte que le droit.
 - **Pas de transcription de code ni de constantes réglées à la main.** On demande des mécanismes

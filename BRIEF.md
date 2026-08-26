@@ -181,7 +181,7 @@ MIT et pleinement utilisable — ne pas confondre les deux.
 | Copier du code GNU Backgammon dans le pipeline | Œuvre dérivée |
 | Initialiser les poids depuis ceux de GNU Backgammon | Dérivé direct d'une œuvre GPL |
 | Utiliser ou fine-tuner un réseau HedgeHog | Clause non commerciale |
-| Utiliser bgsage ou en dériver | AGPL-3.0-or-later |
+| Copier du code bgsage dans l'artefact | **MPL-2.0** (LICENSE du dépôt, vérifié le 2026-08-27 — et non AGPL-3 comme d'abord noté) : copyleft de fichier, qui imposerait ses obligations à l'artefact distribué. Lire, réimplémenter les idées et se comparer à son benchmark restent permis |
 
 | Autorisé | Fondement |
 |---|---|
