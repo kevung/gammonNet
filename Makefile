@@ -37,7 +37,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench bench-infer bench-encoding env clean help
+.PHONY: all setup venv vendor build model corpus test bench bench-infer bench-encoding bench-decision env clean help
 
 all: help
 
@@ -261,6 +261,17 @@ $(BENCH_ENCODING): bench/bench_encoding.c $(OBJECTS) $(VENDOR_OBJECTS)
 
 bench-encoding: build $(BENCH_ENCODING) $(MODEL)
 	$(BENCH_ENCODING) $(MODEL) $(PRUNE_MODEL)
+
+# Une décision 2-ply, sans Python dans le cadre : ce qu'il faut pour répondre à
+# « où passe le temps d'une décision », et ce qui se passe sous callgrind.
+BENCH_DECISION := $(BUILD)/bench_decision
+
+$(BENCH_DECISION): bench/bench_decision.c $(OBJECTS) $(VENDOR_OBJECTS)
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ -lm
+
+bench-decision: build $(BENCH_DECISION) $(MODEL)
+	$(BENCH_DECISION) $(MODEL) 20
 
 clean:
 	rm -rf build/
