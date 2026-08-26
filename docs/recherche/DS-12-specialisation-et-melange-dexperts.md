@@ -9,11 +9,14 @@ exigences de l'objectif.
 
 ## À injecter avant de lancer — ne pas coller cette section
 
-| Marqueur | À remplir depuis |
+**Injections faites le 2026-08-27**, depuis le retour DS-02. **Le prompt est prêt à lancer tel
+quel.**
+
+| Marqueur | Rempli depuis |
 |---|---|
-| `⟨CLASSES-GNUBG⟩` | DS-02, sous-questions 1 et 3 — combien de réseaux, quelles classes, quelles frontières, quelles tailles |
-| `⟨DISCONTINUITÉS⟩` | DS-02, sous-question 3 — ce qui est documenté sur les discontinuités aux frontières de classe |
-| `⟨FAIBLESSES⟩` | DS-02, sous-question 11 — les classes de position où gnubg est documenté comme faible |
+| `CLASSES-GNUBG` | DS-02, sections A1–A3 : trois réseaux + bases exactes, tailles et frontières |
+| `DISCONTINUITÉS` | DS-02, A3 : « transition gaps » déclarés par l'auteur, jamais chiffrés |
+| `FAIBLESSES` | DS-02, D11 : backgames/crashed, bear-off avec contact |
 
 ---
 
@@ -24,9 +27,18 @@ recherche expectiminimax, table d'équité de match, tables de fin de partie exa
 navigateur (WebAssembly, y compris téléphone) et natif.
 
 **Notre situation.** **Un seul réseau** couvre toutes les positions : 196 entrées denses →
-512 → 512 → 256 → 128 → 5 sorties, ~527 000 MACs par évaluation. GNU Backgammon, lui,
-⟨CLASSES-GNUBG⟩. Ce qui est documenté sur les discontinuités à ses frontières de classe :
-⟨DISCONTINUITÉS⟩. Les classes où sa qualité est documentée comme faible : ⟨FAIBLESSES⟩.
+512 → 512 → 256 → 128 → 5 sorties, ~527 000 MACs par évaluation. GNU Backgammon, lui, emploie
+**trois réseaux de position** — contact (250 entrées → 128 cachées → 5 sorties, ~32 640 MACs),
+crashed (même structure, un camp ayant au plus 6 pions « actifs » hors des points 1 et 2 — seuil
+que son auteur qualifie lui-même d'arbitraire, choisi non cyclique) et course (214 entrées → 128
+cachées présumées → 5 sorties) — plus des bases de fin de partie exactes qui tronquent la
+recherche, et de petits réseaux d'élagage (~10 neurones cachés) aux nœuds internes. Ce qui est
+documenté sur les discontinuités à ses frontières de classe : leur existence est **reconnue par
+ses auteurs** (« transition gaps », qui motivent le critère de frontière non cyclique et l'ajout
+de « limiting cases » à l'entraînement), mais **aucune mesure de leur ampleur n'a jamais été
+publiée**. Les classes où sa qualité est documentée comme faible : les **backgames et la classe
+crashed** (« pathetic play in many backgame situations », dixit son auteur principal, chaque
+réseau n'étant entraîné que sur sa propre distribution), et le **bear-off avec contact**.
 
 **La contrainte qui rend la question intéressante.** Nous voulons **plus de qualité sans plus de
 coût par évaluation**. Agrandir le réseau est exclu : le budget vient du navigateur d'un
@@ -84,9 +96,10 @@ achète-t-elle de la qualité à budget de calcul par évaluation constant — e
   qualité qu'en augmentant le calcul par évaluation ne nous sert pas. Signale explicitement, pour
   chaque piste, ce qu'elle coûte **par évaluation** et non en tout.
 - Tout artefact signalé arrive **avec sa licence et son lien**. Hors périmètre, y compris comme
-  source d'entraînement : poids de GNU Backgammon (GPL-3), réseaux HedgeHog (clause non
-  commerciale), bgsage (AGPL-3). Nous pouvons en revanche distiller **notre propre** réseau, et
-  nous le faisons déjà pour notre réseau d'élagage.
+  source d'entraînement : poids de GNU Backgammon (GPL-3), réseaux HedgeHog (licence non
+  confirmée, réputée non commerciale). bgsage est sous MPL-2.0 : ses idées documentées sont
+  recevables, mais ne me recommande pas d'en copier du code. Nous pouvons en revanche distiller
+  **notre propre** réseau, et nous le faisons déjà pour notre réseau d'élagage.
 - Pas de transcription de code ni de constantes réglées à la main.
 
 ## Format du rendu

@@ -1,8 +1,8 @@
 # Dépasser franchement GNU Backgammon — le plan de recherche
 
-**Date** : 2026-08-26 · **Statut** : plan de recherche. **Aucune fiche de `PLAN.md` n'est ouverte
-par ce document.** Il instruit une question, organise quatorze recherches approfondies, et dit ce
-que chacune décide.
+**Date** : 2026-08-26 · **Statut** : plan de recherche, **vague 1 rentrée le 2026-08-27** — voir
+§11. **Aucune fiche de `PLAN.md` n'est ouverte par ce document.** Il instruit une question,
+organise quatorze recherches approfondies, et dit ce que chacune décide.
 
 ---
 
@@ -70,7 +70,7 @@ Il reste quatre hypothèses de rupture, et chacune est une ligne du programme de
 |---|---|---|---|
 | **H1** | L'avantage s'efface parce que le réseau **n'a pas été entraîné à être bon sous recherche**. Un réseau distillé d'une recherche profonde ou d'un rollout garderait son avance au 2-ply | L'auteur amont le désigne lui-même comme la suite ; c'est la thèse standard depuis AlphaZero | **DS-06**, appuyée par DS-01 |
 | **H2** | L'encodage de Tesauro à 196 entrées **plafonne l'information disponible** ; gnubg en met 250, dont des caractéristiques stratégiques calculées | La recherche « retrouve » ce que le réseau ignore ; si le réseau le savait déjà, la recherche n'aurait plus rien à retrouver | **DS-03**, DS-02 |
-| **H3** | Le gain n'est pas dans le jeu de pions mais dans le **videau et le match**, où la barre de gnubg est une heuristique non publiée et où nos propres défauts sont déjà nommés | T39 chiffre deux défauts classe-dépendants ; l'amont bat gnubg de +78,8 mEq/partie au videau money | **DS-08**, DS-13 |
+| **H3** | Le gain n'est pas dans le jeu de pions mais dans le **videau et le match**, où la barre de gnubg est une heuristique non publiée et où nos propres défauts sont déjà nommés | T39 chiffre deux défauts classe-dépendants ; l'amont bat gnubg au videau money de +57,8 mEq/partie [+56,1 ; +59,6] — le +78,8 initialement cité était un chiffre périmé, corrigé par DS-08 | **DS-08**, DS-13 |
 | **H4** | La qualité s'achète par **le nombre de nœuds à budget de temps égal** : un moteur 30× plus rapide cherche 30× plus large | T36 a fermé la profondeur *à budget non contraint* ; elle n'a jamais testé « même seconde, plus de nœuds » | **DS-04**, **DS-05**, DS-09 |
 
 **H4 mérite d'être lue deux fois.** T36 a mesuré qu'un ply de plus ne rapporte rien. Elle n'a pas
@@ -163,8 +163,11 @@ avant.
 Ils ne sont pas négociables, et chaque prompt les répète :
 
 1. **Rien de non libre dans un artefact distribué.** Toute brique rapportée par une recherche doit
-   arriver avec sa licence. Poids gnubg (GPL-3), réseaux HedgeHog (clause non commerciale),
-   bgsage (AGPL) sont hors périmètre — y compris comme source d'entraînement.
+   arriver avec sa licence. Poids gnubg (GPL-3) et réseaux HedgeHog (licence non confirmée à la
+   source, réputée non commerciale — exclus par prudence) sont hors périmètre — y compris comme
+   source d'entraînement. bgsage, d'abord noté AGPL-3, est en réalité sous **MPL-2.0** (LICENSE
+   du dépôt, vérifié le 2026-08-27) : ses idées et son benchmark sont réétudiables, mais aucun
+   code n'en est repris tant que le dépôt n'a pas statué.
 2. **gnubg est un instrument de mesure, jamais une source d'apprentissage.** Le dépôt s'est donné
    cette règle, plus stricte que le droit. Une recherche qui revient avec « distillez gnubg »
    revient avec une réponse inutilisable.
@@ -172,3 +175,57 @@ Ils ne sont pas négociables, et chaque prompt les répète :
    une mesure publiée, une mesure reproduite, ou une hypothèse.
 4. **La contrainte de taille vient du client, jamais de la machine d'entraînement.** Une
    architecture se juge en **précision par MAC**, dans un navigateur mobile.
+
+## 11. La vague 1, rentrée — ce qu'elle change (2026-08-27)
+
+Les six retours (DS-01, 02, 03, 05, 07, 08) sont classés dans `retours/`. Rappel du modèle : un
+retour de recherche n'est pas une mesure de ce dépôt — ce qui suit est l'état des hypothèses, pas
+un verdict.
+
+### Les quatre hypothèses, réévaluées
+
+| # | État après vague 1 | Ce qui l'a fait bouger |
+|---|---|---|
+| **H1** (entraîner pour la recherche) | **Renforcée — c'est la voie principale.** | DS-01 : deux projets indépendants convergent — le goulot est la **qualité du signal d'entraînement**, pas l'architecture ni l'encodage. Le seul gain mesuré qui **survit à la recherche** est la distillation, dans l'évaluateur statique, de la valeur d'une recherche 2-ply (Whittington, ~+2 pts à 1-ply) ; les backups exacts 1-ply de Strehl (notre amont) produisent un avantage qui survit au 2-ply en se resserrant. Plafond connu : « l'élève ne dépasse pas le maître » quand on distille sa propre recherche ; l'échappatoire non bornée est l'optimisation directe de la force (SPSA). Notre effacement 0-ply → 2-ply est le comportement **attendu** d'un gain « non issu d'un signal de recherche ». |
+| **H2** (encodage) | **Affaiblie, mais pas fermée — contradiction ouverte.** | DS-03 recommande ~20 caractéristiques calculées (+40 entrées, +3,9 % de MACs) et montre que la théorie prédit notre effacement sous recherche. Mais DS-01 rapporte **deux résultats négatifs mesurés** (Strehl : « les features n'aident pas » ; Whittington : nuisibles en entrée, neutres puis négatives en NNUE). Aucune ablation publiée « ± features, jugée au différentiel 2-ply » n'existe — la nôtre trancherait, mais **H2 n'est plus prioritaire**. |
+| **H3** (videau et match) | **Confirmée comme levier à haut rendement.** | DS-08 : l'erreur moyenne de videau vaut plus du double d'une erreur de coup (Madsen, 4-ply) ; la barre gnubg est un x fixe (0,6–0,68) que ses auteurs reconnaissent insuffisant. Chemin ordonné : benchmark PR-cube par classe → modèle raffiné (x1, x2) → recalibrage x = f(pip) en course → surcouche volatilité (Higgins α → x local). La corrélation volatilité ↔ efficacité, jamais publiée, est une expérience à notre portée (l'expectiminimax développe déjà les 21 jets). MET maison à régénérer. Correction : +57,8 mEq, pas +78,8. |
+| **H4** (largeur à budget égal) | **Affaiblie.** | DS-01 : Whittington mesure « profondeur ≈ +3 points de taux de gain ; **largeur ≈ nulle** ». La réserve de T36 reste formellement ouverte (jamais mesurée chez nous), mais la vitesse se justifie désormais par le **coût client** (navigateur, mobile), plus par un espoir de force. |
+
+### La vitesse, décomposée et confirmée
+
+DS-02 chiffre ce que §3 supposait : le réseau contact de gnubg fait **~32 640 MACs** (~16× moins
+que nous) et sa recherche n'en dépense que ~2 550 aux nœuds internes (réseau d'élagage, <1 % de
+coups changés) ; s'y ajoutent cache (2¹⁹ entrées) et filtres de coups. Le facteur 25–60× est
+expliqué sans reste. DS-05 ferme la profondeur une troisième fois (Hauk-Buro-Schaeffer) et donne
+les gisements **compatibles avec le noyau par lots** : regroupement exact des jets équivalents,
+cache à clé position+ply avec bornes (−37 % chez Veness-Blair), pré-tri plus discriminant pour
+resserrer k. Star2 (−75 à −95 % de nœuds) **sérialise** les évaluations — à traiter en expérience,
+pas en évidence. Cible proposée par DS-01 : **≤ 3× gnubg au 2-ply** avant d'investir dans la force.
+
+### La mesure, tranchée
+
+DS-07 confirme §5 et le chiffre : le match dupliqué ne peut pas voir un gain modeste (±0,005 ppg ≈
+800 000 paires). L'instrument devient la **perte d'équité appariée par position** contre un arbitre
+externe escaladé en trois passes (gnubg 3-ply → rollout tronqué VR → rollout complet, IC < 0,005),
+sur corpus figé, stratifié, versionné, ancré sur les bases exactes partout où c'est résoluble —
+10⁴–10⁵ décisions disputées, des heures et non des jours. Notre arbitre actuel (rollout par notre
+propre politique) est **structurellement complaisant** : à remplacer. Le match dupliqué reste
+l'instrument de confirmation finale (≥ 100 matchs, test apparié).
+
+### Licences — deux mises à jour
+
+- **bgsage est MPL-2.0**, pas AGPL-3 (LICENSE du dépôt, vérifié le 2026-08-27). Réétudiable comme
+  documentation et repère de benchmark ; pas de copie de code sans décision explicite du dépôt.
+- **HedgeHog** : la « clause non commerciale » n'a pas de source primaire vérifiable ; les réseaux
+  forts sont côté serveur, propriétaires de fait. Reste exclu, le motif devient « licence non
+  confirmée ».
+
+### La suite
+
+La vague 2 se lance avec quatre recherches — **DS-04, DS-06, DS-11, DS-12**, dont les prompts sont
+injectés et prêts (DS-04 réordonné vers quantification/noyaux, le verdict « creux » de DS-03 étant
+négatif ; la sous-question 1 de DS-06 remplacée par la reproduction du protocole Whittington).
+**DS-09 attend le retour de DS-04.** Vague 3 : DS-10 attend DS-06 ; DS-13 attend le benchmark
+PR-cube par classe (étape 1 de DS-08) qui dira si la course pèse ; DS-14 attend qu'une
+architecture soit désignée. Le tableau « programme retenu » de §9 ne s'écrit qu'une fois la
+vague 2 rentrée.

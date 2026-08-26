@@ -8,10 +8,13 @@ remplacer honnêtement dans l'énoncé de l'objectif.
 
 ## À injecter avant de lancer — ne pas coller cette section
 
-| Marqueur | À remplir depuis |
+**Injections faites le 2026-08-27**, depuis le retour DS-07. **Le prompt est prêt à lancer tel
+quel.**
+
+| Marqueur | Rempli depuis |
 |---|---|
-| `⟨MÉTRIQUE⟩` | DS-07, section « Le protocole que je recommande » — la métrique et le volume retenus |
-| `⟨CORPUS⟩` | DS-07, tableau des corpus — celui que nous retiendrons comme corpus de référence, s'il y en a un |
+| `MÉTRIQUE` | DS-07, « Le protocole que je recommande » : perte d'équité appariée par position, arbitre externe escaladé en trois passes |
+| `CORPUS` | DS-07, tableau des corpus : aucun corpus publié ne convient comme instrument — corpus maison figé, stratifié, versionné |
 
 ---
 
@@ -30,7 +33,15 @@ reproductible.
 mesuré** : nous n'avons aucun oracle XG, et toute notre chaîne d'arbitrage passe par gnubg. Cette
 moitié de l'objectif est ouverte et ne se déduit pas de l'autre.
 
-Nous avons par ailleurs arrêté un protocole de mesure : ⟨MÉTRIQUE⟩, sur ⟨CORPUS⟩.
+Nous avons par ailleurs arrêté un protocole de mesure : la **perte d'équité moyenne par décision,
+appariée par position**, contre un arbitre externe dont la profondeur s'escalade en trois passes
+(gnubg 3-ply partout ; rollout tronqué à réduction de variance quand l'écart meilleur/second est
+inférieur à 0,05 ; rollout complet jusqu'à un intervalle de confiance à 95 % inférieur à 0,005
+quand il reste inférieur à 0,02), les positions résolubles étant ancrées sur les bases exactes de
+fin de partie ; le test statistique est un bootstrap par position, et le budget de rollout se
+concentre sur les 10⁴ à 10⁵ décisions « disputées » où les moteurs divergent. Le corpus est un
+**corpus maison figé, stratifié par classe de position et par contexte de score, et versionné**
+(~50 000 positions) — aucun corpus publié ne convenait comme instrument.
 
 ## La question
 
