@@ -40,8 +40,8 @@ Balayage complet, même corpus, même machine, charge inférieure à 1 :
 
 | largeur | s/décision | |
 |---|---|---|
-| 8 | 5,4221 | |
-| 16 | 7,5896 | reproduit deux fois : 7,5876 puis 7,5697 |
+| 8 | 5,4221 | boucle chaude non vectorisée |
+| 16 | 7,5896 | idem ; reproduit deux fois : 7,5876 puis 7,5697 |
 | **24** | **1,9954** | le meilleur — **1,3 %** devant |
 | **32** *(actuelle)* | 2,0214 | |
 | 48 | 2,1904 | |
@@ -52,10 +52,18 @@ une fratrie de 32 coups ne tient plus en une demande mais en deux — 48 voies c
 32. Ce que la largeur récupère sur les petites fratries, elle le reperd sur les grandes, et le
 solde est de 1,3 %.
 
-**L'effondrement à 8, 16 et 64 n'est pas expliqué.** Il est reproductible et il ne vient pas de la
-charge machine, mais rien dans la lecture de `forward_batch` — un triple nid de boucles ordinaire,
-compilé en `-O3` — ne le rend évident. Il est consigné comme observation, pas comme conclusion :
-ce serait exactement le genre de cause inventée que la règle 3 de `CLAUDE.md` interdit.
+**L'effondrement à 8, 16 et 64 est une falaise de vectorisation — mesurée, pas supposée.**
+`gcc -O3 -fopt-info-vec` sur `gn_infer_reference.c` nomme les boucles qu'il vectorise :
+
+| largeur | la boucle chaude (`acc[n] += w * column[n]`, ligne 186) |
+|---|---|
+| 32 | **vectorisée** |
+| 16 | **absente du rapport** — le compilateur vectorise ailleurs, pas elle |
+
+C'est la boucle qui porte tout le travail du réseau. Perdue, le noyau retombe en scalaire et le
+facteur 3,75 s'explique de lui-même. Autrement dit, `GN_EVAL_BATCH = 32` n'est pas seulement un
+bon compromis de remplissage : c'est la largeur à laquelle `gcc` veut bien vectoriser le nid.
+Une largeur choisie sans vérifier `-fopt-info-vec` est un piège.
 
 ## Ce que cela ferme, et ce que cela laisse ouvert
 
