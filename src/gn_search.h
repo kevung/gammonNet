@@ -61,9 +61,24 @@
 extern "C" {
 #endif
 
-/* 3-ply is the deepest this project measures; beyond that the branching makes
- * the question academic before it makes it expensive. */
-#define GN_MAX_PLY 3
+/*
+ * The deepest search this engine will build.
+ *
+ * Raised from 3 to 4 on 2026-08-26, for one reason: gnubg offers a 4-ply
+ * setting and a move filter for it (`show rollout`), so a comparison at that
+ * depth needs the depth to exist. It is NOT a claim that 4-ply is useful --
+ * T36 measured a whole extra ply at +0,00022 equity per decision, inside the
+ * noise, and nothing since has moved that.
+ *
+ * What it costs is the honest reason this ceiling existed. Each ply multiplies
+ * the tree by the twenty-one rolls times the surviving candidates: measured on
+ * this build, a 3-ply decision at guard (0,1,1,5) costs 70,6 s unpruned and
+ * 12,2 s with the pruning network. A 4-ply decision is that again, times the
+ * width of one more level -- minutes at best, and the caller is expected to
+ * know it. `bench/cost_by_depth.py` says what it really is rather than what
+ * this comment guesses.
+ */
+#define GN_MAX_PLY 4
 
 /* The 21 distinct rolls, and nothing more: (1,1) and (2,1) are rolls, (1,2) is
  * the same roll as (2,1) counted twice. */
