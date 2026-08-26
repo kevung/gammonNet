@@ -157,6 +157,7 @@ Python ≥ 3.10 et un compilateur C. Emscripten pour la cible navigateur.
 | [`PLAN.md`](PLAN.md) | Plan d'exécution — 5 phases, 21 fiches |
 | [`THIRD-PARTY.md`](THIRD-PARTY.md) | Inventaire des briques et de leurs licences |
 | [`docs/adr/`](docs/adr/) | Décisions d'architecture |
+| [`docs/recherche/`](docs/recherche/) | Le plan de recherche « dépasser franchement gnubg, à vitesse égale ou meilleure », et ses quatorze recherches approfondies |
 
 Objectif : atteindre un niveau équivalent ou supérieur à GNU Backgammon et à eXtreme Gammon, et le
 justifier par une mesure reproductible dont chaque source est traçable.
