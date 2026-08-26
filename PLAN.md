@@ -1017,6 +1017,34 @@ setsid nohup env PYTHONUNBUFFERED=1 python3 bench/run_t35.py --mode match \
 que la moitié money, donc le même moteur. Débit mesuré ~430 paires/h à 30 ouvriers :
 **~4,8 jours**.
 
+### État au 2026-08-26 — **T35 est rendue** : équivalent à gnubg, confirmé
+
+**Terminée le 2026-08-26 à 14:56** — 50 000/50 000 paires, 7 051,0 min, 0 partie bloquée.
+Fiche : [`docs/mesures/2026-08-26-T35-verdict.md`](docs/mesures/2026-08-26-T35-verdict.md).
+
+| Moitié | Volume | Mesure | IC 95 % |
+|---|---|---|---|
+| money cubeful | 50 000 paires | **−0,0119 ppg** | [−0,0310 ; +0,0074] |
+| match MWC | 50 000 paires | **50,42 %** | [50,16 ; 50,69] |
+
+**Le verdict** : « équivalent » **confirmé** contre gnubg 2-ply filtre (0,1,3) videau 2-ply
+prune 1 ; « supérieur » **non établi** ; **eXtreme Gammon non mesuré**, et cette moitié de
+l'objectif ne se déduit pas de l'autre. **La phase 4 ne s'ouvre pas** — aucun plafond *sous*
+gnubg n'est démontré.
+
+**Le correctif est vérifié par le journal** : les paires post-Crawford atteignant un videau ≥ 4
+passent de 84,1 % à 2,2 %, le videau 8 disparaît, et l'avantage n'est plus concentré en
+post-Crawford (+0,0099 par match hors Crawford, −0,0020 dedans).
+
+**Un défaut résiduel est nommé, et il est de notre côté** : dans un videau mort pour le seul
+joueur au trait (`away_mover <= cube < away_opponent`), notre modèle redoublait — **3,1 %** des
+positions sondées, là où le seul taux correct est zéro. Trois paires rejouées, trois fois nous,
+zéro fois gnubg. Il pèse +0,0003 sur les +0,0085 publiés, **contre nous**. Correctif en une
+garde + son test ; il ne justifie pas de relancer 4,9 jours de calcul.
+
+**Ce que T35 ne clôt pas** : la métrique **PR** n'a jamais tourné, et la condition de sortie de
+la phase 3 est libellée en PR (1,06 → 0,50 → 0,22).
+
 ---
 
 # Phase 4 — Modèle propre au projet *(conditionnel)*
