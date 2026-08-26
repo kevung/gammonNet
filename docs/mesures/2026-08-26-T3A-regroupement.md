@@ -102,6 +102,50 @@ pas là. Empreinte vérifiée inchangée (`3f5f3c8a1ffad278` sur le build par d�
 de l'ordre de 1e-9 par rapport au build sans drapeau. C'est visible, c'est nommé ici, et le corpus
 de non-régression T12 passe.
 
+## Le 3-ply, qui redevient testable
+
+La même fusion, mesurée à la profondeur que T36 avait dû renoncer à explorer — garde `(0,1,1,5)`,
+mono-fil :
+
+| | s/décision | |
+|---|---|---|
+| 3-ply, sans élagage | **70,55** | T36 publiait 60–96 |
+| 3-ply, élagage `k=12` | **20,15** | ×3,50 |
+| 3-ply, élagage `k=5` | **12,23** | **×5,77** |
+
+**Ce que cela rouvre.** T36 nommait sa réserve : sa garde `(0,1,1,5)` a deux niveaux intérieurs à
+un seul candidat, configuration jamais validée, et un 3-ply **large** aurait coûté ~20 min par
+décision — intestable. À ×5,8, ce même 3-ply large tombe vers 3–4 min : **encore cher, mais plus
+hors d'atteinte**. La réserve de T36 devient une mesure à faire plutôt qu'une impossibilité.
+
+**Ce que cela ne change pas** : T36 a mesuré qu'un ply de plus rapporte +0,00022 d'équité par
+décision, dans le bruit. La profondeur reste fermée comme *levier de force*. Ce qui s'ouvre est la
+possibilité de **vérifier** qu'au 3-ply on reste à hauteur — un critère de non-régression, pas un
+gain.
+
+## Ce qui a été essayé ensuite, et qui ne paie pas
+
+**Fusionner aussi les lots du petit réseau.** Ils restaient remplis à 65,6 %, et au 3-ply le petit
+réseau fait 1 012 885 évaluations contre 478 995 pour le grand — il domine. La même technique lui
+a donc été appliquée : générer les vingt-et-une fratries d'abord, ne montrer au petit réseau que
+les jets où l'élagage doit mordre, en un seul passage.
+
+Écrit, vérifié **identique bit à bit**, et mesuré :
+
+| | main | lots du petit fusionnés |
+|---|---|---|
+| 3-ply `k=12` | 20,15 s | 19,97 s |
+| 3-ply `k=5` | 12,23 s | 12,14 s |
+| 2-ply `k=3` | 0,2396 s | 0,2369 s |
+
+**0,7 à 0,9 % — dans le bruit.** Environ cent cinquante lignes délicates (génération séparée,
+compaction des seuls jets élagués, remise en place) pour un gain qu'on ne sait pas distinguer de
+zéro. **La branche a été abandonnée**, et la mesure consignée ici pour que personne ne la refasse.
+
+La leçon rejoint celle du regroupement : le remplissage des lots ne compte que **là où le coût par
+voie est élevé**. Le grand réseau paie 2 Mio de poids par appel, le petit 25 Kio — remplir les lots
+du second ne rachète presque rien.
+
 ## Ce que cette fiche ne mesure pas
 
 - **La force.** Un round-robin élagué contre non élagué le dirait ; il n'a pas tourné. L'élagage
