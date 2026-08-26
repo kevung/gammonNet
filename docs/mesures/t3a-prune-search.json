@@ -17,25 +17,25 @@
   ],
   "seed": 20260826,
   "workers": 26,
-  "grand": "/home/kunger/dev/gammonNet-elagage/models/cubeless_prob5_512_512_256_128.bin",
-  "small": "/home/kunger/dev/gammonNet-elagage/models/prune_32.bin",
+  "grand": "/home/kunger/dev/gammonNet-groupe/models/cubeless_prob5_512_512_256_128.bin",
+  "small": "/home/kunger/dev/gammonNet-groupe/models/prune_32.bin",
   "native_fp": ""
  },
- "elapsed_s": 278.2117705345154,
+ "elapsed_s": 129.56345653533936,
  "results": {
   "contact": {
    "decisions": 300,
    "legal_mean": 20.43,
    "plain": {
-    "seconds_per_decision": 3.1347956233149548,
+    "seconds_per_decision": 3.10315014403585,
     "big_per_decision": 31390.753333333334
    },
    "ks": {
     "2": {
-     "seconds_per_decision": 2.36232302145916,
+     "seconds_per_decision": 0.33302424660068936,
      "big_per_decision": 2579.4933333333333,
      "small_per_decision": 31088.766666666666,
-     "speedup_time": 1.326997025740643,
+     "speedup_time": 9.318090726759193,
      "speedup_big_evals": 12.169348502548305,
      "agreement": 0.7933333333333333,
      "loss_per_decision": 0.004059535469169981,
@@ -46,10 +46,10 @@
      "disagreements": 62
     },
     "3": {
-     "seconds_per_decision": 2.3482062482488497,
+     "seconds_per_decision": 0.3428280697103279,
      "big_per_decision": 3731.963333333333,
      "small_per_decision": 30958.66,
-     "speedup_time": 1.3349745686319914,
+     "speedup_time": 9.05162213426063,
      "speedup_big_evals": 8.411324155560656,
      "agreement": 0.8,
      "loss_per_decision": 0.0038945844680561585,
@@ -60,10 +60,10 @@
      "disagreements": 60
     },
     "5": {
-     "seconds_per_decision": 2.33745669083825,
+     "seconds_per_decision": 0.5039479197131004,
      "big_per_decision": 5874.056666666666,
      "small_per_decision": 30801.663333333334,
-     "speedup_time": 1.3411138848483932,
+     "speedup_time": 6.157680233708448,
      "speedup_big_evals": 5.343965016794186,
      "agreement": 0.9066666666666666,
      "loss_per_decision": 0.0018216095410992605,
@@ -74,10 +74,10 @@
      "disagreements": 28
     },
     "8": {
-     "seconds_per_decision": 2.3227615883015096,
+     "seconds_per_decision": 0.6527664394401169,
      "big_per_decision": 8761.003333333334,
      "small_per_decision": 29829.913333333334,
-     "speedup_time": 1.349598529226254,
+     "speedup_time": 4.753844494054332,
      "speedup_big_evals": 3.583008947605316,
      "agreement": 0.9633333333333334,
      "loss_per_decision": 0.00031347445760367316,
@@ -88,10 +88,10 @@
      "disagreements": 11
     },
     "12": {
-     "seconds_per_decision": 2.300523007582718,
+     "seconds_per_decision": 0.7957137407669022,
      "big_per_decision": 12060.546666666667,
      "small_per_decision": 27973.446666666667,
-     "speedup_time": 1.3626447607706613,
+     "speedup_time": 3.8998322952737507,
      "speedup_big_evals": 2.6027637221530036,
      "agreement": 0.9833333333333333,
      "loss_per_decision": 0.0002255510150957037,
@@ -107,15 +107,15 @@
    "decisions": 150,
    "legal_mean": 17.813333333333333,
    "plain": {
-    "seconds_per_decision": 2.6292141947406344,
+    "seconds_per_decision": 2.6539418604069698,
     "big_per_decision": 19993.793333333335
    },
    "ks": {
     "2": {
-     "seconds_per_decision": 2.212065958881285,
+     "seconds_per_decision": 0.2611740921398935,
      "big_per_decision": 2298.5066666666667,
      "small_per_decision": 19592.426666666666,
-     "speedup_time": 1.1885785702657417,
+     "speedup_time": 10.161581643348569,
      "speedup_big_evals": 8.698601410771051,
      "agreement": 0.7,
      "loss_per_decision": 0.0017499200521427876,
@@ -126,10 +126,10 @@
      "disagreements": 45
     },
     "3": {
-     "seconds_per_decision": 2.1995328623157304,
+     "seconds_per_decision": 0.2555356690031476,
      "big_per_decision": 3239.806666666667,
      "small_per_decision": 19293.206666666665,
-     "speedup_time": 1.195351176509599,
+     "speedup_time": 10.385798079618699,
      "speedup_big_evals": 6.171292114138498,
      "agreement": 0.7066666666666667,
      "loss_per_decision": 0.0016183001143328926,
@@ -140,10 +140,10 @@
      "disagreements": 44
     },
     "5": {
-     "seconds_per_decision": 2.1833155941939912,
+     "seconds_per_decision": 0.3587719438333685,
      "big_per_decision": 4864.326666666667,
      "small_per_decision": 18757.566666666666,
-     "speedup_time": 1.2042300259900147,
+     "speedup_time": 7.397294872197677,
      "speedup_big_evals": 4.110290016158454,
      "agreement": 0.7733333333333333,
      "loss_per_decision": 0.0012579556168229504,
@@ -154,10 +154,10 @@
      "disagreements": 34
     },
     "8": {
-     "seconds_per_decision": 2.1425933242527146,
+     "seconds_per_decision": 0.46650527957438803,
      "big_per_decision": 6849.526666666667,
      "small_per_decision": 18080.16,
-     "speedup_time": 1.2271177012360204,
+     "speedup_time": 5.688985691283645,
      "speedup_big_evals": 2.9190036489139395,
      "agreement": 0.84,
      "loss_per_decision": 0.0008520183276860344,
@@ -168,10 +168,10 @@
      "disagreements": 24
     },
     "12": {
-     "seconds_per_decision": 2.0937734126066787,
+     "seconds_per_decision": 0.551744298931056,
      "big_per_decision": 8922.713333333333,
      "small_per_decision": 16275.553333333333,
-     "speedup_time": 1.2557300512605847,
+     "speedup_time": 4.810093852439782,
      "speedup_big_evals": 2.2407750407760867,
      "agreement": 0.9133333333333333,
      "loss_per_decision": 0.00022710710058732343,
