@@ -37,7 +37,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench bench-infer env clean help
+.PHONY: all setup venv vendor build model corpus test bench bench-infer bench-encoding env clean help
 
 all: help
 
@@ -248,6 +248,19 @@ $(BENCH_INFER): bench/bench_infer.c $(OBJECTS) $(VENDOR_OBJECTS)
 bench-infer: build $(BENCH_INFER) $(MODEL)
 	$(PYTHON) tools/dump_reference.py
 	$(BENCH_INFER) $(MODEL) $(BUILD)/reference.bin
+
+# T3A branché : ce qu'une évaluation coûte à une RECHERCHE, encodage compris —
+# le coût que bench-infer exclut par construction, et qui est le plancher du
+# petit réseau.
+BENCH_ENCODING := $(BUILD)/bench_encoding
+PRUNE_MODEL := models/prune_32.bin
+
+$(BENCH_ENCODING): bench/bench_encoding.c $(OBJECTS) $(VENDOR_OBJECTS)
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ -lm
+
+bench-encoding: build $(BENCH_ENCODING) $(MODEL)
+	$(BENCH_ENCODING) $(MODEL) $(PRUNE_MODEL)
 
 clean:
 	rm -rf build/

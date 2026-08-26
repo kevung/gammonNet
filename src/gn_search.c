@@ -57,7 +57,15 @@ static void build_rolls(void)
 static unsigned long g_evaluations = 0;
 
 unsigned long gn_search_evaluations(void) { return g_evaluations; }
-void gn_search_reset_evaluations(void) { g_evaluations = 0; }
+static unsigned long g_prune_evaluations = 0;
+
+unsigned long gn_search_prune_evaluations(void) { return g_prune_evaluations; }
+
+void gn_search_reset_evaluations(void)
+{
+    g_evaluations = 0;
+    g_prune_evaluations = 0;
+}
 
 /*
  * The single place a leaf position becomes five probabilities (T38, T3A).
@@ -87,10 +95,37 @@ void gn_search_reset_evaluations(void) { g_evaluations = 0; }
 /* Steps 1 and 2 alone: the exact table, then the cache. Returns 1 on a hit
  * (probs filled), 0 on a miss. Split out so the batched shallow pass of
  * `rank_plays` can gather its misses and forward them together. */
-static int evaluate_cheap(const GnPosition *pos, float probs[GN_NUM_OUTPUTS])
+/*
+ * Step 1 alone: the exact table. Split out for the pruning pass, and the
+ * reason is not tidiness.
+ *
+ * THE CACHE IS NEUTRAL, AND THE PRUNING PASS MUST NOT END THAT
+ *
+ * T3A measured and holds that the evaluation cache changes no result: it
+ * replays the big network's own answers, so a warm cache and a cold one
+ * produce the same search, bit for bit -- which is what lets a T35 campaign
+ * be segmented and resumed and still be identical to a run in one go.
+ *
+ * A pruning pass that consulted the cache would end that property in the
+ * worst possible way. The same candidate would be ranked by the BIG
+ * network's value when the cache happens to hold it and by the SMALL
+ * network's when it does not, so the ranking -- and therefore which plays
+ * survive, and therefore the move played -- would depend on evaluation
+ * history. Nothing would crash; runs would simply stop being reproducible,
+ * and the measurement apparatus would stop meaning what it says.
+ *
+ * The exact table has no such problem: it is stateless, and hits the same
+ * positions on every run.
+ */
+static int evaluate_exact(const GnPosition *pos, float probs[GN_NUM_OUTPUTS])
 {
     const GnBearoff *table = gn_bearoff_shared();
-    if (table != NULL && gn_bearoff_probs(table, pos, probs)) {
+    return (table != NULL && gn_bearoff_probs(table, pos, probs)) ? 1 : 0;
+}
+
+static int evaluate_cheap(const GnPosition *pos, float probs[GN_NUM_OUTPUTS])
+{
+    if (evaluate_exact(pos, probs)) {
         return 1;
     }
 
@@ -165,6 +200,21 @@ static int mirror_owner(int owner)
     if (owner == GN_CUBE_OPPONENT)
         return GN_CUBE_OWNED;
     return GN_CUBE_CENTRED;
+}
+
+void gn_search_use_prune(GnSearchConfig *config, const GnNetwork *prune_net,
+                         int k)
+{
+    if (config == NULL) {
+        return;
+    }
+    if (prune_net == NULL || k <= 0) {
+        config->prune_net = NULL;
+        config->prune_k = 0;
+        return;
+    }
+    config->prune_net = prune_net;
+    config->prune_k = k;
 }
 
 void gn_search_use_cube(GnSearchConfig *config, int owner, double efficiency)
@@ -315,6 +365,135 @@ static int compare_candidates(const void *a, const void *b)
 }
 
 /*
+ * Fill `out[0..n).probs` -- the sibling loop that dominates the whole search,
+ * at every depth.
+ *
+ * Three sweeps, so the network sees its positions in BATCHES (T35): gather
+ * what the cheap sources cannot answer, forward those together
+ * (`gn_evaluate_batch`, bit-identical per item -- see gn_infer.h), then the
+ * caller values everything. Same evaluations, same answers, same ranking; the
+ * weights are read once per batch instead of once per position, which is the
+ * entire point (bench/bench_batch.c, x2,21).
+ *
+ * `is_prune` says which network this is, and it changes two things, both of
+ * them load-bearing:
+ *
+ *   - the cheap sources. The big network may use the exact table AND the
+ *     cache; the pruning network may use the exact table only. See
+ *     `evaluate_exact` for why the cache is off limits here.
+ *   - the bookkeeping. A pruning evaluation is counted on its own counter and
+ *     is NEVER stored in the cache. One small-network distribution written
+ *     into that cache would be served as the big network's answer for the
+ *     rest of the process, to every later search, silently -- the single most
+ *     damaging line this feature could have contained.
+ *
+ * Terminal positions are computed, never evaluated (see gn_terminal_equity);
+ * their `probs` are zeroed and the value sweep handles them.
+ *
+ * WHY BOTH NETWORKS BATCH, AGAINST WHAT THE MICRO-BENCHMARK SAID
+ *
+ * Batching exists to read the weights once for many positions -- worth a great
+ * deal for 2 MiB of big-network weights, and seemingly nothing for 25 KiB of
+ * small-network weights that never leave cache. Isolated, that shows up
+ * clearly (`make bench-encoding`, 20 000 real positions, this build):
+ *
+ *     big network    scalar 0.35026 ms   batched 0.04119 ms   x8.5 faster
+ *     small network  scalar 0.00426 ms   batched 0.00641 ms   x1.5 SLOWER
+ *
+ * So the pruning pass was written scalar. Then it was measured IN THE SEARCH,
+ * same corpus, same 8 workers, identical evaluation counts either way
+ * (bench/prune_search.py, 48 contact decisions, k=5):
+ *
+ *     scalar pruning pass    1.720 s/decision
+ *     batched pruning pass   1.582 s/decision   <- 8% faster
+ *
+ * The isolated number predicted the wrong direction. It measures a tight loop
+ * over one array; the search interleaves the pass with move generation and
+ * recursion, and the batch path evidently keeps its locality better there.
+ * The in-situ measurement decides, so both networks batch.
+ *
+ * Worth keeping in mind before the next per-evaluation figure is turned into
+ * a search-level conclusion: this file has now produced two of them that did
+ * not survive contact with the real search.
+ */
+static int shallow_fill(const GnNetwork *net, GnCandidate *out, int n,
+                        int is_prune)
+{
+    int pending[GN_EVAL_BATCH];
+    const GnPosition *batch_pos[GN_EVAL_BATCH];
+    float batch_probs[GN_EVAL_BATCH][GN_NUM_OUTPUTS];
+    int n_pending = 0;
+
+    for (int i = 0; i <= n; i++) {
+        if (i < n) {
+            const GnPosition *result = &out[i].play.result;
+
+            if (gn_position_is_over(result)) {
+                memset(out[i].probs, 0, sizeof(out[i].probs));
+                continue;
+            }
+            if (is_prune ? evaluate_exact(result, out[i].probs)
+                         : evaluate_cheap(result, out[i].probs)) {
+                continue;
+            }
+            pending[n_pending++] = i;
+            if (n_pending < GN_EVAL_BATCH) {
+                continue;
+            }
+        } else if (n_pending == 0) {
+            break;
+        }
+
+        /* The batch is full, or the loop has run out of plays: forward it. */
+        for (int b = 0; b < n_pending; b++) {
+            batch_pos[b] = &out[pending[b]].play.result;
+        }
+        if (gn_evaluate_batch(net, batch_pos, n_pending, batch_probs) != 0) {
+            return -1;
+        }
+        for (int b = 0; b < n_pending; b++) {
+            memcpy(out[pending[b]].probs, batch_probs[b],
+                   sizeof(batch_probs[b]));
+            if (is_prune) {
+                g_prune_evaluations++;
+            } else {
+                evaluated(batch_pos[b], batch_probs[b]);
+            }
+        }
+        n_pending = 0;
+    }
+    return 0;
+}
+
+/*
+ * Probabilities become equities, from the mover's side. `probs` keeps the raw
+ * distribution -- it describes the position, not the score -- and only
+ * `equity` is score-aware.
+ */
+static int value_sweep(GnCandidate *out, int n, const GnSearchConfig *config,
+                       GnMatchState theirs, int owner)
+{
+    for (int i = 0; i < n; i++) {
+        const GnPosition *result = &out[i].play.result;
+
+        if (gn_position_is_over(result)) {
+            out[i].equity = -terminal_value(result, config, theirs);
+            continue;
+        }
+
+        int failed = 0;
+        const double value = node_value(result, out[i].probs, config, theirs,
+                                        mirror_owner(owner), &failed);
+        if (failed) {
+            return -1;
+        }
+        /* The negation: the answer was the opponent's. */
+        out[i].equity = -value;
+    }
+    return 0;
+}
+
+/*
  * Rank the plays for one roll at `depth`, writing them best-first.
  *
  * At depth 0 each play costs one network evaluation. Deeper, the plays are
@@ -323,6 +502,11 @@ static int compare_candidates(const void *a, const void *b)
  * deep is what makes a filter possible at all, and it is also why an unfiltered
  * search still pays for the shallow pass: a cost worth naming, since it is
  * roughly one extra evaluation per play.
+ *
+ * With a pruning network configured (T3A), that shallow pass is done by the
+ * SMALL network first, and only its best `prune_k` survivors are shown to the
+ * big one -- which is also why this function then returns at most `prune_k`
+ * candidates rather than every legal play. See `GnSearchConfig::prune_net`.
  */
 static int rank_plays(const GnNetwork *net, const GnPosition *pos,
                       int d1, int d2, const GnSearchConfig *config, int depth,
@@ -344,95 +528,56 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
         return (count < 0) ? -1 : 0;
     }
 
-    const int written = (count < max_out) ? count : max_out;
+    int written = (count < max_out) ? count : max_out;
 
     /* The result has handed the turn over, so everything about it is seen
      * from the opponent's side -- including the score. */
     const GnMatchState theirs = swap_sides(state);
 
-    /*
-     * Shallow pass: rank every play by the network alone — the sibling loop
-     * that dominates the whole search's cost, at every depth. It runs in
-     * three sweeps so the network sees its positions in BATCHES (T35):
-     * gather what the exact table and the cache cannot answer, forward those
-     * together (`gn_evaluate_batch`, bit-identical per item — see
-     * gn_infer.h), then value everything. Same evaluations, same answers,
-     * same ranking; the weights are read once per batch instead of once per
-     * position, which is the entire point (bench/bench_batch.c, ×2,21).
-     */
-    int pending[GN_EVAL_BATCH];
-    const GnPosition *batch_pos[GN_EVAL_BATCH];
-    float batch_probs[GN_EVAL_BATCH][GN_NUM_OUTPUTS];
-    int n_pending = 0;
-
     for (int i = 0; i < written; i++) {
         out[i].play = plays[i];
-        const GnPosition *result = &plays[i].result;
-
-        if (gn_position_is_over(result)) {
-            /* Computed, never evaluated -- see gn_terminal_equity. */
-            memset(out[i].probs, 0, sizeof(out[i].probs));
-            continue;
-        }
-        if (evaluate_cheap(result, out[i].probs)) {
-            continue;
-        }
-        pending[n_pending++] = i;
-
-        if (n_pending == GN_EVAL_BATCH) {
-            for (int n = 0; n < n_pending; n++) {
-                batch_pos[n] = &out[pending[n]].play.result;
-            }
-            if (gn_evaluate_batch(net, batch_pos, n_pending, batch_probs) != 0) {
-                free(plays);
-                return -1;
-            }
-            for (int n = 0; n < n_pending; n++) {
-                memcpy(out[pending[n]].probs, batch_probs[n],
-                       sizeof(batch_probs[n]));
-                evaluated(batch_pos[n], batch_probs[n]);
-            }
-            n_pending = 0;
-        }
-    }
-    if (n_pending > 0) {
-        for (int n = 0; n < n_pending; n++) {
-            batch_pos[n] = &out[pending[n]].play.result;
-        }
-        if (gn_evaluate_batch(net, batch_pos, n_pending, batch_probs) != 0) {
-            free(plays);
-            return -1;
-        }
-        for (int n = 0; n < n_pending; n++) {
-            memcpy(out[pending[n]].probs, batch_probs[n],
-                   sizeof(batch_probs[n]));
-            evaluated(batch_pos[n], batch_probs[n]);
-        }
-        n_pending = 0;
-    }
-
-    /* Value sweep: probabilities become equities, from the mover's side.
-     * `probs` keeps the raw distribution -- it describes the position, not
-     * the score -- and only `equity` is score-aware. */
-    for (int i = 0; i < written; i++) {
-        const GnPosition *result = &out[i].play.result;
-
-        if (gn_position_is_over(result)) {
-            out[i].equity = -terminal_value(result, config, theirs);
-            continue;
-        }
-
-        int failed = 0;
-        const double value = node_value(result, out[i].probs, config, theirs,
-                                        mirror_owner(owner), &failed);
-        if (failed) {
-            free(plays);
-            return -1;
-        }
-        /* The negation: the answer was the opponent's. */
-        out[i].equity = -value;
     }
     free(plays);
+
+    /*
+     * The pruning pass (T3A), when a pruning network is configured: the small
+     * network ranks every play, and only the best `keep` of them are ever
+     * shown to the big one. This is where a filtered search's cost actually
+     * goes -- the big network is asked about every legal play at every depth,
+     * to keep a handful.
+     *
+     * `keep` is never allowed below `filter[depth]`: pruning below the filter
+     * would search fewer candidates than the caller asked for, and the
+     * ranking would look perfectly normal while doing it.
+     */
+    if (config->prune_net != NULL && config->prune_k > 0) {
+        int keep = config->prune_k;
+        if (depth >= 0 && depth <= GN_MAX_PLY && config->filter[depth] > keep) {
+            keep = config->filter[depth];
+        }
+        if (written > keep) {
+            if (shallow_fill(config->prune_net, out, written, 1) != 0) {
+                return -1;
+            }
+            if (value_sweep(out, written, config, theirs, owner) != 0) {
+                return -1;
+            }
+            qsort(out, (size_t)written, sizeof(GnCandidate),
+                  compare_candidates);
+            /* The survivors, and nothing else: what is dropped here carries
+             * the SMALL network's probabilities, and no caller may see
+             * those. gn_search.h states the contract. */
+            written = keep;
+        }
+    }
+
+    /* The big network's own pass over what is left. */
+    if (shallow_fill(net, out, written, 0) != 0) {
+        return -1;
+    }
+    if (value_sweep(out, written, config, theirs, owner) != 0) {
+        return -1;
+    }
 
     qsort(out, (size_t)written, sizeof(GnCandidate), compare_candidates);
 
