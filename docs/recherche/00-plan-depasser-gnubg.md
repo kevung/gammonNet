@@ -314,3 +314,36 @@ sont arbitrés par XG lui-même, inutilisables comme oracle neutre.
 retour, la vague 2 est complète : écrire alors le tableau **« programme retenu »** de §9 — pour
 chaque changement, le gain attendu, le coût, le risque, la licence et la mesure qui le tranche —
 et le convertir en fiches `PLAN.md` (série T7x). Rien ne s'engage avant.
+
+## 13. Après les quatorze : les passes déclenchées
+
+Les quatorze recherches épuisées, on ne planifie **pas** de vague 4 systématique. La raison est
+dans les retours eux-mêmes : la majorité de leurs sections « Ce que je n'ai pas trouvé » ne sont
+pas des trous de recherche documentaire mais des mesures que **personne n'a publiées** et que
+seul ce dépôt peut produire — l'ampleur des discontinuités de frontière, la carte d'erreur par
+classe, le ratio Wasm-int8/natif-int8, l'ablation des caractéristiques au différentiel 2-ply, le
+classement des cibles d'entraînement sous recherche. Une deep search relancée dessus rendrait un
+rapport qui redit « lacune de la littérature ». Après DS-09, le goulot bascule de l'information
+vers la mesure.
+
+Une nouvelle recherche ne s'écrit donc que sur **déclencheur**, et s'injecte avec la mesure qui
+la motive — c'est ce qui a fait la valeur des prompts de vague 2, et nos chiffres mesurés, que
+personne d'autre ne détient, rendent la question tranchante. Trois déclencheurs :
+
+1. **Un résultat T7x contredit un retour.** Exemple : la distillation 2-ply ne déplace pas
+   l'intervalle malgré ~1,5 M labels → « pourquoi la distillation de sa propre recherche
+   échoue-t-elle — diagnostic et variantes », injectée avec nos courbes.
+2. **Un plafond prévu est atteint.** Exemple : l'élève atteint la parité avec le maître →
+   l'échappatoire nommée par DS-06 mérite alors son propre prompt, « SPSA/CLOP et optimisation
+   directe de la force sur un banc de parties » — aujourd'hui traitée en deux paragraphes.
+3. **Un blocage d'implémentation précis.** Exemple : la recette QAT s'effondre sur le réseau
+   réduit → « QAT pour MLP < 100k MACs, recettes et pièges » ; DS-04 en donne les bornes, pas la
+   recette d'entraînement fine.
+
+Deux cas particuliers n'appellent **aucune** deep search : les hyperparamètres de distillation de
+Whittington sont à extraire de son dépôt (une lecture de code, faisable ici) ; et les conditions
+restantes de vague 3 (DS-13, DS-14) sont déjà couvertes par leurs prompts existants.
+
+Chaque prompt déclenché suit le format des quatorze : autonome, ses contraintes et garde-fous
+répétés (§10), son tableau « À injecter » rempli depuis la mesure déclenchante, et son retour
+classé dans `retours/` selon le modèle.
