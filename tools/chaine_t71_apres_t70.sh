@@ -32,9 +32,17 @@ DEADLINE="${DEADLINE:-172800}"
 
 #: Les processus de la campagne T70. Tant que l'un d'eux vit, la machine est à
 #: elle : deux campagnes à 26 processus sur 32 cœurs se volent leurs mesures.
-BUSY_RE='campagne_t70(_differee)?\.sh|build_corpus_t70\.py|arbitrate_t70\.py|measure_t70\.py|error_map_t77\.py|arbiter_bias_t70\.py|run_t35\.py'
+#:
+#: Un calcul, c'est un Python qui exécute un banc, ou le shell de la campagne.
+#: PAS un shell qui cite le nom d'un banc dans son argv — une autre session en a
+#: laissé un qui attend sa propre disparition, et compter ce genre de processus
+#: ferait attendre ce script indéfiniment. D'où l'exclusion de
+#: `shell-snapshots`, signature d'un shell d'agent et jamais d'un calcul.
+BUSY_RE='python.*(run_t35|build_corpus_t70|arbitrate_t70|measure_t70|error_map_t77|arbiter_bias_t70)[.]py|bash .*campagne_t70[.]sh'
 
-busy() { pgrep -f "$BUSY_RE" | grep -vx "$$" | head -1; }
+busy() {
+    pgrep -af "$BUSY_RE" | grep -v 'shell-snapshots' | grep -v "^$$ " | head -1
+}
 
 started=$(date +%s)
 echo "═══ T71 — en attente de la fin de la campagne T70, depuis $(date -Is) ═══"
@@ -58,7 +66,8 @@ while true; do
         # Silence sans artefact. Deux cas : la campagne n'a pas encore démarré
         # (le guetteur différé attend encore son creux), ou elle a échoué. On
         # les sépare sur l'existence du guetteur, et on ne devine jamais.
-        if pgrep -f 'campagne_t70_differee\.sh' > /dev/null; then
+        if pgrep -af 'campagne_t70_differee[.]sh|lanceur_t70_v2[.]sh' \
+                | grep -q 'bash '; then
             : # le guetteur veille encore ; rien d'anormal, on attend
         else
             echo "  $(date +%H:%M)  ⚠ ni campagne en vie, ni artefact — "
