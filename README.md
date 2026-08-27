@@ -158,8 +158,9 @@ trained by self-play.
 
 ## Project status
 
-Phases 0 through 5 are complete. Phase 4 — a project-specific model — stays closed: it was
-conditional on the model proving insufficient, and it did not.
+Phases 0 through 5 are complete, and v1.0.1 is the artefact they produce. Phase 4 — a
+project-specific model — stays closed: it was conditional on the model proving insufficient, and it
+did not. Phase 7 is under way: going past parity with GNU Backgammon rather than matching it.
 
 | | Tasks | State |
 |---|---|---|
@@ -169,6 +170,7 @@ conditional on the model proving insufficient, and it did not.
 | 3 — Depth & exactness | T30 → T3E | ✅ |
 | 4 — Project-specific model | — | closed |
 | 5 — Publication | T50 · T51 | ✅ |
+| 7 — Going further | T70 → T77 | in progress |
 
 Every task carries a report in [`docs/mesures/`](docs/mesures/), which distinguishes what was
 measured from what was estimated. Working documents: [`CLAUDE.md`](CLAUDE.md) (rules),
