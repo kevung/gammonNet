@@ -60,6 +60,57 @@ WASM = [
     ROOT / "build" / "wasm" / "gammonnet-simd.wasm",
 ]
 
+#: L'API JavaScript et le pool de workers.
+#:
+#: SANS EUX L'ARTEFACT N'EST PAS UTILISABLE, et l'omission ne se voit pas : le
+#: `.wasm` et son collage Emscripten sont bien là, mais un utilisateur devrait
+#: réécrire lui-même le chargement du modèle, son refus quand il est invalide,
+#: et l'appel de recherche. Le pool, lui, fait la différence entre 350 s et
+#: 74 s pour analyser un match (T21b) — le livrer sans lui donnerait un moteur
+#: cinq fois plus lent que ce que les notes de version annoncent.
+API = [
+    ROOT / "wasm" / "gammonnet.mjs",
+    ROOT / "wasm" / "pool.mjs",
+    ROOT / "wasm" / "worker.mjs",
+]
+
+#: LA TABLE EXACTE NE SE PUBLIE PAS, et c'est une limite, pas un oubli.
+#:
+#: Celle que la recherche consulte est `gnubg_ts6x11.bd` — la table
+#: BILATÉRALE, **1,2 Gio**. Aucun artefact web ne la transporte, et un
+#: utilisateur qui la voudrait doit se la procurer séparément.
+#:
+#: Une première version publiait `models/bearoff_one_sided.bin` (6,9 Mio) en
+#: croyant livrer cette table. Le module l'a REFUSÉE, et il avait raison : son
+#: en-tête est `GNBO`, pas `gnubg-TS-`, et ce n'est pas ce que
+#: `gn_bearoff_open` lit. Publier un fichier que le moteur ne charge pas aurait
+#: donné l'illusion d'une exactitude qu'on n'avait pas.
+#:
+#: Ce que cela coûte est chiffré, pas supposé : 0,00028 d'équité par décision
+#: de bearoff (T38), là où GNU Backgammon consulte sa propre table et n'y perd
+#: rien. C'est nommé dans les notes de version.
+TABLES: list = []
+
+#: De quoi VÉRIFIER l'artefact plutôt que de nous croire : le repère de 2 000
+#: positions, le contrôle de parité qui le lit, et la provenance de chaque
+#: réseau. C'est la pièce qui rend l'affirmation de force falsifiable par son
+#: destinataire.
+VERIFY = [
+    ROOT / "build" / "reference.bin",
+    ROOT / "wasm" / "parity.mjs",
+    ROOT / "models" / "cubeless_prob5_512_512_256_128.provenance.json",
+    ROOT / "models" / "prune_32.provenance.json",
+]
+
+#: Les mesures brutes derrière chaque chiffre des notes de version.
+EVIDENCE = [
+    ROOT / "docs" / "mesures" / "t3e-pr.json",
+    ROOT / "docs" / "mesures" / "t3c-analyse-match.json",
+    ROOT / "docs" / "mesures" / "t21b-navigateur-decision.json",
+    ROOT / "docs" / "mesures" / "t21b-navigateur-workers.json",
+    ROOT / "docs" / "mesures" / "t3a-prune-search.json",
+]
+
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -78,6 +129,71 @@ def check_regression() -> None:
         raise SystemExit(
             "REFUSÉ : le corpus de non-régression T12 ne passe pas.\n"
             + result.stdout[-2000:])
+
+
+def quickstart() -> str:
+    return """# Démarrer avec gammonNet
+
+## Ce que contient cette archive
+
+| | |
+|---|---|
+| `strehl-prob5-…​.bin` / `.bin16` | les poids du réseau, en float32 et en float16 (moitié moins lourd) |
+| `strehl-prune-32_…​.bin` / `.bin16` | le réseau d'élagage : il trie les coups pour que le grand n'en note qu'une poignée |
+| `gammonnet-simd.mjs` / `.wasm` | le moteur WebAssembly (préférez la version SIMD) |
+| `api/gammonnet.mjs` | l'API JavaScript — `Evaluator` |
+| `api/pool.mjs`, `api/worker.mjs` | le pool de Web Workers : un match en 74 s au lieu de 350 |
+| `verify/` | de quoi vérifier vous-même que cet artefact donne les bons chiffres |
+| `evidence/` | les mesures brutes derrière chaque chiffre des notes de version |
+
+## Le plus court chemin
+
+```js
+import { Evaluator } from "./api/gammonnet.mjs";
+import factory from "./gammonnet-simd.mjs";
+
+const weights = new Uint8Array(
+  await (await fetch("./strehl-prob5-512-512-256-128_v1_2026-08-27.bin16")).arrayBuffer());
+const evaluator = await Evaluator.create(factory, weights);
+
+// Le réseau d'élagage : ×3,65 sur une décision 2-ply, pour une perte
+// d'équité dans le bruit. Facultatif, mais fortement conseillé.
+const prune = new Uint8Array(
+  await (await fetch("./strehl-prune-32_v1_2026-08-27.bin16")).arrayBuffer());
+evaluator.loadPrune(prune, 12);
+
+// Position de départ, jet 3-1.
+const best = evaluator.bestPlay("4HPwATDgc/ABMA", 0, 3, 1,
+                                { ply: 2, filterTop: 3, filterInner: 1 });
+console.log(best.equity, best.resultId, best.evaluations);
+```
+
+## Vérifier avant de faire confiance
+
+L'archive contient le repère de 2 000 positions et le contrôle qui le lit. Il
+compare le WebAssembly au moteur natif de référence et **refuse** au-delà de
+1e-6 :
+
+```sh
+node verify/parity.mjs
+```
+
+Attendu : `max|Δ| = 0` en scalaire, ~6,4e-7 en SIMD.
+
+## Ce que vous devez savoir avant de vous en servir
+
+- **La force est mesurée, et bornée.** Équivalent à GNU Backgammon en 2-ply :
+  −0,0119 ppg [−0,0310 ; +0,0074] sur 50 000 paires. « Supérieur » n'est PAS
+  établi, et eXtreme Gammon n'a pas été mesuré. Voir `RELEASE.md`.
+- **Le réglage compte plus que vous ne croyez.** À `prune_k = 3` le moteur est
+  deux fois plus rapide qu'à 12 et perd dix-huit fois ce qu'un ply entier de
+  profondeur rapporte. 12 est le défaut mesuré ; ne le baissez pas sans mesurer.
+- **Sans le pool de workers**, un match de 7 points prend 350 s au lieu de 74.
+- **La table exacte de fin de partie n'est pas fournie** : celle que le moteur
+  consulte pèse 1,2 Gio. La fin de partie retombe donc sur le réseau, ce qui
+  coûte 0,00028 d'équité par décision de bearoff (mesuré). `loadBearoff()`
+  existe pour qui se la procure.
+"""
 
 
 def notice() -> str:
@@ -206,7 +322,14 @@ recherche, équité de match, fins de partie — pas celui des poids. `BRIEF.md`
   contre ×8,5 en natif : les chiffres natifs ne s'y transportent pas, et ils
   n'ont pas encore été remesurés là-bas
   (`docs/mesures/2026-08-27-T21-navigateur-a-refaire.md`).
-- **Aucun PR.** La métrique n'a jamais tourné.
+- **La table exacte de fin de partie n'est PAS incluse.** Celle que la recherche
+  consulte pèse 1,2 Gio et ne se transporte pas dans un artefact web. Sans elle,
+  la fin de partie retombe sur le réseau, ce qui coûte **0,00028 d'équité par
+  décision de bearoff** — mesuré (T38), là où GNU Backgammon consulte sa propre
+  table et n'y perd rien. L'API `loadBearoff()` existe pour qui se la procure.
+- **Aucun budget de temps sur mobile.** La pénalité mesurée en août était de
+  ×2,12 à ×2,83 sur deux appareils, mais elle n'a pas été rejouée depuis les
+  optimisations.
 """
 
 
@@ -263,6 +386,29 @@ def main() -> int:
         print("   → `make wasm` sur une machine où Emscripten est installé, "
               "puis relancer.")
 
+    print("\n3b. API JavaScript, table exacte, et de quoi vérifier")
+    # `api/` n'est pas une coquetterie de rangement : notre `gammonnet.mjs` et
+    # le collage Emscripten `build/wasm/gammonnet.mjs` portent le MÊME NOM. Les
+    # poser côte à côte fait écraser l'un par l'autre, et l'artefact devient
+    # silencieusement inutilisable — le module chargerait un fichier qui n'est
+    # pas celui qu'il croit.
+    for group, label, subdir in ((API, "api", "api"),
+                                 (TABLES, "table exacte", ""),
+                                 (VERIFY, "vérification", "verify"),
+                                 (EVIDENCE, "mesures", "evidence")):
+        for path in group:
+            if not path.exists():
+                missing.append(path.name)
+                print(f"   ABSENT : {path.name}")
+                continue
+            destination = target / subdir if subdir else target
+            destination.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, destination / path.name)
+            name = f"{subdir}/{path.name}" if subdir else path.name
+            files.append((name, sha256(path), path.stat().st_size))
+            print(f"   {name}")
+
+    (target / "QUICKSTART.md").write_text(quickstart(), encoding="utf-8")
     (target / "NOTICE").write_text(notice(), encoding="utf-8")
     (target / "RELEASE.md").write_text(
         release_notes(args.version, date, files), encoding="utf-8")

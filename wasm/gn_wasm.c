@@ -37,15 +37,21 @@
 #include <stdlib.h>
 
 #include "gn_encoding.h"
+#include "gn_bearoff.h"
+#include "gn_cube.h"
+#include "gn_evalcache.h"
 #include "gn_infer.h"
 
 static GnNetwork *g_network = NULL;
 static GnNetwork *g_prune = NULL;
 static int g_prune_k = 0;
+static GnBearoff *g_bearoff = NULL;
+static GnEvalCache *g_cache = NULL;
 
 /* MEMFS, not a real path: RAM that `fopen` happens to understand. */
 static const char *MODEL_PATH = "/gammonnet-model.bin";
 static const char *PRUNE_PATH = "/gammonnet-prune.bin";
+static const char *BEAROFF_PATH = "/gammonnet-bearoff.bin";
 
 /*
  * Load a network from a byte buffer.
@@ -266,6 +272,253 @@ int gnw_has_simd(void)
  * ou -99.0 si la position est illisible, si aucun coup n'est légal, ou si le
  * score demandé sort de la table. Refusé, jamais approximé.
  */
+/*
+ * ── Les trois réglages qui manquaient, et ce qu'ils changent ─────────
+ *
+ * Le module exposait la profondeur, les filtres et l'élagage. Trois leviers
+ * mesurés du moteur natif restaient inatteignables depuis un navigateur, dont
+ * un que l'artefact livre pourtant.
+ */
+
+/*
+ * LA TABLE EXACTE DE FIN DE PARTIE.
+ *
+ * L'artefact publie `bearoff_one_sided.bin` — et jusqu'ici rien ne pouvait le
+ * charger. T38 a mesuré ce qu'elle comble : 0,00028 d'équité par décision de
+ * bearoff, un déficit réel, comblé avec CERTITUDE et non approché. Sans elle
+ * la recherche retombe sur le réseau, silencieusement.
+ *
+ * `length <= 0` la retire. Retours : 0 succès, -1 tampon inutilisable,
+ * -2 table refusée.
+ */
+EMSCRIPTEN_KEEPALIVE
+int gnw_load_bearoff(const unsigned char *bytes, int length)
+{
+    if (g_bearoff != NULL) {
+        gn_bearoff_set_shared(NULL);
+        gn_bearoff_close(g_bearoff);
+        g_bearoff = NULL;
+    }
+    if (bytes == NULL || length <= 0) {
+        return 0;                     /* retrait demandé, pas une faute */
+    }
+
+    FILE *staged = fopen(BEAROFF_PATH, "wb");
+    if (staged == NULL) {
+        return -1;
+    }
+    const size_t written = fwrite(bytes, 1, (size_t)length, staged);
+    fclose(staged);
+    if (written != (size_t)length) {
+        remove(BEAROFF_PATH);
+        return -1;
+    }
+
+    g_bearoff = gn_bearoff_open(BEAROFF_PATH);
+    /* Le fichier N'EST PAS retiré : la table est lue à la demande, pas
+     * chargée d'un bloc — 6,9 Mio qu'on ne veut pas voir deux fois en
+     * mémoire. */
+    return (g_bearoff == NULL) ? -2 : (gn_bearoff_set_shared(g_bearoff), 0);
+}
+
+/*
+ * LE CACHE D'ÉVALUATION.
+ *
+ * Il rejoue les réponses du réseau, jamais n'en invente : T3A a vérifié qu'il
+ * ne change AUCUN résultat, et mesuré ce qu'il rapporte — ×1,35 en contact,
+ * ×4,6 en course à 2-ply, où les mêmes positions reviennent sans cesse.
+ *
+ * `log2_entries` dit sa taille : 21 donne deux millions d'entrées, le réglage
+ * de la campagne T35. 0 le désactive.
+ */
+EMSCRIPTEN_KEEPALIVE
+int gnw_enable_cache(int log2_entries)
+{
+    if (g_cache != NULL) {
+        gn_evalcache_set_shared(NULL);
+        gn_evalcache_free(g_cache);
+        g_cache = NULL;
+    }
+    if (log2_entries <= 0) {
+        return 0;
+    }
+    g_cache = gn_evalcache_create((unsigned)log2_entries);
+    if (g_cache == NULL) {
+        return -1;
+    }
+    gn_evalcache_set_shared(g_cache);
+    return 0;
+}
+
+/*
+ * Les N MEILLEURS COUPS, avec tout ce qu'une analyse affiche.
+ *
+ * `gnw_best_play` ne rend que le premier, ce qui suffit pour jouer et pas pour
+ * ANALYSER : une interface montre les candidats, leur classement, leur équité
+ * et les cinq probabilités des deux camps. C'est ce que fait `bench/pr.py` et
+ * `bench/analyse_match.py` en natif ; il n'y avait pas d'équivalent ici.
+ *
+ * `out` reçoit, par candidat et dans cet ordre :
+ *
+ *     [0]   équité du coup, du point de vue de celui qui le joue
+ *     [1..5] les cinq probabilités de la position RÉSULTANTE
+ *     [6..12] l'identifiant de la position résultante, 14 octets + NUL,
+ *             écrits par `out_ids` et non ici
+ *
+ * soit 6 flottants par candidat dans `out`, et 15 octets par candidat dans
+ * `out_ids`. Rend le nombre de candidats écrits, ou -1.
+ *
+ * LES PROBABILITÉS SONT CELLES DE LA POSITION RÉSULTANTE, donc vues par
+ * l'ADVERSAIRE — c'est la convention de `GnCandidate`, et l'inverser
+ * silencieusement produirait cinq nombres parfaitement plausibles. Une
+ * interface qui veut les afficher du point de vue du joueur doit les
+ * retourner : P(gain) devient 1 − P(gain), et les gammons échangent de camp.
+ */
+EMSCRIPTEN_KEEPALIVE
+int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
+                   int ply, int filter_top, int filter_inner,
+                   int use_match, int away_on_roll, int away_opponent,
+                   int cube, int crawford,
+                   int cube_owner, double efficiency,
+                   int max_out, float *out, char *out_ids)
+{
+    if (g_network == NULL || position_id == NULL || out == NULL
+        || max_out <= 0) {
+        return -1;
+    }
+
+    GnPosition position;
+    if (gn_position_from_id(position_id, turn, &position) != 0) {
+        return -1;
+    }
+
+    GnSearchConfig config;
+    if (use_match) {
+        const GnMatchState state = {away_on_roll, away_opponent, cube, crawford};
+        config = gn_search_config_match(ply, &state);
+        if (!config.use_match) {
+            return -1;   /* score hors table : refusé, pas rabattu en money */
+        }
+    } else {
+        config = gn_search_config(ply);
+    }
+    if (filter_top > 0 && ply >= 1) {
+        config.filter[ply] = filter_top;
+    }
+    if (filter_inner > 0 && ply >= 2) {
+        config.filter[ply - 1] = filter_inner;
+    }
+    gn_search_use_prune(&config, g_prune, g_prune_k);
+    /* La valuation CUBEFUL des feuilles, quand un videau est en jeu. Elle ne
+     * change pas la décision de videau — elle change le COUP : audacieux vers
+     * l'encaissement quand on possède le videau, sobre quand on l'a contre
+     * soi. `cube_owner < 0` la laisse éteinte, et la recherche reste cubeless.
+     * L'efficacité est MESURÉE (bench/fit_efficiency.py), jamais empruntée. */
+    if (cube_owner >= 0) {
+        gn_search_use_cube(&config, cube_owner, efficiency);
+    }
+
+    GnCandidate *candidates = malloc(sizeof(GnCandidate) * (size_t)max_out);
+    if (candidates == NULL) {
+        return -1;
+    }
+    const int count = gn_search_plays(g_network, &position, d1, d2, &config,
+                                      candidates, max_out);
+    if (count <= 0) {
+        free(candidates);
+        return count;
+    }
+
+    for (int i = 0; i < count; i++) {
+        out[i * 6 + 0] = (float)candidates[i].equity;
+        for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
+            out[i * 6 + 1 + k] = candidates[i].probs[k];
+        }
+        if (out_ids != NULL) {
+            gn_position_id(&candidates[i].play.result, out_ids + (size_t)i * 15);
+        }
+    }
+    free(candidates);
+    return count;
+}
+
+/*
+ * LA DÉCISION DE VIDEAU, avec ses équités et non seulement son verdict.
+ *
+ * `out` reçoit, dans cet ordre :
+ *
+ *     [0] l'action : 0 pas de double, 1 double/prend, 2 double/passe,
+ *         3 trop bon pour doubler
+ *     [1] l'équité si l'on ne double pas
+ *     [2] l'équité si l'on double
+ *     [3] le point de prise de l'adversaire
+ *     [4..8] les cinq probabilités de la position, du point de vue du joueur
+ *            au trait — celles sur lesquelles la décision est prise
+ *
+ * *« Une décision juste à 0,001 près et une décision juste à 0,5 près ne sont
+ * pas la même décision »* (`gn_cube.h`) : c'est pourquoi les deux équités
+ * sortent, et pas seulement le verdict.
+ *
+ * `efficiency` est l'efficacité du videau. Elle est MESURÉE
+ * (`bench/fit_efficiency.py`), jamais empruntée à une constante publiée ;
+ * l'appelant doit passer celle de son état de videau.
+ */
+EMSCRIPTEN_KEEPALIVE
+int gnw_cube_decide(const char *position_id, int turn, int owner,
+                    int use_match, int away_on_roll, int away_opponent,
+                    int cube, int crawford, double efficiency, int jacoby,
+                    int ply, int filter_top, int filter_inner, double *out)
+{
+    if (g_network == NULL || position_id == NULL || out == NULL) {
+        return -1;
+    }
+
+    GnPosition position;
+    if (gn_position_from_id(position_id, turn, &position) != 0) {
+        return -1;
+    }
+
+    GnSearchConfig config;
+    GnMatchState state = {away_on_roll, away_opponent, cube, crawford};
+    if (use_match) {
+        config = gn_search_config_match(ply, &state);
+        if (!config.use_match) {
+            return -1;
+        }
+    } else {
+        config = gn_search_config(ply);
+    }
+    if (filter_top > 0 && ply >= 1) {
+        config.filter[ply] = filter_top;
+    }
+    if (filter_inner > 0 && ply >= 2) {
+        config.filter[ply - 1] = filter_inner;
+    }
+    gn_search_use_prune(&config, g_prune, g_prune_k);
+
+    /* La distribution AVANT le jet — ce dont une décision de videau a besoin,
+     * et non celle d'après un dé particulier (gn_search.h, gn_search_probs). */
+    float probs[GN_NUM_OUTPUTS];
+    if (gn_search_probs(g_network, &position, &config, probs) != 0) {
+        return -1;
+    }
+
+    GnCubeDecision decision;
+    if (gn_cube_decide(probs, (GnCubeOwner)owner, use_match ? &state : NULL,
+                       efficiency, jacoby, &decision) != 0) {
+        return -1;
+    }
+
+    out[0] = (double)decision.action;
+    out[1] = decision.equity_no_double;
+    out[2] = decision.equity_double;
+    out[3] = decision.take_point;
+    for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
+        out[4 + k] = probs[k];
+    }
+    return 0;
+}
+
 EMSCRIPTEN_KEEPALIVE
 double gnw_best_play(const char *position_id, int turn, int d1, int d2,
                      int ply, int filter_top, int filter_inner,
