@@ -14,8 +14,10 @@ Phase 1 — Reproduire               T10 T11 T12                  (certitude, pa
 Phase 2 — Navigateur               T20 T21 T22 T23              (la frontière se chiffre)
 Phase 3 — Profondeur & exactitude  T30 T31 T32 T33             (la recherche, les fins)
                                    T36 T37 T38 T39 T34 T35     (le videau, puis le verdict)
-Phase 4 — Modèle propre au projet  T40 T41 T42                  ← CONDITIONNEL
+Phase 4 — Modèle propre au projet  T40 T41 T42                  ← CONDITIONNEL, restée fermée
 Phase 5 — Publication              T50
+Phase 7 — Dépasser                 T70 T71 T72 T73              ← CHOISIE le 2026-08-27
+                                   T74 T75 T76 T77              (programme du plan de recherche)
 ```
 
 **Chemin critique** :
@@ -1104,6 +1106,241 @@ complet.
 **Critères d'acceptation**
 - Le modèle retenu l'est **sur un chiffre**, avec son intervalle de confiance. En cas d'égalité
   statistique, on garde le plus petit et le plus rapide.
+
+---
+
+# Phase 7 — Dépasser : le programme du plan de recherche *(choisie le 2026-08-27)*
+
+> **Origine.** Les quatorze recherches de [`docs/recherche/`](docs/recherche/), synthétisées dans
+> le [plan](docs/recherche/00-plan-depasser-gnubg.md) — §14 (le programme retenu, huit lignes
+> P1–P8) et §15 (le budget et les paliers). Décision utilisateur du 2026-08-27 : les fiches sont
+> ouvertes ; **l'implémentation n'est pas commencée**.
+>
+> **Articulation avec la phase 4.** T35 n'a révélé aucun plafond : la condition d'ouverture de la
+> phase 4 n'est pas remplie, et elle reste fermée *en tant que telle*. Cette phase est le
+> « chantier de différenciation qu'on choisit » que le plan annonçait. **T41 est remplacée par
+> T71** — même intention (entraîner pour la recherche), recette désormais instruite par la mesure
+> publiée ; T40 et T42 sont subsumées par T71/T72 et le banc T70.
+>
+> **L'ordre.** T70 d'abord — l'instrument, règle n°2 de `CLAUDE.md`. Puis **T71 (qualité) et T73
+> (vitesse) en parallèle** — T71 est jugée par T70. **T72 après T71** : on distille le réseau déjà
+> entraîné pour la recherche, pas l'actuel. T74–T77 s'ordonnent selon les résultats.
+>
+> **Le budget** (DS-14) : un candidat se produit en heures — le poste dominant est la **mesure**.
+> Les paliers B0–B5 du §15 s'appliquent à toute la phase : jamais de rollout pour départager du
+> bruit ; le match dupliqué (4,9 jours) est un événement rare, une fois par candidat retenu.
+
+## T70 — L'arbitre externe escaladé et le corpus figé
+
+> **La ligne P1 — le prérequis de tout le reste.** Notre arbitre actuel (rollout conduit par
+> notre propre politique) est structurellement complaisant ; le match dupliqué ne voit pas un
+> gain modeste (±0,005 ppg ≈ 800 000 paires). Cet instrument est ce qui permet à T71 d'exister.
+
+**Objectif** — un instrument qui voit un gain modeste par décision, en heures et non en jours.
+
+**Périmètre** — Corpus **figé, stratifié, versionné** de 10⁴–10⁵ décisions disputées (celles où
+notre 2-ply et gnubg divergent), stratifié par classe de position et contexte de score, ancré sur
+les bases exactes partout où c'est résoluble. Arbitrage **escaladé en trois passes** : gnubg
+3-ply quand l'écart meilleur/second est net ; rollout tronqué à variance réduite sinon ; rollout
+complet (IC 95 % < 0,005) pour ce qui reste. Métrique : **perte d'équité appariée par décision**,
+bootstrap par position.
+
+**Exclut** — tout verdict de force (il sort des fiches suivantes) ; le « PR façon XG » (T76).
+
+**Critères d'acceptation**
+- Le corpus est versionné, sa stratification publiée ; chaque décision porte sa passe
+  d'arbitrage et son intervalle.
+- **Contrôle de non-biais** : sur le domaine des bases exactes, l'arbitre retrouve la valeur
+  exacte dans son intervalle — un arbitre non vérifié n'arbitre rien (règle T39).
+- La sensibilité de l'instrument est chiffrée : l'IC de la perte d'équité par décision sur le
+  corpus complet, et le **coût machine d'un point de comparaison** — l'attendu est « des
+  heures » ; s'il est en jours, l'instrument est à revoir avant d'engager T71.
+- Le biais de la passe 1 (gnubg 3-ply) est encadré : un échantillon de ses verdicts est réévalué
+  en passe 2, l'écart chiffré et publié avec chaque usage de l'instrument.
+
+## T71 — Distiller notre 2-ply : l'entraînement pour la recherche
+
+> **La ligne P2 — le cœur du programme.** La seule recette dont la survie sous recherche est
+> prouvée par une mesure publiée (Whittington v1.9.0 : ~52 % contre son champion à 1-ply, « ne se
+> lave pas sous la recherche »), et qui reste dans notre périmètre de licence. Remplace T41.
+
+**Objectif** — un réseau dont l'avantage par décision **survit au 2-ply**.
+
+**Périmètre** — **Étape 0, obligatoire (la règle d'or de DS-14)** : mesurer le professeur. Notre
+expectiminimax 2-ply distributionnel doit battre le réseau actuel au ply de jeu — z > 3 sur
+≥ 10 000 décisions appariées, un contrôle qui coûte des minutes. **Étape 1, le prototype
+(palier B1)** : 400–500 k labels, entraînement complet y compris QAT si T73 est prête, jugé par
+décision. **Étape 2, le volume nominal** : 1,0–1,5 M positions de contact auto-générées par
+self-play, biaisées vers les positions où le désaccord 0-ply/2-ply est élevé, chacune étiquetée
+par le **vecteur des 5 probabilités** rendu par le 2-ply (pas l'équité seule) ; **tête auxiliaire
+de volatilité exacte** sur les 21 jets (sous-produit gratuit du backup, poids de perte 0,15–0,3
+du principal) ; entraînement **from scratch** (le warm-start nuit), architecture constante,
+cross-entropy sur les 5 probabilités + MSE sur la volatilité.
+
+**Exclut** — tout professeur externe : gnubg, XG, HedgeHog — règle de licence du dépôt, y compris
+pour l'étiquetage (la recommandation contraire de DS-14 est rejetée, voir son retour) ;
+l'agrandissement du réseau (mesuré indiscernable à movetime égal) ; les caractéristiques
+expertes en entrée (trois négatifs mesurés — H2 dormante).
+
+**Critères d'acceptation**
+- L'étape 0 est rendue avec son z. Si le professeur ne bat pas l'élève, **la fiche s'arrête là**
+  et le résultat est publié — c'est un déclencheur §13 du plan de recherche, pas un échec à
+  cacher.
+- Palier B1 : à 400–500 k labels, si le candidat ne bat pas l'incumbent par décision (z < ~1 sur
+  ≥ 10 000 décisions appariées), **arrêt** — la donnée supplémentaire ne sauve pas une idée
+  neutre.
+- **Le critère de succès n'est pas le 0-ply** (il montera trivialement) : l'intervalle 2-ply par
+  décision — aujourd'hui **[−0,00005 ; +0,00019]** contre l'arbitre gnubg (T36) — **se déplace
+  au-dessus de zéro**, mesuré par l'instrument T70.
+- Lecture secondaire consignée : le taux de désaccord 2-ply avec gnubg (aujourd'hui 9,5 %) — s'il
+  cesse de tomber **et** que l'équité monte, le réseau a acquis de l'information que la recherche
+  ne récupère pas.
+- Au-delà de 1,5 M labels, on n'augmente le volume que sur un head-to-head non résolu — jamais
+  sur la validation-loss, qui baisse encore quand la force a cessé de suivre.
+- En cas de plafond à la parité : le résultat est publié, et la suite (SPSA sur la tête de
+  sortie, banc à dés miroirs) s'ouvre par une fiche déclenchée — pas dans celle-ci.
+
+## T72 — Réduire le réseau par distillation : 60–100 k MACs
+
+> **La ligne P3.** Le premier levier de vitesse — ×2,5 à ×6,6 sur toute décision, natif et
+> navigateur. Vient **après** T71 : on distille le réseau déjà entraîné pour la recherche.
+
+**Objectif** — un réseau 5 à 9 fois plus petit, à qualité indiscernable sur l'instrument.
+
+**Périmètre** — Distiller le réseau issu de T71 vers une architecture cible de **60 000 à
+100 000 MACs** (ordre de grandeur 256→128→64→5), entraînée à imiter les 5 sorties + la
+volatilité. SVD tronquée en option sur les couches larges restantes.
+
+**Critères d'acceptation**
+- La qualité est jugée par T70 : la perte d'équité par décision du réseau réduit reste dans
+  l'intervalle du grand. Seuil de repli (DS-04) : au-delà de ~1 pt d'équité perdu, réduire moins
+  agressivement et compenser par T73.
+- Le débit est mesuré, natif et WebAssembly, sur le banc existant ; le facteur réel est consigné
+  face au ×2,5–6,6 attendu.
+- Le corpus de non-régression (T12) est **régénéré** pour le nouveau réseau — un changement de
+  poids doit rester visible.
+
+## T73 — QAT int8 et noyau SIMD128 déterministe
+
+> **La ligne P4.** Le débit par MAC, sans casser la garantie bit-à-bit — le garde-fou du projet
+> contre les régressions silencieuses.
+
+**Objectif** — un chemin int8 universel (Safari iOS compris) et bit-à-bit, avec l'accélération
+relaxed en option là où elle existe.
+
+**Périmètre** — QAT int8 per-channel (accumulation int32, int16 où la dynamique des entrées
+denses l'exige, ClippedReLU 0..127, facteurs d'échelle en puissances de 2 — la remise à l'échelle
+devient un décalage) ; noyau GEMM par lots de 32, poids pré-empaquetés hors ligne ; **chemin de
+référence SIMD128 déterministe** (`i32x4.dot_i16x8_s`) identique natif↔Wasm ; **relaxed-dot
+7 bits en opt-in** détecté à l'exécution — Chrome/Firefox/Android seulement, jamais sur le chemin
+critique ni dans le repère bit-à-bit. Briques : noyau maison, ou XNNPACK (BSD-3).
+
+**Exclut** — tout code GPL (Stockfish NNUE) ; l'accumulation incrémentale NNUE (écartée par
+DS-04 : entrées denses, évaluation par lots) ; WebGPU (écarté par DS-09 : dispatch-bound, non
+bit-exact).
+
+**Critères d'acceptation**
+- **Le micro-banc GEMM int8 vs f32 est rendu sur les sept plateformes** (éval/s et MAC/s, par
+  plateforme et version, chemins déterministe / f32 / relaxed où disponible). Aucun banc de ce
+  genre n'est publié nulle part : le nôtre fait référence. Seuil d'abandon (DS-09) : si le gain
+  int8 déterministe est < 1,3× vs f32, la complexité int8 est réévaluée et le verdict publié.
+- **Le bit-à-bit natif↔Wasm tient sur le chemin déterministe** : l'écart du repère (4,77e-07 sur
+  les sept plateformes) reste identique après quantification. Le chemin relaxed est documenté
+  **hors garantie**.
+- Le test décisif de l'anomalie du lot (×2,21 Wasm contre ×8,5 natif) est exécuté : build natif
+  dégradé SSE2 sans FMA/VNNI, gain de lot comparé — l'explication ISA est confirmée ou réfutée.
+- La taille de l'artefact int8 + Brotli est mesurée (attendu : < 300 Kio transférés), poids hors
+  chemin critique, chargement en flux.
+
+## T74 — Élagage aux nœuds internes, et Star2 en expérience
+
+> **La ligne P5.** gnubg dépense ~2 550 MACs aux nœuds internes là où nous dépensons le réseau
+> entier ; son réglage change < 1 % des coups.
+
+**Objectif** — resserrer le filtre sans payer les +0,0039 par décision du réglage `k=3`.
+
+**Périmètre** — Mini-réseau d'élagage (~10–20 neurones cachés) **distillé de notre réseau**, aux
+nœuds internes de la recherche. **Star2 en expérience contrôlée** : l'élagage de Ballard économise
+−75 à −95 % de nœuds mais sérialise ce que notre noyau par lots parallélise — c'est une mesure à
+faire, pas une évidence à implémenter.
+
+**Critères d'acceptation**
+- La qualité de l'élagage est chiffrée comme T31 l'exige : taux de coups changés et équité perdue
+  au désaccord, contre le 2-ply de référence. Le repère gnubg est < 1 % de coups changés.
+- Star2 est jugé **à budget de temps égal** contre le réglage actuel : nœuds économisés **et**
+  temps réel par décision, les deux consignés, verdict explicite lot-contre-Star2.
+
+## T75 — Le videau au-delà de Janowski
+
+> **La ligne P6.** L'erreur moyenne de videau vaut plus du double d'une erreur de coup (Madsen,
+> 4-ply) — le gain le moins cher du programme. Les deux défauts de notre videau sont déjà nommés
+> par T39 : sur-double des fenêtres fines de contact, sous-double de course hors domaine.
+
+**Objectif** — un videau mesurablement meilleur, étape par étape, chaque étape arbitrée.
+
+**Périmètre** — Dans l'ordre de DS-08 : (1) **benchmark PR-cube par classe de position** — c'est
+lui qui déclenche ou non DS-13 ; (2) modèle raffiné **x1/x2** (efficacités doubler/prendre
+séparées) ; (3) recalibrage **x = f(pip)** en course ; (4) surcouche **volatilité** — la tête
+auxiliaire de T71 fournit le signal ; la corrélation volatilité ↔ efficacité n'a jamais été
+publiée, c'est à nous de l'établir. MET maison à régénérer.
+
+**Exclut** — la lecture de la source gnubg : pour le videau, le protocole `docs/etudes/` impose
+la littérature publiée seule (Janowski, dérivation depuis la table d'équité).
+
+**Critères d'acceptation**
+- Le PR-cube par classe est rendu **avant toute modification**, puis après chaque étape — un
+  chiffre par étape, avec intervalle, sur le corpus T70.
+- Les deux défauts nommés par T39 sont re-mesurés après chaque étape : la fenêtre fine de contact
+  (26–60 avant, p = 1,6×10⁻⁴) et la sous-double de course hors domaine.
+- Les efficacités restent **mesurées sur nos données** (règle T34), jamais reprises d'un autre
+  moteur.
+
+## T76 — La moitié XG de l'objectif, par voie indirecte
+
+> **La ligne P7.** T35 a rendu « équivalent à gnubg » ; « et à eXtreme Gammon » n'a jamais été
+> mesuré, et ne se déduit pas. XG n'a ni API ni CLI — la voie directe en routine n'existe pas.
+
+**Objectif** — borner « équivalent ou supérieur à XG » de façon défendable, sans exécuter XG en
+routine.
+
+**Périmètre** — **Voie principale, indirecte** : composer notre équivalence gnubg 2-ply (T35)
+avec le calage tiers gnubg↔XG (étude bgsage « Méthode 3 » : différence +0,002 PR, IC ±0,03,
+r = 0,98 sur 580 notations), cité avec sa réserve — auto-étude d'un concurrent, non répliquée.
+**Contrôle ponctuel** : XG2 sous Wine, Batch Analysis sur un sous-échantillon de décisions
+disputées du corpus T70, verdicts extraits en parsant les `.xg` (`xgdatatools`, libre). Jamais de
+données XG dans l'artefact ni dans l'entraînement ; pas de redistribution du binaire.
+
+**Critères d'acceptation**
+- L'ordre des champs XGID est **validé empiriquement avant tout usage** : ~200 positions croisées
+  contre gnubg (qui lit nativement l'XGID), zéro divergence — l'ordre vient d'implémentations
+  tierces, pas de l'éditeur.
+- **Deux chiffres sont publiés, jamais un seul** : l'erreur d'équité par décision ×500 avec un
+  filtre de décision identique appliqué aux deux moteurs, et un « PR façon XG » reproduisant
+  l'exclusion des coups « non obvious ». Jamais un mEMG gnubg ÷ 2 présenté comme un PR.
+- Le verdict « équivalent à XG » est énoncé avec ses deux réserves nommées : le calage tiers non
+  répliqué, et le contrôle ponctuel seulement — pas d'oracle XG systématique.
+
+## T77 — La carte d'erreur par classe de position
+
+> **La ligne P8 — le « Test C » de DS-12.** Personne n'a jamais publié où l'erreur d'un réseau
+> unique se concentre, catégorie par catégorie. Sans cette carte, tout choix de spécialisation
+> est aveugle ; avec elle, il devient une décision d'une ligne.
+
+**Objectif** — savoir **où** l'erreur du réseau se concentre, et décider sur mesure si une tête
+spécialisée se justifie.
+
+**Périmètre** — Stratifier le corpus T70 par catégories : blitz, prime-contre-prime, holding,
+backgame, crashed, course avec contact résiduel, bear-off avec et sans contact. Mesurer l'erreur
+d'équité par catégorie contre l'arbitre T70, avec le poids de chaque catégorie dans les décisions
+réelles.
+
+**Critères d'acceptation**
+- La carte est rendue : erreur moyenne et intervalle **par catégorie**, plus la fréquence de la
+  catégorie dans les parties réelles.
+- La décision est documentée par le seuil de DS-12 : une catégorie qui concentre **> 2× l'erreur
+  moyenne et pèse** dans les décisions réelles ouvre une fiche « tête dédiée sur tronc partagé »
+  (déclencheur) ; sinon, **aucun découpage** — l'aiguillage dur est mesuré neutre, on ne
+  spécialise pas par principe.
 
 ---
 
