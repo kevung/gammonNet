@@ -289,12 +289,7 @@ class Gnubg:
         re.MULTILINE,
     )
 
-    def hints(self, position: Position, d1: int, d2: int) -> list[Hint]:
-        """Le classement de gnubg, avec équités. Diagnostic, pas chemin chaud."""
-        self.set_position(position)
-        self._send(f"set dice {d1} {d2}")
-        text = self._send("hint")
-
+    def _parse_hints(self, text: str) -> list[Hint]:
         moves = self._HINT.findall(text)
         probabilities = self._PROBS.findall(text)
         out = []
@@ -305,6 +300,29 @@ class Gnubg:
                 probs = (win, wg, wbg, lg, lbg)
             out.append(Hint(move.strip(), float(equity), probs))
         return out
+
+    def hints(self, position: Position, d1: int, d2: int) -> list[Hint]:
+        """Le classement de gnubg, avec équités. Diagnostic, pas chemin chaud."""
+        self.set_position(position)
+        self._send(f"set dice {d1} {d2}")
+        return self._parse_hints(self._send("hint"))
+
+    def hints_at_score(self, position: Position, d1: int, d2: int) -> list[Hint]:
+        """Le même classement, SANS toucher au contexte de match.
+
+        `hints` passe par `set_position`, qui commence une **nouvelle partie**
+        — et perd donc le score, le trait et le videau posés avant. Pour une
+        analyse au score il faut la recette de la sonde de T35 : le match est
+        posé une fois par `new_match`/`set_score`/`set_turn`, et seule la
+        position change ensuite, par `set board` seul.
+
+        La relecture de l'identifiant vérifie du même coup la position **et**
+        le trait : l'identifiant est relatif au joueur au trait.
+        """
+        self._send(f"set board {codec.position_id(position)}")
+        self.verify_board(position, cube=1, owner=None, check_cube=False)
+        self._send(f"set dice {d1} {d2}")
+        return self._parse_hints(self._send("hint"))
 
     # ── Le match, le score, le videau ────────────────────────────────
     #
