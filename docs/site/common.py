@@ -12,7 +12,7 @@ project = "gammonNet"
 author = "Kevin Unger"
 copyright = "2026, Kevin Unger — documentation sous licence MIT"
 
-extensions = ["myst_parser"]
+extensions = ["myst_parser", "sphinx_design"]
 myst_enable_extensions = ["colon_fence", "deflist", "attrs_inline"]
 
 templates_path = ["../_templates"]

@@ -70,4 +70,4 @@ developpeur/index
 
 ---
 
-*English version: [/en/](../en/index.html)*
+*English version: <a href="../en/">/en/</a>*
