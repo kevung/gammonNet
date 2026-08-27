@@ -183,9 +183,21 @@ EMCC ?= $(firstword $(shell command -v emcc) /usr/lib/emscripten/emcc)
 WASM_DIR := wasm
 WASM_BUILD := $(BUILD)/wasm
 
+# Cette liste doit suivre $(SOURCES) : `gn_search.c` est le MÊME fichier des
+# deux côtés, et la phase 3 lui a donné des dépendances — table de fin de
+# partie, cache d'évaluation, videau. Les omettre ici ne produit pas un module
+# amputé mais une erreur de lien, ce qui est la bonne façon d'échouer ; c'est
+# ainsi que la dérive s'est vue le 2026-08-27, la cible WebAssembly n'ayant
+# plus été construite depuis le 2026-08-03.
+#
+# `gn_bearoff.c` entre dans le module sans sa table : `gn_bearoff_shared()`
+# rend NULL tant que rien ne l'a chargée, et la recherche retombe sur le
+# réseau. Servir la table à un navigateur est une décision d'artefact — sa
+# taille est en jeu — qui appartient à T50, pas à une liste de sources.
 WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
                 src/gn_rules_reference.c src/gn_encoding.c \
                 src/gn_position_id.c src/gn_infer_reference.c \
+                src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
                 src/gn_search.c src/gn_met.c src/gn_choose.c \
                 $(REFERENCE)/c_engine/bg_engine.c \
                 $(REFERENCE)/c_inference/nn_eval.c
