@@ -104,9 +104,9 @@ Un rapport en **français** où :
 
 **Le mode d'échec que la sous-question 6 vise est le mode d'échec central du domaine**, et le
 dépôt le porte en règle : *« un réseau à qui l'on donne une entrée qu'il n'a jamais vue retourne
-cinq probabilités parfaitement plausibles »*. HedgeHog raconte s'être trompé de 0,5 d'équité sur un
-cinquième des positions sans aucun signe extérieur. D'où la règle : un modèle qu'un build ne sait
-pas évaluer est refusé, jamais approximé.
+cinq probabilités parfaitement plausibles »*. Un moteur peut ainsi se tromper d'une demi-unité
+d'équité sur une fraction notable des positions sans aucun signe extérieur. D'où la règle : un
+modèle qu'un build ne sait pas évaluer est refusé, jamais approximé.
 
 Un corpus de distillation mal composé reproduit exactement cette faute, en plus silencieux : le
 réseau distillé sera excellent là où le corpus l'a mené et faux ailleurs, et **aucune mesure faite

@@ -96,8 +96,8 @@ comparatives — et où la décision de videau de GNU Backgammon est-elle docume
 
 - Nous distribuons un module WebAssembly, ce qui **est une distribution**. Tout artefact — table,
   poids, corpus, code — arrive **avec sa licence et son lien**. Hors périmètre, y compris comme
-  source d'entraînement : poids de GNU Backgammon (GPL-3), réseaux HedgeHog (clause non
-  commerciale), bgsage (AGPL-3).
+  source d'entraînement : poids de GNU Backgammon (GPL-3), tout réseau sous clause
+  non commerciale, bgsage (AGPL-3).
 - **Ne recopie ni code source ni constante réglée à la main** (les coefficients d'efficacité de
   videau d'un moteur sous copyleft en sont l'exemple type : nous les re-mesurons chez nous, nous
   ne les reprenons pas). Décris les mécanismes, cite la littérature — et quand une idée vient de

@@ -122,7 +122,7 @@ seulement à profondeur zéro ?**
   pas couverte par le droit d'auteur sur son code. Une recommandation qui repose là-dessus est
   inutilisable pour nous.
 - Tout artefact signalé arrive **avec sa licence et son lien**. Hors périmètre : poids gnubg
-  (GPL-3), réseaux HedgeHog (licence non confirmée, réputée non commerciale). bgsage est sous
+  (GPL-3), tout réseau sous clause non commerciale. bgsage est sous
   MPL-2.0 : ses idées documentées sont recevables, mais ne me recommande pas d'en copier du code.
 - **La taille du réseau est contrainte par le navigateur d'un téléphone**, jamais par la machine
   d'entraînement. Une recette qui n'améliore la qualité qu'en agrandissant le réseau ne nous sert

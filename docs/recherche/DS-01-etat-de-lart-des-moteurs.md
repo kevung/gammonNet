@@ -33,7 +33,7 @@ qui soutient chaque classement ?**
 ## Les sous-questions, dans l'ordre d'importance
 
 1. **Le classement, et ses preuves.** Recense les moteurs qui comptent — eXtreme Gammon (XG),
-   GNU Backgammon, BGBlitz, HedgeHog, Snowie (historique), wildbg, `alexstrehl/backgammon-ai-engine`,
+   GNU Backgammon, BGBlitz, Snowie (historique), wildbg, `alexstrehl/backgammon-ai-engine`,
    et tout autre que tu trouves. Pour chacun : qui l'a écrit, dans quel état il est en 2026, ce
    qu'il revendique comme force, **et sur quelle mesure**. Distingue soigneusement une mesure
    publiée avec protocole et intervalle de confiance d'une affirmation de forum.
@@ -62,7 +62,7 @@ qui soutient chaque classement ?**
 ## Sources à ne pas manquer
 
 - Les dépôts et sites : `alexstrehl/backgammon-ai-engine` (GitHub), `carsten-wenderdel/wildbg`
-  (GitHub), `hedgehog-bg.com` et son GitLab public, le site de BGBlitz, `extremegammon.com`, le
+  (GitHub), le site de BGBlitz, `extremegammon.com`, le
   projet GNU Backgammon (`gnu.org/software/gnubg`) et ses listes de diffusion.
 - Les fichiers de benchmarks publiés, s'il en existe (par exemple des JSON de round-robin servis
   par un site de moteur).
@@ -84,7 +84,7 @@ sens des licences. Donc :
 - Tout artefact que tu me signales — code, poids, corpus, table — doit arriver **avec sa licence
   et son lien**. Un artefact sans licence identifiée m'est inutilisable.
 - Sont hors périmètre, même en tant que source d'entraînement : les poids de GNU Backgammon
-  (GPL-3), les réseaux HedgeHog (clause non commerciale), bgsage (AGPL-3).
+  (GPL-3), les tout réseau sous clause non commerciale, bgsage (AGPL-3).
 - GNU Backgammon nous sert d'**oracle de mesure** et jamais de source d'apprentissage. C'est une
   règle que nous nous sommes donnée, plus stricte que ce que le droit exige.
 - **Ne transcris aucun code source ni aucune constante réglée à la main** trouvée dans un moteur
@@ -118,6 +118,6 @@ XG et que gnubg est à quelques millièmes de PR du plafond connu, l'ambition «
 change de nature : elle devient un travail de recherche, pas d'ingénierie, et le budget se discute
 autrement.
 
-**Le piège à surveiller au retour** : la table de benchmarks de HedgeHog (`benchmarks.json`) est
-déjà dans `BRIEF.md` §5 et sert de repère au dépôt. Elle est produite par un acteur qui y figure.
-Si le retour la reprend sans le dire, c'est une reprise, pas une confirmation indépendante.
+**Le piège à surveiller au retour** : les tables de benchmarks publiées entre moteurs sont souvent
+produites par un acteur qui y figure lui-même. Si le retour en reprend une sans le dire, c'est une
+reprise, pas une confirmation indépendante.

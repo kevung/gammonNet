@@ -114,7 +114,7 @@ Un match de 7 points (~300 décisions) en 2-ply filtré tomberait vers **90 s en
 semble tenir sur desktop.** Le mot *semble* est là parce que T30 n'existe pas.
 
 Le 0-ply reste ~18× plus cher que l'extrapolation du `BRIEF`. L'écart s'explique : les chiffres
-publiés par HedgeHog viennent d'un moteur **NNUE à accumulation incrémentale** avec filtre de
+publiés par le moteur tiers viennent d'un **NNUE à accumulation incrémentale** avec filtre de
 coups actif, pas d'un GEMV dense recalculé intégralement. Ce n'est pas le même calcul.
 
 ## Le seuil falsifiable, à confronter à un vrai téléphone
@@ -223,7 +223,7 @@ Deux mises en garde :
 | Quantification int8 | ×4 sur le trafic ; le modèle passerait de 2,0 Mio à ~530 Kio | **concession — écartée** |
 
 Le plafond de 19 % mérite d'être souligné parce qu'il contredit un réflexe : **l'accumulation
-incrémentale de HedgeHog ne rapporterait au mieux que 19 % sur ce réseau**, puisque c'est tout ce
+incrémentale ne rapporterait au mieux que 19 % sur ce réseau**, puisque c'est tout ce
 que pèse la couche d'entrée dans les 528 389 MACs. Copier leur architecture pour la vitesse serait
 un contresens ici — ce qui rejoint la correction apportée au `BRIEF.md` §3.2.
 

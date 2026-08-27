@@ -44,7 +44,7 @@ mesurément meilleures, et à quel coût par MAC ?**
 
 1. **L'inventaire des encodages publiés.** Tesauro (Neurogammon, TD-Gammon 1.0 puis 2.0/3.0 et
    ses « caractéristiques expertes »), GNU Backgammon, Berliner (BKG et ses fonctions
-   d'application floue), Snowie si documenté, `wildbg`, HedgeHog, `alexstrehl/backgammon-ai-engine`,
+   d'application floue), Snowie si documenté, `wildbg`, `alexstrehl/backgammon-ai-engine`,
    et tout autre. Pour chacun : le nombre d'entrées, leur nature, et **ce que l'auteur dit avoir
    gagné** en les ajoutant.
 2. **La preuve que les caractéristiques calculées valent le coup.** Tesauro rapporte que
@@ -91,8 +91,8 @@ mesurément meilleures, et à quel coût par MAC ?**
 
 - Nous distribuons un module WebAssembly, ce qui **est une distribution**. Tout artefact que tu
   signales (code, poids, corpus) doit venir **avec sa licence et son lien**. Hors périmètre, même
-  comme source d'entraînement : poids de GNU Backgammon (GPL-3), réseaux HedgeHog (clause non
-  commerciale), bgsage (AGPL-3).
+  comme source d'entraînement : poids de GNU Backgammon (GPL-3), tout réseau sous clause
+  non commerciale, bgsage (AGPL-3).
 - **Ne recopie aucun code source de ces projets, ni aucune constante réglée à la main.** Une
   *idée* documentée est réimplémentable ; du code transcrit, même traduit dans un autre langage,
   ne l'est pas. Décris les mécanismes et cite la documentation.

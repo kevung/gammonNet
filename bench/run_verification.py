@@ -7,9 +7,8 @@ afterwards.
 
 The comparison points, both from `BRIEF.md`:
 
-* **+0.0673 ppg** — HedgeHog's public benchmark, `colossus` vs `gnubg`, 0-ply,
-  **cubeful**, 10 M games per pair.
-* **+57.8 mEq/game** — the model author's own figure at 0-ply, 10 M games.
+* **+57.8 mEq/game** — the model author's own figure at 0-ply, 10 M games. This is
+  the only external reference this repository sets out to reproduce.
 
 If the measured gap exceeds the confidence intervals it must be **explained
 before phase 2 opens**. An unexplained gap invalidates everything after it.
@@ -31,7 +30,6 @@ sys.path.insert(0, str(ROOT / "python"))
 
 from gammonnet.arena import NetworkEngine, OracleEngine, play_pair  # noqa: E402
 
-PUBLISHED_CUBEFUL_PPG = 0.0673      # HedgeHog benchmark, colossus vs gnubg, cubeful
 PUBLISHED_AUTHOR_PPG = 0.0578       # the author's +57.8 mEq/game at 0-ply
 
 
@@ -70,7 +68,6 @@ def main() -> int:
     low, high = result.ci
     print("\nComparaison aux chiffres publiés :")
     for label, published in (
-        ("HedgeHog, colossus vs gnubg, 0-ply CUBEFUL", PUBLISHED_CUBEFUL_PPG),
         ("auteur du modèle, 0-ply", PUBLISHED_AUTHOR_PPG),
     ):
         inside = low <= published <= high

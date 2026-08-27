@@ -176,10 +176,6 @@ measured from what was estimated. Working documents: [`CLAUDE.md`](CLAUDE.md) (r
 - Kazaross-XG2 match equity table — Neil Kazaross; transcription cross-checked with
   [blunderDB](https://github.com/kevung/blunderDB), MIT.
 - GNU Backgammon — measurement oracle and match equity reference. Not a source of code or weights.
-- [HedgeHog](https://hedgehog-bg.com/) — their principle *"a model this build cannot evaluate is
-  refused, not approximated"* is adopted as a working rule, and their published figures served as
-  initial hypotheses. Neither their code nor their networks are used
-  ([ADR-0001](docs/adr/0001-moteur-inference.md)).
 
 ## Licence
 

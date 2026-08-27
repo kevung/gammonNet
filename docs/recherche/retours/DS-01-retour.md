@@ -9,7 +9,8 @@
 > d'entraînement (distillation de sa propre recherche 2-ply) ; caractéristiques expertes et
 > largeur de recherche sont mesurées inopérantes par deux projets indépendants.
 > **Ce qu'il ne tranche pas** : aucun match direct à grand volume contre XG n'est possible (pas
-> d'API) ; la licence des réseaux HedgeHog reste introuvable ; la contradiction bgsage AGPL/MPL
+> d'API) ; la licence des réseaux de plusieurs moteurs propriétaires reste introuvable ; la
+> contradiction bgsage AGPL/MPL
 > qu'il signale a depuis été tranchée à la source : **MPL-2.0** (fichier LICENSE du dépôt
 > `markbgsage/bgsage`, consulté le 2026-08-27).
 
@@ -95,8 +96,6 @@ Frank Berger, Java, RL pur, multiple vainqueur des Computer Olympiads (bronze au
 
 **Snowie — historique.** Olivier Egger, 1998 ; PR 1,24 (Snowie 4 3-ply, Depreli). Supplanté par XG en 2009. Pas de développement moderne.
 
-**HedgeHog / Aureus / Fox (OpenGammon) — [FOLKLORE] pour la force, licence non identifiée.**
-Développeur anonyme (pseudo « Yzqw »). **Revendique un moteur serveur (« Aureus ») « légèrement supérieur à eXtreme Gammon 2 » / « le plus fort de la planète » — sans aucun protocole, volume ni IC publiés** (sites SPA non extractibles ; revendication seulement capturée en seconde main via gammonrants.org, 5 août 2026, verbatim : *« what they claim to be the strongest engine on this planet, even outperforming Extreme Gammon 2 slightly »*). Seule mesure indépendante : gammonrants trouve **Aureus à PR 1,6 (analyse XG2 Roller++) / 1,9 (BGBlitz 4-ply) sur 63 parties** (et « PR 1,9, confiance moyenne, 26 parties » dans sa table), avec avertissement explicite de faible échantillon ; Fox 0.32 à PR 5,9. **Licence introuvable** : aucun dépôt public pour les réseaux Aureus/Fox ; la clause « non commerciale » supposée n'a pas pu être confirmée sur une source primaire — mais les réseaux forts sont serveur-only et propriétaires de fait. Le fork permissif `gammonx/gammonx-wildbg` (Apache/MIT) concerne le petit moteur dérivé de wildbg, pas Aureus. Aucune preuve ne relie Michael Depreli (contributeur de BGBlitz et auteur du benchmark 2010/2012) à HedgeHog. **Inutilisable pour toi faute de licence identifiée.**
 
 **Palamedes — académique.** Nikolaos Papahristou & Ioannis Refanidis (Univ. Macédoine) ; or au 16e Computer Olympiad (2011). Variantes (Portes, Plakoto, Fevga…), NN + TD + features expertes + bases de fin de partie. Thèse et articles publics (nikpapa.com). Pertinent pour la méthodologie, pas comme moteur backgammon standard SOTA.
 
@@ -115,7 +114,7 @@ Corollaire décisionnel pour gammonNet : **ton gain d'évaluation 0-ply n'est pa
 
 - **Sur mesure publiée à niveaux appariés : oui, marginalement** — Open Sage 3T/4P devant XG Roller++/4-ply de 0,04–0,16 PR, y compris jugé contre les propres rollouts de XG [MESURE, bgsage.ai/botperformance]. Réserve : petit écart, vendeur, pas de vraies parties têtes-à-tête (XG sans API).
 - **Contre gnubg (proxy de XG) : parité atteinte** par Whittington après distillation de labels gnubg [MESURE].
-- **Sur match direct à grand volume contre XG : non documenté pour personne** — l'absence d'API de XG l'empêche structurellement. La revendication HedgeHog « plus fort que XG2 » est [FOLKLORE] (aucun protocole).
+- **Sur match direct à grand volume contre XG : non documenté pour personne** — l'absence d'API de XG l'empêche structurellement. Les revendications de supériorité sur XG2 émises par des moteurs propriétaires sont [FOLKLORE] (aucun protocole).
 - Fichiers de benchmark publics servis par un moteur : `bgsage` fournit `data/money_benchmark/benchmark.json.gz` et des scripts reproductibles ; `alexstrehl` fournit un dossier `benchmarks/` et des modèles `.pt` ; `wildbg-training` publie ses rollouts et réseaux. Ce sont les trois corpus reproductibles réels que j'ai trouvés.
 
 ### 4. Littérature académique depuis TD-Gammon
@@ -155,7 +154,7 @@ Constat : **la littérature revue post-2015 sur le backgammon *standard* est min
 
 - **Aucune non-transitivité mesurée entre moteurs de backgammon modernes** (cycle A bat B, B bat C, C bat A). La littérature « non-transitif » trouvée est générique (pierre-feuille-ciseaux, dés de Efron, DeepMind « spinning tops »). Si le phénomène existe entre XG/gnubg/Sage/wildbg, il n'est pas publié avec protocole. À vérifier toi-même par round-robin.
 - **Aucun benchmark public tête-à-tête XG vs un challenger à grand volume** (barrière technique : pas d'API XG). Tous les « XG vs X » passent par Batch Analysis sur positions, pas par des parties jouées.
-- **Aucune licence identifiable pour les réseaux HedgeHog/Aureus/Fox** ; la clause « non commerciale » supposée n'a pas de source primaire vérifiable (sites SPA non extractibles). À confirmer dans l'app en session navigateur.
+- **Aucune licence identifiable pour les réseaux de plusieurs moteurs propriétaires servis dans le navigateur** ; les clauses « non commerciales » supposées n'ont pas de source primaire vérifiable (sites SPA non extractibles).
 - **Le texte intégral de l'article d'Andrew Lin (TAAI 2020)** est derrière le péage IEEE ; je n'ai que le résumé, les citations et les reprises. Résultats chiffrés précis non vérifiés directement.
 - **La présentation technique de BGBlitz (PDF Aachen)** est citée mais je n'en ai pas extrait de chiffres de force avec protocole.
 - **La licence exacte du dépôt Backgammon-NN de Whittington** n'a pas été confirmée (à lire dans le dépôt avant tout emprunt de méthode/code).
@@ -178,7 +177,7 @@ Comme tu t'interdis gnubg/XG comme professeurs, la seule échappatoire non born�
 Deux projets indépendants (Strehl, Whittington) montrent que **les features d'entrée expertes n'aident pas** et que **la largeur seule n'aide pas** ; la profondeur du réseau et surtout la qualité du signal paient. N'investis pas de semaines dans un encodage plus riche.
 
 **Étape 5 — hygiène de licence (dure, car WebAssembly = distribution).**
-Références utilisables telles quelles : **wildbg (Apache/MIT)** et **alexstrehl (MIT)** comme sources d'inspiration/comparaison à licence propre ; **gnubg (GPL-3) uniquement comme oracle de mesure**, jamais dans le binaire ni comme professeur. Vérifie la licence de Backgammon-NN avant tout emprunt. Écarte HedgeHog (licence inconnue) et bgsage tant que la contradiction AGPL/MPL n'est pas tranchée. Ne transcris aucune constante réglée à la main d'un moteur copyleft.
+Références utilisables telles quelles : **wildbg (Apache/MIT)** et **alexstrehl (MIT)** comme sources d'inspiration/comparaison à licence propre ; **gnubg (GPL-3) uniquement comme oracle de mesure**, jamais dans le binaire ni comme professeur. Vérifie la licence de Backgammon-NN avant tout emprunt. Écarte tout moteur à licence inconnue ou non commerciale. Ne transcris aucune constante réglée à la main d'un moteur copyleft.
 
 ### Tableau de décision
 

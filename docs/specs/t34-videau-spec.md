@@ -167,8 +167,8 @@ document impose de plus : le drapeau `jacoby`, et l'accès aux équités de bran
 **Ce que font les moteurs de référence** — et ce qu'ils ne font pas. Pas de branchement explicite
 double/prend/passe à chaque nœud (coût exponentiel) : la **formule d'équité cubeful est appliquée
 aux feuilles**, avec l'état du videau de la racine, et cette valeur cube-consciente remonte par
-l'expectiminimax. Trace indépendante dans `BRIEF.md` §3.2 : hedgehog-public embarque
-l'expectiminimax et les formules de Janowski côte à côte.
+l'expectiminimax. C'est l'agencement usuel : l'expectiminimax et les formules de Janowski
+cohabitent, la conversion cubeful se faisant aux feuilles.
 
 **Les deux effets attendus** : (1) le choix de coup devient sensible à la possession du videau
 (jeu hardi vers le cash quand on le possède, sobre sous la menace) ; (2) les décisions de videau

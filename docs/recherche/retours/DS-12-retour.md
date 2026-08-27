@@ -16,8 +16,8 @@
 > (le piège du calendrier d'apprentissage) et survivre au 2-ply.
 > **Ce qu'il ne tranche pas** : l'ampleur des discontinuités de frontière (reconnues par gnubg,
 > chiffrées nulle part — lacune centrale), la largeur de goulot minimale d'un tronc partagé, le
-> routage appris top-1 contre l'aiguillage manuel (jamais comparés dans un jeu), et
-> l'architecture de HedgeHog (la prémisse « ensembles » n'est pas confirmée). Nuance de licence :
+> routage appris top-1 contre l'aiguillage manuel (jamais comparés dans un jeu). Nuance de
+> licence :
 > `sage-engine-server` est AGPL-3.0, distinct de la lib `bgsage` MPL-2.0.
 
 ---
@@ -54,7 +54,6 @@
 
 *bgsage / Open Sage (Mark Higgins)* : « stage9 model (19 neural networks, backgame-aware pair strategy) » + base de bear-off une face. [DÉCLARÉ] (https://github.com/customation/sage-engine-server, https://github.com/markbgsage/bgsage, consulté le 26/08/2026.) C'est l'exemple le plus poussé de découpage multi-réseaux, avec une stratégie de paire spécifique aux backgames. **Attention licence** : le serveur `sage-engine-server` est AGPL-3.0 ; la lib `bgsage` est distribuée sur PyPI. Vous mentionnez MPL-2.0 pour bgsage — dans tous les cas : **idées documentées recevables, ne pas copier de code**.
 
-*HedgeHog* : outil d'analyse/jeu par réseau de neurones dans le navigateur (https://hedgehog-bg.com/, consulté le 26/08/2026). Je n'ai trouvé **aucune documentation technique publique** confirmant qu'il utilise un ensemble ou un mélange d'experts, ni de mesure. [HYPOTHÈSE non confirmée] Licence non confirmée, réputée non commerciale : **hors périmètre**.
 
 *TD-Gammon, Jellyfish, Snowie, XG, BGBlitz* : aucune ablation publiée « un réseau vs plusieurs, mêmes MACs ». XG est la référence de rollouts de la communauté mais fermé/propriétaire. [DÉCLARÉ]
 
@@ -144,7 +143,7 @@ Pour situer l'ordre de grandeur de NNUE dans son ensemble (et non du bucketing) 
 
 **Test A (priorité 1) — Distiller un enseignant fort dans votre réseau actuel, architecture inchangée.**
 - *Pourquoi d'abord :* c'est le seul mécanisme dont le gain à coût par évaluation strictement constant est prouvé (Backgammon-NN, Hinton, Born-Again), et il ne touche ni votre budget MACs, ni votre pipeline WASM, ni votre chargement de poids.
-- *L'enseignant :* votre propre recherche expectiminimax 2-ply, retournant la distribution complète (win/gammon/backgammon), pas seulement l'équité — c'est le point que Backgammon-NN identifie comme décisif. Vous le faites déjà pour l'élagage ; étendez-le à l'éval principale. **N'utilisez pas** les poids GNU BG (GPL-3) ni HedgeHog comme enseignant.
+- *L'enseignant :* votre propre recherche expectiminimax 2-ply, retournant la distribution complète (win/gammon/backgammon), pas seulement l'équité — c'est le point que Backgammon-NN identifie comme décisif. Vous le faites déjà pour l'élagage ; étendez-le à l'éval principale. **N'utilisez pas** les poids GNU BG (GPL-3) ni aucun réseau non libre comme enseignant.
 - *Entraînement :* labelliser N positions par la sortie 2-ply, entraîner le réseau 196→512→512→256→128→5 à reproduire la distribution (blend soft/hard).
 - *La mesure en quelques heures :* head-to-head à dés miroités, réseau distillé (0-ply) vs réseau actuel (0-ply), 2 000–5 000 parties, puis re-vérifier au ply que l'appli joue (2-ply). **Seuil de décision : > 51 % avec barre d'erreur excluant 50 %, ET gain qui survit à 1/2-ply.** Backgammon-NN montre que les gains 0-ply qui s'évaporent en recherche sont sans valeur — c'est votre critère d'élimination.
 
@@ -165,7 +164,6 @@ Pour situer l'ordre de grandeur de NNUE dans son ensemble (et non du bucketing) 
 - **Aucune mesure de l'ampleur des discontinuités de frontière** (transition gaps), ni au backgammon (GNU BG les reconnaît sans les chiffrer) ni ailleurs. Personne n'a publié « voici l'incohérence en équité entre deux réseaux voisins de part et d'autre de la frontière crashed ». [Lacune centrale, elle vous concerne]
 - **Aucune carte chiffrée de l'erreur d'un réseau unique par type de position** (blitz, prime-vs-prime, holding, backgame, bear-off avec/sans contact) vs rollouts profonds. Les faiblesses sont *déclarées* (backgame, crashed, containment) mais jamais *mesurées catégorie par catégorie*. Vous devrez la produire vous-même (Test C).
 - **Aucune ablation isolant l'Elo du bucketing/layer-stacks seul dans Stockfish** — la PR #3474 mesure le paquet entier (21,74 ±3,4 STC / 5,85 ±1,7 LTC). Le « quasi gratuit en calcul » est déclaré par les auteurs (Sopel97, texte de la PR), pas quantifié en Elo-par-MAC.
-- **Aucune documentation technique publique sur l'architecture interne de HedgeHog** (ensemble ? MoE ?) ni de mesure — la prémisse « HedgeHog utilise des ensembles » reste non confirmée.
 - **Aucune règle chiffrée sur la largeur de goulot minimale** pour que des têtes spécialisées soient utiles au backgammon.
 - **Aucune mesure du routage appris (MoE) vs aiguillage manuel dans un jeu de plateau** à budget constant — Backgammon-NN a trouvé le routage catégoriel « neutre » mais n'a pas comparé un routeur appris top-1.
 - **Aucune étude publiée quantifiant l'effet d'une discontinuité de fonction de valeur sur un expectiminimax de backgammon** spécifiquement.

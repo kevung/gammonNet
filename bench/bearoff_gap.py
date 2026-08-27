@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """T33 — de combien le réseau se trompe là où une table exacte sait.
 
-C'est la valeur de T33, et elle n'était pas connue. `BRIEF.md` §3.3 cite l'aveu
-de HedgeHog sur son propre build public : *« Without a bearoff database the
-network's learned approximation carries pure races and deep bearoffs on its own,
-and it is measurably weaker there than an exact table. »* **Measurably** — donc
-mesurons.
+C'est la valeur de T33, et elle n'était pas connue. `BRIEF.md` §3.3 le pose sans
+le chiffrer : sans table de fin de partie, l'approximation apprise du réseau
+porte seule les courses pures et les bearoffs profonds, et elle y est
+mesurablement plus faible qu'une table exacte. **Mesurablement** — donc mesurons.
 
 ## Ce qui est exact, et pourquoi
 

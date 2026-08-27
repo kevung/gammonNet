@@ -538,8 +538,8 @@ d'inférence ; exposition des **cinq probabilités brutes**.
 puis cubeful.
 
 **Critères d'acceptation**
-- Le ppg mesuré est comparé au **+0,0673 publié** (benchmark HedgeHog, `colossus` vs `gnubg`,
-  0-ply cubeful) et au **+57,8 mEq/partie** annoncé par l'auteur en 0-ply.
+- Le ppg mesuré est comparé au **+57,8 mEq/partie** annoncé par l'auteur du modèle en 0-ply —
+  la seule référence externe que ce dépôt cherche à reproduire.
 - **Si l'écart dépasse les intervalles de confiance, il est expliqué avant de continuer** :
   protocole différent, traitement du videau, sur-représentation des fins de partie. Un écart
   inexpliqué **arrête la phase 2**.
@@ -599,9 +599,9 @@ et ≥ 1 mobile réel (pas un émulateur), avec et sans SIMD, en fil principal e
 
 **Objectif** — trancher entre les candidats, sur mesure.
 
-**Périmètre** — Comparer : (i) le C du dépôt de référence, (ii) le C++ de `hedgehog-public`
-complété du layout `DENSE_FLOAT` qu'il refuse délibérément. Critères : débit WebAssembly, taille
-de l'artefact, effort d'intégration, dette.
+**Périmètre** — Comparer : (i) le C du dépôt de référence, (ii) un moteur d'inférence C++ tiers,
+complété du layout dense qu'il ne prend pas en charge. Critères : débit WebAssembly, taille de
+l'artefact, effort d'intégration, dette.
 
 **Livrable** — une note de décision **chiffrée**, versionnée dans le dépôt.
 
@@ -685,8 +685,8 @@ post-Crawford.
 
 ## T33 — Tables de fin de partie
 
-**Objectif** — combler le trou que ni le build public de HedgeHog ni le modèle de référence ne
-comblent.
+**Objectif** — combler le trou qu'un réseau seul, sans table exacte, laisse en course et en
+bearoff profond.
 
 **Périmètre** — Charger les tables au format GNU Backgammon, **ou** les recalculer par
 programmation dynamique. Chemin de repli sur le réseau quand la position sort de la table.
@@ -1177,7 +1177,7 @@ de volatilité exacte** sur les 21 jets (sous-produit gratuit du backup, poids d
 du principal) ; entraînement **from scratch** (le warm-start nuit), architecture constante,
 cross-entropy sur les 5 probabilités + MSE sur la volatilité.
 
-**Exclut** — tout professeur externe : gnubg, XG, HedgeHog — règle de licence du dépôt, y compris
+**Exclut** — tout professeur externe (gnubg, XG, ou tout autre moteur) — règle de licence du dépôt, y compris
 pour l'étiquetage (la recommandation contraire de DS-14 est rejetée, voir son retour) ;
 l'agrandissement du réseau (mesuré indiscernable à movetime égal) ; les caractéristiques
 expertes en entrée (trois négatifs mesurés — H2 dormante).

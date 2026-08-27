@@ -71,12 +71,10 @@ reprise.
 
 | Brique | Auteur | Licence | Ce qu'on lui doit |
 |---|---|---|---|
-| [`hedgehog-public`](https://gitlab.com/eranlambooij/hedgehog-public) | Eran Lambooij | MIT — vérifiée par lecture du fichier `LICENSE` | **Aucun code embarqué** (décision T22, [ADR-0001](docs/adr/0001-moteur-inference.md)). Leur **benchmark public** est l'étalon que T11 confronte, et leur principe *« refused, not approximated »* est devenu la règle n° 2 de `CLAUDE.md` |
-| Highway (SIMD) | Google | Apache-2.0 **ou** BSD-3-Clause | **Non utilisé.** Il n'arrivait que par transitivité via `hedgehog-public`. S'il devenait nécessaire, il sera pris à la source comme dépendance nommée, avec ses obligations propres — fichier `NOTICE` et marquage des fichiers modifiés |
+| Highway (SIMD) | Google | Apache-2.0 **ou** BSD-3-Clause | **Non utilisé.** Il n'arrivait que par transitivité, via une piste écartée. S'il devenait nécessaire, il sera pris à la source comme dépendance nommée, avec ses obligations propres — fichier `NOTICE` et marquage des fichiers modifiés |
 
-> **Les réseaux de neurones de HedgeHog ne sont pas utilisés** : ils portent une clause non
-> commerciale, incompatible avec l'engagement de licence de ce dépôt. Leur **code** est MIT. Les
-> deux n'ont pas la même licence, et la distinction doit rester visible partout.
+> **Aucun réseau portant une clause non commerciale n'est utilisé** : une telle clause est
+> incompatible avec l'engagement de licence de ce dépôt.
 
 ## Outillage (non distribué)
 
@@ -88,9 +86,8 @@ reprise.
 
 ## Une distinction qui compte
 
-**Le code de HedgeHog et les réseaux de HedgeHog n'ont pas la même licence.** Le dépôt
-`hedgehog-public` est MIT ; les réseaux publiés sur leur site portent une clause **non
-commerciale**. gammonNet peut utiliser le premier, pas les seconds. Toute mention publique de ce
-projet doit préserver cette distinction — écrire « propulsé par HedgeHog » sans plus laisserait
-croire qu'on emploie leurs modèles, ce qui serait faux et injuste envers eux comme envers
-l'auteur du modèle réellement utilisé.
+**Un dépôt et les modèles qu'il publie n'ont pas forcément la même licence.** Le nom du dépôt ne
+renseigne pas sur la licence des poids : un dépôt MIT peut publier des réseaux sous clause non
+commerciale. C'est pourquoi chaque brique de ce tableau est vérifiée par lecture de sa licence,
+poids et code séparément, et pourquoi le seul réseau embarqué ici est celui dont la licence a été
+lue — celui d'Alexander Strehl.

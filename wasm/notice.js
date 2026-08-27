@@ -16,9 +16,9 @@
  * https://github.com/kevung/gammonNet
  *
  * ── Ce qui N'EST PAS utilisé ici ───────────────────────────────────────
- * Les réseaux de neurones de HedgeHog portent une clause non commerciale et ne
- * sont pas employés. Aucun poids de GNU Backgammon (GPL-3) n'entre dans cet
- * artefact. Le réseau embarqué est celui d'Alexander Strehl, cité ci-dessus.
+ * Aucun poids de GNU Backgammon (GPL-3) n'entre dans cet artefact, ni aucun
+ * réseau portant une clause non commerciale. Le réseau embarqué est celui
+ * d'Alexander Strehl, cité ci-dessus.
  *
  * SPDX-License-Identifier: MIT
  */

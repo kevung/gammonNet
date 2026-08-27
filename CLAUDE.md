@@ -35,7 +35,7 @@ Un module WebAssembly servi à un navigateur **est une distribution**. Donc :
 |---|---|
 | Poids GNU Backgammon, ou tout dérivé de ceux-ci | GPL-3 |
 | Code GNU Backgammon copié dans le pipeline | Œuvre dérivée |
-| Réseaux HedgeHog, ou un fine-tuning de ceux-ci | Clause non commerciale — hors du périmètre de licence de ce dépôt |
+| Tout réseau sous clause non commerciale, ou un fine-tuning d'un tel réseau | Hors du périmètre de licence de ce dépôt |
 | Copier du code bgsage | MPL-2.0 vérifiée (et non AGPL-3 comme d'abord noté) — copyleft de fichier ; lecture et réimplémentation d'idées permises, voir `BRIEF.md` §3.5 |
 
 | Autorisé | Fondement |
@@ -56,10 +56,10 @@ peut pas corriger par un correctif.
 > **Un réseau à qui l'on donne une entrée qu'il n'a jamais vue retourne cinq probabilités
 > parfaitement plausibles.**
 
-C'est le mode de défaillance central du domaine, et il est silencieux. HedgeHog raconte s'être
-ainsi trompé de 0,5 d'équité sur un cinquième des positions, sans aucun signe extérieur — d'où
-leur principe, qu'on reprend ici : *« A model this build cannot evaluate is refused, not
-approximated. »*
+C'est le mode de défaillance central du domaine, et il est silencieux : un moteur peut se tromper
+d'une demi-unité d'équité sur une fraction notable des positions sans qu'aucun signe extérieur ne
+le trahisse. D'où la règle : **un modèle qu'un build ne sait pas évaluer est refusé, jamais
+approximé.**
 
 Deux conséquences pratiques :
 
@@ -112,8 +112,8 @@ font un réseau nouveau. Voir `BRIEF.md`.
 - **Ne jamais conclure « ça marche » sans avoir lancé la commande et lu sa sortie.**
 - **Ne jamais annoncer une force sans le protocole, le volume et l'intervalle de confiance.**
 - **Ne jamais intégrer une source dont la licence n'a pas été lue.** Le nom du dépôt ne suffit
-  pas : les modèles peuvent avoir une licence différente du code qui les charge — c'est
-  précisément le cas de HedgeHog, dont le dépôt est MIT mais dont les réseaux ne le sont pas.
+  pas : les modèles peuvent avoir une licence différente du code qui les charge. Un dépôt MIT peut
+  parfaitement publier des poids sous clause non commerciale.
 - **Ne pas élargir le périmètre.** L'entraînement d'un modèle propre au projet (phase 4) est
   **conditionnel** au résultat de la phase 1. Ne pas l'engager avant.
 
