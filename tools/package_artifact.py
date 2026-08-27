@@ -147,6 +147,27 @@ GNU Backgammon en 2-ply, confirmé*. « Supérieur » n'est **pas** établi.
 **eXtreme Gammon n'a pas été mesuré**, et cette moitié de l'objectif ne se
 déduit pas de l'autre.
 
+## Le taux d'erreur, mesuré contre un arbitre plus fort
+
+Le **PR** — 500 × l'équité moyenne perdue par décision, jugée par GNU Backgammon
+à 3-ply — sur 600 décisions de contact :
+
+| configuration | PR | IC 95 % | référence publiée |
+|---|---|---|---|
+| 0-ply | 1,088 | [0,802 ; 1,412] | 1,06 |
+| 1-ply | 0,499 | [0,330 ; 0,705] | 0,50 |
+| 2-ply, sans élagage | **0,273** | [0,190 ; 0,364] | 0,22 |
+| 2-ply, élagage `k=12` *(le défaut)* | 0,375 | [0,264 ; 0,499] | — |
+
+**Les trois valeurs de référence tombent dans leur intervalle.** Le PR descend à
+chaque ply ajouté, ce qui est le contrôle que `PLAN.md` désigne comme le plus
+révélateur de la chaîne. Fiche : `docs/mesures/2026-08-27-T3E-performance-rating.md`.
+
+**Deux réserves à lire avec ces chiffres** : le corpus est uniquement de contact,
+donc le PR est probablement pessimiste ; et un PR mesuré contre gnubg n'est
+reproductible qu'à ~±0,005 d'un build à l'autre, à version et poids identiques —
+mesuré sur deux machines.
+
 ## Ce que l'analyse d'un vrai match montre
 
 139 décisions d'un match de 7 points, au score et au videau réels : **86,3 %
