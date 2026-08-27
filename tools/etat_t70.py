@@ -78,7 +78,10 @@ def harvest_state():
     des récoltes terminées : ils sont écartés, sinon une tranche finie il y a
     trois heures continuerait de peser sur l'état.
     """
-    STALE = 1800
+    #: Un fichier de suivi qu'aucun processus n'a touché depuis ce délai
+    #: appartient à une récolte finie. 20 min laisse de la marge au relevé le
+    #: plus espacé (~90 s) sans traîner une tranche terminée pendant une heure.
+    STALE = 1200
     now = time.time()
     files = sorted(Path("/tmp").glob(PROGRESS_GLOB))
     if PROGRESS.exists():
@@ -157,15 +160,28 @@ def main() -> int:
             share = st["kept"] / target if target else 0.0
             rate = st["kept"] / st["seconds"] if st["seconds"] else 0.0
             left = (target - st["kept"]) / rate if (rate and target) else 0.0
-            stale = st["age"] > 600
+            # Une récolte qui a atteint sa cible et se tait est TERMINÉE, pas
+            # bloquée. Confondre les deux fait crier l'alarme à chaque fin de
+            # tranche — et un garde-fou qui crie pour rien est celui qu'on
+            # apprend à ignorer. L'alarme ne vaut que pour une récolte qui se
+            # tait AVANT d'avoir fini.
+            done = target and st["kept"] >= target
+            stale = st["age"] > 600 and not done
+            if done:
+                mark = "   ✓ terminée"
+                reste = ""
+            else:
+                mark = ("   ⚠ MUETTE DEPUIS "
+                        + str(int(st["age"] / 60)) + " MIN" if stale else "")
+                reste = f"   reste ~{left / 3600:.1f} h"
             print(f"    {st['name']:14s} {st['kept']:5d}"
                   f"{'/' + str(target) if target else ''} gardées "
                   f"({100 * share:5.1f} %)  {st['workers'] - st['idle']}/"
-                  f"{st['workers']} processus actifs"
-                  f"   reste ~{left / 3600:.1f} h"
-                  f"{'   ⚠ MUETTE DEPUIS ' + str(int(st['age'] / 60)) + ' MIN' if stale else ''}")
-        idle = sum(st["idle"] for st in states)
-        busy = sum(st["workers"] - st["idle"] for st in states)
+                  f"{st['workers']} processus actifs{reste}{mark}")
+        vivantes = [st for st in states
+                    if not (target and st["kept"] >= target)]
+        idle = sum(st["idle"] for st in vivantes)
+        busy = sum(st["workers"] - st["idle"] for st in vivantes)
         if busy + idle:
             print(f"    → {busy} processus au travail, {idle} en attente "
                   f"({100 * idle / (busy + idle):.0f} % de traîne)")
