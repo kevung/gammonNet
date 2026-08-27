@@ -83,6 +83,105 @@ export class Evaluator {
     }
   }
 
+  /**
+   * Les N meilleurs coups, avec tout ce qu'une analyse affiche.
+   *
+   * `bestPlay` ne rend que le premier, ce qui suffit pour JOUER et pas pour
+   * ANALYSER. Ici chaque candidat porte son équité, les cinq probabilités et
+   * l'identifiant de la position résultante.
+   *
+   * ATTENTION AUX PROBABILITÉS : elles décrivent la position RÉSULTANTE, donc
+   * vues par l'ADVERSAIRE — la convention du moteur. `forMover` les retourne
+   * pour l'affichage ; les inverser en silence produirait cinq nombres
+   * parfaitement plausibles et faux.
+   */
+  rankPlays(positionId, turn, d1, d2, {
+    ply = 0, filterTop = 0, filterInner = 0,
+    useMatch = false, awayOnRoll = 0, awayOpponent = 0,
+    cube = 1, crawford = false, max = 10,
+  } = {}) {
+    const m = this.#module;
+    const outPtr = m._malloc(4 * 6 * max);
+    const idPtr = m._malloc(15 * max);
+    try {
+      const count = m.ccall(
+        "gnw_rank_plays", "number",
+        ["string", "number", "number", "number", "number", "number", "number",
+         "number", "number", "number", "number", "number", "number", "number",
+         "number"],
+        [positionId, turn, d1, d2, ply, filterTop, filterInner,
+         useMatch ? 1 : 0, awayOnRoll, awayOpponent, cube, crawford ? 1 : 0,
+         max, outPtr, idPtr]);
+      if (count < 0) {
+        throw new Error("classement refusé : position illisible, ou score " +
+                        "hors de la table d'équité de match");
+      }
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        const base = (outPtr >> 2) + i * 6;
+        const probs = Array.from(m.HEAPF32.subarray(base + 1, base + 6));
+        out.push({
+          equity: m.HEAPF32[base],
+          resultId: m.UTF8ToString(idPtr + i * 15),
+          // Vues par l'adversaire, comme le moteur les produit.
+          probs,
+          // Et retournées, pour l'affichage.
+          forMover: {
+            win: 1 - probs[0],
+            winGammon: probs[3], winBackgammon: probs[4],
+            loseGammon: probs[1], loseBackgammon: probs[2],
+          },
+        });
+      }
+      return out;
+    } finally {
+      m._free(outPtr); m._free(idPtr);
+    }
+  }
+
+  /**
+   * La décision de videau, avec ses équités et non seulement son verdict.
+   *
+   * *« Une décision juste à 0,001 près et une décision juste à 0,5 près ne
+   * sont pas la même décision »* — d'où `noDouble`, `double` et le point de
+   * prise, en plus de l'action.
+   *
+   * `efficiency` est MESURÉE (`bench/fit_efficiency.py`), jamais empruntée à
+   * une constante publiée.
+   */
+  cubeDecision(positionId, turn, {
+    owner = 0, useMatch = false, awayOnRoll = 0, awayOpponent = 0,
+    cube = 1, crawford = false, efficiency = 0.566, jacoby = true,
+    ply = 0, filterTop = 0, filterInner = 0,
+  } = {}) {
+    const m = this.#module;
+    const outPtr = m._malloc(8 * 9);
+    try {
+      const status = m.ccall(
+        "gnw_cube_decide", "number",
+        ["string", "number", "number", "number", "number", "number", "number",
+         "number", "number", "number", "number", "number", "number", "number"],
+        [positionId, turn, owner, useMatch ? 1 : 0, awayOnRoll, awayOpponent,
+         cube, crawford ? 1 : 0, efficiency, jacoby ? 1 : 0,
+         ply, filterTop, filterInner, outPtr]);
+      if (status !== 0) {
+        throw new Error("décision de videau refusée : position illisible, ou " +
+                        "score hors de la table d'équité de match");
+      }
+      const v = m.HEAPF64.subarray(outPtr >> 3, (outPtr >> 3) + 9);
+      const ACTIONS = ["no-double", "double-take", "double-pass", "too-good"];
+      return {
+        action: ACTIONS[v[0]] ?? String(v[0]),
+        equityNoDouble: v[1],
+        equityDouble: v[2],
+        takePoint: v[3],
+        probs: Array.from(v.subarray(4, 9)),
+      };
+    } finally {
+      m._free(outPtr);
+    }
+  }
+
   /** Le k réellement en vigueur — 0 si l'élagage est éteint. */
   pruneK() {
     return this.#module._gnw_prune_k();
