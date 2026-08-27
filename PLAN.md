@@ -1364,6 +1364,43 @@ API native documentées.
 
 ---
 
+## T51 — La documentation publiée, en trois volets et deux langues
+
+**Objectif** — que quelqu'un qui découvre le projet puisse **se convaincre par lui-même**, sans
+nous croire sur parole, que cet évaluateur vaut la peine — et sache s'en servir.
+
+**Périmètre** — Une documentation **Sphinx**, publiée sur **GitHub Pages**, en **français et en
+anglais**, en trois volets :
+
+| Volet | Pour qui | Ce qu'il contient |
+|---|---|---|
+| **Manuel utilisateur** | qui veut analyser des positions | installation, préréglages et leur budget de temps, lecture d'une analyse, limites connues |
+| **Documentation scientifique** | qui veut être convaincu | l'encodage, la recherche, l'équité de match, le videau, les tables exactes — et surtout **les mesures** : protocole, volume, intervalle de confiance, et la comparaison aux moteurs de référence |
+| **Documentation développeur** | qui veut lire, modifier, porter | l'architecture, les frontières, les invariants qui ne se voient pas (exactitude bit à bit, neutralité du cache, pureté des dés), comment reproduire chaque mesure |
+
+**Le volet scientifique est le cœur, et il a une exigence particulière** : il doit permettre à un
+lecteur exigeant de juger la **qualité d'évaluation** face aux moteurs de référence — benchmarks,
+protocoles, et les écarts **tels qu'ils sont**, y compris quand ils ne nous flattent pas. C'est la
+règle 2 de `CLAUDE.md` appliquée à la vitrine : une force affirmée sans protocole, volume et
+intervalle de confiance n'a pas sa place, même dans une page d'accueil.
+
+**Ton** — clair, concis, factuel. Pas de superlatif, pas de comparaison qualitative sans chiffre.
+Chaque affirmation de performance renvoie à sa fiche de `docs/mesures/` et à sa commande de
+reproduction.
+
+**Exclut** — toute page qui affirmerait une force que le dépôt n'a pas mesurée.
+
+**Critères d'acceptation**
+- Le site se construit et se publie automatiquement depuis le dépôt.
+- Les trois volets existent dans les deux langues, et aucune page n'est un placeholder.
+- Toute affirmation chiffrée de la documentation scientifique cite sa fiche et sa commande, et
+  un lecteur peut refaire la mesure.
+- La comparaison aux moteurs de référence est présente, avec son protocole et ses intervalles.
+
+**Dépend de T50** : on ne documente pas un artefact qui n'est pas publié.
+
+---
+
 ## Ce que ce plan ne couvre pas
 
 - Le format de sérialisation à long terme. Le `.bin` du dépôt de référence suffit à démarrer ;
