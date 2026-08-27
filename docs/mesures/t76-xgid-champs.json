@@ -1,0 +1,10 @@
+{
+  "cases": 216,
+  "divergences": [],
+  "passed": true,
+  "score_order": {
+    "ambiguous": 0,
+    "upper_is_index0": 0,
+    "upper_is_index1": 120
+  }
+}

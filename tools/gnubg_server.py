@@ -242,7 +242,20 @@ def op_xgid(request):
         gnubg.command("set xgid " + identifier)
     except Exception as exc:  # noqa: BLE001 -- l'erreur EST la réponse
         return {"error": f"gnubg a refusé {identifier!r} : {exc}"}
-    return {"board": [list(side) for side in gnubg.board()]}
+    # Le plateau ET l'état : videau, score, longueur de match, Crawford, trait.
+    # T76 a besoin des deux — l'ordre des champs hors pions vient des mêmes
+    # implémentations tierces que celui des pions, et n'a pas plus de raison
+    # d'être juste sans vérification.
+    reply = {"board": [list(side) for side in gnubg.board()]}
+    try:
+        reply["cubeinfo"] = gnubg.cubeinfo()
+    except Exception as exc:  # noqa: BLE001
+        reply["cubeinfo_error"] = str(exc)[:120]
+    try:
+        reply["posinfo"] = gnubg.posinfo()
+    except Exception as exc:  # noqa: BLE001
+        reply["posinfo_error"] = str(exc)[:120]
+    return reply
 
 
 OPS = {

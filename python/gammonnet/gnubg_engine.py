@@ -159,6 +159,15 @@ class GnubgSession:
         reply = self.ask({"op": "xgid", "xgid": identifier})
         return None if "error" in reply else reply["board"]
 
+    def state_from_xgid(self, identifier: str):
+        """Tout ce que gnubg lit dans un XGID : plateau, videau, score, trait.
+
+        Rend None s'il refuse. Le refus est une réponse : c'est ainsi qu'on
+        découvre qu'un XGID est malformé, et un oracle doit pouvoir dire « non ».
+        """
+        reply = self.ask({"op": "xgid", "xgid": identifier})
+        return None if "error" in reply else reply
+
     def close(self):
         if self._process.poll() is None:
             try:
