@@ -445,3 +445,9 @@ Le programme du §14 est **engageable sur la machine du projet** : un candidat s
 heures, se qualifie en heures par les paliers, et le match dupliqué ne se paie qu'une fois par
 candidat retenu. La suite n'est plus de la recherche : c'est la **conversion du §14 en fiches
 `PLAN.md` (série T7x)** — une décision d'engagement qui appartient au dépôt, pas à ce document.
+
+**La conversion est faite** — décidée par l'utilisateur et exécutée le 2026-08-27 : les huit
+lignes P1–P8 sont devenues les fiches **T70–T77** (`PLAN.md`, phase 7), suivies par les issues
+GitHub [#9](https://github.com/kevung/gammonNet/issues/9)–[#16](https://github.com/kevung/gammonNet/issues/16)
+sous l'epic [#17](https://github.com/kevung/gammonNet/issues/17). L'implémentation n'est pas
+commencée. Ce document a rempli son office ; les décisions vivent désormais dans `PLAN.md`.
