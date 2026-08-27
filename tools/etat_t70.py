@@ -25,12 +25,17 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PROGRESS = Path(os.environ.get("T70_CORPUS_PROGRESS", "/tmp/t70-corpus-progress.log"))
+#: La v2 lance plusieurs récoltes de front, chacune avec son propre fichier de
+#: suivi : un seul fichier partagé mélangerait deux tranches, et l'état
+#: additionnerait des budgets qui n'ont rien à voir.
+PROGRESS_GLOB = "t70-progress-*.log"
 LOGS = Path(os.environ.get("LOGS", "/home/kunger/dev/gammonNet-logs"))
 
 
@@ -62,29 +67,52 @@ def harvest_target() -> int | None:
 
 
 def harvest_state():
-    """Le dernier relevé de chaque processus de récolte."""
-    if not PROGRESS.exists():
-        return None
-    latest = {}
-    for line in PROGRESS.read_text().splitlines():
-        if not line.strip():
+    """L'état de CHAQUE récolte en cours, séparément.
+
+    La v2 lance plusieurs récoltes de front, chacune avec son fichier de suivi.
+    Les additionner produirait un non-sens : les budgets de deux tranches n'ont
+    rien à voir, et le total des décisions gardées dépasserait la cible d'une
+    seule — c'est ce que l'état affichait, avec un temps restant négatif.
+
+    Les fichiers dont plus rien ne bouge depuis STALE secondes appartiennent à
+    des récoltes terminées : ils sont écartés, sinon une tranche finie il y a
+    trois heures continuerait de peser sur l'état.
+    """
+    STALE = 1800
+    now = time.time()
+    files = sorted(Path("/tmp").glob(PROGRESS_GLOB))
+    if PROGRESS.exists():
+        files.append(PROGRESS)
+    out = []
+    for path in files:
+        age = now - path.stat().st_mtime
+        if age > STALE:
             continue
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
+        latest = {}
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            latest[row["worker"]] = row
+        if not latest:
             continue
-        latest[row["worker"]] = row
-    if not latest:
-        return None
-    rows = list(latest.values())
-    return {
-        "workers": len(rows),
-        "kept": sum(r["kept"] for r in rows),
-        "examined": sum(r["examined"] for r in rows),
-        "budget": sum(r["budget"] for r in rows),
-        "seconds": max(r["seconds"] for r in rows),
-        "age": time.time() - PROGRESS.stat().st_mtime,
-    }
+        rows = list(latest.values())
+        name = re.sub(r"^t70-progress-|\.log$", "", path.name)
+        out.append({
+            "name": name if name != "t70-corpus-progress" else "(v1)",
+            "workers": len(rows),
+            "idle": sum(1 for r in rows
+                        if max(x["seconds"] for x in rows) - r["seconds"] > 600),
+            "kept": sum(r["kept"] for r in rows),
+            "examined": sum(r["examined"] for r in rows),
+            "budget": sum(r["budget"] for r in rows),
+            "seconds": max(r["seconds"] for r in rows),
+            "age": age,
+        })
+    return out
 
 
 def main() -> int:
@@ -96,7 +124,7 @@ def main() -> int:
 
     print(f"T70 — état au {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-    orchestrator = running("bash .*campagne_t70_tranches[.]sh")
+    orchestrator = running("bash .*campagne_t70_(tranches|v2)[.]sh")
     print(f"  orchestrateur : "
           f"{'vivant, PID ' + orchestrator[0].split()[0] if orchestrator else '⚠ ABSENT'}")
     print(f"  charge : {Path('/proc/loadavg').read_text().split()[0]}"
@@ -104,7 +132,9 @@ def main() -> int:
           f"   arbitrage {len(running('python.*arbitrate_t70[.]py'))} proc.")
 
     # ── les tranches ───────────────────────────────────────────────────────
-    tranches = sorted((ROOT / "docs/corpus/t70/tranches").glob("tranche-*"))
+    root = ROOT / "docs/corpus/t70/tranches"
+    tranches = sorted(list(root.glob("tranche-*")) + list(root.glob("*-[0-9][0-9]")))
+    tranches = sorted(set(tranches))
     if tranches:
         print("\n  tranches récoltées :")
         total = 0
@@ -119,36 +149,26 @@ def main() -> int:
         print(f"    {'total':22s}  {total:6d}")
 
     # ── la récolte en cours ────────────────────────────────────────────────
-    state = harvest_state()
-    if state:
-        share = state["examined"] / state["budget"] if state["budget"] else 0.0
-        rate = state["examined"] / state["seconds"] if state["seconds"] else 0.0
-        stale = state["age"] > 600
-        print(f"\n  récolte en cours — {state['workers']} processus ont parlé")
-        print(f"    {state['examined']}/{state['budget']} positions examinées "
-              f"({100 * share:.1f} %), {state['kept']} décisions gardées")
-        print(f"    {rate * 60:.0f} positions/min observées")
-
-        # Ce qui arrête une récolte, ce n'est PAS l'épuisement du budget
-        # d'examen : c'est le remplissage des quotas, qui arrive bien avant.
-        # Extrapoler vers le budget donnait « reste ~5 h » là où les deux
-        # premières tranches ont mis 2 h 30 — une estimation deux fois trop
-        # longue, annoncée avec le même aplomb qu'une bonne. On extrapole donc
-        # sur les décisions GARDÉES vers la cible, et le budget redevient ce
-        # qu'il est : un plafond, pas un objectif.
+    states = harvest_state()
+    if states:
         target = harvest_target()
-        if target and state["kept"]:
-            kept_rate = state["kept"] / state["seconds"] if state["seconds"] else 0.0
-            left = (target - state["kept"]) / kept_rate if kept_rate else 0.0
-            print(f"    {state['kept']}/{target} décisions gardées → "
-                  f"reste ~{left / 3600:.1f} h (règle de trois sur les décisions "
-                  f"gardées, pas une mesure)")
-            if rate:
-                ceiling = (state["budget"] - state["examined"]) / rate
-                print(f"    le budget d'examen, lui, ne serait épuisé qu'après "
-                      f"~{ceiling / 3600:.1f} h — c'est un plafond, pas un objectif")
-        print(f"    dernier relevé il y a {state['age']:.0f} s"
-              f"{'   ⚠ PLUS DE DIX MINUTES — vérifier' if stale else ''}")
+        print(f"\n  récoltes en cours : {len(states)}")
+        for st in states:
+            share = st["kept"] / target if target else 0.0
+            rate = st["kept"] / st["seconds"] if st["seconds"] else 0.0
+            left = (target - st["kept"]) / rate if (rate and target) else 0.0
+            stale = st["age"] > 600
+            print(f"    {st['name']:14s} {st['kept']:5d}"
+                  f"{'/' + str(target) if target else ''} gardées "
+                  f"({100 * share:5.1f} %)  {st['workers'] - st['idle']}/"
+                  f"{st['workers']} processus actifs"
+                  f"   reste ~{left / 3600:.1f} h"
+                  f"{'   ⚠ MUETTE DEPUIS ' + str(int(st['age'] / 60)) + ' MIN' if stale else ''}")
+        idle = sum(st["idle"] for st in states)
+        busy = sum(st["workers"] - st["idle"] for st in states)
+        if busy + idle:
+            print(f"    → {busy} processus au travail, {idle} en attente "
+                  f"({100 * idle / (busy + idle):.0f} % de traîne)")
 
     # ── l'arbitrage ────────────────────────────────────────────────────────
     journal = ROOT / f"docs/corpus/t70/registre-{args.context}.jsonl.journal"
