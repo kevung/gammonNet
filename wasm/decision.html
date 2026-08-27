@@ -31,6 +31,15 @@
       resultId: "sGfwATDgc/ABMA", reps: 5 },
     { ply: 2, filterTop: 1, filterInner: 1, equity: 0.166899, evaluations: 12951,
       resultId: "sGfwATDgc/ABMA", reps: 3 },
+    // Le point de fonctionnement de la campagne T35, et le même avec le
+    // réseau d'élagage au défaut natif. En natif : 2,0075 s contre 0,5588 s
+    // par décision, ×3,9. Ce que ça devient ici est LA question — le gain
+    // vient du remplissage des lots, et le lot rend ×2,21 dans un navigateur
+    // contre ×8,5 en natif. Rien ne se transporte.
+    { ply: 2, filterTop: 3, filterInner: 1, equity: 0.166899, evaluations: 38721,
+      resultId: "sGfwATDgc/ABMA", reps: 2, pruneK: 0 },
+    { ply: 2, filterTop: 3, filterInner: 1, equity: 0.166899, evaluations: 15142,
+      resultId: "sGfwATDgc/ABMA", reps: 3, pruneK: 12 },
   ];
 
   const out = document.getElementById("out");
@@ -53,6 +62,11 @@
       await (await fetch("/models/cubeless_prob5_512_512_256_128.bin")).arrayBuffer(),
     );
     const evaluator = await Evaluator.create(factory, modelBytes);
+    // Chargé une fois ; c'est `loadPrune(bytes, k)` qui l'allume ou l'éteint
+    // par configuration.
+    const pruneBytes = new Uint8Array(
+      await (await fetch("/models/prune_32.bin")).arrayBuffer(),
+    );
 
     out.textContent = `build ${build} · SIMD ${evaluator.hasSimd}\n`;
     log("profondeur   ms/décision      éval    accord natif");
@@ -70,6 +84,18 @@
         filterTop: expected.filterTop,
         filterInner: expected.filterInner,
       };
+
+      // L'élagage est posé AVANT le contrôle d'accord, pas après : c'est la
+      // configuration entière qui doit rendre le compte d'évaluations
+      // attendu, élagage compris. Un k qui ne serait pas pris déplacerait ce
+      // compte, et le contrôle le dirait au lieu de chronométrer une
+      // configuration qui n'est pas celle qu'on croit.
+      const wantedK = expected.pruneK || 0;
+      evaluator.loadPrune(pruneBytes, wantedK);
+      if (evaluator.pruneK() !== wantedK) {
+        throw new Error(
+          `élagage demandé à k=${wantedK}, en vigueur k=${evaluator.pruneK()}`);
+      }
 
       // L'accord d'abord.
       const first = evaluator.bestPlay(
@@ -98,6 +124,7 @@
 
       payload.results.push({
         ply: expected.ply,
+        pruneK: wantedK,
         filter: `${expected.filterTop}/${expected.filterInner}`,
         medianMs: Number(median.toFixed(3)),
         evaluations: first.evaluations,

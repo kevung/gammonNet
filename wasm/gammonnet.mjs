@@ -47,6 +47,47 @@ export class Evaluator {
     return evaluator;
   }
 
+  /**
+   * Charger le réseau d'ÉLAGAGE et fixer combien de candidats il laisse
+   * passer. `k <= 0` l'éteint et rend la recherche d'avant, bit pour bit.
+   *
+   * Le gain natif est ×3,9 à k=12 pour une perte dans le bruit. Ce qu'il
+   * devient ICI n'est pas connu : il vient du remplissage des lots, et le lot
+   * rend ×2,21 dans un navigateur contre ×8,5 en natif. Cette méthode existe
+   * pour que ce soit mesuré, pas transporté.
+   */
+  loadPrune(pruneBytes, k) {
+    const m = this.#module;
+    if (!k || k <= 0) {
+      if (m._gnw_load_prune(0, 0, 0) !== 0) {
+        throw new Error("l'extinction de l'élagage a été refusée");
+      }
+      return;
+    }
+    const ptr = m._malloc(pruneBytes.length);
+    try {
+      m.HEAPU8.set(pruneBytes, ptr);
+      const status = m._gnw_load_prune(ptr, pruneBytes.length, k);
+      if (status !== 0) {
+        // Refusé, jamais ignoré : un élagage silencieusement inactif ferait
+        // tourner une configuration qui n'est pas celle qu'on croit mesurer.
+        throw new Error(
+          status === -2
+            ? "réseau d'élagage refusé : illisible, ou que ce build ne sait " +
+              "pas évaluer"
+            : "le réseau d'élagage n'a pas pu être chargé en mémoire",
+        );
+      }
+    } finally {
+      m._free(ptr);
+    }
+  }
+
+  /** Le k réellement en vigueur — 0 si l'élagage est éteint. */
+  pruneK() {
+    return this.#module._gnw_prune_k();
+  }
+
   loadModel(modelBytes) {
     const m = this.#module;
     const ptr = m._malloc(modelBytes.length);
