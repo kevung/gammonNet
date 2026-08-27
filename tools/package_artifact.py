@@ -74,10 +74,22 @@ API = [
     ROOT / "wasm" / "worker.mjs",
 ]
 
-#: La table exacte de fin de partie. T38 a mesuré qu'elle comble 0,00028
-#: d'équité par décision de bearoff — un déficit réel, comblé avec certitude.
-#: Sans elle le moteur retombe sur le réseau, silencieusement.
-TABLES = [ROOT / "models" / "bearoff_one_sided.bin"]
+#: LA TABLE EXACTE NE SE PUBLIE PAS, et c'est une limite, pas un oubli.
+#:
+#: Celle que la recherche consulte est `gnubg_ts6x11.bd` — la table
+#: BILATÉRALE, **1,2 Gio**. Aucun artefact web ne la transporte, et un
+#: utilisateur qui la voudrait doit se la procurer séparément.
+#:
+#: Une première version publiait `models/bearoff_one_sided.bin` (6,9 Mio) en
+#: croyant livrer cette table. Le module l'a REFUSÉE, et il avait raison : son
+#: en-tête est `GNBO`, pas `gnubg-TS-`, et ce n'est pas ce que
+#: `gn_bearoff_open` lit. Publier un fichier que le moteur ne charge pas aurait
+#: donné l'illusion d'une exactitude qu'on n'avait pas.
+#:
+#: Ce que cela coûte est chiffré, pas supposé : 0,00028 d'équité par décision
+#: de bearoff (T38), là où GNU Backgammon consulte sa propre table et n'y perd
+#: rien. C'est nommé dans les notes de version.
+TABLES: list = []
 
 #: De quoi VÉRIFIER l'artefact plutôt que de nous croire : le repère de 2 000
 #: positions, le contrôle de parité qui le lit, et la provenance de chaque
@@ -128,7 +140,6 @@ def quickstart() -> str:
 |---|---|
 | `strehl-prob5-…​.bin` / `.bin16` | les poids du réseau, en float32 et en float16 (moitié moins lourd) |
 | `strehl-prune-32_…​.bin` / `.bin16` | le réseau d'élagage : il trie les coups pour que le grand n'en note qu'une poignée |
-| `bearoff_one_sided.bin` | la table EXACTE de fin de partie |
 | `gammonnet-simd.mjs` / `.wasm` | le moteur WebAssembly (préférez la version SIMD) |
 | `api/gammonnet.mjs` | l'API JavaScript — `Evaluator` |
 | `api/pool.mjs`, `api/worker.mjs` | le pool de Web Workers : un match en 74 s au lieu de 350 |
@@ -178,8 +189,10 @@ Attendu : `max|Δ| = 0` en scalaire, ~6,4e-7 en SIMD.
   deux fois plus rapide qu'à 12 et perd dix-huit fois ce qu'un ply entier de
   profondeur rapporte. 12 est le défaut mesuré ; ne le baissez pas sans mesurer.
 - **Sans le pool de workers**, un match de 7 points prend 350 s au lieu de 74.
-- **Sans `bearoff_one_sided.bin`**, la fin de partie retombe sur le réseau et
-  perd 0,00028 d'équité par décision de bearoff — silencieusement.
+- **La table exacte de fin de partie n'est pas fournie** : celle que le moteur
+  consulte pèse 1,2 Gio. La fin de partie retombe donc sur le réseau, ce qui
+  coûte 0,00028 d'équité par décision de bearoff (mesuré). `loadBearoff()`
+  existe pour qui se la procure.
 """
 
 
@@ -309,7 +322,14 @@ recherche, équité de match, fins de partie — pas celui des poids. `BRIEF.md`
   contre ×8,5 en natif : les chiffres natifs ne s'y transportent pas, et ils
   n'ont pas encore été remesurés là-bas
   (`docs/mesures/2026-08-27-T21-navigateur-a-refaire.md`).
-- **Aucun PR.** La métrique n'a jamais tourné.
+- **La table exacte de fin de partie n'est PAS incluse.** Celle que la recherche
+  consulte pèse 1,2 Gio et ne se transporte pas dans un artefact web. Sans elle,
+  la fin de partie retombe sur le réseau, ce qui coûte **0,00028 d'équité par
+  décision de bearoff** — mesuré (T38), là où GNU Backgammon consulte sa propre
+  table et n'y perd rien. L'API `loadBearoff()` existe pour qui se la procure.
+- **Aucun budget de temps sur mobile.** La pénalité mesurée en août était de
+  ×2,12 à ×2,83 sur deux appareils, mais elle n'a pas été rejouée depuis les
+  optimisations.
 """
 
 

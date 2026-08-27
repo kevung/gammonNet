@@ -99,6 +99,7 @@ export class Evaluator {
     ply = 0, filterTop = 0, filterInner = 0,
     useMatch = false, awayOnRoll = 0, awayOpponent = 0,
     cube = 1, crawford = false, max = 10,
+    cubeOwner = null, efficiency = 0.566,
   } = {}) {
     const m = this.#module;
     const outPtr = m._malloc(4 * 6 * max);
@@ -108,9 +109,10 @@ export class Evaluator {
         "gnw_rank_plays", "number",
         ["string", "number", "number", "number", "number", "number", "number",
          "number", "number", "number", "number", "number", "number", "number",
-         "number"],
+         "number", "number", "number"],
         [positionId, turn, d1, d2, ply, filterTop, filterInner,
          useMatch ? 1 : 0, awayOnRoll, awayOpponent, cube, crawford ? 1 : 0,
+         cubeOwner === null ? -1 : cubeOwner, efficiency,
          max, outPtr, idPtr]);
       if (count < 0) {
         throw new Error("classement refusé : position illisible, ou score " +
@@ -180,6 +182,73 @@ export class Evaluator {
     } finally {
       m._free(outPtr);
     }
+  }
+
+  /**
+   * La TABLE EXACTE de fin de partie.
+   *
+   * L'artefact la livre (`bearoff_one_sided.bin`, 6,9 Mio). Sans elle la
+   * recherche retombe sur le réseau et perd 0,00028 d'équité par décision de
+   * bearoff — mesuré, et silencieux. Passez `null` pour la retirer.
+   */
+  loadBearoff(bytes) {
+    const m = this.#module;
+    if (!bytes || bytes.length === 0) {
+      m._gnw_load_bearoff(0, 0);
+      return;
+    }
+    const ptr = m._malloc(bytes.length);
+    try {
+      m.HEAPU8.set(bytes, ptr);
+      const status = m._gnw_load_bearoff(ptr, bytes.length);
+      if (status !== 0) {
+        throw new Error(status === -2
+          ? "table de fin de partie refusée : illisible ou d'un format inconnu"
+          : "la table n'a pas pu être chargée en mémoire");
+      }
+    } finally {
+      m._free(ptr);
+    }
+  }
+
+  /**
+   * Le CACHE D'ÉVALUATION.
+   *
+   * Il rejoue les réponses du réseau et n'en invente aucune : vérifié qu'il ne
+   * change aucun résultat. Mesuré ×1,35 en contact, ×4,6 en course à 2-ply.
+   * `log2Entries = 21` donne deux millions d'entrées (le réglage de la
+   * campagne de mesure) ; `0` le désactive.
+   */
+  enableCache(log2Entries = 21) {
+    if (this.#module._gnw_enable_cache(log2Entries) !== 0) {
+      throw new Error("cache d'évaluation refusé : mémoire insuffisante ?");
+    }
+  }
+
+  /**
+   * Un NIVEAU D'ANALYSE, plutôt que six réglages à accorder soi-même.
+   *
+   * Rend l'objet d'options à passer à `rankPlays` / `bestPlay`. Les budgets de
+   * temps sont mesurés et documentés ; les composer autrement est possible,
+   * mais alors c'est à vous de mesurer ce que ça coûte.
+   */
+  static level(name) {
+    const LEVELS = {
+      // 0-ply : le réseau seul. ~6 ms par décision dans un navigateur.
+      instant: { ply: 0, filterTop: 0, filterInner: 0, pruneK: 0 },
+      // Le défaut. 2-ply filtré, élagage k=12 : ×3,65 pour une perte d'équité
+      // dans le bruit. ~2,7 s par décision, ~74 s le match à huit workers.
+      normal: { ply: 2, filterTop: 3, filterInner: 1, pruneK: 12 },
+      // Le même sans élagage : ~9,8 s par décision. Pour trancher une
+      // décision précise, pas pour parcourir un match.
+      thorough: { ply: 2, filterTop: 3, filterInner: 1, pruneK: 0 },
+    };
+    const level = LEVELS[name];
+    if (!level) {
+      throw new Error(
+        `niveau inconnu : ${name}. Connus : ${Object.keys(LEVELS).join(", ")}`);
+    }
+    return { ...level };
   }
 
   /** Le k réellement en vigueur — 0 si l'élagage est éteint. */
