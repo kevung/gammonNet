@@ -102,10 +102,20 @@ def main() -> int:
                         default=ROOT / "docs" / "mesures" / "t3e-pr.json")
     args = parser.parse_args()
 
-    plies = [int(p) for p in args.plies.split(",")]
-    if args.arbiter_ply <= max(plies):
+    # `--plies 0,1,2,2@0` : la dernière entrée est un 2-ply SANS élagage.
+    # L'arbitre ne dépendant pas de la configuration jugée, mesurer plusieurs
+    # configurations dans le même passage coûte ce que coûte le sujet — cinq
+    # minutes — au lieu d'un second arbitrage d'une heure.
+    plies = []
+    for token in args.plies.split(","):
+        if "@" in token:
+            ply, k = token.split("@")
+            plies.append((int(ply), int(k)))
+        else:
+            plies.append((int(token), None))
+    if args.arbiter_ply <= max(p for p, _ in plies):
         print(f"REFUSÉ : l'arbitre ({args.arbiter_ply}-ply) doit être PLUS FORT "
-              f"que tout ce qu'il juge (jusqu'à {max(plies)}-ply). Un joueur qui "
+              f"que tout ce qu'il juge (jusqu'à {max(p for p, _ in plies)}-ply). Un joueur qui "
               f"s'arbitre lui-même a un PR de zéro par construction.")
         return 2
 
@@ -114,6 +124,19 @@ def main() -> int:
     small = Network.load(PRUNE) if args.prune_k else None
     cases = corpus(args.decisions, SEED, net)
     print(f"   {len(cases)} décisions")
+
+    # L'arbitre coûte l'essentiel du temps — 68 min pour 600 décisions — et il
+    # ne dépend QUE du corpus et de sa profondeur, pas de la configuration
+    # jugée. Le mettre en cache rend la question « et sans élagage ? »
+    # rejouable en cinq minutes au lieu de soixante-dix, ce qui est la
+    # différence entre vérifier une hypothèse et la supposer.
+    cache = (ROOT / "build" /
+             f"pr-arbiter-{args.decisions}-{SEED}-{args.arbiter_ply}ply.json")
+    if cache.exists():
+        print(f"\n2. L'arbitre : repris du cache {cache.name}")
+        reference = json.loads(cache.read_text())
+        print(f"   {len(reference)} décisions")
+        return _subjects(args, plies, cases, reference, net, small)
 
     print(f"\n2. L'arbitre : gnubg {args.arbiter_ply}-ply sur tous les coups légaux")
     started = time.time()
@@ -135,7 +158,12 @@ def main() -> int:
                 print(f"   {index + 1}/{len(cases)}  "
                       f"({time.time() - started:.0f} s)")
     print(f"   {time.time() - started:.0f} s")
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(json.dumps(reference))
+    return _subjects(args, plies, cases, reference, net, small)
 
+
+def _subjects(args, plies, cases, reference, net, small) -> int:
     report = {"task": "T3E", "metric": "PR = 500 x equity lost per decision",
               "decisions": len(cases), "arbiter": f"gnubg {args.arbiter_ply}-ply",
               "seed": SEED, "prune_k": args.prune_k, "results": {}}
@@ -143,10 +171,13 @@ def main() -> int:
     print(f"\n3. Le sujet, à chaque profondeur")
     print(f"   {'ply':>4} {'décisions':>10} {'PR':>8} {'IC 95 %':>20} "
           f"{'accord':>8}")
-    for ply in plies:
+    for ply, override in plies:
+        k = args.prune_k if override is None else override
+        use_prune = k > 0 and ply >= PRUNE_FROM_PLY
         config = SearchConfig(ply=ply, filter=FILTERS.get(ply, ()),
-                              prune_net=small if ply >= PRUNE_FROM_PLY else None,
-                              prune_k=args.prune_k if ply >= PRUNE_FROM_PLY else 0)
+                              prune_net=small if use_prune else None,
+                              prune_k=k if use_prune else 0)
+        label = f"{ply}" if override is None else f"{ply}@{override}"
         losses, agree, counted = [], 0, 0
         for (position, d1, d2), table in zip(cases, reference):
             if not table:
@@ -164,20 +195,22 @@ def main() -> int:
 
         mean_loss = statistics.mean(losses)
         lo, hi = bootstrap_ci(losses, resamples=args.bootstrap, seed=SEED)
-        report["results"][str(ply)] = {
-            "decisions": counted, "pr": PR_SCALE * mean_loss,
+        report["results"][label] = {
+            "decisions": counted, "ply": ply, "prune_k": k if use_prune else 0,
+            "pr": PR_SCALE * mean_loss,
             "pr_ci": [PR_SCALE * lo, PR_SCALE * hi],
             "agreement": agree / counted,
             "mean_loss": mean_loss,
         }
-        print(f"   {ply:>4} {counted:>10} {PR_SCALE * mean_loss:>8.3f} "
+        print(f"   {label:>4} {counted:>10} {PR_SCALE * mean_loss:>8.3f} "
               f"[{PR_SCALE * lo:>7.3f} ; {PR_SCALE * hi:>7.3f}] "
               f"{100 * agree / counted:>7.1f}%")
 
     args.out.write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"\n→ {args.out}")
 
-    ordered = [report["results"][str(p)]["pr"] for p in plies]
+    ordered = [report["results"][f"{p}" if o is None else f"{p}@{o}"]["pr"]
+               for p, o in plies if o is None]
     if len(ordered) > 1 and not all(a > b for a, b in zip(ordered, ordered[1:])):
         print("\nATTENTION : le PR ne descend pas à chaque ply. `PLAN.md` traite "
               "cela comme BLOQUANT — c'est la signature d'une recherche fausse.")
