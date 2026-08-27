@@ -23,3 +23,4 @@ node_modules/
 gnu_bearoff_database/
 # Lien vers les bases de fin de partie, quand on travaille depuis un worktree.
 gnu_bearoff_database
+dist/

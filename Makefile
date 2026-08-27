@@ -37,7 +37,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench bench-infer bench-encoding bench-decision env clean help
+.PHONY: all setup venv vendor build model corpus test bench bench-infer bench-encoding bench-decision artifact env clean help
 
 all: help
 
@@ -279,6 +279,14 @@ PRUNE_MODEL := models/prune_32.bin
 $(BENCH_ENCODING): bench/bench_encoding.c $(OBJECTS) $(VENDOR_OBJECTS)
 	@mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ -lm
+
+# T50 : l'artefact publiable. Refuse de se déclarer complet s'il manque une
+# pièce — notamment le WebAssembly, qui demande Emscripten.
+.PHONY: artifact
+artifact: build wasm
+	$(PYTHON) tools/package_artifact.py --version $(VERSION)
+
+VERSION ?= v1
 
 bench-encoding: build $(BENCH_ENCODING) $(MODEL)
 	$(BENCH_ENCODING) $(MODEL) $(PRUNE_MODEL)
