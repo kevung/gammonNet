@@ -132,14 +132,40 @@ make model      # exporte cubeless_prob5_512_512_256_128.bin
 
 | Brique | Vérification |
 |---|---|
-| Emscripten | `emcc --version` |
+| Emscripten | `emcc --version` — attendu **6.0.5**, la version de T20/T21 |
 | Node ≥ 20 | `node --version` — sert au test de parité WebAssembly |
 | Un navigateur **réel** | Pas un émulateur. T21 a mesuré sept plateformes, dont quatre appareils physiques |
 
+Emscripten n'est pas un paquet système ici : il vit dans `~/emsdk`, installé sans `sudo`
+et sans rien toucher hors de ce répertoire. **Il faut l'activer dans le shell avant tout
+`make wasm`** — sans quoi le `Makefile` ne trouve pas `emcc` et la piste B entière est
+muette :
+
 ```bash
+source ~/emsdk/emsdk_env.sh          # emcc 6.0.5 dans le PATH
+
 make wasm
 make wasm-parity     # sorties WebAssembly contre le repère natif
 ```
+
+Réinstaller ailleurs, ou après une remise à zéro de la machine :
+
+```bash
+git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
+cd ~/emsdk && ./emsdk install 6.0.5 && ./emsdk activate 6.0.5
+```
+
+**Épingler 6.0.5, ne pas prendre `latest`.** Le repère de parité natif ↔ WebAssembly est
+une comparaison numérique : changer de chaîne de compilation le déplace, et un repère
+déplacé sans qu'on le sache est exactement la régression silencieuse que ce projet refuse.
+Le 2026-08-27 il valait 0,000e+00 (scalaire) et 6,407e-07 (SIMD) —
+voir `docs/mesures/2026-08-27-T2x-wasm-retabli.md`, qui explique aussi pourquoi ce n'est
+pas le chiffre de T20.
+
+`emsdk` installe son propre Node (24.19.0, sous `~/emsdk/node/`). Le Node du système est
+`v18.20.8`, en dessous du seuil de ce tableau ; le test de parité passe avec l'un comme
+avec l'autre — la sémantique flottante de WebAssembly est spécifiée — mais toute lecture
+de **débit** sous Node doit dire lequel des deux a servi.
 
 ## Le contrôle de bout en bout
 
