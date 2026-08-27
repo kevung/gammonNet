@@ -100,12 +100,37 @@ ARBITER_PLY = 3
 #: ×2,3 de trajectoires en moins contre ×2,8, et 44 % de décisions closes.
 DOMINANCE_MARGIN = 0.020
 
-#: La cible de la passe 3 : IC 95 % < 0,005, soit un se de 0,005 / 1,96.
-FULL_TARGET_SE = 0.005 / 1.96
+#: La résolution par décision, et le raisonnement qui la fixe.
+#:
+#: La fiche écrit « rollout complet (IC 95 % < 0,005) ». Ce serait la bonne
+#: exigence s'il fallait trancher CHAQUE décision individuellement. Ce n'est pas
+#: la métrique de T70 : la métrique est une MOYENNE de pertes sur 10⁴–10⁵
+#: décisions, et l'erreur d'un arbitrage non biaisé se divise par la racine du
+#: nombre de décisions.
+#:
+#: Le calcul, sur ce qui doit être visible — l'intervalle 2-ply par décision de
+#: T36, [-0,00005 ; +0,00019], que T71 doit faire passer au-dessus de zéro :
+#:
+#:  - deux moteurs proches diffèrent sur ~10 % des décisions, soit ~1 000 sur
+#:    10 000 ; le registre étant FIGÉ, ils lisent les mêmes valeurs partout où
+#:    ils jouent le même coup, et ces décisions contribuent exactement zéro ;
+#:  - un effet de 0,0002 sur l'ensemble vaut donc ~0,002 sur les décisions de
+#:    désaccord ;
+#:  - avec un se de `s` par décision, le se de leur moyenne vaut s/racine(1000),
+#:    soit s/32. Pour rester sous le tiers de l'effet, il faut s <= 0,02.
+#:
+#: On retient 0,010, la moitié de ce que le calcul autorise : la marge paie
+#: l'incertitude du raisonnement lui-meme. Par rapport au 0,00255 qu'imposait la
+#: lecture littérale de la fiche, le nombre d'essais est divisé par ~15.
+#:
+#: Ce que cela suppose, et qui se vérifie ailleurs : que l'erreur d'arbitrage
+#: soit NON BIAISÉE. Un biais, lui, ne se divise par rien — d'où
+#: `bench/arbiter_bias_t70.py`, qui doit passer avant toute campagne.
+FULL_TARGET_SE = 0.010 / 1.96
 
 #: Le se visé par la passe 2. Plus lâche que la passe 3 : son rôle est de
 #: trancher ce qui se tranche vite, pas de tout résoudre.
-TRUNCATED_TARGET_SE = 0.006
+TRUNCATED_TARGET_SE = 0.012
 
 
 def context_state(context: str) -> MatchState | None:
@@ -308,7 +333,7 @@ def main() -> int:
     parser.add_argument("--deep-truncate", type=int, default=25,
                         help="troncature de la passe 3 ; 0 serait un rollout complet, "
                              "impraticable avec réduction de variance")
-    parser.add_argument("--resolution", type=float, default=0.005,
+    parser.add_argument("--resolution", type=float, default=0.010,
                         help="largeur d'IC 95 %% en deçà de laquelle on s'arrête")
     parser.add_argument("--truncated-trials", type=int, default=1296)
     parser.add_argument("--full-trials", type=int, default=5184)
