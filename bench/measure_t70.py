@@ -53,6 +53,34 @@ FILTERS = {0: (), 1: (0, 5), 2: (0, 1, 5), 3: (0, 1, 1, 5)}
 #: de noter le moteur et se met à noter le corpus. Le banc le dit alors haut.
 HORS_CORPUS_ALARM = 0.05
 
+#: ─────────────────────────────────────────────────────────────────────────
+#: CE CHIFFRE N'EST PAS UN PR, ET NE LE DEVIENT PAS EN LE MULTIPLIANT PAR 500.
+#:
+#: Le PR d'eXtreme Gammon est « l'équité normalisée perdue par décision × 500 »
+#: (retour DS-11, source éditeur). La tentation est donc forte de multiplier la
+#: sortie de ce banc par 500 et d'annoncer un PR. Ce serait faux, pour une
+#: raison qui tient à la CONSTRUCTION DU CORPUS et non à l'arithmétique.
+#:
+#: Le corpus de T70 ne retient que les décisions **disputées** — celles où notre
+#: 2-ply et gnubg 2-ply divergent, soit 9,75 % des décisions de contact. Le PR,
+#: lui, se calcule sur TOUTES les décisions. Et les décisions écartées ne
+#: portent pas une perte nulle : les deux moteurs y jouent le même coup, ce qui
+#: ne veut pas dire qu'ils jouent le meilleur. Leur perte commune est invisible
+#: à ce banc par construction.
+#:
+#: Multiplier par 500 rendrait donc un nombre à l'échelle d'un PR, calculé sur
+#: un dixième des décisions et aveugle aux erreurs partagées — c'est-à-dire
+#: précisément le genre de chiffre plausible et faux que ce dépôt refuse.
+#:
+#: Ce que T70 mesure : la perte d'un moteur RELATIVEMENT au meilleur coup connu,
+#: sur les décisions qui séparent les moteurs. C'est l'instrument de comparaison
+#: dont T71 a besoin, et il est bon pour cela.
+#: Ce que T76 devra construire à part : un corpus NON restreint aux décisions
+#: disputées, seul capable de porter un PR absolu — avec, en plus, le filtre de
+#: décision « non obvious » d'XG que DS-11 documente sans le spécifier.
+#: ─────────────────────────────────────────────────────────────────────────
+PR_SCALE = 500.0
+
 
 def score_batch(payload):
     rows, model, ply, prune_model, prune_k, context = payload
@@ -193,6 +221,11 @@ def main() -> int:
               f"corpus autant que le moteur — élargir --width et ré-arbitrer.")
     print(f"  coût du point de comparaison : {elapsed:.0f} s de mur sur "
           f"{workers} processus, soit {elapsed * workers / 3600:.2f} h·cœur")
+    print(f"\n  ⚠ {PR_SCALE:.0f} × ce chiffre ({PR_SCALE * mean:.3f}) N'EST PAS un PR :")
+    print("    le corpus ne contient que les décisions disputées (~10 % du total),")
+    print("    et les décisions écartées ne portent pas une perte nulle — les deux")
+    print("    moteurs y jouent le même coup, pas forcément le meilleur. Voir la")
+    print("    note en tête de ce fichier.")
 
     per_class = collections.defaultdict(list)
     for s in inside:
