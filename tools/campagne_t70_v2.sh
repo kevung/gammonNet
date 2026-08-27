@@ -34,9 +34,19 @@ cd "$ROOT"
 PYTHON="${PYTHON:-/home/kunger/venv-gammonnet/bin/python}"
 T71="${T71:-/home/kunger/dev/gammonNet-t71}"
 LOGS="${LOGS:-/home/kunger/dev/gammonNet-logs}"
-WORKERS="${WORKERS:-26}"
+#: 30 et non 26. La convention du dépôt dit « 26 ou plus » ; 26 laissait
+#: 6,8 fils inoccupés sur 32, mesuré le 2026-08-28 : python consommait 2 520 %
+#: de CPU (25,2 cœurs) et gnubg 45 % (0,45 cœur) — les sessions gnubg attendent
+#: bien plus qu'elles ne calculent, donc la réserve qu'on leur laissait ne leur
+#: servait pas. 30 reste sous les 32 fils : on ne sur-souscrit pas.
+#:
+#: Ce que ce chiffre N'EST PAS : un optimum mesuré. Les 32 fils sont 16 cœurs
+#: avec SMT, et le rendement des quatre processus ajoutés n'a pas été chronométré
+#: — le mesurer coûterait plus d'heures qu'il n'en fait gagner. C'est un réglage
+#: prudent, pas une mesure.
+WORKERS="${WORKERS:-30}"
 PARALLEL="${PARALLEL:-2}"
-JOB_WORKERS="${JOB_WORKERS:-13}"
+JOB_WORKERS="${JOB_WORKERS:-15}"
 EXAMINE="${EXAMINE:-22}"
 WIDTH="${WIDTH:-6}"
 PER_SLICE="${PER_SLICE:-5000}"
