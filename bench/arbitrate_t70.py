@@ -87,26 +87,44 @@ def context_state(context: str) -> MatchState | None:
     return CONTEXTS[context]
 
 
-def decided(differences, errors, pivot: int, margin: float) -> bool:
-    """Le classement est-il déterminé ?
+def resolution_of(differences, errors, pivot: int, margin: float) -> list[str]:
+    """L'état de chaque candidat : `resolved`, `dominated`, ou `open`.
 
-    Non pas « le meilleur est-il connu » — on veut l'équité de **tous** les
-    candidats, puisque le registre servira à noter des moteurs qui n'existent
-    pas encore. La décision porte donc sur le pire intervalle : tant qu'un seul
-    candidat reste flou, la décision n'est pas tranchée.
+    Exiger que les six candidats soient connus à ±`margin` rendrait l'arbitrage
+    prohibitif — l'estimation de coût donnait des dizaines d'heures là où la
+    fiche exige « des heures ». Or ce n'est pas nécessaire : un coup dont on
+    sait **avec certitude** qu'il est pire que le pivot d'au moins `margin` est
+    tranché, quelle que soit l'imprécision qui reste sur sa valeur exacte.
+
+    Ce que le registre perd, il le dit : un candidat `dominated` porte une
+    estimation dont l'intervalle est large, et `bench/measure_t70.py` compte à
+    part les décisions où le moteur noté a justement joué un tel coup. Un bon
+    moteur ne joue presque jamais un coup manifestement dominé, donc
+    l'imprécision se concentre là où elle ne coûte rien — mais elle n'est
+    jamais passée sous silence.
     """
-    for index, error in enumerate(errors):
+    states = []
+    for index, (difference, error) in enumerate(zip(differences, errors)):
         if index == pivot:
-            continue
-        if 1.96 * error > margin:
-            return False
-    return True
+            states.append("resolved")
+        elif 1.96 * error <= margin:
+            states.append("resolved")
+        elif difference + 1.96 * error < -margin:
+            states.append("dominated")
+        else:
+            states.append("open")
+    return states
+
+
+def decided(differences, errors, pivot: int, margin: float) -> bool:
+    """Plus aucun candidat n'est `open` : la décision est tranchée."""
+    return "open" not in resolution_of(differences, errors, pivot, margin)
 
 
 def arbitrate_batch(payload):
     """Une tranche du corpus, arbitrée de bout en bout par un processus."""
     (rows, context, model, seed, net_margin, truncated_trials, full_trials,
-     truncate, resolution, audit_indices) = payload
+     truncate, margin, audit_indices) = payload
 
     from gammonnet.gnubg_engine import GnubgSession, gnubg_state
 
@@ -134,12 +152,15 @@ def arbitrate_batch(payload):
         # ── Passe 0 : la table exacte ───────────────────────────────
         if (table is not None and state is None
                 and all(table.contains(r) for r in results)):
-            # `equity` répond pour le joueur au trait de la position confiée,
-            # soit l'adversaire de celui qui a joué : d'où la négation, la même
-            # qui court dans tout ce dépôt.
-            equities = [-table.equity(r).equity for r in results]
+            # `.cubeless` et non une équité agrégée : le corpus money est
+            # cubeless, et lire ici une des trois colonnes cubeful mêlerait
+            # deux échelles. `equity` répond pour le joueur au trait de la
+            # position confiée, soit l'adversaire de celui qui a joué : d'où la
+            # négation, la même qui court dans tout ce dépôt.
+            equities = [-table.equity(r).cubeless for r in results]
             record.update(pass_used=0, equities=equities,
                           errors=[0.0] * len(results),
+                          resolution=["resolved"] * len(results),
                           trials=0, seconds=time.perf_counter() - started)
             out.append(record)
             _tick()
@@ -150,12 +171,17 @@ def arbitrate_batch(payload):
                                   plies=ARBITER_PLY, prune=1, state=request_state)
         gnubg_equities = [-float(v[5]) for v in values]
         ordered = sorted(gnubg_equities, reverse=True)
-        margin = ordered[0] - ordered[1] if len(ordered) > 1 else float("inf")
+        # `gap` et non `margin` : `margin` est la largeur d'IC visée par les
+        # passes 2 et 3, et l'écrase ici les ferait viser l'écart gnubg de la
+        # décision courante — une résolution différente à chaque ligne, sans
+        # que rien ne le signale.
+        gap = ordered[0] - ordered[1] if len(ordered) > 1 else float("inf")
         audit = row["index"] in audit_indices
 
-        if margin >= net_margin and not audit:
+        if gap >= net_margin and not audit:
             record.update(pass_used=1, equities=gnubg_equities,
-                          errors=[0.0] * len(results), margin=margin,
+                          errors=[0.0] * len(results), gap=gap,
+                          resolution=["resolved"] * len(results),
                           trials=0, seconds=time.perf_counter() - started)
             out.append(record)
             _tick()
@@ -172,7 +198,7 @@ def arbitrate_batch(payload):
             network, results, config, pivot)
         used, total_trials = 2, trials
 
-        if not decided(differences, errors, pivot, resolution):
+        if not decided(differences, errors, pivot, margin):
             # ── Passe 3 : rollout complet ───────────────────────────
             config = RolloutConfig(trials=full_trials, truncate=0,
                                    seed=seed + row["index"],
@@ -186,12 +212,13 @@ def arbitrate_batch(payload):
 
         record.update(pass_used=used, equities=equities, differences=differences,
                       errors=errors, pivot=pivot, trials=total_trials,
+                      resolution=resolution_of(differences, errors, pivot, margin),
                       seconds=time.perf_counter() - started)
         if audit:
             # L'audit garde les DEUX lectures de la même décision : c'est
             # l'écart entre elles qui chiffre le biais de la passe 1.
             record["audit_pass1"] = gnubg_equities
-            record["audit_margin"] = margin
+            record["audit_gap"] = gap
         out.append(record)
         _tick()
 
@@ -281,6 +308,12 @@ def main() -> int:
         seconds = sum(r["seconds"] for r in part) / len(part)
         print(f"    passe {used} : {len(part):6d} décisions "
               f"({100 * len(part) / len(records):5.1f} %)  {seconds:7.2f} s·cœur en moyenne")
+    states = [state for record in records for state in record.get("resolution", [])]
+    if states:
+        dominated = states.count("dominated")
+        print(f"    candidats seulement bornés (dominés) : {dominated}/{len(states)} "
+              f"({100 * dominated / len(states):.1f} %) — leur valeur exacte n'a pas "
+              f"été achetée, on sait seulement qu'ils sont pires.")
     print(f"\n  registre : {out}")
     return 0
 

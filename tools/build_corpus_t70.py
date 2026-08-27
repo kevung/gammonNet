@@ -182,6 +182,11 @@ def harvest(payload):
                                  jacoby=False, beavers=False)
 
     rng = random.Random(seed)
+    # Un tirage SÉPARÉ pour gnubg. `choose` ne consomme pas de hasard
+    # aujourd'hui, mais partager le générateur du corpus le couplerait à ce
+    # détail : le jour où `choose` s'en servirait, le corpus « figé » changerait
+    # sans que rien ne le dise. C'est la convention de `bench/decision_loss.py`.
+    theirs_rng = random.Random(0)
     kept: list[dict] = []
     taken = collections.Counter()
     examined = 0
@@ -197,7 +202,7 @@ def harvest(payload):
         if not ranked:
             continue
         mine = ranked[0].play
-        yours = theirs.choose(position, d1, d2, rng, gnubg_state)
+        yours = theirs.choose(position, d1, d2, theirs_rng, gnubg_state)
         if yours is None or mine.result == yours.result:
             continue
 
@@ -333,6 +338,28 @@ def main() -> int:
         print(f"    {total} décisions disputées sur {examined} examinées "
               f"({100 * rate:.1f} %) en {elapsed / 60:.1f} min")
         print(f"    {path.name}  sha256 {digest[:16]}…")
+
+        # Le remplissage par strate, toujours affiché. Une classe rare peut ne
+        # PAS atteindre son quota : le budget d'examen se dépense surtout sur
+        # les classes fréquentes, qui saturent tôt et rejettent ensuite. Un
+        # corpus qui rendrait « 10 000 décisions » sans dire que le backgame en
+        # a douze donnerait à cette strate un intervalle illisible, et le
+        # lecteur n'aurait aucun moyen de s'en apercevoir.
+        print("    remplissage des strates :")
+        starved = []
+        for name in sorted(quota, key=lambda k: -quota[k]):
+            got = counts.get(name, 0)
+            share = got / quota[name] if quota[name] else 0.0
+            flag = "" if share >= 0.8 else "  ← sous-rempli"
+            if share < 0.8:
+                starved.append(name)
+            print(f"      {name:22s} {got:6d} / {quota[name]:6d} "
+                  f"({100 * share:5.1f} %){flag}")
+        if starved:
+            print(f"    ⚠ {len(starved)} strate(s) sous-remplie(s) : "
+                  f"{', '.join(starved)}")
+            print("      Monter --examine-factor, ou lire ces strates en "
+                  "sachant que leur intervalle sera large.")
         manifest["contexts"][context] = {
             "decisions": total,
             "examined": examined,
@@ -340,6 +367,9 @@ def main() -> int:
             "seconds": elapsed,
             "sha256": digest,
             "by_class": dict(counts),
+            "fill": {name: counts.get(name, 0) / quota[name] if quota[name] else 0.0
+                     for name in quota},
+            "starved": starved,
         }
 
     (out / "manifeste.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
