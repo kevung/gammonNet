@@ -398,9 +398,18 @@ def main() -> int:
     states = [state for record in records for state in record.get("resolution", [])]
     if states:
         dominated = states.count("dominated")
+        still_open = states.count("open")
         print(f"    candidats seulement bornés (dominés) : {dominated}/{len(states)} "
               f"({100 * dominated / len(states):.1f} %) — leur valeur exacte n'a pas "
               f"été achetée, on sait seulement qu'ils sont pires.")
+        print(f"    candidats restés OUVERTS : {still_open}/{len(states)} "
+              f"({100 * still_open / len(states):.1f} %) — le plafond d'essais a été "
+              f"atteint avant la résolution.")
+        if still_open:
+            print("      Le plafond est un choix : il borne le coût d'une décision "
+                  "pathologique au lieu de laisser un rollout courir des heures. "
+                  "Ces candidats portent une valeur, mais son intervalle dépasse la "
+                  "résolution visée — et le registre le dit plutôt que de le taire.")
     print(f"\n  registre : {out}")
     return 0
 

@@ -84,17 +84,19 @@ def score_batch(payload):
             # CLAUDE.md nomme.
             scored.append({"index": row["index"], "class": row["class"],
                            "weight": row["weight"], "loss": None,
-                           "bounded": False, "pass_used": row["pass_used"]})
+                           "bounded": False, "open": False,
+                           "pass_used": row["pass_used"]})
             continue
         # Le coup joué a-t-il été RÉSOLU, ou seulement borné comme dominé ?
         # Un coup manifestement mauvais n'a pas été prix finement (voir
         # `resolution_of` dans l'arbitre) : sa perte est du bon ordre mais son
         # intervalle est large. Compté, et compté à part.
         states = row.get("resolution")
-        bounded = bool(states) and states[index] == "dominated"
+        state = states[index] if states else "resolved"
         scored.append({"index": row["index"], "class": row["class"],
                        "weight": row["weight"], "loss": best - equities[index],
-                       "bounded": bounded, "pass_used": row["pass_used"]})
+                       "bounded": state == "dominated", "open": state == "open",
+                       "pass_used": row["pass_used"]})
     return scored
 
 
@@ -173,13 +175,19 @@ def main() -> int:
     print(f"\n  perte d'équité par décision : {mean:.5f}  "
           f"[{low:.5f} ; {high:.5f}]  (IC 95 %, bootstrap {args.bootstrap})")
     bounded = sum(1 for s in inside if s.get("bounded"))
+    unresolved = sum(1 for s in inside if s.get("open"))
     print(f"  décisions notées : {len(inside)}   hors registre : {outside} "
           f"({100 * rate:.2f} %)")
     print(f"  dont le coup joué n'était que borné (dominé) : {bounded} "
           f"({100 * bounded / max(len(inside), 1):.2f} %)")
+    print(f"  dont le coup joué était resté ouvert : {unresolved} "
+          f"({100 * unresolved / max(len(inside), 1):.2f} %)")
     if bounded > len(inside) * 0.10:
         print("  ⚠ ce moteur joue souvent des coups que l'arbitrage n'a pas prix "
               "finement — sa perte est estimée grossièrement là où il est mauvais.")
+    if unresolved > len(inside) * 0.05:
+        print("  ⚠ le registre n'a pas résolu une part notable des coups que ce "
+              "moteur joue : relever le plafond d'essais avant de conclure.")
     if rate > HORS_CORPUS_ALARM:
         print(f"  ⚠ au-delà de {100 * HORS_CORPUS_ALARM:.0f} %, ce chiffre note le "
               f"corpus autant que le moteur — élargir --width et ré-arbitrer.")
@@ -201,6 +209,7 @@ def main() -> int:
         "model": Path(args.model).name, "ply": args.ply,
         "decisions": len(scored), "scored": len(inside),
         "outside": outside, "outside_rate": rate, "bounded": bounded,
+        "unresolved": unresolved,
         "loss": mean, "ci95": [low, high],
         "seconds": elapsed, "workers": workers,
         "core_hours": elapsed * workers / 3600,
