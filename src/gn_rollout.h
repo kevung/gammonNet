@@ -247,6 +247,13 @@ int gn_rollout(const GnNetwork *net, const GnPosition *pos,
  * NOT the error on their difference -- the difference is far better determined,
  * precisely because the dice are shared. `gn_rollout_difference` gives that one.
  */
+/*
+ * The most candidates one arbitration may price at once. Eight covers every
+ * plausible play of a decision with room to spare; the paired accumulators are
+ * stack arrays, and an unbounded `count` would be an unbounded frame.
+ */
+#define GN_ROLLOUT_MAX_CANDIDATES 8
+
 int gn_rollout_candidates(const GnNetwork *net, const GnPosition *results,
                           int count, const GnRolloutConfig *config,
                           double *equities, double *standard_errors);
@@ -258,6 +265,35 @@ int gn_rollout_candidates(const GnNetwork *net, const GnPosition *results,
  * Returns 0 on success. `difference` is `a - b`, from the point of view of the
  * player who moved.
  */
+/*
+ * The arbitration call of T70: roll out `count` candidates under the SAME dice,
+ * and report each one's equity, its difference to `pivot`, and the error ON
+ * THAT DIFFERENCE, computed from the paired trials.
+ *
+ * This is `gn_rollout_difference` widened from two variants to `count`. It is
+ * what lets one arbitration price EVERY plausible play of a decision rather
+ * than the two that happened to be compared: a later candidate engine that
+ * picks a different move is then scored from the same frozen ledger, at no
+ * further cost. Rolling k candidates against a pivot pairwise would play
+ * 2(k-1) trajectories; this plays k.
+ *
+ * A trial the engine declines to play for one candidate is dropped for all of
+ * them -- an unpaired trial would silently destroy the very correlation that
+ * makes the difference cheap to determine.
+ *
+ * `target_se` stops the rollout when EVERY non-pivot difference is inside it,
+ * never on the pivot's own (identically zero). `equities` and `differences` are
+ * required; `difference_errors` and `trials_done` may be NULL.
+ *
+ * Returns 0 on success, -1 on refusal -- including `count` above
+ * GN_ROLLOUT_MAX_CANDIDATES.
+ */
+int gn_rollout_candidates_paired(const GnNetwork *net, const GnPosition *results,
+                                 int count, const GnRolloutConfig *config,
+                                 int pivot, double *equities,
+                                 double *differences, double *difference_errors,
+                                 unsigned long *trials_done);
+
 int gn_rollout_difference(const GnNetwork *net,
                           const GnPosition *a, const GnPosition *b,
                           const GnRolloutConfig *config,

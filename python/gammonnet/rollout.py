@@ -71,6 +71,19 @@ _LIB.gn_rollout_candidates.argtypes = [
 ]
 _LIB.gn_rollout_candidates.restype = ctypes.c_int
 
+_LIB.gn_rollout_candidates_paired.argtypes = [
+    ctypes.c_void_p,
+    ctypes.POINTER(_CPosition),
+    ctypes.c_int,
+    ctypes.POINTER(_CRolloutConfig),
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_ulong),
+]
+_LIB.gn_rollout_candidates_paired.restype = ctypes.c_int
+
 _LIB.gn_rollout_difference.argtypes = [
     ctypes.c_void_p,
     ctypes.POINTER(_CPosition),
@@ -243,3 +256,44 @@ def rollout_difference(network: Network, a: Position, b: Position,
                                   ctypes.byref(difference), ctypes.byref(error)) != 0:
         raise RuntimeError("rollout de différence refusé")
     return difference.value, error.value
+
+
+#: La borne du C (`GN_ROLLOUT_MAX_CANDIDATES`). Répétée ici pour refuser côté
+#: Python plutôt que de lire un -1 sans cause lisible.
+MAX_CANDIDATES = 8
+
+
+def rollout_candidates_paired(network: Network, results: list[Position],
+                              config: RolloutConfig | None = None,
+                              pivot: int = 0
+                              ) -> tuple[list[float], list[float], list[float], int]:
+    """L'arbitrage de T70 : chaque candidat, sa différence au pivot, et
+    l'erreur **sur cette différence**.
+
+    Rend `(équités, différences, erreurs, essais)`. C'est ce qui permet de payer
+    un arbitrage **une fois** et d'y lire ensuite le coût de n'importe quel coup
+    plausible : un moteur candidat qui joue autrement se note sur le même
+    registre, sans nouveau rollout.
+
+    Les erreurs marginales de `rollout_candidates` ne conviennent pas ici — les
+    dés étant partagés, la différence est bien mieux déterminée que chacun des
+    deux termes, et c'est la différence qu'on arbitre.
+    """
+    config = config or RolloutConfig()
+    count = len(results)
+    if not 0 < count <= MAX_CANDIDATES:
+        raise ValueError(f"de 1 à {MAX_CANDIDATES} candidats, {count} demandés")
+    if not 0 <= pivot < count:
+        raise ValueError(f"pivot {pivot} hors des {count} candidats")
+
+    array = (_CPosition * count)(*(p._to_c() for p in results))
+    equities = (ctypes.c_double * count)()
+    differences = (ctypes.c_double * count)()
+    errors = (ctypes.c_double * count)()
+    trials = ctypes.c_ulong()
+    if _LIB.gn_rollout_candidates_paired(network._handle, array, count,
+                                         ctypes.byref(config._to_c()), pivot,
+                                         equities, differences, errors,
+                                         ctypes.byref(trials)) != 0:
+        raise RuntimeError("rollout apparié des candidats refusé")
+    return (list(equities), list(differences), list(errors), int(trials.value))
