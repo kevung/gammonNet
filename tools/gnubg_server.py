@@ -211,8 +211,43 @@ def op_classify(request):
     return {"classes": [gnubg.classifypos(as_board(b)) for b in boards]}
 
 
+def op_xgid(request):
+    """Le plateau que GNU Backgammon lit dans un XGID — l'oracle de T76.
+
+    gnubg lit nativement l'XGID. C'est la seule implémentation indépendante à
+    laquelle confronter la nôtre, et T76 en fait un critère d'acceptation :
+    *« l'ordre des champs XGID est validé empiriquement avant tout usage »*,
+    parce que cet ordre vient d'implémentations tierces et non de l'éditeur.
+
+    **La commande est `set xgid`, et elle seule.** Établie par sonde, parce que
+    la manière dont gnubg échoue est le piège : `set board XGID=...` ne lève
+    pas, ne prévient pas, et laisse le plateau INCHANGÉ. Un banc qui l'aurait
+    utilisée aurait comparé chaque position à la position de départ et rapporté
+    des divergences partout — ce qui est arrivé au premier jet de
+    `bench/verify_xgid.py`, et se lisait comme un défaut de notre codec.
+    `set board xgid <id>` est pire encore : elle change le plateau, pour autre
+    chose. (`strings` sur le binaire donne « set GNUbg ID from XGID », ce qui
+    met sur la voie sans donner la syntaxe.)
+
+    On rend le plateau **non interprété**, dans la convention de gnubg : deux
+    tableaux de 25 entiers positifs, `board[1]` au joueur au trait. Le client le
+    compare au sien. Interpréter ici reviendrait à faire dire à l'oracle ce
+    qu'on veut lui entendre dire.
+
+    `gnubg.board()` rend le plateau du joueur au trait ; l'XGID porte lui-même
+    le trait, et c'est au client de vérifier que les deux s'accordent.
+    """
+    identifier = request["xgid"]
+    try:
+        gnubg.command("set xgid " + identifier)
+    except Exception as exc:  # noqa: BLE001 -- l'erreur EST la réponse
+        return {"error": f"gnubg a refusé {identifier!r} : {exc}"}
+    return {"board": [list(side) for side in gnubg.board()]}
+
+
 OPS = {
     "eval": op_eval,
+    "xgid": op_xgid,
     "cfeval": op_cfeval,
     "bestmove": op_bestmove,
     "met": op_met,

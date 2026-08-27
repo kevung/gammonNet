@@ -150,6 +150,15 @@ class GnubgSession:
     def classify(self, boards):
         return self.ask({"op": "classify", "boards": boards})["classes"]
 
+    def board_from_xgid(self, identifier: str):
+        """Le plateau que gnubg lit dans un XGID, ou None s'il le refuse.
+
+        Un refus est une réponse — c'est ainsi qu'on découvre qu'un XGID
+        malformé l'est. L'oracle de T76 doit pouvoir dire « non ».
+        """
+        reply = self.ask({"op": "xgid", "xgid": identifier})
+        return None if "error" in reply else reply["board"]
+
     def close(self):
         if self._process.poll() is None:
             try:
