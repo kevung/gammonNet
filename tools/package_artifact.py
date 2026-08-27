@@ -131,6 +131,59 @@ def check_regression() -> None:
             + result.stdout[-2000:])
 
 
+def retarget_parity(source: Path, destination: Path, weights_name: str) -> None:
+    """`wasm/parity.mjs` est écrit pour l'arborescence du DÉPÔT, pas pour celle
+    de l'archive : il importe `./gammonnet.mjs` (voisin dans `wasm/`), lit
+    `../build/reference.bin` et `../models/…`, et charge les modules depuis
+    `../build/wasm/`. Recopié tel quel dans `verify/`, il échoue au premier
+    import — et la commande que le README et le QUICKSTART promettent
+    (`node verify/parity.mjs`) ne marche pas.
+
+    Il est donc transposé, pas dupliqué : le contrôle lui-même — le repère de
+    2 000 positions, la tolérance de 1e-6 — reste défini à un seul endroit.
+    Seuls les chemins changent. `check_artifact_parity()` l'exécute ensuite sur
+    l'artefact produit, pour que cette transposition ne puisse pas pourrir en
+    silence.
+    """
+    text = source.read_text(encoding="utf-8")
+    moves = [
+        ('from "./gammonnet.mjs"', 'from "../api/gammonnet.mjs"'),
+        ('join(ROOT, "build", "reference.bin")', 'join(HERE, "reference.bin")'),
+        ('join(ROOT, "models", "cubeless_prob5_512_512_256_128.bin")',
+         f'join(ROOT, "{weights_name}")'),
+        ('"../build/wasm/gammonnet.mjs"', '"../gammonnet.mjs"'),
+        ('"../build/wasm/gammonnet-simd.mjs"', '"../gammonnet-simd.mjs"'),
+    ]
+    for before, after in moves:
+        if before not in text:
+            raise SystemExit(
+                f"REFUSÉ : `wasm/parity.mjs` a changé de forme — « {before} » "
+                "ne s'y trouve plus. La transposition vers l'archive est "
+                "obsolète ; corrigez `retarget_parity`.")
+        text = text.replace(before, after)
+    destination.write_text(text, encoding="utf-8")
+
+
+def check_artifact_parity(target: Path) -> None:
+    """L'artefact passe-t-il sa PROPRE vérification ?
+
+    Le README et le QUICKSTART promettent `node verify/parity.mjs`. Une
+    promesse qu'on ne tient pas soi-même avant de publier n'est pas une
+    garantie, c'est une intention.
+    """
+    node = shutil.which("node")
+    if node is None:
+        print("   node absent — vérification non exécutée (SAUTÉE)")
+        return
+    result = subprocess.run([node, "verify/parity.mjs"], cwd=target,
+                            capture_output=True, text=True)
+    if result.returncode != 0:
+        raise SystemExit(
+            "REFUSÉ : l'artefact ne passe pas sa propre vérification de "
+            "parité.\n" + (result.stdout + result.stderr)[-2000:])
+    print("   " + (result.stdout.strip().splitlines() or ["passée"])[-1])
+
+
 def check_weights() -> None:
     """Les poids publiés sont-ils CEUX qui ont été mesurés ?
 
@@ -401,8 +454,13 @@ def main() -> int:
     from pack_fp16 import pack
 
     files: list[tuple[str, str, int]] = []
+    big_name = ""
     for name, source in NETWORKS.items():
         stem = f"{name}_{args.version}_{date}"
+        if name == "strehl-prob5-512-512-256-128":
+            #: `verify/parity.mjs` doit charger CES poids-là, sous le nom
+            #: qu'ils portent dans l'archive — pas celui du dépôt.
+            big_name = f"{stem}.bin"
         wide = target / f"{stem}.bin"
         shutil.copy2(source, wide)
         half = target / f"{stem}.bin16"
@@ -440,9 +498,13 @@ def main() -> int:
                 continue
             destination = target / subdir if subdir else target
             destination.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(path, destination / path.name)
+            if path.name == "parity.mjs":
+                retarget_parity(path, destination / path.name, big_name)
+            else:
+                shutil.copy2(path, destination / path.name)
+            written = destination / path.name
             name = f"{subdir}/{path.name}" if subdir else path.name
-            files.append((name, sha256(path), path.stat().st_size))
+            files.append((name, sha256(written), written.stat().st_size))
             print(f"   {name}")
 
     (target / "QUICKSTART.md").write_text(quickstart(), encoding="utf-8")
@@ -451,6 +513,10 @@ def main() -> int:
         release_notes(args.version, date, files), encoding="utf-8")
     shutil.copy2(ROOT / "THIRD-PARTY.md", target / "THIRD-PARTY.md")
     shutil.copy2(ROOT / "LICENSE", target / "LICENSE")
+
+    if not missing:
+        print("\n3c. L'artefact passe-t-il sa propre vérification ?")
+        check_artifact_parity(target)
 
     sums = "\n".join(f"{digest}  {name}" for name, digest, _ in files) + "\n"
     (target / "SHA256SUMS").write_text(sums, encoding="utf-8")

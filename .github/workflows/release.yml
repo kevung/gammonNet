@@ -51,12 +51,19 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gnubg
 
       - name: Dépendances Python
+        # DANS LE VENV QUE LE MAKEFILE ATTEND, pas à côté. `make` résout
+        # `$(HOME)/venv-gammonnet/bin/python` ; installer dans le Python du
+        # runner laissait `wasm-parity` échouer sur un interpréteur absent.
+        # Ajouter son `bin/` au PATH fait que `python` et `make` désignent le
+        # même interpréteur — une seule vérité, comme en local.
         run: |
-          python -m pip install --upgrade pip
-          # La roue CPU : torque ne sert qu'à convertir les poids, et la roue
+          python3 -m venv "$HOME/venv-gammonnet"
+          echo "$HOME/venv-gammonnet/bin" >> "$GITHUB_PATH"
+          "$HOME/venv-gammonnet/bin/python" -m pip install --upgrade pip
+          # La roue CPU : torch ne sert qu'à convertir les poids, et la roue
           # CUDA pèserait dix fois plus pour rien.
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install numpy pytest
+          "$HOME/venv-gammonnet/bin/pip" install torch --index-url https://download.pytorch.org/whl/cpu
+          "$HOME/venv-gammonnet/bin/pip" install numpy pytest
 
       - name: Sources vendorées, au commit épinglé
         run: python tools/fetch_vendor.py
