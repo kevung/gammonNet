@@ -1,0 +1,40 @@
+{
+ "task": "T3E",
+ "metric": "PR = 500 x equity lost per decision",
+ "decisions": 40,
+ "arbiter": "gnubg 3-ply",
+ "seed": 20260827,
+ "prune_k": 12,
+ "results": {
+  "0": {
+   "decisions": 40,
+   "pr": 0.9458139538764954,
+   "pr_ci": [
+    0.0,
+    2.4471640586853027
+   ],
+   "agreement": 0.925,
+   "mean_loss": 0.0018916279077529907
+  },
+  "1": {
+   "decisions": 40,
+   "pr": 0.9458139538764954,
+   "pr_ci": [
+    0.0,
+    2.4471640586853027
+   ],
+   "agreement": 0.925,
+   "mean_loss": 0.0018916279077529907
+  },
+  "2": {
+   "decisions": 40,
+   "pr": 0.11891573667526245,
+   "pr_ci": [
+    0.0,
+    0.346238911151886
+   ],
+   "agreement": 0.95,
+   "mean_loss": 0.0002378314733505249
+  }
+ }
+}
