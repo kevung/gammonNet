@@ -4,6 +4,7 @@
 
 | File | What it is |
 |---|---|
+| `manifest.json` | The file names for this release — read it instead of copying them |
 | `strehl-prob5-512-512-256-128_v1_….bin` | Network weights, **float32** — 2.1 MiB |
 | `…​.bin16` | The same, **float16** — 1.06 MiB. Prefer this one on the web |
 | `strehl-prune-32_v1_….bin` / `.bin16` | The **pruning network**: it sorts moves so the big one only scores a handful |
@@ -28,15 +29,18 @@ network when its weights change; renaming would claim credit for what we did not
 import { Evaluator } from "./api/gammonnet.mjs";
 import factory from "./gammonnet-simd.mjs";
 
+// The archive names its own files: never hard-code a version into your code.
+const files = await (await fetch("./manifest.json")).json();
+
 const weights = new Uint8Array(
-  await (await fetch("./strehl-prob5-512-512-256-128_v1_2026-08-27.bin16")).arrayBuffer());
+  await (await fetch("./" + files.network_fp16)).arrayBuffer());
 const evaluator = await Evaluator.create(factory, weights);
 
 // The pruning network: ×3.65 on a 2-ply decision in a browser, for an equity
 // loss that is inside the noise. Optional, strongly recommended.
 const prune = new Uint8Array(
-  await (await fetch("./strehl-prune-32_v1_2026-08-27.bin16")).arrayBuffer());
-evaluator.loadPrune(prune, 12);
+  await (await fetch("./" + files.prune_fp16)).arrayBuffer());
+evaluator.loadPrune(prune, files.prune_k);
 
 const best = evaluator.bestPlay("4HPwATDgc/ABMA", 0, 3, 1,
                                 { ply: 2, filterTop: 3, filterInner: 1 });

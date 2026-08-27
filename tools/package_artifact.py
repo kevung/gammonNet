@@ -229,6 +229,7 @@ def quickstart() -> str:
 | `gammonnet-simd.mjs` / `.wasm` | le moteur WebAssembly (préférez la version SIMD) |
 | `api/gammonnet.mjs` | l'API JavaScript — `Evaluator` |
 | `api/pool.mjs`, `api/worker.mjs` | le pool de Web Workers : un match en 74 s au lieu de 350 |
+| `manifest.json` | les noms de fichiers de cette version — lisez-le plutôt que de les recopier |
 | `verify/` | de quoi vérifier vous-même que cet artefact donne les bons chiffres |
 | `evidence/` | les mesures brutes derrière chaque chiffre des notes de version |
 
@@ -238,15 +239,19 @@ def quickstart() -> str:
 import { Evaluator } from "./api/gammonnet.mjs";
 import factory from "./gammonnet-simd.mjs";
 
+// L'archive nomme ses propres fichiers : ne figez jamais une version dans
+// votre code, elle change à chaque publication.
+const files = await (await fetch("./manifest.json")).json();
+
 const weights = new Uint8Array(
-  await (await fetch("./strehl-prob5-512-512-256-128_v1_2026-08-27.bin16")).arrayBuffer());
+  await (await fetch("./" + files.network_fp16)).arrayBuffer());
 const evaluator = await Evaluator.create(factory, weights);
 
 // Le réseau d'élagage : ×3,65 sur une décision 2-ply, pour une perte
 // d'équité dans le bruit. Facultatif, mais fortement conseillé.
 const prune = new Uint8Array(
-  await (await fetch("./strehl-prune-32_v1_2026-08-27.bin16")).arrayBuffer());
-evaluator.loadPrune(prune, 12);
+  await (await fetch("./" + files.prune_fp16)).arrayBuffer());
+evaluator.loadPrune(prune, files.prune_k);
 
 // Position de départ, jet 3-1.
 const best = evaluator.bestPlay("4HPwATDgc/ABMA", 0, 3, 1,
@@ -513,6 +518,36 @@ def main() -> int:
         release_notes(args.version, date, files), encoding="utf-8")
     shutil.copy2(ROOT / "THIRD-PARTY.md", target / "THIRD-PARTY.md")
     shutil.copy2(ROOT / "LICENSE", target / "LICENSE")
+
+    #: LES NOMS DE FICHIERS PORTENT LA VERSION ET LA DATE — donc ils changent à
+    #: chaque publication. Tout extrait de code qui en fige un devient faux à la
+    #: version suivante, et l'utilisateur qui le copie récolte un 404. Le
+    #: manifeste rend les noms interrogeables : la documentation lit d'ici,
+    #: plutôt que de répéter ce qui bouge.
+    manifest = {
+        "version": args.version,
+        "date": date,
+        "network": f"strehl-prob5-512-512-256-128_{args.version}_{date}.bin",
+        "network_fp16": f"strehl-prob5-512-512-256-128_{args.version}_{date}.bin16",
+        "prune": f"strehl-prune-32_{args.version}_{date}.bin",
+        "prune_fp16": f"strehl-prune-32_{args.version}_{date}.bin16",
+        "prune_k": 12,
+        "wasm": "gammonnet-simd.mjs",
+        "wasm_scalar": "gammonnet.mjs",
+        "api": "api/gammonnet.mjs",
+        "pool": "api/pool.mjs",
+    }
+    for key in ("network", "network_fp16", "prune", "prune_fp16", "wasm", "wasm_scalar",
+                "api", "pool"):
+        if not (target / manifest[key]).exists():
+            raise SystemExit(
+                f"REFUSÉ : le manifeste annonce `{manifest[key]}`, qui n'est pas "
+                "dans l'artefact. Un manifeste faux est pire que pas de manifeste.")
+    (target / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    files.append(("manifest.json", sha256(target / "manifest.json"),
+                  (target / "manifest.json").stat().st_size))
+    print("   manifest.json")
 
     if not missing:
         print("\n3c. L'artefact passe-t-il sa propre vérification ?")

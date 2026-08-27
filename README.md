@@ -82,17 +82,21 @@ means to verify it, and the raw evidence behind every published figure.
 | `api/pool.mjs`, `api/worker.mjs` | the Web Worker pool — a match in 74 s instead of 350 |
 | `verify/` | check for yourself that this artifact returns the right numbers |
 | `evidence/` | the raw measurements behind each figure in the release notes |
+| `manifest.json` | the file names for this release — read it instead of hard-coding them |
 | `NOTICE`, `THIRD-PARTY.md`, `SHA256SUMS` | attribution, licences, checksums |
 
 ```js
 import { Evaluator } from "./api/gammonnet.mjs";
 import factory from "./gammonnet-simd.mjs";
 
-const weights = new Uint8Array(await (await fetch("./strehl-prob5-…​.bin16")).arrayBuffer());
+// The archive names its own files — never hard-code a version into your code.
+const files = await (await fetch("./manifest.json")).json();
+
+const weights = new Uint8Array(await (await fetch("./" + files.network_fp16)).arrayBuffer());
 const evaluator = await Evaluator.create(factory, weights);
 
-const prune = new Uint8Array(await (await fetch("./strehl-prune-32_…​.bin16")).arrayBuffer());
-evaluator.loadPrune(prune, 12);          // ×3.65, strongly recommended
+const prune = new Uint8Array(await (await fetch("./" + files.prune_fp16)).arrayBuffer());
+evaluator.loadPrune(prune, files.prune_k);   // ×3.65, strongly recommended
 
 const level = Evaluator.level("normal");   // ply, move filters, pruning width
 
