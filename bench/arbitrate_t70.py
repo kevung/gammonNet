@@ -256,7 +256,7 @@ def arbitrate_batch(payload):
                             key=lambda j: gnubg_equities[head[j]])
         pivot = head[pivot_in_head]
         config = RolloutConfig(trials=truncated_trials, truncate=truncate,
-                               seed=seed + row["index"], policy=SearchConfig(ply=0),
+                               seed=seed + 7919 * row["index"], policy=SearchConfig(ply=0),
                                variance_reduction=True,
                                target_se=TRUNCATED_TARGET_SE, min_trials=72,
                                match=state, use_cube=False)
@@ -271,7 +271,7 @@ def arbitrate_batch(payload):
             # payant une recherche 1-ply : l'estimation à partir de T39 donne
             # ~6 h par décision, et deux décisions arbitrées l'ont confirmé.
             config = RolloutConfig(trials=full_trials, truncate=deep_truncate,
-                                   seed=seed + row["index"],
+                                   seed=seed + 7919 * row["index"],
                                    policy=SearchConfig(ply=0),
                                    variance_reduction=True,
                                    target_se=FULL_TARGET_SE, min_trials=108,
@@ -311,6 +311,79 @@ def arbitrate_batch(payload):
     return out
 
 
+
+def protocol_header(args, corpus: Path, count: int, context: str) -> dict:
+    """Ce qui doit être identique pour que deux lots vivent dans le même journal.
+
+    Un journal qui mélangerait deux protocoles n'est plus une mesure : les
+    décisions arbitrées avec un budget d'essais ou une marge de dominance
+    différents ne sont pas comparables entre elles, et rien dans le fichier ne
+    le dirait. La reprise CONFRONTE donc l'en-tête à l'invocation, et refuse au
+    moindre désaccord — la règle de `run_t35.py`, pour la même raison.
+
+    Le nombre de processus n'y figure pas, et c'est le point : depuis que la
+    graine d'une décision vaut `seed + 7919 * index`, le découpage n'influe
+    plus sur le résultat. Reprendre à 26 processus ce qui a commencé à 8 rend
+    le même registre.
+    """
+    return {
+        "corpus": corpus.name, "decisions": count, "context": context,
+        "seed": args.seed, "net": args.net, "resolution": args.resolution,
+        "truncated_trials": args.truncated_trials,
+        "full_trials": args.full_trials, "truncate": args.truncate,
+        "deep_truncate": args.deep_truncate, "audit": args.audit,
+        "model": MODEL.name,
+    }
+
+
+def load_journal(journal: Path, header: dict) -> set:
+    """Les index déjà arbitrés, l'en-tête vérifié. Refuse si le protocole diffère."""
+    if not journal.exists():
+        return set()
+    done, seen_header = set(), None
+    for line in journal.read_text().splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            # Dernière ligne tronquée par une coupure : son index manque donc au
+            # journal, et la décision sera simplement rejouée.
+            continue
+        if "header" in row and len(row) == 1:
+            seen_header = row["header"]
+            continue
+        if "index" in row:
+            done.add(row["index"])
+    if seen_header is not None and seen_header != header:
+        differences = sorted(
+            k for k in set(seen_header) | set(header)
+            if seen_header.get(k) != header.get(k))
+        raise SystemExit(
+            f"REFUS — le journal {journal.name} a été écrit sous un autre "
+            f"protocole ; désaccord sur : {', '.join(differences)}.\n"
+            "Un journal qui mélange deux protocoles n'est plus une mesure. "
+            "Reprendre avec les mêmes réglages, ou écrire ailleurs.")
+    return done
+
+
+def read_journal_records(journal: Path) -> list:
+    """Le registre, reconstitué depuis le journal : trié, dédoublonné par index."""
+    if not journal.exists():
+        return []
+    best = {}
+    for line in journal.read_text().splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if "index" in row and not ("header" in row and len(row) == 1):
+            best[row["index"]] = row
+    return [best[k] for k in sorted(best)]
+
+
 def _tick():
     try:
         with open(PROGRESS, "a") as fh:
@@ -320,7 +393,7 @@ def _tick():
 
 
 def main() -> int:
-    from concurrent.futures import ProcessPoolExecutor
+    from concurrent.futures import ProcessPoolExecutor, as_completed
 
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -354,6 +427,12 @@ def main() -> int:
     parser.add_argument("--audit", type=float, default=0.05,
                         help="part des décisions tranchées en passe 1 rejouées en passe 2")
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--chunk", type=int, default=64,
+                        help="taille maximale d'une tranche rendue au parent ; "
+                             "borne ce qu'une coupure fait perdre")
+    parser.add_argument("--journal-only", action="store_true",
+                        help="ne rien arbitrer : reconstruire le registre depuis "
+                             "le journal d'une campagne interrompue")
     args = parser.parse_args()
 
     corpus = Path(args.corpus)
@@ -378,22 +457,83 @@ def main() -> int:
     print(f"  audit de la passe 1 : {len(audit_indices)} décisions rejouées")
     print(f"  suivi : {PROGRESS}", flush=True)
 
-    workers = max(1, min(args.workers, len(rows)))
-    chunks = [rows[i::workers] for i in range(workers)]
-    payloads = [(chunk, context, str(MODEL), args.seed + 7919 * i, args.net,
+    journal = Path(str(out) + ".journal")
+    header = protocol_header(args, corpus, len(rows), context)
+
+    if args.journal_only:
+        # Une campagne coupée laisse un journal complet et pas de registre. Cette
+        # porte le reconstruit sans rien recalculer : ce qui a été payé une fois
+        # ne doit pas l'être deux.
+        records = read_journal_records(journal)
+        if not records:
+            print(f"journal vide ou absent : {journal}", file=sys.stderr)
+            return 2
+        with open(out, "w") as fh:
+            for record in records:
+                fh.write(json.dumps(record, sort_keys=True) + "\n")
+        print(f"  registre reconstruit depuis le journal : {len(records)} décisions")
+        print(f"  → {out}")
+        return 0
+
+    done = load_journal(journal, header)
+    if done:
+        print(f"  reprise : {len(done)} décisions déjà arbitrées dans {journal.name}")
+    todo = [row for row in rows if row["index"] not in done]
+    if not todo:
+        print("  rien à arbitrer : le journal est complet.")
+
+    workers = max(1, min(args.workers, max(len(todo), 1)))
+    # Des tranches COURTES, et non une par processus. Une tranche par processus
+    # ne rend rien avant sa fin : sur une campagne de plusieurs jours, une
+    # coupure perdrait tout le travail en vol. Ici chaque tranche revient en
+    # quelques minutes, est écrite et poussée sur disque, et la reprise ne coûte
+    # au pire que les tranches en cours. C'est la construction de `run_t35.py`,
+    # portée à l'arbitrage.
+    span = max(1, min(args.chunk, max(len(todo) // (workers * 4), 1)))
+    chunks = [todo[i:i + span] for i in range(0, len(todo), span)]
+    payloads = [(chunk, context, str(MODEL), args.seed, args.net,
                  args.truncated_trials, args.full_trials, args.truncate,
                  args.deep_truncate, args.resolution, audit_indices)
-                for i, chunk in enumerate(chunks) if chunk]
+                for chunk in chunks if chunk]
 
     started = time.perf_counter()
-    if len(payloads) == 1:
-        gathered = [arbitrate_batch(payloads[0])]
-    else:
-        with ProcessPoolExecutor(max_workers=len(payloads)) as pool:
-            gathered = list(pool.map(arbitrate_batch, payloads))
+    written = 0
+    with journal.open("a") as fh:
+        if not done:
+            fh.write(json.dumps({"header": header}, sort_keys=True) + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+
+        def note(part):
+            nonlocal written
+            for record in part:
+                fh.write(json.dumps(record, sort_keys=True) + "\n")
+                written += 1
+            # Poussé sur disque à chaque tranche, pas à la fin : éteindre la
+            # machine au milieu ne coûte que les tranches en vol.
+            fh.flush()
+            os.fsync(fh.fileno())
+            spent = time.perf_counter() - started
+            rate = written / spent if spent > 0 else 0.0
+            left = (len(todo) - written) / rate if rate > 0 else 0.0
+            print(f"    {written}/{len(todo)} arbitrées  {rate * 3600:.0f}/h  "
+                  f"reste ~{left / 3600:.1f} h", flush=True)
+
+        if len(payloads) == 1:
+            note(arbitrate_batch(payloads[0]))
+        elif payloads:
+            # `as_completed` et non `map` : `map` rend les résultats dans
+            # l'ordre de soumission, donc une tranche lente retiendrait en
+            # mémoire toutes celles finies après elle — et le journal, censé
+            # borner ce qu'une coupure fait perdre, ne serait plus écrit au fil
+            # de l'eau. On prend ce qui arrive, quand ça arrive.
+            with ProcessPoolExecutor(max_workers=min(workers, len(payloads))) as pool:
+                futures = [pool.submit(arbitrate_batch, load) for load in payloads]
+                for future in as_completed(futures):
+                    note(future.result())
     elapsed = time.perf_counter() - started
 
-    records = sorted((r for part in gathered for r in part), key=lambda r: r["index"])
+    records = read_journal_records(journal)
     with open(out, "w") as fh:
         for record in records:
             fh.write(json.dumps(record, sort_keys=True) + "\n")

@@ -42,6 +42,7 @@ import argparse
 import json
 import math
 import random
+from concurrent.futures import ProcessPoolExecutor
 import sys
 import time
 from pathlib import Path
@@ -106,6 +107,50 @@ def cases(rng: random.Random, table: TwoSidedBearoff, count: int, width: int):
     return out
 
 
+
+def _bias_batch(payload):
+    """La part d'un processus : ses index, et rien d'autre à sérialiser.
+
+    Chaque processus RECONSTRUIT les cas au lieu de les recevoir. `cases()` ne
+    fait que des lectures de table — c'est bon marché — tandis que faire voyager
+    des `Position` et un réseau ctypes entre processus ne l'est pas, et n'est
+    même pas possible sans les encoder. Reconstruire est déterministe : la même
+    graine rend la même liste, ce que le test de non-régression vérifie.
+
+    La graine d'une décision vaut `seed + 7919 * index`, donc le résultat ne
+    dépend NI du nombre de processus NI du découpage. C'est ce qui rend ce banc
+    parallélisable sans changer son chiffre.
+    """
+    (indices, seed, decisions, width, truncate, trials, target_se,
+     min_trials, no_vr) = payload
+
+    table = TwoSidedBearoff(str(DATABASE))
+    network = Network.load(str(MODEL))
+    try:
+        built = cases(random.Random(seed), table, decisions, width)
+        wanted = set(indices)
+        scores = []
+        for index, (_position, results, exact) in enumerate(built):
+            if index not in wanted:
+                continue
+            config = RolloutConfig(
+                trials=trials, truncate=truncate,
+                seed=seed + 7919 * index, policy=SearchConfig(ply=0),
+                variance_reduction=not no_vr,
+                target_se=target_se, min_trials=min_trials)
+            _eq, differences, errors, _trials = rollout_candidates_paired(
+                network, results, config, pivot=0)
+            for candidate in range(1, len(results)):
+                truth = exact[candidate] - exact[0]
+                error = errors[candidate]
+                if error <= 0:
+                    continue
+                scores.append((differences[candidate] - truth) / error)
+        return len(built), scores
+    finally:
+        table.close()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -116,7 +161,10 @@ def main() -> int:
     parser.add_argument("--target-se", type=float, default=0.006)
     parser.add_argument("--min-trials", type=int, default=72)
     parser.add_argument("--no-vr", action="store_true")
-    parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--workers", type=int, default=26,
+                        help="processus. Le contrôle est massivement "
+                             "parallèle et le laisser mono-cœur fait "
+                             "attendre toute la campagne derrière lui.")
     parser.add_argument("--seed", type=int, default=20260827)
     parser.add_argument("--out", default="")
     args = parser.parse_args()
@@ -135,22 +183,25 @@ def main() -> int:
           f"se visé {args.target_se}", flush=True)
 
     built = cases(rng, table, args.decisions, args.width)
-    scores = []
+    print(f"  {len(built)} cas construits, {args.workers} processus", flush=True)
+
     started = time.perf_counter()
-    for index, (_position, results, exact) in enumerate(built):
-        config = RolloutConfig(
-            trials=args.trials, truncate=args.truncate,
-            seed=args.seed + 7919 * index, policy=SearchConfig(ply=0),
-            variance_reduction=not args.no_vr,
-            target_se=args.target_se, min_trials=args.min_trials)
-        _eq, differences, errors, _trials = rollout_candidates_paired(
-            network, results, config, pivot=0)
-        for candidate in range(1, len(results)):
-            truth = exact[candidate] - exact[0]
-            error = errors[candidate]
-            if error <= 0:
-                continue
-            scores.append((differences[candidate] - truth) / error)
+    common = (args.seed, args.decisions, args.width, args.truncate, args.trials,
+              args.target_se, args.min_trials, args.no_vr)
+    workers = max(1, min(args.workers, len(built)))
+    if workers == 1:
+        _count, scores = _bias_batch((list(range(len(built))),) + common)
+    else:
+        # Réparti en peigne (`i::workers`) et non en blocs : les décisions de
+        # bearoff n'ont pas toutes le même coût, et un bloc de positions
+        # coûteuses ferait attendre les autres processus. Le résultat ne dépend
+        # de toute façon pas du découpage.
+        shares = [list(range(len(built)))[i::workers] for i in range(workers)]
+        payloads = [(share,) + common for share in shares if share]
+        scores = []
+        with ProcessPoolExecutor(max_workers=len(payloads)) as pool:
+            for _count, part in pool.map(_bias_batch, payloads):
+                scores.extend(part)
     elapsed = time.perf_counter() - started
 
     if not scores:

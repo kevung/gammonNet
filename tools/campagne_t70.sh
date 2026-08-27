@@ -42,8 +42,13 @@ echo "── 0/4  contrôle de non-biais de l'arbitre ────────�
 # arrête alors la campagne — c'est le but. Découvrir après trente heures de
 # machine que l'arbitre était biaisé rendrait ces trente heures inutiles, et
 # pire, le registre serait plausible.
+# --workers : sans lui le contrôle tournait sur UN cœur pendant que 25
+# attendaient. L'option existait déjà mais n'était branchée nulle part dans le
+# banc — mesuré le 2026-08-27 : 6 décisions en 190 s mono-cœur contre 52 s à
+# six processus, pour un chiffre identique au dernier décimal.
 "$PYTHON" -u bench/arbiter_bias_t70.py \
     --decisions "${BIAS_DECISIONS:-60}" --truncate "${TRUNCATE:-9}" \
+    --workers "$WORKERS" \
     --out docs/mesures/t70-non-biais.json
 
 echo
@@ -55,8 +60,11 @@ echo "── 1/4  corpus figé ────────────────�
 for context in ${CONTEXTS//,/ }; do
     echo
     echo "── 2/4  arbitrage escaladé — $context ─────────────────────────"
+    # L'arbitrage journalise et REPREND : une coupure ne coûte que les tranches
+    # en vol. C'est ce qui sépare une campagne conséquente d'un pari.
     "$PYTHON" -u bench/arbitrate_t70.py \
         --corpus "$OUT/corpus-$context.jsonl" --workers "$WORKERS" \
+        --chunk "${CHUNK:-64}" \
         --truncate "${TRUNCATE:-9}" --deep-truncate "${DEEP_TRUNCATE:-21}"
 
     echo
