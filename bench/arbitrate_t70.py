@@ -326,8 +326,20 @@ def arbitrate_batch(payload):
         if audit:
             # L'audit garde les DEUX lectures de la même décision : c'est
             # l'écart entre elles qui chiffre le biais de la passe 1.
+            #
+            # `spread` et non `gap` : `gap` n'existait nulle part dans ce
+            # fichier, et cette ligne levait donc un NameError dès la première
+            # décision auditée qui montait en passe 2 — c'est-à-dire au bout de
+            # quelques secondes d'une vraie campagne, `--audit` valant 0,05 par
+            # défaut. Le chemin n'avait jamais été exécuté : les tests couvrent
+            # l'escalade, pas l'audit de l'escalade.
+            #
+            # `spread` est l'écart, SELON LA PASSE 1, à l'intérieur du groupe de
+            # tête. C'est la grandeur qui a décidé de l'escalade, donc celle
+            # qu'un audit de cette décision doit consigner à côté des deux
+            # lectures.
             record["audit_pass1"] = gnubg_equities
-            record["audit_gap"] = gap
+            record["audit_gap"] = spread
         out.append(record)
         _tick()
 
