@@ -335,8 +335,21 @@ def main() -> int:
                              "impraticable avec réduction de variance")
     parser.add_argument("--resolution", type=float, default=0.010,
                         help="largeur d'IC 95 %% en deçà de laquelle on s'arrête")
-    parser.add_argument("--truncated-trials", type=int, default=1296)
-    parser.add_argument("--full-trials", type=int, default=5184)
+    # Les plafonds sont des BUDGETS, pas des limites théoriques. Sur une
+    # décision où l'erreur ne converge pas — et il en existe —, `target_se` ne
+    # déclenche jamais et l'on paie le plafond en entier. Avec 1 296 essais à
+    # variance réduite sur trois candidats tronqués à 17 plis, cela vaut des
+    # HEURES pour une seule décision : la plomberie s'y est arrêtée deux fois,
+    # bloquée à 7 décisions sur 25 pendant vingt minutes.
+    #
+    # Le plafond borne donc le coût, et ce qui n'est pas résolu dans ce budget
+    # est marqué « ouvert » et rapporté. C'est le bon compromis : une décision
+    # pathologique coûte un budget fixe au lieu de manger la campagne, et le
+    # registre dit lesquelles n'ont pas abouti au lieu de le taire.
+    parser.add_argument("--truncated-trials", type=int, default=324,
+                        help="budget de la passe 2 ; atteint = candidat « ouvert »")
+    parser.add_argument("--full-trials", type=int, default=648,
+                        help="budget de la passe 3 ; atteint = candidat « ouvert »")
     parser.add_argument("--truncate", type=int, default=11)
     parser.add_argument("--audit", type=float, default=0.05,
                         help="part des décisions tranchées en passe 1 rejouées en passe 2")
