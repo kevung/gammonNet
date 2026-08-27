@@ -82,8 +82,23 @@ ARBITER_PLY = 3
 #: L'étendue, elle, a une médiane de 0,048 : les candidats lointains sont
 #: franchement mauvais, seuls ceux de tête sont serrés. C'est ce qui rend
 #: l'escalade praticable — on écarte les mauvais à la passe 1, et le rollout ne
-#: paie que le groupe de tête, deux ou trois candidats au lieu de six.
-DOMINANCE_MARGIN = 0.050
+#: paie que le groupe de tête.
+#:
+#: La valeur est CHOISIE SUR MESURE (25 décisions, 98 candidats) :
+#:
+#:   seuil   tête moyenne   décisions closes   trajectoires
+#:   0,010       2,68            52 %               35
+#:   0,020       2,84            44 %               43
+#:   0,030       3,16            28 %               60
+#:   0,050       3,44            20 %               71
+#:   sans tri    3,92             0 %               98
+#:
+#: 0,010 économise le plus, mais c'est GNUBG qui décide qui entre dans le groupe
+#: de tête : un seuil trop serré exclurait un bon coup dès que gnubg se trompe
+#: de dix millièmes sur lui, et ce biais est justement l'inconnue que `--audit`
+#: mesure. 0,020 garde une marge du double pour un coût à peine supérieur —
+#: ×2,3 de trajectoires en moins contre ×2,8, et 44 % de décisions closes.
+DOMINANCE_MARGIN = 0.020
 
 #: La cible de la passe 3 : IC 95 % < 0,005, soit un se de 0,005 / 1,96.
 FULL_TARGET_SE = 0.005 / 1.96
