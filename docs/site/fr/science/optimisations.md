@@ -133,3 +133,14 @@ de la forme du code, c'est la perdre au premier refactor, **sans un signe**.
 - **Une table de transposition** sur les nœuds de recherche — dont le taux de répétition doit être
   **mesuré** avant qu'une ligne soit écrite.
 - **L'élagage des nœuds de hasard** (star1/star2) : exact, mais difficile et au bénéfice inconnu.
+- **Un réseau distillé de la table exacte de fin de partie.** La table pèse 1,2 Gio et ne se
+  distribue pas ; un petit réseau entraîné sur elle le pourrait. C'est la technique qui a déjà
+  produit le réseau d'élagage, et la vérité terrain est ici **exacte** plutôt qu'estimée. La cible
+  n'est pas d'être exact — c'est de faire mieux que le réseau généraliste sur ce domaine, où le
+  déficit vaut 0,00028 d'équité par décision.
+
+  **Deux réserves à poser d'avance** : un réseau approché rendrait « moins faux », jamais
+  « juste » — et il ne faudrait alors plus écrire « table exacte » à son sujet. Et **la queue
+  compte plus que la moyenne** : le pire cas mesuré au 1-ply vaut 0,0919 sur une seule décision
+  contre 0,0023 pour GNU Backgammon. Un réseau qui améliorerait la moyenne en laissant la queue
+  intacte n'aurait rien réglé.
