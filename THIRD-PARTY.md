@@ -11,7 +11,13 @@ effectivement utilisé**. Tenu à jour à chaque ajout de dépendance.
 
 | Brique | Auteur | Licence | Ce qui est utilisé | Source |
 |---|---|---|---|---|
-| *(aucune pour l'instant — le dépôt ne produit pas encore d'artefact)* | | | | |
+| `backgammon-ai-engine` | Alexander Strehl | MIT | **Les poids** `cubeless_prob5_512_512_256_128`, publiés sous le nom `strehl-prob5-512-512-256-128` — la paternité reste à l'auteur (`BRIEF.md` §8) ; **le moteur de règles** `c_engine/bg_engine.c` et **le moteur d'inférence** `c_inference/nn_eval.c`, compilés dans l'artefact | [dépôt](https://github.com/alexstrehl/backgammon-ai-engine), commit `b2750df` |
+| Table d'équité de match Kazaross-XG2 | Neil Kazaross | œuvre de N. Kazaross, avec attribution | La table, compilée dans l'artefact (`src/gn_met_table.h`) | précédent MIT dans [blunderDB](https://github.com/kevung/blunderDB) |
+| `strehl-prune-32` | poids produits par ce dépôt, **distillés de** `strehl-prob5-...` (Strehl, MIT) | MIT | Le réseau d'élagage, qui trie les coups candidats | `tools/train_prune.py`, provenance dans `models/prune_32.provenance.json` |
+
+> **La notice voyage avec l'artefact.** `tools/package_artifact.py` écrit un fichier `NOTICE`
+> dans le répertoire publié, et `wasm/notice.js` la place en tête du module WebAssembly. Les
+> deux portent le texte MIT complet d'Alexander Strehl et l'attribution à Neil Kazaross.
 
 ## Présent dans l'arbre de travail (`vendor/`, non distribué en l'état)
 
