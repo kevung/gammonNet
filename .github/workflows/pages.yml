@@ -39,6 +39,10 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          # Sans ce chemin, l'action cherche `requirements.txt` ou
+          # `pyproject.toml`, ne les trouve pas, et ÉCHOUE — ce qui est arrivé
+          # au premier passage.
+          cache-dependency-path: requirements-docs.txt
 
       - name: Dépendances
         # La documentation se construit SANS le moteur : ni compilateur, ni
@@ -54,6 +58,21 @@ jobs:
 
       - name: Page d'accueil bilingue
         run: cp docs/site/root-index.html _site/index.html
+
+      - name: Préserver la page de mesure mobile
+        # `gh-pages` portait la page statique publiée en août pour mesurer
+        # depuis un téléphone — le téléphone atteignant internet plutôt que la
+        # machine de mesure. Basculer Pages sur Actions la mettrait hors ligne ;
+        # elle est donc recopiée sous /mobile/. Rien n'est perdu, et la méthode
+        # reste utilisable pour le prochain appareil.
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null 2>&1; then
+            git fetch --depth 1 origin gh-pages
+            mkdir -p _site/mobile
+            git archive origin/gh-pages | tar -x -C _site/mobile
+          else
+            echo "pas de branche gh-pages : rien à préserver"
+          fi
 
       - uses: actions/upload-pages-artifact@v3
         with:
