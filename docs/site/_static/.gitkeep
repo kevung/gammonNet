@@ -1,0 +1,3 @@
+# Sphinx exige que ce répertoire existe (html_static_path).
+# git ne suit pas les répertoires vides : sans ce fichier, la construction
+# passe en local et ÉCHOUE sur le runner, où le répertoire est absent.
