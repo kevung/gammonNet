@@ -190,14 +190,19 @@ def harvest(payload):
     kept: list[dict] = []
     taken = collections.Counter()
     examined = 0
-    coverage = 0
+    compared = 0
 
     for position, d1, d2 in play_positions(rng, network, count):
         examined += 1
         klass = classify(position)
         if quota and taken[klass] >= quota.get(klass, 0):
+            # Strate déjà pleine : la position est VUE mais jamais soumise aux
+            # deux moteurs. La compter au dénominateur du taux de désaccord
+            # ferait lire 6,5 % là où le taux réel est de 10 % — l'écart est
+            # entièrement fait de positions qu'on n'a pas regardées.
             continue
 
+        compared += 1
         ranked = search_plays(network, position, d1, d2, ours_config)
         if not ranked:
             continue
@@ -209,7 +214,6 @@ def harvest(payload):
         results = candidate_results(network, position, d1, d2, mine, yours,
                                     width, state)
         ids = [codec.position_id(r) for r in results]
-        coverage += 1
         taken[klass] += 1
         kept.append({
             "position_id": codec.position_id(position),
@@ -222,7 +226,7 @@ def harvest(payload):
             "gnubg": ids.index(codec.position_id(yours.result)),
         })
 
-    return kept, examined, dict(taken), coverage
+    return kept, examined, dict(taken), compared
 
 
 def main() -> int:
@@ -315,10 +319,11 @@ def main() -> int:
         elapsed = time.perf_counter() - started
 
         rows: list[dict] = []
-        examined = 0
-        for kept, seen, _taken, _cov in gathered:
+        examined = compared = 0
+        for kept, seen, _taken, submitted in gathered:
             rows.extend(kept)
             examined += seen
+            compared += submitted
 
         counts = collections.Counter(row["class"] for row in rows)
         total = len(rows)
@@ -334,9 +339,13 @@ def main() -> int:
                 fh.write(json.dumps(row, sort_keys=True) + "\n")
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
 
-        rate = total / examined if examined else 0.0
-        print(f"    {total} décisions disputées sur {examined} examinées "
-              f"({100 * rate:.1f} %) en {elapsed / 60:.1f} min")
+        # Le taux de désaccord se lit sur les positions SOUMISES aux deux
+        # moteurs, pas sur toutes celles que le générateur a traversées.
+        rate = total / compared if compared else 0.0
+        print(f"    {total} décisions disputées sur {compared} comparées "
+              f"({100 * rate:.1f} %) — {examined} positions traversées, "
+              f"le reste écarté par les quotas")
+        print(f"    en {elapsed / 60:.1f} min")
         print(f"    {path.name}  sha256 {digest[:16]}…")
 
         # Le remplissage par strate, toujours affiché. Une classe rare peut ne
@@ -363,6 +372,7 @@ def main() -> int:
         manifest["contexts"][context] = {
             "decisions": total,
             "examined": examined,
+            "compared": compared,
             "disagreement_rate": rate,
             "seconds": elapsed,
             "sha256": digest,
