@@ -20,7 +20,19 @@
  * SPDX-License-Identifier: MIT
  */
 
+/*
+ * `EMSCRIPTEN_KEEPALIVE` sous garde, et ce n'est pas de la politesse : sans
+ * elle, ce fichier ne compile que là où Emscripten est installé — donc il ne
+ * se vérifie nulle part ailleurs, et une faute de type y survit jusqu'au
+ * poste qui sait construire le WASM. Avec la garde, `cc -c` le contrôle
+ * partout ; seul l'édition de liens WebAssembly reste propre à emcc.
+ */
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#else
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -28,9 +40,12 @@
 #include "gn_infer.h"
 
 static GnNetwork *g_network = NULL;
+static GnNetwork *g_prune = NULL;
+static int g_prune_k = 0;
 
 /* MEMFS, not a real path: RAM that `fopen` happens to understand. */
 static const char *MODEL_PATH = "/gammonnet-model.bin";
+static const char *PRUNE_PATH = "/gammonnet-prune.bin";
 
 /*
  * Load a network from a byte buffer.
@@ -68,6 +83,58 @@ int gnw_load_model(const unsigned char *bytes, int length)
     remove(MODEL_PATH);
 
     return (g_network == NULL) ? -2 : 0;
+}
+
+/*
+ * Charger le réseau d'ÉLAGAGE et fixer combien de candidats il laisse passer.
+ *
+ * `k <= 0` l'éteint et rend la recherche d'avant, bit pour bit. Le défaut natif
+ * est 12 : mesuré 98,3 % d'accord avec la recherche non élaguée en contact et
+ * une perte dans le bruit, pour x3,9 (docs/mesures/2026-08-27-T3D-...).
+ *
+ * Ce que ce gain devient DANS UN NAVIGATEUR n'est pas connu : il vient du
+ * remplissage des lots, et le lot y rend x2,21 et non x8,5 (T21). Cette
+ * fonction existe pour que ce soit MESURÉ là-bas, pas transporté d'ici.
+ *
+ * Retours : 0 succès, -1 tampon inutilisable, -2 modèle refusé.
+ */
+EMSCRIPTEN_KEEPALIVE
+int gnw_load_prune(const unsigned char *bytes, int length, int k)
+{
+    if (g_prune != NULL) {
+        gn_network_free(g_prune);
+        g_prune = NULL;
+    }
+    g_prune_k = 0;
+
+    if (bytes == NULL || length <= 0 || k <= 0) {
+        return (k <= 0) ? 0 : -1;   /* k nul : extinction demandée, pas une faute */
+    }
+
+    FILE *staged = fopen(PRUNE_PATH, "wb");
+    if (staged == NULL) {
+        return -1;
+    }
+    const size_t written = fwrite(bytes, 1, (size_t)length, staged);
+    fclose(staged);
+    if (written != (size_t)length) {
+        remove(PRUNE_PATH);
+        return -1;
+    }
+
+    g_prune = gn_network_load(PRUNE_PATH);
+    remove(PRUNE_PATH);
+    if (g_prune == NULL) {
+        return -2;
+    }
+    g_prune_k = k;
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int gnw_prune_k(void)
+{
+    return (g_prune == NULL) ? 0 : g_prune_k;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -138,6 +205,14 @@ void gnw_free_model(void)
         gn_network_free(g_network);
         g_network = NULL;
     }
+    /* Le réseau d'élagage part avec : le laisser derrière ferait qu'une page
+     * qui recharge un modèle continuerait d'élaguer avec l'ancien, sans que
+     * rien ne le dise. */
+    if (g_prune != NULL) {
+        gn_network_free(g_prune);
+        g_prune = NULL;
+    }
+    g_prune_k = 0;
 }
 
 /*
@@ -223,6 +298,9 @@ double gnw_best_play(const char *position_id, int turn, int d1, int d2,
     if (filter_inner > 0 && ply >= 2) {
         config.filter[ply - 1] = filter_inner;
     }
+    /* L'élagage, s'il a été chargé. `gn_search_use_prune` refuse un k nul ou
+     * un réseau absent, donc l'appel est sûr dans tous les cas. */
+    gn_search_use_prune(&config, g_prune, g_prune_k);
 
     gn_search_reset_evaluations();
 
