@@ -117,7 +117,8 @@ Verify before you trust it — the archive carries a 2 000-position benchmark an
 reads it, which **refuses** any deviation beyond 1e-6:
 
 ```sh
-node verify/parity.mjs
+node verify/parity.mjs           # WebAssembly matches the native engine
+node verify/api_invariants.mjs   # the API answers what it promises
 ```
 
 **Known limits.** The exact bearoff table is *not* shipped: the one the engine consults weighs

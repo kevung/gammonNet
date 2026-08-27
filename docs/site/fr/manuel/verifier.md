@@ -42,3 +42,25 @@ même depuis le premier jour du projet.
 | `t3a-prune-search.json` | ce que l'élagage coûte et rapporte, par `k` |
 
 Rien n'y est agrégé : ce sont les sorties des bancs, telles qu'ils les ont écrites.
+
+## Les invariants de l'API
+
+```sh
+node verify/api_invariants.mjs
+```
+
+La parité dit que le module **calcule** comme le moteur natif. Ceci dit qu'il **répond ce qu'il
+promet** : que la liste des coups candidats est ordonnée par équité, que son premier élément est
+bien le coup que rend `bestPlay`, que chaque candidat porte cinq probabilités exploitables, et que,
+filtre de coups éteint, les N meilleurs coups ne dépendent pas de N.
+
+Ce dernier point n'est pas décoratif. `rankPlays` dimensionnait son tampon de candidats sur le
+nombre de coups demandé, et la recherche tronque à la taille de son tampon **avant d'évaluer quoi
+que ce soit**, dans l'ordre de génération : demander 3 coups en faisait classer 3 arbitraires. Sur
+l'ouverture 3-1, le deuxième coup rendu valait −0,1262 là où la liste complète trouve −0,0029. Rien
+ne clochait : probabilités plausibles, équités plausibles, ordre décroissant. Il a fallu comparer
+deux appels pour le voir.
+
+Avec le filtre **actif**, les N meilleurs dépendent légitimement de N — un filtre à N cherche en
+profondeur les N coups les plus prometteurs d'une passe superficielle, et le vrai N-ième peut se
+trouver en dehors. GNU Backgammon a le même comportement.

@@ -403,7 +403,23 @@ int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
         config = gn_search_config(ply);
     }
     if (filter_top > 0 && ply >= 1) {
-        config.filter[ply] = filter_top;
+        /*
+         * LE FILTRE EST ÉLARGI À CE QUE L'APPELANT DEMANDE.
+         *
+         * Le filtre de coups ne réévalue en profondeur que ses `filter_top`
+         * premiers ; les suivants gardent une équité d'une passe plus
+         * superficielle. Rendus tels quels dans une même liste, les deux
+         * échelles se mélangent et le classement cesse d'être un classement :
+         * sur l'ouverture 3-1 à `filter_top = 3`, le 4e coup rendu (-0,0080)
+         * était MEILLEUR que le 3e (-0,0135), simplement parce qu'il n'avait
+         * pas été cherché aussi loin.
+         *
+         * `bestPlay` ne souffrait pas de cela — un filtre à 3 suffit pour
+         * désigner le meilleur. Une API qui promet « les N meilleurs coups avec
+         * leurs statistiques » doit, elle, les avoir tous cherchés à la même
+         * profondeur. Le coût monte avec N, et c'est le prix juste.
+         */
+        config.filter[ply] = (filter_top < max_out) ? max_out : filter_top;
     }
     if (filter_inner > 0 && ply >= 2) {
         config.filter[ply - 1] = filter_inner;
@@ -418,16 +434,30 @@ int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
         gn_search_use_cube(&config, cube_owner, efficiency);
     }
 
-    GnCandidate *candidates = malloc(sizeof(GnCandidate) * (size_t)max_out);
+    /*
+     * THE BUFFER IS THE WHOLE LEGAL MOVE LIST, NEVER `max_out`.
+     *
+     * `rank_plays` truncates to the buffer size BEFORE evaluating anything, in
+     * move-generation order -- so a buffer of `max_out` would rank `max_out`
+     * ARBITRARY plays and call them the best. Measured on the opening 3-1:
+     * `max_out = 3` returned a second-best move at -0.1262 where the full list
+     * finds -0.0029. The N best moves must not depend on N.
+     *
+     * `gn_rollout.c` states the same constraint for the same reason. This
+     * wrapper walked into it anyway; the fix is to rank everything and emit
+     * only what the caller asked for.
+     */
+    GnCandidate *candidates = malloc(sizeof(GnCandidate) * (size_t)GN_MAX_PLAYS);
     if (candidates == NULL) {
         return -1;
     }
-    const int count = gn_search_plays(g_network, &position, d1, d2, &config,
-                                      candidates, max_out);
-    if (count <= 0) {
+    const int ranked = gn_search_plays(g_network, &position, d1, d2, &config,
+                                       candidates, GN_MAX_PLAYS);
+    if (ranked <= 0) {
         free(candidates);
-        return count;
+        return ranked;
     }
+    const int count = (ranked < max_out) ? ranked : max_out;
 
     for (int i = 0; i < count; i++) {
         out[i * 6 + 0] = (float)candidates[i].equity;

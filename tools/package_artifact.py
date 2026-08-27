@@ -98,6 +98,7 @@ TABLES: list = []
 VERIFY = [
     ROOT / "build" / "reference.bin",
     ROOT / "wasm" / "parity.mjs",
+    ROOT / "wasm" / "api_invariants.mjs",
     ROOT / "models" / "cubeless_prob5_512_512_256_128.provenance.json",
     ROOT / "models" / "prune_32.provenance.json",
 ]
@@ -131,7 +132,8 @@ def check_regression() -> None:
             + result.stdout[-2000:])
 
 
-def retarget_parity(source: Path, destination: Path, weights_name: str) -> None:
+def retarget_check(source: Path, destination: Path, weights_name: str,
+                   prune_name: str) -> None:
     """`wasm/parity.mjs` est écrit pour l'arborescence du DÉPÔT, pas pour celle
     de l'archive : il importe `./gammonnet.mjs` (voisin dans `wasm/`), lit
     `../build/reference.bin` et `../models/…`, et charge les modules depuis
@@ -146,14 +148,24 @@ def retarget_parity(source: Path, destination: Path, weights_name: str) -> None:
     silence.
     """
     text = source.read_text(encoding="utf-8")
-    moves = [
-        ('from "./gammonnet.mjs"', 'from "../api/gammonnet.mjs"'),
-        ('join(ROOT, "build", "reference.bin")', 'join(HERE, "reference.bin")'),
-        ('join(ROOT, "models", "cubeless_prob5_512_512_256_128.bin")',
-         f'join(ROOT, "{weights_name}")'),
-        ('"../build/wasm/gammonnet.mjs"', '"../gammonnet.mjs"'),
-        ('"../build/wasm/gammonnet-simd.mjs"', '"../gammonnet-simd.mjs"'),
-    ]
+    common = [('from "./gammonnet.mjs"', 'from "../api/gammonnet.mjs"')]
+    per_file = {
+        "parity.mjs": [
+            ('join(ROOT, "build", "reference.bin")', 'join(HERE, "reference.bin")'),
+            ('join(ROOT, "models", "cubeless_prob5_512_512_256_128.bin")',
+             f'join(ROOT, "{weights_name}")'),
+            ('"../build/wasm/gammonnet.mjs"', '"../gammonnet.mjs"'),
+            ('"../build/wasm/gammonnet-simd.mjs"', '"../gammonnet-simd.mjs"'),
+        ],
+        "api_invariants.mjs": [
+            ('join(ROOT, "models", "cubeless_prob5_512_512_256_128.bin")',
+             f'join(ROOT, "{weights_name}")'),
+            ('join(ROOT, "models", "prune_32.bin")', f'join(ROOT, "{prune_name}")'),
+            ('join(ROOT, "build", "wasm", "gammonnet-simd.mjs")',
+             'join(ROOT, "gammonnet-simd.mjs")'),
+        ],
+    }
+    moves = common + per_file[source.name]
     for before, after in moves:
         if before not in text:
             raise SystemExit(
@@ -175,13 +187,14 @@ def check_artifact_parity(target: Path) -> None:
     if node is None:
         print("   node absent — vérification non exécutée (SAUTÉE)")
         return
-    result = subprocess.run([node, "verify/parity.mjs"], cwd=target,
-                            capture_output=True, text=True)
-    if result.returncode != 0:
-        raise SystemExit(
-            "REFUSÉ : l'artefact ne passe pas sa propre vérification de "
-            "parité.\n" + (result.stdout + result.stderr)[-2000:])
-    print("   " + (result.stdout.strip().splitlines() or ["passée"])[-1])
+    for script in ("verify/parity.mjs", "verify/api_invariants.mjs"):
+        result = subprocess.run([node, script], cwd=target,
+                                capture_output=True, text=True)
+        if result.returncode != 0:
+            raise SystemExit(
+                f"REFUSÉ : l'artefact ne passe pas `{script}`.\n"
+                + (result.stdout + result.stderr)[-2000:])
+        print("   " + (result.stdout.strip().splitlines() or ["passée"])[-1])
 
 
 def check_weights() -> None:
@@ -459,9 +472,11 @@ def main() -> int:
     from pack_fp16 import pack
 
     files: list[tuple[str, str, int]] = []
-    big_name = ""
+    big_name = prune_name = ""
     for name, source in NETWORKS.items():
         stem = f"{name}_{args.version}_{date}"
+        if name == "strehl-prune-32":
+            prune_name = f"{stem}.bin"
         if name == "strehl-prob5-512-512-256-128":
             #: `verify/parity.mjs` doit charger CES poids-là, sous le nom
             #: qu'ils portent dans l'archive — pas celui du dépôt.
@@ -503,8 +518,8 @@ def main() -> int:
                 continue
             destination = target / subdir if subdir else target
             destination.mkdir(parents=True, exist_ok=True)
-            if path.name == "parity.mjs":
-                retarget_parity(path, destination / path.name, big_name)
+            if path.name in ("parity.mjs", "api_invariants.mjs"):
+                retarget_check(path, destination / path.name, big_name, prune_name)
             else:
                 shutil.copy2(path, destination / path.name)
             written = destination / path.name

@@ -37,7 +37,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench bench-infer bench-encoding bench-decision artifact env clean help
+.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision artifact env clean help
 
 all: help
 
@@ -160,6 +160,7 @@ $(LIBRARY): $(OBJECTS) $(VENDOR_OBJECTS)
 # ── Modèle ───────────────────────────────────────────────────────────
 
 MODEL := models/cubeless_prob5_512_512_256_128.bin
+PRUNE_MODEL := models/prune_32.bin
 
 model: $(MODEL)
 
@@ -260,6 +261,12 @@ wasm-parity: wasm $(MODEL)
 	$(PYTHON) tools/dump_reference.py
 	node $(WASM_DIR)/parity.mjs
 
+# Les invariants de l'API JavaScript. La parité vérifie que le module CALCULE
+# comme le natif ; ceci vérifie qu'il RÉPOND ce qu'il promet — le classement des
+# N meilleurs coups, notamment, où deux défauts silencieux ont été trouvés.
+wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
+	node $(WASM_DIR)/api_invariants.mjs
+
 # ── Mesure ───────────────────────────────────────────────────────────
 
 test: build
@@ -286,7 +293,6 @@ bench-infer: build $(BENCH_INFER) $(MODEL)
 # le coût que bench-infer exclut par construction, et qui est le plancher du
 # petit réseau.
 BENCH_ENCODING := $(BUILD)/bench_encoding
-PRUNE_MODEL := models/prune_32.bin
 
 $(BENCH_ENCODING): bench/bench_encoding.c $(OBJECTS) $(VENDOR_OBJECTS)
 	@mkdir -p $(BUILD)

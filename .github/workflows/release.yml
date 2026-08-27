@@ -105,6 +105,12 @@ jobs:
         # mérites.
         run: make wasm-parity
 
+      - name: Invariants de l'API JavaScript
+        # La parité dit que le module CALCULE comme le natif. Ceci dit qu'il
+        # RÉPOND ce qu'il promet : deux défauts silencieux du classement des N
+        # meilleurs coups ont été trouvés là où la parité ne voyait rien.
+        run: make wasm-api
+
       - name: Tests
         run: python -m pytest tests/ -q
 
