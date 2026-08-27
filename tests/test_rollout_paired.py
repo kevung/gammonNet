@@ -44,8 +44,13 @@ def candidates(network):
     return [entry.play.result for entry in ranked[:4]]
 
 
+#: Ces tests vérifient une IDENTITÉ — le noyau apparié rend exactement ce que
+#: rend `rollout_difference` — et non une statistique. Le nombre d'essais n'a
+#: donc qu'à être suffisant pour que les erreurs soient non nulles ; le monter
+#: n'achèterait aucune certitude sur ce qui est testé. Le premier jet demandait
+#: 2 h 30 de machine pour cette raison, ce qui n'est plus un test.
 def config(**kwargs):
-    base = dict(trials=216, truncate=7, seed=4242, policy=SearchConfig(ply=0))
+    base = dict(trials=72, truncate=5, seed=4242, policy=SearchConfig(ply=0))
     base.update(kwargs)
     return RolloutConfig(**base)
 
@@ -65,7 +70,7 @@ def test_it_agrees_with_rollout_difference(network, candidates):
         assert differences[index] == pytest.approx(expected, abs=1e-9), (
             f"candidat {index} : apparié {differences[index]} "
             f"contre différence {expected}")
-    assert trials == 216
+    assert trials == 72
 
 
 def test_the_error_is_the_one_on_the_difference(network, candidates):
@@ -139,8 +144,8 @@ def test_equities_match_the_unpaired_call(network, candidates):
 def test_variance_reduction_narrows_without_moving_the_answer(network, candidates):
     """La correction par la chance a une espérance nulle : elle resserre
     l'intervalle, elle ne déplace pas la réponse hors de cet intervalle."""
-    plain = config(trials=648)
-    reduced = config(trials=648, variance_reduction=True)
+    plain = config(trials=144)
+    reduced = config(trials=144, variance_reduction=True)
     _e1, d1, r1, _n1 = rollout_candidates_paired(network, candidates, plain, 0)
     _e2, d2, r2, _n2 = rollout_candidates_paired(network, candidates, reduced, 0)
     for index in range(1, len(candidates)):
@@ -151,10 +156,10 @@ def test_variance_reduction_narrows_without_moving_the_answer(network, candidate
 
 
 def test_target_se_stops_early_and_says_how_early(network, candidates):
-    settings = config(trials=4096, target_se=0.05, min_trials=72)
+    settings = config(trials=720, target_se=0.05, min_trials=36)
     _eq, _diff, errors, trials = rollout_candidates_paired(network, candidates,
                                                            settings, 0)
-    assert trials < 4096, "l'arrêt sur intervalle n'a pas eu lieu"
+    assert trials < 720, "l'arrêt sur intervalle n'a pas eu lieu"
     assert trials % 36 == 0, "le contrôle d'intervalle se fait tous les 36 essais"
     assert max(errors[1:]) <= 0.05
 
@@ -162,10 +167,10 @@ def test_target_se_stops_early_and_says_how_early(network, candidates):
 def test_target_se_ignores_the_pivots_own_zero(network, candidates):
     """Le piège : le se du pivot vaut zéro dès le premier essai. S'il comptait,
     tout rollout à intervalle s'arrêterait aussitôt et rendrait du bruit."""
-    settings = config(trials=4096, target_se=1e-9, min_trials=72)
+    settings = config(trials=144, target_se=1e-9, min_trials=36)
     _eq, _diff, _errors, trials = rollout_candidates_paired(network, candidates,
                                                             settings, 0)
-    assert trials == 4096, "l'arrêt s'est déclenché sur le zéro du pivot"
+    assert trials == 144, "l'arrêt s'est déclenché sur le zéro du pivot"
 
 
 def test_too_many_candidates_is_refused(network, candidates):

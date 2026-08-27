@@ -48,6 +48,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
+# `tools/` aussi : les contextes de score sont définis là où le corpus est
+# construit, et une seconde définition serait un second joueur.
+sys.path.insert(0, str(ROOT))
 
 from gammonnet import codec  # noqa: E402
 from gammonnet import gnubg_board as gb  # noqa: E402
@@ -82,12 +85,6 @@ TRUNCATED_TARGET_SE = 0.006
 def context_state(context: str) -> MatchState | None:
     from tools.build_corpus_t70 import CONTEXTS  # noqa: PLC0415
     return CONTEXTS[context]
-
-
-def _load_contexts():
-    sys.path.insert(0, str(ROOT))
-    from tools.build_corpus_t70 import CONTEXTS  # noqa: PLC0415
-    return CONTEXTS
 
 
 def decided(differences, errors, pivot: int, margin: float) -> bool:

@@ -292,7 +292,12 @@ def main() -> int:
         workers = max(1, args.workers)
         per_worker_quota = {name: max(1, -(-quota[name] // workers)) for name in quota}
         budget = int(args.target * args.examine_factor / workers) + 1
-        payloads = [(args.seed + 7919 * i + hash(context) % 1000, budget, context,
+        # `hash()` d'une chaîne varie d'un processus Python à l'autre
+        # (PYTHONHASHSEED) : s'en servir ici rendrait le corpus irreproductible
+        # sans que rien ne le signale. L'index du contexte dans CONTEXTS est
+        # stable, et c'est tout ce qu'on demandait à ce terme.
+        offset = list(CONTEXTS).index(context) * 104_729
+        payloads = [(args.seed + 7919 * i + offset, budget, context,
                      args.width, args.ply, per_worker_quota, str(MODEL))
                     for i in range(workers)]
 
