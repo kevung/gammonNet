@@ -209,6 +209,9 @@ def arbitrate_batch(payload):
             # position confiée, soit l'adversaire de celui qui a joué : d'où la
             # négation, la même qui court dans tout ce dépôt.
             equities = [-table.equity(r).cubeless for r in results]
+            # Zéro est ici la VRAIE valeur : une table de fin de partie rend
+            # l'équité exacte, pas une estimation. C'est le seul endroit du
+            # fichier où un intervalle nul se justifie.
             record.update(pass_used=0, equities=equities,
                           errors=[0.0] * len(results),
                           resolution=["resolved"] * len(results),
@@ -239,6 +242,12 @@ def arbitrate_batch(payload):
             # `margin` près, ce que le registre doit précisément garantir.
             states = ["resolved" if i in head else "dominated"
                       for i in range(len(results))]
+            # gnubg 3-ply est DÉTERMINISTE : rejouer rend le même nombre, donc
+            # l'erreur d'échantillonnage est nulle. Elle n'est pas exacte pour
+            # autant — le biais de cette passe est une autre question, celle
+            # que l'audit `--audit` sert à chiffrer. `errors` mesure la
+            # dispersion, jamais la justesse, et le registre porte
+            # `pass_used` pour qu'on ne confonde pas les deux.
             record.update(pass_used=1, equities=gnubg_equities,
                           errors=[0.0] * len(results), spread=spread,
                           head=len(head), resolution=states,
@@ -293,8 +302,25 @@ def arbitrate_batch(payload):
             equities[i] = head_equities[j]
             states[i] = head_states[j]
 
+        # L'INTERVALLE, et non un zéro. Le rollout calcule une erreur-type par
+        # candidat de tête, `resolution_of` s'en sert juste au-dessus pour
+        # décider si un candidat est résolu ou resté ouvert — et le registre
+        # les jetait pour écrire des zéros. Un registre dont chaque intervalle
+        # vaut 0,000 se lit comme un arbitrage parfaitement résolu : c'est le
+        # « zéro par défaut » que la règle 2 de CLAUDE.md nomme, et la fiche
+        # T70 exige au contraire que « chaque décision porte sa passe
+        # d'arbitrage ET SON INTERVALLE ».
+        #
+        # `None` pour les candidats hors du groupe de tête, jamais zéro : leur
+        # valeur vient de gnubg recalé sur le pivot, aucun rollout ne les a
+        # prix, et leur intervalle n'est donc pas mesuré. Ne pas mesurer et
+        # mesurer zéro sont deux choses différentes ; `resolution` dit déjà
+        # « dominated » pour ceux-là.
+        candidate_errors = [None] * len(results)
+        for j, i in enumerate(head):
+            candidate_errors[i] = errors[j]
         record.update(pass_used=used, equities=equities, head=len(head),
-                      errors=[0.0] * len(results), pivot=pivot,
+                      errors=candidate_errors, pivot=pivot,
                       trials=total_trials, resolution=states,
                       seconds=time.perf_counter() - started)
         if audit:
