@@ -8,6 +8,13 @@ vendor/
 models/*.pt
 models/*.bin
 !models/README.md
+# EXCEPTION — le réseau d'élagage est versionné, les autres poids non.
+# Le grand réseau se réexporte au bit près depuis les sources vendorées : le
+# régénérer et le publier sont la même chose. Le petit, lui, a été ENTRAÎNÉ,
+# sur GPU, et sa provenance dit que la rétro-propagation CUDA n'est pas
+# reproductible au bit près. Le régénérer donne un autre réseau — auquel les
+# mesures T3D et T3E ne s'appliquent plus. 25,9 Kio est le prix de l'identité.
+!models/prune_32.bin
 __pycache__/
 *.pyc
 .venv/

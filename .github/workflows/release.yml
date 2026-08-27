@@ -61,17 +61,33 @@ jobs:
       - name: Sources vendorées, au commit épinglé
         run: python tools/fetch_vendor.py
 
-      - name: Poids
+      - name: Poids du grand réseau
+        # Une CONVERSION de format, pas un entraînement : bit-reproductible
+        # depuis les sources vendorées au commit épinglé. `package_artifact.py`
+        # le vérifie ensuite contre le sha256 de sa provenance.
         run: python tools/export_model.py
 
-      - name: Réseau d'élagage
-        # Distillé du grand réseau ; le corpus se régénère par sa graine.
-        run: |
-          python tools/build_prune_corpus.py --count 800000 --workers 2
-          python tools/train_prune.py
-
       - name: Bibliothèque native
+        # AVANT tout ce qui importe `gammonnet` : le paquet Python charge
+        # `build/libgammonnet.so` à l'import.
         run: make build
+
+      # LE RÉSEAU D'ÉLAGAGE N'EST PAS RÉENTRAÎNÉ ICI, ET C'EST DÉLIBÉRÉ.
+      #
+      # Il l'a été une fois, sur GPU, et sa provenance dit ce que cela implique :
+      # l'accumulation atomique de la rétro-propagation CUDA n'est pas
+      # reproductible au bit près. Un runner sans GPU retombe silencieusement
+      # sur le CPU (`train_prune.py` le fait sans broncher) et produit un réseau
+      # DIFFÉRENT — proche, mais autre — auquel les mesures de T3D (`k=12` ne
+      # coûte rien de mesurable) et de T3E (PR 0,273) ne s'appliquent plus.
+      #
+      # Rien ne l'aurait attrapé : le corpus de non-régression T12 évalue le
+      # grand réseau et ne touche pas l'élagage. La panne aurait été muette.
+      #
+      # Il est donc versionné (`models/prune_32.bin`, 25,9 Kio) et
+      # `package_artifact.py` REFUSE de publier si son sha256 s'écarte de sa
+      # provenance. Ce n'était pas non plus une affaire de temps : le corpus
+      # coûte ~50 s à deux ouvriers, mesuré.
 
       - name: WebAssembly, scalaire et SIMD
         run: make wasm

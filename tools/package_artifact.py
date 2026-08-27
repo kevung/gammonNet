@@ -131,6 +131,39 @@ def check_regression() -> None:
             + result.stdout[-2000:])
 
 
+def check_weights() -> None:
+    """Les poids publiés sont-ils CEUX qui ont été mesurés ?
+
+    La question n'est pas rhétorique. Le réseau d'élagage a été entraîné sur
+    GPU, et sa propre provenance le dit : l'accumulation atomique de la
+    rétro-propagation CUDA n'est pas reproductible au bit près. Une chaîne
+    d'intégration qui le RÉENTRAÎNE produit donc un réseau différent — proche,
+    sûrement, mais différent — et publierait un artefact auquel les mesures de
+    T3D (`k=12` ne coûte rien) et de T3E (PR 0,273) ne s'appliquent plus.
+
+    Rien d'autre ne l'attraperait : le corpus de non-régression T12 évalue le
+    GRAND réseau et ne touche pas l'élagage. Le défaut serait silencieux, ce
+    qui est exactement le mode de défaillance que `CLAUDE.md` §2 nomme.
+
+    D'où ce contrôle : chaque réseau porte une provenance versionnée qui
+    contient son `sha256`. Ils doivent correspondre, sinon on refuse.
+    """
+    for source in NETWORKS.values():
+        provenance = source.with_suffix(".provenance.json")
+        if not provenance.exists():
+            raise SystemExit(f"REFUSÉ : {source.name} n'a pas de provenance")
+        recorded = json.loads(provenance.read_text())["sha256"]
+        actual = sha256(source)
+        if actual != recorded:
+            raise SystemExit(
+                f"REFUSÉ : {source.name} n'est pas le réseau mesuré.\n"
+                f"  attendu (provenance) : {recorded}\n"
+                f"  trouvé               : {actual}\n"
+                "Les mesures de force publiées portent sur le réseau attendu. "
+                "Publier celui-ci reviendrait à leur faire dire ce qu'elles ne "
+                "disent pas. Restaurez les poids, ou mesurez à nouveau.")
+
+
 def quickstart() -> str:
     return """# Démarrer avec gammonNet
 
@@ -348,12 +381,16 @@ def main() -> int:
         if not source.exists():
             raise SystemExit(f"REFUSÉ : {source} absent")
 
+    print("0. Les poids sont-ils ceux qui ont été mesurés ?")
+    check_weights()
+    print("   sha256 conformes aux provenances")
+
     if not args.skip_regression:
-        print("1. Corpus de non-régression T12")
+        print("\n1. Corpus de non-régression T12")
         check_regression()
         print("   passé")
     else:
-        print("1. Corpus de non-régression T12 — SAUTÉ (essai)")
+        print("\n1. Corpus de non-régression T12 — SAUTÉ (essai)")
 
     target = args.out / f"gammonnet-{args.version}"
     if target.exists():

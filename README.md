@@ -1,180 +1,186 @@
 # gammonNet
 
-Un évaluateur de positions de backgammon, pour le navigateur et pour le natif.
+A backgammon position evaluator for the browser and for native code — a neural network, an
+expectiminimax search, a match equity table and exact bearoff tables.
 
-Un réseau de neurones, une recherche expectiminimax, une table d'équité de match et des tables de
-fin de partie. Deux cibles : WebAssembly (2-ply sur l'appareil) et natif (profondeurs supérieures
-et rollouts).
+**Measured equivalent to GNU Backgammon at 2-ply.** Not asserted: measured, on 50 000 duplicate
+pairs, in both money and match play, and reproduced independently on a second machine.
 
-Tout ce qui est distribué est sous licence permissive, sans clause d'usage. Un module WebAssembly
-servi à un navigateur est une distribution, ce qui exclut les briques sous copyleft fort ou sous
-clause non commerciale.
+📖 **[Documentation](https://kevung.github.io/gammonNet/)** — user manual, scientific manual and
+developer manual, in [English](https://kevung.github.io/gammonNet/en/) and
+[French](https://kevung.github.io/gammonNet/fr/).
 
-## Ce qui est réutilisé, ce qui est écrit ici
+> One position goes in, one evaluation comes out. This repository does not know its callers: no
+> user, no account, no storage, no game library. Everything distributed is permissively licensed,
+> with no usage clause — a WebAssembly module served to a browser *is* a distribution, which rules
+> out strong copyleft and non-commercial terms.
 
-Les poids du réseau viennent de
-[`alexstrehl/backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine) (MIT),
-entraîné en self-play.
+## Strength, as measured
 
-| Brique | Origine | Statut |
+Full configuration — network, 2-ply filtered search, match equity, bearoff tables, cube — against
+GNU Backgammon at the same settings, common dice, bootstrap over duplicate pairs.
+
+| Protocol | Volume | Result | 95 % CI |
+|---|---|---|---|
+| money, cubeful | 50 000 pairs | **−0.0119 ppg** | [−0.0310 ; +0.0074] |
+| match, MWC | 50 000 pairs | **50.42 %** | [50.16 ; 50.69] |
+
+**Equivalent, confirmed. Superior: not established** — and eXtreme Gammon has never been measured
+here. In money the interval contains zero; in match the edge is +0.42 points of MWC, separated
+from equality but by a hair. ([T35](docs/mesures/2026-08-26-T35-verdict.md))
+
+### Performance rating
+
+600 contact decisions, arbiter GNU Backgammon at 3-ply over every legal move. The published
+reference figures for this model are reproduced at all three depths, each inside its interval.
+
+| Configuration | PR | 95 % CI | Reference |
+|---|---|---|---|
+| 0-ply | **1.088** | [0.802 ; 1.412] | 1.06 ✅ |
+| 1-ply | **0.499** | [0.330 ; 0.705] | 0.50 ✅ |
+| 2-ply `(0,1,3)`, no pruning | **0.273** | [0.190 ; 0.364] | 0.22 ✅ |
+
+The 1-ply figure — 0.499 against 0.50 published, two independent chains and two different
+arbiters — is the strongest validation of the search this repository has produced.
+([T3E](docs/mesures/2026-08-27-T3E-performance-rating.md))
+
+### On a real match
+
+A 7-point match played by humans, analysed decision by decision against GNU Backgammon: **139
+decisions, 19 disagreements (13.7 %), and none costing more than 0.0195 equity.** The two engines
+diverge where several moves are worth the same, never where a game is decided.
+([T3C](docs/mesures/2026-08-27-T3C-analyse-de-match.md))
+
+## Cost in the browser
+
+Opening position, Chromium, one worker. The pruning network sorts the moves so the big network
+scores only a handful of them.
+
+| Configuration | Evaluations | Cost per decision |
 |---|---|---|
-| Poids du réseau, moteur de règles, lecteur `.bin` | Strehl, MIT | réutilisés, isolés derrière une interface |
-| Table d'équité de match Kazaross-XG2 | Neil Kazaross | réutilisée, vérifiée contre le rendu de GNU Backgammon |
-| Codec position ↔ 196 caractéristiques | — | écrit ici |
-| Recherche expectiminimax 0→3 ply, filtrage de coups | idée documentée par le manuel de GNU Backgammon ; aucun code repris | écrit ici |
-| Équité de match dans la recherche | architecture de GNU Backgammon : réseau cubeless, conversion après | écrit ici |
-| Portage WebAssembly, pool de Web Workers | — | écrit ici |
-| ×9 de débit sur la passe avant, exact au bit près | — | écrit ici |
+| 0-ply | 16 | **6 ms** |
+| 1-ply | 7 475 | 2 289 ms |
+| 2-ply `(0,1,3)`, no pruning | 38 721 | 9 813 ms |
+| **2-ply `(0,1,3)`, pruning `k=12`** | 15 142 | **2 689 ms** |
 
-Le codec permet d'évaluer une position fournie de l'extérieur (XGID, Position ID) ; sans lui, le
-modèle ne traite que les positions de son propre moteur de self-play. La recherche fait passer du
-0-ply à des profondeurs supérieures : le 1-ply change le coup choisi dans 7,6 % des décisions
-mesurées. L'équité de match est nécessaire pour jouer ailleurs qu'en money, le réseau étant
-cubeless et aveugle au score.
+Pruning is ×3.65 on a 2-ply decision for an equity loss inside the noise, so it is the default.
+With 8 Web Workers throughput reaches 26 667 eval/s (×6.2), and a full 7-point match is analysed
+in **74 s**. WebAssembly matches the native engine exactly in scalar builds (max\|Δ\| = 0) and to
+6.4e-7 with SIMD.
 
-### Annoncé et mesuré
+## Using a release
 
-| | annoncé | mesuré ici |
-|---|---|---|
-| Force du modèle contre GNU Backgammon, 0-ply money | +0,0578 ppg (auteur) | +0,0400 [+0,0377 ; +0,0425], 10⁶ parties |
-| Pénalité WebAssembly | ×1,5 à ×2,5 (hypothèse) | ×1,18 à ×1,29 |
-| Coût d'une décision 2-ply | 245 ms (extrapolé) | 1 394 ms, filtre 1/1 |
-| Match de 7 points dans le navigateur | 30 à 60 s | ~2 min, 3,3 workers |
-| PR du modèle, 0-ply → 2-ply | 1,06 → 0,22 (auteur) | non vérifié — objet de T35 |
-| Coût d'une décision 2-ply, nous / gnubg | — | **3,29 s contre ~0,01 s** |
-| Perte d'équité par décision de bearoff, 0-ply | — | **0,00028**, contre 0,00000 pour gnubg avec sa table |
-
-Le +0,0578 n'a pas été reproduit. Le harnais du dépôt de référence, exécuté inchangé ici, donne
-+0,0351, soit le même résultat que le nôtre. L'hypothèse d'un oracle différent a été testée et
-réfutée. La base de comparaison de ce dépôt est donc +0,0400 dans cet environnement.
-
-La force de la configuration complète — recherche, équité de match, tables de fin de partie —
-n'est pas mesurée. C'est l'objet de T35.
-
-### Ce que le 2026-08-06 a établi
-
-**La table exacte comble 0,00028 point d'équité par décision de bearoff** (T38, 8 000 décisions,
-arbitre sans variance). GNU Backgammon n'y perd rien, parce qu'il consulte sa propre table : le
-tableau ne compare pas deux réseaux, il chiffre le trou qu'une table comblerait. Notre pire cas au
-1-ply vaut 0,0919 sur une seule décision, contre 0,0023 pour gnubg — c'est la queue, pas la
-moyenne, qui coûte.
-
-**Notre décision 2-ply coûte ~330 fois celle de gnubg** — 3,29 s contre ~10 ms, entièrement
-expliqué par 38 244 évaluations à 86 µs. Ses réseaux d'élagage rendent son coût quasi plat avec la
-profondeur ; le nôtre explose. Cela engage la faisabilité des mesures **et** le budget navigateur.
-
-**L'instrument de mesure a changé.** Une partie ne rend qu'un point de donnée et en contient
-cinquante-cinq. Mesurer la perte d'équité **par décision** contre une référence commune est deux
-ordres de grandeur plus sensible qu'un round-robin — et en fin de partie, la table bilatérale
-fournit un arbitre **exact**, sans variance et sans réserve.
-
-### Ce que le 2026-08-07 a établi
-
-**L'avantage du réseau s'annule sous recherche.** Mesuré sur 2 400 décisions de contact, à
-profondeur égale, avec deux arbitres indépendants :
-
-| profondeur | notre arbitre | arbitre gnubg |
-|---|---|---|
-| 0-ply | +0,00247 | +0,00182 |
-| 1-ply | +0,00154 | +0,00070 |
-| 2-ply | +0,00053 | **+0,00007 — l'intervalle contient zéro** |
-
-Ce n'est pas la faute de notre filtre : un contrôle sur 2 000 décisions établit que le resserrement
-de la garde intérieure ne change que 1,1 % des coups et **ne coûte rien de mesurable**, tout en
-divisant le coût d'une décision par douze.
-
-**Et la profondeur ne le rachète pas.** Notre 3-ply contre leur 2-ply — 180 fois plus de calcul —
-ne gagne rien de plus que notre 2-ply. La vitesse reste nécessaire au budget navigateur, mais elle
-n'est **pas** un levier de force.
-
-Il reste donc deux voies bon marché avant la phase 4 : **brancher les tables de fin de partie**,
-dont le déficit est connu et se comble avec certitude, et le **videau**, seul composant totalement
-absent. Sur le jeu de pions en contact, aucune voie bon marché ne subsiste.
-
-## Coût dans le navigateur
-
-Position d'ouverture, Chromium :
-
-| Profondeur | Évaluations réseau | Coût d'une décision |
-|---|---|---|
-| 0-ply | 16 | 1,7 ms |
-| 1-ply | 7 475 | 797 ms |
-| 2-ply, filtre 1/1 | 12 951 | 1 394 ms |
-
-Un match de 7 points représente environ deux minutes de calcul sur 3,3 workers. Mesuré sur sept
-plateformes : Chromium, Firefox, deux Android, deux iPhone
-([détail](docs/mesures/2026-08-04-decision-navigateur.md)).
-
-Sur ces sept plateformes, l'écart au repère natif vaut `4,77e-07` dans tous les cas. Une analyse
-produite sur téléphone donne le même résultat que sur ordinateur.
-
-## État
-
-Phases 0, 1 et 2 terminées. Phase 3 en cours.
-
-| | Tâches | État |
-|---|---|---|
-| 0 — Socle & instrument | T00 · T01 · T02 · T03 · T04 · T05 | ✅ |
-| 1 — Reproduire | T10 · T11 · T12 | ✅ |
-| 2 — Navigateur | T20 · T21 · T22 · T23 | ✅ |
-| 3 — Profondeur & exactitude | T30 ✅ · T31 ✅ · T32 ✅ · T33 ⏳ · T36 ✅ · T37 · T38 ⏳ · T39 ✅ · T34 · T35 | en cours |
-| 4 — Modèle propre au projet | — | fermée |
-| 5 — Publication | T50 | à venir |
-
-Chaque tâche porte un rapport dans [`docs/mesures/`](docs/mesures/), qui distingue le mesuré de
-l'estimé.
-
-La phase 3 a été **recadrée le 2026-08-06** vers l'objectif tel qu'il est posé : un moteur en
-match, avec videau, au moins aussi bon que GNU Backgammon. Le seul chiffre de force du dépôt est
-mesuré en 0-ply cubeless money, et **trois transports** le séparent de cette cible — la
-profondeur, le videau, le match. Aucun ne se déduit des autres. Le chemin est découpé en quatre
-paliers, chacun refermé par une mesure qui autorise ou interdit le suivant :
-diagnostic (T36, T37) → fins de partie exactes (T38) → videau (T34) → arbitre et verdict
-(T39, T35). Le détail est dans [`PLAN.md`](PLAN.md), section *Recadrage vers l'objectif*.
-
-La phase 4 devait s'ouvrir si la phase 1 échouait à confirmer la force annoncée. Le critère est
-atteint à la lettre, puisque le chiffre publié n'a pas été reproduit. Elle reste fermée : le
-critère visait le cas où le modèle serait insuffisant, ce qui n'est pas le cas. Condition de
-réouverture : T35.
-
-## Démarrer
-
-```bash
-make setup     # environnement Python, sources tierces épinglées, moteur C compilé
-make build     # bibliothèque native
-make wasm      # module WebAssembly
-make test
-```
-
-Python ≥ 3.10 et un compilateur C. Emscripten pour la cible navigateur.
-
-## Documents
+Every release ships a self-contained archive — weights, WebAssembly, the JavaScript API, the
+means to verify it, and the raw evidence behind every published figure.
 
 | | |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | Règles de travail — frontière, contraintes, conventions |
-| [`BRIEF.md`](BRIEF.md) | Contexte — sources, licences, chaîne technique, protocole |
-| [`PLAN.md`](PLAN.md) | Plan d'exécution — 5 phases, 21 fiches |
-| [`THIRD-PARTY.md`](THIRD-PARTY.md) | Inventaire des briques et de leurs licences |
-| [`docs/adr/`](docs/adr/) | Décisions d'architecture |
-| [`docs/recherche/`](docs/recherche/) | Le plan de recherche « dépasser franchement gnubg, à vitesse égale ou meilleure », et ses quatorze recherches approfondies |
+| `strehl-prob5-…​.bin` / `.bin16` | network weights, float32 and float16 (half the size) |
+| `strehl-prune-32_…​.bin` / `.bin16` | the pruning network |
+| `gammonnet-simd.mjs` / `.wasm` | the WebAssembly engine (prefer the SIMD build) |
+| `api/gammonnet.mjs` | the JavaScript API — `Evaluator` |
+| `api/pool.mjs`, `api/worker.mjs` | the Web Worker pool — a match in 74 s instead of 350 |
+| `verify/` | check for yourself that this artifact returns the right numbers |
+| `evidence/` | the raw measurements behind each figure in the release notes |
+| `NOTICE`, `THIRD-PARTY.md`, `SHA256SUMS` | attribution, licences, checksums |
 
-Objectif : atteindre un niveau équivalent ou supérieur à GNU Backgammon et à eXtreme Gammon, et le
-justifier par une mesure reproductible dont chaque source est traçable.
+```js
+import { Evaluator } from "./api/gammonnet.mjs";
+import factory from "./gammonnet-simd.mjs";
 
-## Crédits
+const weights = new Uint8Array(await (await fetch("./strehl-prob5-…​.bin16")).arrayBuffer());
+const evaluator = await Evaluator.create(factory, weights);
 
-- Réseau et moteur de règles — [Alexander Strehl](https://github.com/alexstrehl/backgammon-ai-engine), MIT.
-- Table d'équité de match Kazaross-XG2 — Neil Kazaross ; transcription croisée avec
+const prune = new Uint8Array(await (await fetch("./strehl-prune-32_…​.bin16")).arrayBuffer());
+evaluator.loadPrune(prune, 12);          // ×3.65, strongly recommended
+
+const level = Evaluator.level("normal");   // ply, move filters, pruning width
+
+// The 5 best moves, each with win / gammon / backgammon probabilities and equity.
+const moves = evaluator.rankPlays("4HPwATDgc/ABMA", 0, 3, 1, { ...level, max: 5 });
+
+// Cube decision: no-double, double-take and double-pass equities, and the verdict.
+const cube = evaluator.cubeDecision("4HPwATDgc/ABMA", 0, { ...level, owner: 0 });
+```
+
+Three analysis levels are exposed — `instant` (0-ply, ~6 ms), `normal` (2-ply filtered with
+pruning, ~2.7 s) and `thorough` (the same without pruning, ~9.8 s) — along with every underlying
+parameter: depth, move filters, pruning width, evaluation cache, cubeful or cubeless valuation,
+match score, cube ownership and cube efficiency. See the
+[settings reference](https://kevung.github.io/gammonNet/en/manuel/settings.html).
+
+Verify before you trust it — the archive carries a 2 000-position benchmark and the check that
+reads it, which **refuses** any deviation beyond 1e-6:
+
+```sh
+node verify/parity.mjs
+```
+
+**Known limits.** The exact bearoff table is *not* shipped: the one the engine consults weighs
+1.2 GiB. The endgame therefore falls back on the network, which costs 0.00028 equity per bearoff
+decision on average — and up to 0.0919 in the worst case observed. The
+[limits page](https://kevung.github.io/gammonNet/en/manuel/limits.html) lists every one of them.
+
+## Building from source
+
+```bash
+make setup     # Python environment, pinned third-party sources, C engine
+make build     # native library
+make wasm      # WebAssembly module
+make test
+```
+
+Python ≥ 3.10 and a C compiler; Emscripten for the browser target. Note that `models/*.bin` is not
+in the repository — the weights are rebuilt from Alexander Strehl's vendored sources at a pinned
+commit, which also verifies on every release that the export chain still works.
+
+## What is reused, what is written here
+
+The network weights come from
+[`alexstrehl/backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine) (MIT),
+trained by self-play.
+
+| Component | Origin | Status |
+|---|---|---|
+| Network weights, rules engine, `.bin` reader | Strehl, MIT | reused, isolated behind an interface |
+| Kazaross-XG2 match equity table | Neil Kazaross | reused, cross-checked against GNU Backgammon |
+| Position ↔ 196-feature codec | — | written here |
+| Expectiminimax search 0→4 ply, move filters | idea documented in the GNU Backgammon manual; no code taken | written here |
+| Match equity inside the search | GNU Backgammon architecture: cubeless network, conversion after | written here |
+| Pruning network, distilled from the big one | — | written here |
+| WebAssembly port, Web Worker pool | — | written here |
+| ×9 forward-pass throughput, bit-exact | — | written here |
+
+## Project status
+
+Phases 0 through 5 are complete. Phase 4 — a project-specific model — stays closed: it was
+conditional on the model proving insufficient, and it did not.
+
+| | Tasks | State |
+|---|---|---|
+| 0 — Foundations & instrument | T00 · T01 · T02 · T03 · T04 · T05 | ✅ |
+| 1 — Reproduce published figures | T10 · T11 · T12 | ✅ |
+| 2 — Browser | T20 · T21 · T22 · T23 | ✅ |
+| 3 — Depth & exactness | T30 → T3E | ✅ |
+| 4 — Project-specific model | — | closed |
+| 5 — Publication | T50 · T51 | ✅ |
+
+Every task carries a report in [`docs/mesures/`](docs/mesures/), which distinguishes what was
+measured from what was estimated. Working documents: [`CLAUDE.md`](CLAUDE.md) (rules),
+[`BRIEF.md`](BRIEF.md) (context, sources, licences), [`PLAN.md`](PLAN.md) (task sheets),
+[`THIRD-PARTY.md`](THIRD-PARTY.md) (licence inventory).
+
+## Credits
+
+- Network and rules engine — [Alexander Strehl](https://github.com/alexstrehl/backgammon-ai-engine), MIT.
+- Kazaross-XG2 match equity table — Neil Kazaross; transcription cross-checked with
   [blunderDB](https://github.com/kevung/blunderDB), MIT.
-- GNU Backgammon — oracle de mesure et référence de la table d'équité. Pas une source de code ni
-  de poids.
-- [HedgeHog](https://hedgehog-bg.com/) — leur principe « refused, not approximated » est repris
-  comme règle de travail, et leurs chiffres publiés ont servi d'hypothèses initiales. Ni leur code
-  ni leurs réseaux ne sont utilisés ([ADR-0001](docs/adr/0001-moteur-inference.md)).
-
-Licences : [`THIRD-PARTY.md`](THIRD-PARTY.md).
+- GNU Backgammon — measurement oracle and match equity reference. Not a source of code or weights.
+- [HedgeHog](https://hedgehog-bg.com/) — their principle *"a model this build cannot evaluate is
+  refused, not approximated"* is adopted as a working rule, and their published figures served as
+  initial hypotheses. Neither their code nor their networks are used
+  ([ADR-0001](docs/adr/0001-moteur-inference.md)).
 
 ## Licence
 
-MIT. Voir [`LICENSE`](LICENSE).
+MIT. See [`LICENSE`](LICENSE) and [`THIRD-PARTY.md`](THIRD-PARTY.md).
