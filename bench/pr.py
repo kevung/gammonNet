@@ -47,6 +47,7 @@ import json
 import statistics
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -91,12 +92,48 @@ FILTERS = {0: (), 1: (), 2: (0, 1, 3)}
 PRUNE_FROM_PLY = 2
 
 
+_SESSION = None
+
+
+def _open_session():
+    """Une session gnubg par ouvrier, ouverte une fois.
+
+    Le sous-processus met une seconde à démarrer ; le rouvrir par décision
+    coûterait plus que l'arbitrage lui-même.
+    """
+    global _SESSION
+    from gammonnet.gnubg_engine import GnubgSession as _S
+    _SESSION = _S()
+
+
+def _arbitrate(payload):
+    """Les équités de gnubg pour TOUS les coups légaux d'une décision.
+
+    L'arbitrage est trivialement parallélisable : chaque décision est une
+    question indépendante. La première version était séquentielle et coûtait
+    68 minutes pour 600 décisions, alors que la documentation du script
+    annonçait déjà `--workers 26`.
+    """
+    from gammonnet.rules import Position as _P  # noqa: F401
+    index, position, d1, d2, arbiter_ply = payload
+    plays = position.legal_plays(d1, d2)
+    if len(plays) < 2:
+        return index, {}
+    boards = [to_gnubg(play.result) for play in plays]
+    values = _SESSION.evaluate(boards, plies=arbiter_ply, prune=0)
+    # La position résultante a rendu la main : sa valeur est celle de
+    # l'adversaire, d'où la négation.
+    return index, {str(play.result): -value[EQUITY]
+                   for play, value in zip(plays, values)}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--decisions", type=int, default=2000)
     parser.add_argument("--plies", default="0,1,2")
     parser.add_argument("--arbiter-ply", type=int, default=3)
     parser.add_argument("--prune-k", type=int, default=12)
+    parser.add_argument("--workers", type=int, default=24)
     parser.add_argument("--bootstrap", type=int, default=10_000)
     parser.add_argument("--out", type=Path,
                         default=ROOT / "docs" / "mesures" / "t3e-pr.json")
@@ -138,25 +175,20 @@ def main() -> int:
         print(f"   {len(reference)} décisions")
         return _subjects(args, plies, cases, reference, net, small)
 
-    print(f"\n2. L'arbitre : gnubg {args.arbiter_ply}-ply sur tous les coups légaux")
+    print(f"\n2. L'arbitre : gnubg {args.arbiter_ply}-ply, "
+          f"{args.workers} ouvriers")
     started = time.time()
-    reference: list[dict] = []
-    with GnubgSession() as engine:
-        for index, (position, d1, d2) in enumerate(cases):
-            plays = position.legal_plays(d1, d2)
-            if len(plays) < 2:
-                reference.append({})
-                continue
-            boards = [to_gnubg(play.result) for play in plays]
-            values = engine.evaluate(boards, plies=args.arbiter_ply, prune=0)
-            # La position résultante a rendu la main : sa valeur est celle de
-            # l'adversaire, d'où la négation.
-            reference.append({
-                play.result.id() if hasattr(play.result, "id") else str(play.result):
-                -value[EQUITY] for play, value in zip(plays, values)})
-            if (index + 1) % 200 == 0:
-                print(f"   {index + 1}/{len(cases)}  "
-                      f"({time.time() - started:.0f} s)")
+    payloads = [(i, position, d1, d2, args.arbiter_ply)
+                for i, (position, d1, d2) in enumerate(cases)]
+    reference = [{} for _ in cases]
+    with ProcessPoolExecutor(max_workers=args.workers,
+                             initializer=_open_session) as pool:
+        done = 0
+        for index, table in pool.map(_arbitrate, payloads, chunksize=4):
+            reference[index] = table
+            done += 1
+            if done % 200 == 0:
+                print(f"   {done}/{len(cases)}  ({time.time() - started:.0f} s)")
     print(f"   {time.time() - started:.0f} s")
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(json.dumps(reference))
