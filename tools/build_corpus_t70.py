@@ -119,6 +119,31 @@ def play_positions(rng: random.Random, network, limit: int):
             d1, d2 = rng.randint(1, 6), rng.randint(1, 6)
 
 
+#: Où chaque processus dit où il en est. Sans cela, 26 processus travaillent en
+#: silence pendant des heures et rien ne distingue « ça avance » de « ça patine »
+#: — c'est le trou que le propriétaire a nommé le 2026-08-27. Une ligne JSON par
+#: relevé, en ajout : aucun verrou, aucune coordination, et le dernier relevé de
+#: chaque processus suffit à faire un état.
+PROGRESS = Path(os.environ.get("T70_CORPUS_PROGRESS", "/tmp/t70-corpus-progress.log"))
+
+#: Tous les combien un processus se signale. Une position coûte ~3,6 s (mesuré à
+#: la calibration du 2026-08-27), donc 25 fait un signe de vie toutes les ~90 s :
+#: assez souvent pour qu'une alarme de silence à dix minutes ne mente pas.
+PROGRESS_EVERY = 25
+
+
+def _report(worker: int, kept: int, examined: int, budget: int, started: float) -> None:
+    """Un relevé, en ajout, sans jamais faire échouer la récolte pour si peu."""
+    try:
+        with open(PROGRESS, "a") as fh:
+            fh.write(json.dumps({
+                "worker": worker, "kept": kept, "examined": examined,
+                "budget": budget, "seconds": round(time.perf_counter() - started, 1),
+            }) + "\n")
+    except OSError:
+        pass
+
+
 def natural_distribution(seed: int, sample: int) -> dict[str, float]:
     """La fréquence de chaque classe **dans les décisions réelles**.
 
@@ -192,8 +217,11 @@ def harvest(payload):
     examined = 0
     compared = 0
 
+    started_at = time.perf_counter()
     for position, d1, d2 in play_positions(rng, network, count):
         examined += 1
+        if examined % PROGRESS_EVERY == 0:
+            _report(seed, len(kept), examined, count, started_at)
         klass = classify(position)
         if quota and taken[klass] >= quota.get(klass, 0):
             # Strate déjà pleine : la position est VUE mais jamais soumise aux
@@ -226,6 +254,7 @@ def harvest(payload):
             "gnubg": ids.index(codec.position_id(yours.result)),
         })
 
+    _report(seed, len(kept), examined, count, started_at)
     return kept, examined, dict(taken), compared
 
 
@@ -298,6 +327,8 @@ def main() -> int:
 
     for context in contexts:
         print(f"\n  ── {context} ──", flush=True)
+        PROGRESS.unlink(missing_ok=True)
+        print(f"  suivi : {PROGRESS}", flush=True)
         workers = max(1, args.workers)
         per_worker_quota = {name: max(1, -(-quota[name] // workers)) for name in quota}
         budget = int(args.target * args.examine_factor / workers) + 1
