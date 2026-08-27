@@ -286,6 +286,24 @@ bench-encoding: build $(BENCH_ENCODING) $(MODEL)
 
 # Une décision 2-ply, sans Python dans le cadre : ce qu'il faut pour répondre à
 # « où passe le temps d'une décision », et ce qui se passe sous callgrind.
+# T73 -- int8 contre f32 sur les formes du réseau. La cible `bench-gemm-sse2`
+# recompile le même programme sans FMA ni AVX2 : c'est le test décisif de
+# l'anomalie du lot (x2,21 en Wasm contre x8,5 en natif, T21).
+BENCH_GEMM := $(BUILD)/bench_gemm_int8
+
+$(BENCH_GEMM): bench/bench_gemm_int8.c src/gn_gemm_int8.c $(HEADERS)
+	$(CC) $(CFLAGS) -Isrc -o $@ bench/bench_gemm_int8.c src/gn_gemm_int8.c -lm
+
+bench-gemm: $(BENCH_GEMM)
+	$(BENCH_GEMM) 2000 --json docs/mesures/t73-gemm-int8.json
+
+$(BUILD)/bench_gemm_int8_sse2: bench/bench_gemm_int8.c src/gn_gemm_int8.c $(HEADERS)
+	$(CC) $(CFLAGS) -mno-fma -mno-avx2 -msse2 -Isrc -o $@ \
+	      bench/bench_gemm_int8.c src/gn_gemm_int8.c -lm
+
+bench-gemm-sse2: $(BUILD)/bench_gemm_int8_sse2
+	$(BUILD)/bench_gemm_int8_sse2 2000 --json docs/mesures/t73-gemm-int8-sse2.json
+
 BENCH_DECISION := $(BUILD)/bench_decision
 
 $(BENCH_DECISION): bench/bench_decision.c $(OBJECTS) $(VENDOR_OBJECTS)
