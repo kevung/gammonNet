@@ -69,10 +69,21 @@ PROGRESS = Path(os.environ.get("T70_PROGRESS", "/tmp/t70-arbitrage-progress.log"
 #: sans quoi elle arbitrerait avec le regard de l'un des deux plaideurs.
 ARBITER_PLY = 3
 
-#: L'écart meilleur/second, en équité money, au-dessus duquel la passe 1 tranche
-#: seule. Choisi rond, et **avant** d'avoir vu un résultat ; sa justesse est
-#: précisément ce que `--audit` mesure.
-NET_MARGIN = 0.020
+#: L'écart au meilleur, selon gnubg 3-ply, au-delà duquel un candidat est tenu
+#: pour DOMINÉ sans qu'aucun rollout ne le vérifie.
+#:
+#: Mesuré sur le corpus, et le chiffre a renversé la conception : l'écart
+#: meilleur/second y a une médiane de **0,0016**, si bien qu'un critère « l'écart
+#: est net » à 0,020 ne trancherait **aucune** décision. C'était prévisible après
+#: coup — le corpus ne retient que les décisions DISPUTÉES, et deux moteurs
+#: divergent précisément là où les coups sont proches. Le corpus sélectionne donc
+#: les positions où rien ne domine.
+#:
+#: L'étendue, elle, a une médiane de 0,048 : les candidats lointains sont
+#: franchement mauvais, seuls ceux de tête sont serrés. C'est ce qui rend
+#: l'escalade praticable — on écarte les mauvais à la passe 1, et le rollout ne
+#: paie que le groupe de tête, deux ou trois candidats au lieu de six.
+DOMINANCE_MARGIN = 0.050
 
 #: La cible de la passe 3 : IC 95 % < 0,005, soit un se de 0,005 / 1,96.
 FULL_TARGET_SE = 0.005 / 1.96
@@ -124,7 +135,7 @@ def decided(differences, errors, pivot: int, margin: float) -> bool:
 def arbitrate_batch(payload):
     """Une tranche du corpus, arbitrée de bout en bout par un processus."""
     (rows, context, model, seed, net_margin, truncated_trials, full_trials,
-     truncate, margin, audit_indices) = payload
+     truncate, deep_truncate, margin, audit_indices) = payload
 
     from gammonnet.gnubg_engine import GnubgSession, gnubg_state
 
@@ -170,49 +181,81 @@ def arbitrate_batch(payload):
         values = session.evaluate([gb.to_gnubg(r) for r in results],
                                   plies=ARBITER_PLY, prune=1, state=request_state)
         gnubg_equities = [-float(v[5]) for v in values]
-        ordered = sorted(gnubg_equities, reverse=True)
-        # `gap` et non `margin` : `margin` est la largeur d'IC visée par les
-        # passes 2 et 3, et l'écrase ici les ferait viser l'écart gnubg de la
-        # décision courante — une résolution différente à chaque ligne, sans
-        # que rien ne le signale.
-        gap = ordered[0] - ordered[1] if len(ordered) > 1 else float("inf")
+        best_equity = max(gnubg_equities)
+        # Le GROUPE DE TÊTE : les candidats que gnubg 3-ply ne condamne pas
+        # franchement. Eux seuls iront au rollout ; les autres sont dominés, et
+        # leur valeur exacte n'a aucune importance parce qu'aucun moteur
+        # raisonnable ne les jouera. Ce tri est ce qui divise le coût du rollout
+        # par le rapport entre le nombre de candidats et la taille du groupe.
+        head = [i for i, equity in enumerate(gnubg_equities)
+                if best_equity - equity <= net_margin]
+        spread = best_equity - min(gnubg_equities[i] for i in head)
         audit = row["index"] in audit_indices
 
-        if gap >= net_margin and not audit:
+        if (len(head) <= 1 or spread < margin) and not audit:
+            # Tranché sans rollout — non pas parce qu'on sait QUI gagne, mais
+            # parce que l'enjeu entre les prétendants est sous la résolution :
+            # la perte de n'importe lequel d'entre eux est alors connue à
+            # `margin` près, ce que le registre doit précisément garantir.
+            states = ["resolved" if i in head else "dominated"
+                      for i in range(len(results))]
             record.update(pass_used=1, equities=gnubg_equities,
-                          errors=[0.0] * len(results), gap=gap,
-                          resolution=["resolved"] * len(results),
+                          errors=[0.0] * len(results), spread=spread,
+                          head=len(head), resolution=states,
                           trials=0, seconds=time.perf_counter() - started)
             out.append(record)
             _tick()
             continue
 
         # ── Passe 2 : rollout tronqué, variance réduite ─────────────
-        pivot = max(range(len(results)), key=lambda i: gnubg_equities[i])
+        # Sur le groupe de tête SEUL. Les dominés gardent leur équité gnubg et
+        # leur étiquette : ils sont pires, on sait de combien à peu près, et
+        # c'est tout ce dont le registre a besoin d'eux.
+        rolled = [results[i] for i in head]
+        pivot_in_head = max(range(len(head)),
+                            key=lambda j: gnubg_equities[head[j]])
+        pivot = head[pivot_in_head]
         config = RolloutConfig(trials=truncated_trials, truncate=truncate,
                                seed=seed + row["index"], policy=SearchConfig(ply=0),
                                variance_reduction=True,
-                               target_se=TRUNCATED_TARGET_SE, min_trials=216,
+                               target_se=TRUNCATED_TARGET_SE, min_trials=72,
                                match=state, use_cube=False)
-        equities, differences, errors, trials = rollout_candidates_paired(
-            network, results, config, pivot)
+        head_equities, differences, errors, trials = rollout_candidates_paired(
+            network, rolled, config, pivot_in_head)
         used, total_trials = 2, trials
 
-        if not decided(differences, errors, pivot, margin):
-            # ── Passe 3 : rollout complet ───────────────────────────
-            config = RolloutConfig(trials=full_trials, truncate=0,
+        if not decided(differences, errors, pivot_in_head, margin):
+            # ── Passe 3 : rollout long ──────────────────────────────
+            # Tronqué à `deep_truncate` et non complet. Un rollout non tronqué
+            # avec réduction de variance joue cinq fois plus de plis, chacun
+            # payant une recherche 1-ply : l'estimation à partir de T39 donne
+            # ~6 h par décision, et deux décisions arbitrées l'ont confirmé.
+            config = RolloutConfig(trials=full_trials, truncate=deep_truncate,
                                    seed=seed + row["index"],
                                    policy=SearchConfig(ply=0),
                                    variance_reduction=True,
-                                   target_se=FULL_TARGET_SE, min_trials=648,
+                                   target_se=FULL_TARGET_SE, min_trials=108,
                                    match=state, use_cube=False)
-            equities, differences, errors, trials = rollout_candidates_paired(
-                network, results, config, pivot)
+            head_equities, differences, errors, trials = rollout_candidates_paired(
+                network, rolled, config, pivot_in_head)
             used, total_trials = 3, trials
 
-        record.update(pass_used=used, equities=equities, differences=differences,
-                      errors=errors, pivot=pivot, trials=total_trials,
-                      resolution=resolution_of(differences, errors, pivot, margin),
+        # Recomposer le registre complet : le groupe de tête porte les équités
+        # du rollout, les dominés gardent celles de gnubg, recalées sur le pivot
+        # pour que les deux moitiés vivent sur la MÊME échelle. Sans ce recalage,
+        # une perte se lirait tantôt en unités de rollout tantôt en unités de
+        # gnubg, et la moyenne mélangerait deux règles graduées différemment.
+        offset = head_equities[pivot_in_head] - gnubg_equities[pivot]
+        equities = [gnubg_equities[i] + offset for i in range(len(results))]
+        states = ["dominated"] * len(results)
+        head_states = resolution_of(differences, errors, pivot_in_head, margin)
+        for j, i in enumerate(head):
+            equities[i] = head_equities[j]
+            states[i] = head_states[j]
+
+        record.update(pass_used=used, equities=equities, head=len(head),
+                      errors=[0.0] * len(results), pivot=pivot,
+                      trials=total_trials, resolution=states,
                       seconds=time.perf_counter() - started)
         if audit:
             # L'audit garde les DEUX lectures de la même décision : c'est
@@ -245,7 +288,11 @@ def main() -> int:
     parser.add_argument("--out", default="", help="registre de sortie (.jsonl)")
     parser.add_argument("--workers", type=int, default=26)
     parser.add_argument("--seed", type=int, default=20260827)
-    parser.add_argument("--net", type=float, default=NET_MARGIN)
+    parser.add_argument("--net", type=float, default=DOMINANCE_MARGIN,
+                        help="écart au meilleur au-delà duquel un candidat est dominé")
+    parser.add_argument("--deep-truncate", type=int, default=25,
+                        help="troncature de la passe 3 ; 0 serait un rollout complet, "
+                             "impraticable avec réduction de variance")
     parser.add_argument("--resolution", type=float, default=0.005,
                         help="largeur d'IC 95 %% en deçà de laquelle on s'arrête")
     parser.add_argument("--truncated-trials", type=int, default=1296)
@@ -274,7 +321,7 @@ def main() -> int:
 
     print("T70 — arbitrage escaladé du corpus figé")
     print(f"  {len(rows)} décisions, contexte {context}, {args.workers} processus")
-    print(f"  passe 1 nette au-delà de {args.net}, résolution visée {args.resolution}")
+    print(f"  dominé au-delà de {args.net}, résolution visée {args.resolution}")
     print(f"  audit de la passe 1 : {len(audit_indices)} décisions rejouées")
     print(f"  suivi : {PROGRESS}", flush=True)
 
@@ -282,7 +329,7 @@ def main() -> int:
     chunks = [rows[i::workers] for i in range(workers)]
     payloads = [(chunk, context, str(MODEL), args.seed + 7919 * i, args.net,
                  args.truncated_trials, args.full_trials, args.truncate,
-                 args.resolution, audit_indices)
+                 args.deep_truncate, args.resolution, audit_indices)
                 for i, chunk in enumerate(chunks) if chunk]
 
     started = time.perf_counter()
