@@ -44,6 +44,23 @@ def running(pattern: str) -> list[str]:
     return [line for line in out.splitlines() if "shell-snapshots" not in line]
 
 
+
+def harvest_target() -> int | None:
+    """La cible de la récolte en cours, lue sur la ligne de commande du parent.
+
+    Elle n'est écrite nulle part ailleurs : le fichier de suivi ne porte que le
+    budget d'examen. La deviner serait pire que de ne rien dire.
+    """
+    for line in running("python.*build_corpus_t70[.]py"):
+        parts = line.split()
+        if "--target" in parts:
+            try:
+                return int(parts[parts.index("--target") + 1])
+            except (ValueError, IndexError):
+                return None
+    return None
+
+
 def harvest_state():
     """Le dernier relevé de chaque processus de récolte."""
     if not PROGRESS.exists():
@@ -106,13 +123,30 @@ def main() -> int:
     if state:
         share = state["examined"] / state["budget"] if state["budget"] else 0.0
         rate = state["examined"] / state["seconds"] if state["seconds"] else 0.0
-        left = (state["budget"] - state["examined"]) / rate if rate else 0.0
         stale = state["age"] > 600
         print(f"\n  récolte en cours — {state['workers']} processus ont parlé")
         print(f"    {state['examined']}/{state['budget']} positions examinées "
               f"({100 * share:.1f} %), {state['kept']} décisions gardées")
-        print(f"    {rate * 60:.0f} positions/min observées → reste ~{left / 3600:.1f} h "
-              f"(règle de trois, pas une mesure)")
+        print(f"    {rate * 60:.0f} positions/min observées")
+
+        # Ce qui arrête une récolte, ce n'est PAS l'épuisement du budget
+        # d'examen : c'est le remplissage des quotas, qui arrive bien avant.
+        # Extrapoler vers le budget donnait « reste ~5 h » là où les deux
+        # premières tranches ont mis 2 h 30 — une estimation deux fois trop
+        # longue, annoncée avec le même aplomb qu'une bonne. On extrapole donc
+        # sur les décisions GARDÉES vers la cible, et le budget redevient ce
+        # qu'il est : un plafond, pas un objectif.
+        target = harvest_target()
+        if target and state["kept"]:
+            kept_rate = state["kept"] / state["seconds"] if state["seconds"] else 0.0
+            left = (target - state["kept"]) / kept_rate if kept_rate else 0.0
+            print(f"    {state['kept']}/{target} décisions gardées → "
+                  f"reste ~{left / 3600:.1f} h (règle de trois sur les décisions "
+                  f"gardées, pas une mesure)")
+            if rate:
+                ceiling = (state["budget"] - state["examined"]) / rate
+                print(f"    le budget d'examen, lui, ne serait épuisé qu'après "
+                      f"~{ceiling / 3600:.1f} h — c'est un plafond, pas un objectif")
         print(f"    dernier relevé il y a {state['age']:.0f} s"
               f"{'   ⚠ PLUS DE DIX MINUTES — vérifier' if stale else ''}")
 
