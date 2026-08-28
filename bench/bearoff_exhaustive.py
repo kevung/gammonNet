@@ -20,6 +20,13 @@ Si l'évaluateur préfère un coup `c` au meilleur coup `b`, c'est que
 toutes les décisions du domaine, y compris celles que personne n'a tirées. Un
 banc de décisions, si large soit-il, ne dit jamais cela : il dit ce qu'il a vu.
 
+La borne se resserre **par ligne**. Les candidats d'une même décision partagent
+la disposition de l'adversaire : ils ne diffèrent que par la colonne. La perte
+d'une décision dont l'adversaire est `i` est donc bornée par deux fois le
+maximum de la seule **ligne** `i`, et le banc rend la distribution de ces
+maxima. La borne globale est le pire cas d'une ligne ; les quantiles disent ce
+qu'il en est pour presque toutes les autres.
+
 ## Pourquoi c'est calculable en une minute
 
 La première couche est linéaire et ses entrées sont la concaténation de deux
@@ -91,6 +98,7 @@ def scan(net: BearoffNet, features: np.ndarray, matrix, rows: int = 64):
     total_sq = 0.0
     count = 0
     above = 0
+    row_worst = np.zeros(positions, dtype=np.float64)
 
     for start in range(1, positions, rows):
         stop = min(start + rows, positions)
@@ -108,6 +116,7 @@ def scan(net: BearoffNet, features: np.ndarray, matrix, rows: int = 64):
         target = matrix[start:stop, 1:].astype(np.float32) * SCALE - 1.0
         error = np.abs(predicted - target)
 
+        row_worst[start:stop] = error.max(axis=1)
         flat = int(error.argmax())
         if error.flat[flat] > worst:
             worst = float(error.flat[flat])
@@ -117,6 +126,7 @@ def scan(net: BearoffNet, features: np.ndarray, matrix, rows: int = 64):
         above += int((error > GNUBG_WORST / 2).sum())
         count += error.size
 
+    per_row = row_worst[1:]
     return {
         "pairs": count,
         "mean_abs": total / count,
@@ -125,6 +135,13 @@ def scan(net: BearoffNet, features: np.ndarray, matrix, rows: int = 64):
         "worst_at": [int(worst_at[0]), int(worst_at[1])],
         "guaranteed_decision_loss": 2.0 * worst,
         "pairs_above_half_gnubg": above,
+        "row_bound": {
+            "median": 2.0 * float(np.median(per_row)),
+            "p90": 2.0 * float(np.quantile(per_row, 0.90)),
+            "p99": 2.0 * float(np.quantile(per_row, 0.99)),
+            "rows_under_gnubg": int((2.0 * per_row <= GNUBG_WORST).sum()),
+            "rows": int(per_row.size),
+        },
     }
 
 
@@ -160,10 +177,14 @@ def main() -> int:
         stats = scan(candidate, features, matrix, rows=args.rows)
         stats["seconds"] = time.perf_counter() - start
         results[name] = stats
+        row = stats["row_bound"]
         print(f"{name:<9} moyenne {stats['mean_abs']:.3e}  rms {stats['rms']:.3e}  "
               f"pire {stats['worst_abs']:.5f} en {tuple(stats['worst_at'])}  "
               f"borne {stats['guaranteed_decision_loss']:.5f}  "
               f"({stats['seconds']:.0f} s)")
+        print(f"{'':<9} borne par ligne : médiane {row['median']:.5f}  "
+              f"p90 {row['p90']:.5f}  p99 {row['p99']:.5f}  "
+              f"lignes sous {GNUBG_WORST} : {row['rows_under_gnubg']}/{row['rows']}")
 
     print(f"\nLecture : « borne » est deux fois l'erreur maximale, donc la perte")
     print(f"par décision que le réseau ne peut PAS dépasser, où que ce soit dans")
