@@ -121,6 +121,42 @@ def test_eval_finds_the_known_best_opening_play(server):
     assert probs["lose_bg"] <= probs["lose_g"] <= 1.0 - probs["win"] + 1e-6
 
 
+def test_eval_probs_and_equity_describe_the_same_player(server):
+    """The bug this pins: `equity` is the MOVER's (gn_search.h: "already
+    negated") while `probs` used to be copied straight out of `GnCandidate`,
+    which holds the resulting position's distribution — the OPPONENT's. Five
+    plausible numbers, silently the wrong side, which is exactly `CLAUDE.md`
+    rule 2's failure mode. A monotonicity check cannot see it: a mirrored
+    nested distribution is still perfectly nested.
+
+    The tight check is the identity itself — cubeless money equity is a
+    function OF the five probabilities (`gn_infer_reference.c:482`), so if
+    both fields describe the same player, recomputing one from the other must
+    reproduce it. Under the old inversion the reconstruction comes out with
+    the opposite sign, and no tolerance hides that.
+    """
+    status, body = _post(server, "/v1/eval", {"xgid": OPENING_31_XGID, "ply": 0})
+    assert status == 200
+
+    for candidate in body["candidates"]:
+        p = candidate["probs"]
+        reconstructed = (
+            2.0 * p["win"] + p["win_g"] + p["win_bg"]
+            - p["lose_g"] - p["lose_bg"] - 1.0
+        )
+        assert reconstructed == pytest.approx(candidate["equity"], abs=1e-6), (
+            f"{candidate['move']} : probs et equity ne décrivent pas le même joueur"
+        )
+        assert p["win_bg"] <= p["win_g"] <= p["win"] <= 1.0
+        assert p["lose_bg"] <= p["lose_g"] <= 1.0 - p["win"] + 1e-6
+
+    # Making the 5-point wins for the MOVER, so its own win probability is
+    # above half — the plain reading a client displays next to `+0.166`.
+    best = body["candidates"][0]
+    assert best["move"] == "6/5 8/5"
+    assert best["probs"]["win"] > 0.5, best["probs"]
+
+
 def test_eval_clamps_ply_to_the_server_operators_ceiling(server):
     """The fixture launches with `--max-ply 1`; asking for 99 must come back
     reporting 1, never the number that was asked for."""

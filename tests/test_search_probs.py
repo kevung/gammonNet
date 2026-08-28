@@ -153,3 +153,35 @@ def test_match_equity_is_the_valuation_of_the_probs(network):
         equity = position_equity(network, position, config)
         probs = position_probs(network, position, config)
         assert state.equity(probs) == pytest.approx(equity, abs=1e-5), position
+
+
+# ── Le miroir de la distribution ─────────────────────────────────────
+#
+# `GnCandidate.probs` (`gn_search.h`) décrit la position RÉSULTANTE, donc
+# l'adversaire, alors que `GnCandidate.equity` du même candidat est déjà
+# retournée du côté du joueur. Tout ce qui expose les deux ensemble doit
+# ramener l'un dans le référentiel de l'autre — `tools/serve.py` le fait pour
+# `/v1/eval`. Ce que ces trois tests fixent, c'est l'opération elle-même.
+
+
+def test_mirroring_negates_the_money_equity(network):
+    """Le seul contrôle qui vaille. Une distribution retournée reste
+    parfaitement imbriquée, donc parfaitement plausible ; ce qui la trahit,
+    c'est l'équité — elle doit changer de signe, exactement."""
+    for position in CORPUS:
+        e = network.evaluate(position)
+        assert e.mirrored().money_equity == pytest.approx(-e.money_equity, abs=1e-6)
+
+
+def test_mirroring_twice_is_the_identity(network):
+    for position in CORPUS:
+        e = network.evaluate(position)
+        assert e.mirrored().mirrored().as_tuple() == pytest.approx(e.as_tuple())
+
+
+def test_a_mirrored_distribution_is_still_nested(network):
+    """Précisément pourquoi un contrôle d'imbrication ne peut PAS détecter une
+    inversion de référentiel : il passe des deux côtés. C'est ce qui a laissé
+    l'inversion de `/v1/eval` traverser `tests/test_serve.py`."""
+    for position in CORPUS:
+        assert network.evaluate(position).mirrored().is_nested
