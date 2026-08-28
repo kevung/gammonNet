@@ -107,7 +107,17 @@ while pgrep -f 'python.*build_corpus_t70[.]py' > /dev/null; do
 done
 
 # ── PHASE A : la file des récoltes ─────────────────────────────────────────
+#
+# SKIP_HARVEST=1 la saute entièrement. Utile quand une coupure de courant est
+# ANNONCÉE : la récolte n'est pas reprenable — une tranche de sept heures tuée
+# à la sixième est perdue en entier — alors que l'arbitrage journalise toutes
+# les quatre décisions. Devant une coupure à heure connue, on fait tourner ce
+# qui survit.
 running=0
+if [ "${SKIP_HARVEST:-0}" = "1" ]; then
+    say "  phase A SAUTÉE (SKIP_HARVEST=1) — on ne lance pas de récolte non"
+    say "  reprenable devant une coupure annoncée"
+else
 for entry in $ALL; do
     ctx="${entry%%:*}"; count="${entry##*:}"
     for slice in $(seq 1 "$count"); do
@@ -132,6 +142,7 @@ for entry in $ALL; do
 done
 wait
 say "── phase A terminée : toutes les récoltes sont faites"
+fi
 
 # ── PHASE B : par contexte, la chaîne complète ─────────────────────────────
 for entry in $ALL; do
