@@ -1424,6 +1424,49 @@ de fin de partie.
 
 ---
 
+## T80 — Le videau exact en fin de course, distillé
+
+> **La deuxième moitié de la table, laissée de côté par T78.** `gnubg-TS-06-11` a quatre
+> colonnes : l'équité cubeless, et les trois équités **cubeful** selon qui possède le videau. T78
+> n'a distillé que la première. Or la fin de course est *le seul endroit du jeu où une décision de
+> videau admet une réponse sans variance* (DS-13 §2) — et notre modèle y perd bien plus qu'au
+> coup : mesuré par `bench/cube_at_depth.py`, **0,00072 d'équité par décision de videau possédé
+> et 0,00135 au videau centré, avec un pire cas de 0,2778**, contre 0,00028 et 0,0919 pour le
+> coup.
+
+**Objectif** — un réseau à quatre sorties qui rende la décision de videau de fin de course sans
+la table, et qui batte le modèle de Janowski sur sa propre mesure exacte.
+
+**Périmètre**
+- Extraction des quatre colonnes (`tools/build_bearoff_matrix.py --cubeful`), vérifiées contre le
+  lecteur de T38 comme la première.
+- Un réseau à quatre sorties, même gabarit que le gagnant de T78, entraîné en **quatre étages** :
+  régression, fouille exhaustive, affinage par décision de coup (colonne 0), puis **affinage par
+  décision de videau** — une charnière sur le signe de la marge `e_nd − min(2·e_opp, 1)`,
+  pondérée par ce que le verdict inverse coûterait. Une erreur commune aux deux branches ne change
+  pas le verdict ; seule leur différence le fait.
+- `bench/cube_at_depth.py` étendu : l'**équité perdue** en plus de l'accord, et une colonne pour
+  le réseau distillé — jugé par la même règle §4 que la table, sans Janowski ni `x` ajusté.
+
+**Critères d'acceptation**
+- L'instrument de T34 est **préservé** : à graine et à nombre de positions égaux, les taux
+  d'accord publiés (98,3 % possédé, 97,5 % centré) sont reproduits par la version étendue avant
+  qu'on lui demande quoi que ce soit de neuf.
+- **Seuil de succès, écrit avant la mesure** : sur 20 000 positions, l'équité perdue par décision
+  de videau du distillé est **inférieure d'un facteur 10** à celle du modèle actuel dans les deux
+  états de possession, et son pire cas passe **sous 0,05** (contre 0,2778).
+- La qualité de la colonne cubeless est **re-mesurée par le banc de T78** : un réseau à quatre
+  sorties qui dégraderait le jeu de coups n'est pas un progrès, et le vérifier coûte huit minutes.
+- L'erreur exhaustive est rapportée **par colonne** sur les 153 165 376 paires.
+- La taille est mesurée en float32 et float16, et comparée à celle du réseau cubeless seul : si
+  quatre sorties coûtent moins qu'un second réseau, c'est un argument, pas une intuition.
+
+**Ce que cette fiche ne fait pas** — le branchement, ni le videau **en match** (la table est
+money ; l'équité de match a sa propre récursion, T32/T34 §9). Elle ne touche pas non plus au
+modèle de Janowski, qui reste ce qui répond hors du domaine.
+
+---
+
 # Phase 5 — Publication
 
 ## T50 — Publier l'artefact

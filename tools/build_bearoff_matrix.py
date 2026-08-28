@@ -20,6 +20,10 @@ reading random pairs back through that reference reader.
 * `ts6x11_cubeless.u16` -- the raw 16-bit cubeless column, C order, one entry
   per `(player, opponent)` pair. `equity = value / 65535 * 2 - 1`, the scale
   T38 established against `bearoffdump`.
+* `ts6x11_cubeful.u16` (with `--cubeful`) -- all four columns instead of one,
+  shaped `(positions, positions, 4)`: cubeless, then the three cubeful equities
+  by cube ownership (owned by the player on roll, centred, owned by the
+  opponent). 1,2 GiB, the whole file minus its header. T80 distils these.
 * `ts6x11_sides.npy` -- `(12 376, 6)` int8, the checker layout of every index.
   `sides[k][i]` is the number of checkers `i + 1` pips from off. Built by
   enumeration and checked to be a bijection against `bearoff_index`.
@@ -84,8 +88,8 @@ def enumerate_sides(points: int, chequers: int) -> np.ndarray:
     return sides
 
 
-def extract(database: Path, out: Path, positions: int) -> str:
-    """Stream the first of four columns into a dense matrix, hashing as we go."""
+def extract(database: Path, out: Path, positions: int, columns: int = 1) -> str:
+    """Stream the first `columns` of four into a dense matrix, hashing as we go."""
     pairs = positions * positions
     digest = hashlib.sha256()
     written = 0
@@ -98,7 +102,7 @@ def extract(database: Path, out: Path, positions: int) -> str:
             raw = source.read(want * 8)
             if len(raw) != want * 8:
                 raise AssertionError(f"short read at pair {written}")
-            block = np.frombuffer(raw, dtype="<u2").reshape(-1, 4)[:, 0].copy()
+            block = np.frombuffer(raw, dtype="<u2").reshape(-1, 4)[:, :columns].copy()
             digest.update(block.tobytes())
             sink.write(block.tobytes())
             written += want
@@ -133,14 +137,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--database", default=str(DEFAULT_DATABASE))
-    parser.add_argument("--out", default=str(OUT_MATRIX))
+    parser.add_argument("--out", default="")
     parser.add_argument("--sides", default=str(OUT_SIDES))
     parser.add_argument("--checks", type=int, default=2000)
+    parser.add_argument("--cubeful", action="store_true",
+                        help="extraire les quatre colonnes, pas seulement l'équité cubeless")
     parser.add_argument("--seed", type=int, default=20260828)
     args = parser.parse_args()
 
     database = Path(args.database)
-    out = Path(args.out)
+    out = Path(args.out or (OUT_MATRIX.parent /
+                            ("ts6x11_cubeful.u16" if args.cubeful
+                             else OUT_MATRIX.name)))
     out.parent.mkdir(parents=True, exist_ok=True)
 
     with TwoSidedBearoff(database) as probe:
@@ -153,14 +161,29 @@ def main() -> int:
     np.save(args.sides, sides)
     print(f"  {sides.shape[0]} dispositions écrites dans {args.sides}")
 
-    digest = extract(database, out, positions)
+    columns = 4 if args.cubeful else 1
+    digest = extract(database, out, positions, columns)
     size = out.stat().st_size
     print(f"  {size} octets écrits dans {out}  sha256={digest[:16]}…")
-    if size != positions * positions * 2:
+    if size != positions * positions * 2 * columns:
         raise AssertionError("taille inattendue")
 
-    matrix = np.memmap(out, dtype="<u2", mode="r", shape=(positions, positions))
-    verify(database, matrix, positions, args.checks, args.seed)
+    shape = ((positions, positions) if columns == 1
+             else (positions, positions, columns))
+    matrix = np.memmap(out, dtype="<u2", mode="r", shape=shape)
+    verify(database, matrix if columns == 1 else matrix[:, :, 0],
+           positions, args.checks, args.seed)
+    if columns == 4:
+        # Les trois colonnes cubeful se vérifient comme la première : par le
+        # lecteur de T38, sur des paires tirées au hasard.
+        import random as _random
+        rng = _random.Random(args.seed + 1)
+        with TwoSidedBearoff(database) as table:
+            for _ in range(args.checks):
+                i, j = rng.randrange(positions), rng.randrange(positions)
+                if tuple(int(v) for v in matrix[i, j]) != table.raw(i, j):
+                    raise AssertionError(f"colonnes cubeful : paire ({i}, {j})")
+        print(f"  {args.checks} paires : les quatre colonnes concordent")
     return 0
 
 
