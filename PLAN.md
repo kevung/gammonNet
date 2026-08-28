@@ -1461,6 +1461,27 @@ la table, et qui batte le modèle de Janowski sur sa propre mesure exacte.
 - La taille est mesurée en float32 et float16, et comparée à celle du réseau cubeless seul : si
   quatre sorties coûtent moins qu'un second réseau, c'est un argument, pas une intuition.
 
+**La règle de diagnostic, écrite avant le résultat** — le dépôt écrit ses seuils de succès avant
+la mesure ; un échec mérite la même discipline, sinon l'explication qui arrange sera choisie après
+coup, et « c'était l'architecture » est la plus confortable de toutes. Si le seuil ci-dessus n'est
+pas atteint, la cause se lit dans cet ordre, et **une seule chose change à la fois**, à budget de
+données et à graine identiques (l'avertissement de DS-12 : le « gain de routage » de Whittington
+était en fait un gain de calendrier d'apprentissage).
+
+| Symptôme, chiffré | Cause | Ce qu'on change ensuite |
+|---|---|---|
+| En doublant le gabarit, la perte moyenne par décision de videau tombe encore d'un facteur ≥ 2 | **capacité** (poids) | agrandir — repère T78 : dans la famille à code appris, doubler la taille divise la perte par 3 |
+| La perte moyenne atteint sa cible (≤ 0,000072 possédé, ≤ 0,000135 centré) mais le **pire cas reste > 0,05** | **architecture** — la queue, pas la moyenne | sortie **marge** supervisée directement (`e_nd − min(2·e_opp, 1)`), aucune unité saturante près de la sortie, couche monotone en l'équité cubeless. Repère T78 : à moyenne égale, la tanh double le pire cas exhaustif (0,162 contre 0,095) |
+| L'équité perdue se concentre sur les décisions de marge faible : les décisions à \|marge\| < 0,01 portent > 50 % de la perte totale | **la perte**, pas le réseau | repondérer la charnière du quatrième étage |
+| La colonne 0 sort du seuil de T78 (≤ 0,00005 moyenne, ≤ 0,0023 pire cas) au banc de `bench/bearoff_distill.py` | **interférence entre têtes** | têtes séparées, ou pondération des étages |
+
+**Ce qu'un échec n'autorise pas à conclure** — que le videau appris ne marche pas. Ce réseau a le
+**code appris par disposition** en entrée, pas les 196 caractéristiques du tronc ; son gabarit est
+**hérité d'une sélection faite sur la colonne cubeless**, c'est-à-dire sur une régression et non
+sur une décision de seuil ; et son domaine est le plus discrétisé du jeu. T80 est une **preuve
+d'existence** — « un réseau *peut* battre Janowski sur une décision de videau » — pas un pronostic
+pour le contact ni pour le match.
+
 **Ce que cette fiche ne fait pas** — le branchement, ni le videau **en match** (la table est
 money ; l'équité de match a sa propre récursion, T32/T34 §9). Elle ne touche pas non plus au
 modèle de Janowski, qui reste ce qui répond hors du domaine.
