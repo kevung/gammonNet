@@ -1424,6 +1424,61 @@ de fin de partie.
 
 ---
 
+## T79 — Ce que la fin de partie pèse réellement
+
+> **Le multiplicateur qui manquait à T78.** T78 a mesuré ce que le réseau perd *par décision de
+> bearoff* — 0,00028 en moyenne, 0,0919 au pire — et ce que le distillé y ramène. Ces chiffres ne
+> décident rien tant qu'on ignore **quelle part des décisions d'une partie tombe dans ce
+> domaine**. `BRIEF.md` §9 avertit exactement de cela : un corpus riche en fins de partie flatte
+> qui a une table.
+
+**Objectif** — convertir le gain de T78 en **équité par partie**, la seule forme sous laquelle il
+se compare à autre chose dans ce projet.
+
+**Périmètre** — `bench/bearoff_in_play.py` : des parties d'argent sans videau, jouées par notre
+moteur ; à chaque décision de coup, on compte, et si elle est dans le domaine de la table on note
+**exactement** tous les coups légaux et on relève ce que perdent le moteur qui joue *et* le
+distillé — le second en pure hypothèse, il ne touche pas à la partie.
+
+**Critères d'acceptation**
+- La fraction des décisions dans le domaine est mesurée, ainsi que la part des parties qui
+  l'atteignent et le nombre de pions restants à l'entrée.
+- Le gain du branchement est donné **en équité par partie, avec son intervalle à 95 %**, calculé
+  sur la **différence appariée** — les deux moteurs tranchent les mêmes décisions, donc la
+  variance des parties s'annule et ne doit pas être comptée deux fois.
+- Le volume est dimensionné pour que l'intervalle soit dix fois plus petit que le gain, ou le
+  contraire est dit.
+- La distribution des positions est celle du **jeu**, pas celle de T78 (uniforme sur le nombre de
+  pions) ; l'écart entre les deux pertes par décision est rapporté, car il mesure à quel point le
+  tirage uniforme flatte ou punit.
+
+**Résultat — mesuré le 2026-08-28**, fiche
+[`docs/mesures/2026-08-28-T79-poids-du-domaine.md`](docs/mesures/2026-08-28-T79-poids-du-domaine.md).
+
+**Le domaine pèse 4,28 % des décisions** (1,88 par partie, 42,7 % des parties l'atteignent), et le
+branchement du distillé vaudrait, **contre le 2-ply qui est le réglage servi**, **0,000073 d'équité
+par partie** [0,000039 ; 0,000107] — soit **0,00083 PR** contre un PR de 0,273. **Trois pour mille
+de l'erreur restante du moteur.**
+
+Le gain est réel (l'intervalle exclut zéro à quatre écarts-types) et petit, parce que **la
+recherche comble déjà l'essentiel du trou** : de 0 à 2 plis, la perte par décision de fin de
+partie tombe de 0,000278 à 0,000043. Le premier passage, joué à 0-ply, donnait 0,000552 par
+partie ; ce chiffre ne vaut que pour un moteur 0-ply, et le publier seul aurait été juste et
+trompeur.
+
+**Ce qui ne se comble pas par la recherche, c'est la queue** : pire décision 0,0170 au 2-ply
+contre 0,00217 pour le distillé, un facteur huit. C'est le seul argument de qualité qui survive —
+avec la vitesse, qui reste à mesurer.
+
+Deux contrôles gratuits au passage : le tirage uniforme de T78 est **représentatif** du jeu réel
+(0,00028 contre 0,000278 en jeu), et la mesure du 2-ply de T38 **se reproduit** sur une autre
+distribution (0,00004 contre 0,000043).
+
+**Ce que cette fiche ne fait pas** — elle ne mesure pas le videau (T80), ni le coût en vitesse, ni
+le jeu au-delà du 0-ply. Le moteur qui joue est à 0-ply, pour le volume ; c'est écrit dans la
+fiche de mesure plutôt que laissé à deviner.
+
+---
 ## T81 — La tête de videau, à tronc gelé : B0 contre B
 
 > **La marche 1 de l'axe « videau appris ».** L'axe a été instruit trois fois (DS-08
