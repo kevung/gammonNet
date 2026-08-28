@@ -30,6 +30,7 @@ buy nothing and cost a reader that lies.
 
     magic   8 bytes  b"GNBONET1"
     int32   feature version
+    int32   output activation: 0 = tanh, 1 = identity
     int32   number of layers L
     L x (int32 in, int32 out)
     then, per layer, `in * out` float32 weights (row-major, out-major) and
@@ -60,6 +61,13 @@ SIDE_FEATURES = POINTS * 7 + 6
 INPUT_SIZE = 2 * SIDE_FEATURES
 
 MAGIC = b"GNBONET1"
+
+#: How the last layer is finished. `tanh` keeps the output inside the range an
+#: equity can take; `identity` does not, and trains better where it matters --
+#: most of the domain is lopsided, `tanh` saturates there, and a saturated unit
+#: has no gradient to give exactly on the positions whose ordering is hardest.
+#: Which of the two wins is a measurement, not a preference: see T78's fiche.
+TANH, IDENTITY = 0, 1
 _PIPS = np.arange(1, POINTS + 1, dtype=np.float32)
 
 
@@ -145,7 +153,8 @@ class BearoffNet:
     """
 
     def __init__(self, layers: list[tuple[np.ndarray, np.ndarray]],
-                 feature_version: int = FEATURE_VERSION):
+                 feature_version: int = FEATURE_VERSION,
+                 activation: int = TANH):
         if feature_version != FEATURE_VERSION:
             raise ValueError(
                 f"weights encode features v{feature_version}, this module is "
@@ -159,6 +168,9 @@ class BearoffNet:
                         np.ascontiguousarray(b, dtype=np.float32))
                        for w, b in layers]
         self.feature_version = feature_version
+        if activation not in (TANH, IDENTITY):
+            raise ValueError(f"unknown output activation {activation}")
+        self.activation = activation
 
     # ── shape and cost ──────────────────────────────────────────────
 
@@ -182,7 +194,8 @@ class BearoffNet:
             x = x @ w + b
             if index + 1 < len(self.layers):
                 np.maximum(x, 0.0, out=x)
-        return np.tanh(x[:, 0])
+        out = x[:, 0]
+        return np.tanh(out) if self.activation == TANH else out
 
     def equities_from_counts(self, mine: np.ndarray, theirs: np.ndarray) -> np.ndarray:
         """Equity for the side on roll, from both layouts, `(N, 6)` each."""
@@ -203,7 +216,8 @@ class BearoffNet:
         path = Path(path)
         with path.open("wb") as handle:
             handle.write(MAGIC)
-            handle.write(struct.pack("<ii", self.feature_version, len(self.layers)))
+            handle.write(struct.pack("<iii", self.feature_version, self.activation,
+                                     len(self.layers)))
             for w, _ in self.layers:
                 handle.write(struct.pack("<ii", w.shape[0], w.shape[1]))
             for w, b in self.layers:
@@ -215,8 +229,8 @@ class BearoffNet:
         raw = Path(path).read_bytes()
         if raw[:8] != MAGIC:
             raise ValueError(f"{path} is not a {MAGIC.decode()} file")
-        version, count = struct.unpack_from("<ii", raw, 8)
-        offset = 16
+        version, activation, count = struct.unpack_from("<iii", raw, 8)
+        offset = 20
         shapes = []
         for _ in range(count):
             shapes.append(struct.unpack_from("<ii", raw, offset))
@@ -231,4 +245,4 @@ class BearoffNet:
             layers.append((weights, bias))
         if offset != len(raw):
             raise ValueError(f"{path}: {len(raw) - offset} trailing bytes")
-        return cls(layers, feature_version=version)
+        return cls(layers, feature_version=version, activation=activation)

@@ -17,19 +17,28 @@ rather than estimated.
 Not the mean. T38 measured that the network already loses only 0.00028 equity
 per bearoff decision on average; what it also measured is a worst case of
 0.0919 on a single decision, where GNU Backgammon -- which consults its table --
-never exceeds 0.0023. **It is the tail that costs**, so the run has two stages:
+never exceeds 0.0023. **It is the tail that costs**, so the run has three
+stages, and only the first is ordinary:
 
 1. **Regression**, uniformly over the domain, mean squared error. This buys the
    mean and most of the shape.
-2. **Decision fine-tuning**, on a corpus of real bearoff decisions built by
+2. **Exhaustive mining.** The domain is finite, so the network's worst pairs
+   are not sampled for -- all 153 million are scored, the worst million are
+   kept, and training continues on them mixed with fresh uniform pairs. This is
+   the stage that attacks the maximum error, and the maximum error is what
+   bounds the tail: misranking two moves gives up at most **twice** the largest
+   error the evaluator can make anywhere. That bound holds over the whole
+   domain, which is something no sampled measurement can offer.
+
+3. **Decision fine-tuning**, on a corpus of real bearoff decisions built by
    `tools/build_bearoff_decisions.py`. A decision is a ranking problem, not a
    regression one: an error common to all candidate moves cancels, and only the
    ordering matters. The loss is therefore a cost-weighted pairwise hinge --
    each candidate that outranks the true best is penalised **in proportion to
    the equity it would actually lose**. That is what aims at the tail.
 
-The two-stage split is itself a claim to be checked, and the run reports the
-decision loss after each stage so that stage 2 has to earn its place.
+Each stage is a claim to be checked, and the run reports the exhaustive error
+after every one of them, so a stage that buys nothing says so.
 
 ## Determinism
 
@@ -60,7 +69,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
 from gammonnet.bearoff_net import (  # noqa: E402
-    FEATURE_VERSION, INPUT_SIZE, SIDE_FEATURES, BearoffNet, side_features,
+    FEATURE_VERSION, IDENTITY, INPUT_SIZE, SIDE_FEATURES, TANH, BearoffNet,
+    side_features,
 )
 
 DEFAULT_MATRIX = ROOT / "build" / "ts6x11_cubeless.u16"
@@ -89,7 +99,7 @@ def set_seeds(seed: int) -> None:
 class Model:
     """A thin torch wrapper that can hand its weights to `BearoffNet`."""
 
-    def __init__(self, hidden: list[int], device):
+    def __init__(self, hidden: list[int], device, activation: int = TANH):
         import torch.nn as nn
         sizes = [INPUT_SIZE] + hidden + [1]
         layers = []
@@ -97,9 +107,11 @@ class Model:
             layers.append(nn.Linear(sizes[index], sizes[index + 1]))
             if index + 2 < len(sizes):
                 layers.append(nn.ReLU())
-        layers.append(nn.Tanh())
+        if activation == TANH:
+            layers.append(nn.Tanh())
         self.net = nn.Sequential(*layers).to(device)
         self.sizes = sizes
+        self.activation = activation
 
     def export(self) -> BearoffNet:
         import torch.nn as nn
@@ -108,7 +120,8 @@ class Model:
             if isinstance(module, nn.Linear):
                 weights.append((module.weight.detach().cpu().numpy().T.copy(),
                                 module.bias.detach().cpu().numpy().copy()))
-        return BearoffNet(weights, feature_version=FEATURE_VERSION)
+        return BearoffNet(weights, feature_version=FEATURE_VERSION,
+                          activation=self.activation)
 
 
 def load_domain(matrix_path: Path, sides_path: Path):
@@ -123,17 +136,24 @@ def load_domain(matrix_path: Path, sides_path: Path):
     return np.asarray(raw), sides, features
 
 
-def exhaustive_error(model, features_t, matrix, device, chunk: int = 16):
-    """Max and mean |error| over **every** pair of the domain, index 0 aside.
+def scan_domain(model, features_t, matrix, device, chunk: int = 16, keep: int = 0):
+    """Every pair of the domain, index 0 aside: the error, and the worst of it.
 
     Index 0 is the empty layout -- a side with no checkers has already won, and
-    the table's row and column for it describe a game that is over. Including
-    them would flatter or spoil the figure for positions the evaluator is never
-    asked about.
+    that row and column describe a game that is over. Including them would
+    flatter or spoil a figure for positions the evaluator is never asked about.
 
-    Rows are done in blocks: `features_t` is small, and the whole point of the
-    exercise is that the network is small enough for 153 million forward passes
-    to be a matter of a minute.
+    `keep` asks for the indices of the `keep` worst pairs, which is what the
+    mining stage trains on. They are gathered chunk by chunk (the best of each
+    block, then the best of those) rather than by sorting 153 million values.
+
+    **Why this is worth a minute of machine.** The domain is finite and fully
+    known, so `worst_abs` is not an estimate of the worst error -- it *is* the
+    worst error. And it bounds what no sampled measurement can bound: if the
+    evaluator misranks two moves, the equity it gives up is at most twice the
+    largest error it can make anywhere. A max of 1.15e-3 therefore *guarantees*
+    a decision loss under 0.0023, the worst case GNU Backgammon was measured at
+    in T38 -- guaranteed, not observed.
     """
     import torch
     positions = matrix.shape[0]
@@ -143,6 +163,9 @@ def exhaustive_error(model, features_t, matrix, device, chunk: int = 16):
     total_sq = 0.0
     count = 0
     over = 0
+    pool_error: list[np.ndarray] = []
+    pool_index: list[np.ndarray] = []
+    per_chunk = max(1, keep // 64) if keep else 0
 
     with torch.no_grad():
         others = features_t[1:]
@@ -161,6 +184,7 @@ def exhaustive_error(model, features_t, matrix, device, chunk: int = 16):
                 matrix[start:stop, 1:].astype(np.float32)
             ).to(device) * SCALE - 1.0
             error = (predicted - target).abs()
+
             block_worst, flat = error.reshape(-1).max(dim=0)
             block_worst = float(block_worst)
             if block_worst > worst:
@@ -172,14 +196,37 @@ def exhaustive_error(model, features_t, matrix, device, chunk: int = 16):
             over += int((error > 0.01).sum())
             count += error.numel()
 
-    return {
+            if per_chunk:
+                flat_error = error.reshape(-1)
+                take = min(per_chunk, flat_error.numel())
+                values, indices = torch.topk(flat_error, take, sorted=False)
+                pool_error.append(values.cpu().numpy())
+                pool_index.append(
+                    np.stack([start + indices.cpu().numpy() // (positions - 1),
+                              1 + indices.cpu().numpy() % (positions - 1)], axis=1))
+
+    stats = {
         "pairs": count,
         "mean_abs": total / count,
         "rms": (total_sq / count) ** 0.5,
         "worst_abs": worst,
         "worst_at": worst_at,
         "above_0.01": over,
+        "guaranteed_decision_loss": 2.0 * worst,
     }
+    if not keep:
+        return stats, None
+
+    errors = np.concatenate(pool_error)
+    indices = np.concatenate(pool_index)
+    take = min(keep, errors.shape[0])
+    chosen = np.argpartition(-errors, take - 1)[:take]
+    return stats, indices[chosen]
+
+
+def exhaustive_error(model, features_t, matrix, device, chunk: int = 16):
+    stats, _ = scan_domain(model, features_t, matrix, device, chunk=chunk)
+    return stats
 
 
 def sample_batch(matrix, positions, batch, rng, device, features_t):
@@ -221,6 +268,62 @@ def regression_stage(model, matrix, features_t, args, device, log):
             running = 0.0
             log(f"  regression {step:>7}/{args.steps}  mse {mean:.3e}  "
                 f"rmse {mean ** 0.5:.3e}  {elapsed / 60:.1f} min")
+    return model
+
+
+def mining_stage(model, matrix, features_t, args, device, log):
+    """Chase the maximum error itself, on the pairs that actually carry it.
+
+    The domain is finite, so the hardest pairs are not guessed at: they are
+    *found*, by scoring all 153 million and keeping the worst. Each round
+    retrains on a mixture of those and of fresh uniform pairs -- the uniform
+    half is what keeps the network from trading the bulk of the domain away for
+    its tail, and the run reports both figures after every round so the trade is
+    visible rather than assumed.
+    """
+    import torch
+    positions = matrix.shape[0]
+    rng = np.random.default_rng(args.seed + 3)
+    optimiser = torch.optim.AdamW(model.net.parameters(), lr=args.mine_lr,
+                                  weight_decay=args.weight_decay)
+    schedule = torch.optim.lr_scheduler.OneCycleLR(
+        optimiser, max_lr=args.mine_lr,
+        total_steps=args.mine_rounds * args.mine_steps, pct_start=0.05)
+    loss_fn = torch.nn.MSELoss()
+    hard_size = max(1, int(args.batch * args.mine_mix))
+    easy_size = args.batch - hard_size
+
+    for round_index in range(1, args.mine_rounds + 1):
+        started = time.perf_counter()
+        stats, hard = scan_domain(model, features_t, matrix, device,
+                                  keep=args.mine_keep)
+        log(f"  mine {round_index}/{args.mine_rounds}  moyenne {stats['mean_abs']:.3e}  "
+            f"rms {stats['rms']:.3e}  pire {stats['worst_abs']:.5f}  "
+            f"borne décision {stats['guaranteed_decision_loss']:.5f}  "
+            f"balayage {time.perf_counter() - started:.0f} s")
+
+        running = 0.0
+        for step in range(1, args.mine_steps + 1):
+            picked = rng.integers(0, hard.shape[0], size=hard_size)
+            i = np.concatenate([hard[picked, 0],
+                                rng.integers(1, positions, size=easy_size)])
+            j = np.concatenate([hard[picked, 1],
+                                rng.integers(1, positions, size=easy_size)])
+            target = matrix[i, j].astype(np.float32) * SCALE - 1.0
+            x = torch.cat([features_t[torch.from_numpy(i.astype(np.int64)).to(device)],
+                           features_t[torch.from_numpy(j.astype(np.int64)).to(device)]],
+                          dim=1)
+            y = torch.from_numpy(target).to(device)
+            loss = loss_fn(model.net(x)[:, 0], y)
+            optimiser.zero_grad(set_to_none=True)
+            loss.backward()
+            optimiser.step()
+            schedule.step()
+            running += float(loss.detach())
+            if step % args.report == 0:
+                log(f"    mine {round_index} {step:>6}/{args.mine_steps}  "
+                    f"mse {running / args.report:.3e}")
+                running = 0.0
     return model
 
 
@@ -350,6 +453,8 @@ def main() -> int:
     parser.add_argument("--matrix", default=str(DEFAULT_MATRIX))
     parser.add_argument("--sides", default=str(DEFAULT_SIDES))
     parser.add_argument("--hidden", default="128,64")
+    parser.add_argument("--output", default="tanh", choices=["tanh", "linear"],
+                        help="activation de sortie ; « linear » ne sature pas")
     parser.add_argument("--steps", type=int, default=40000)
     parser.add_argument("--batch", type=int, default=16384)
     parser.add_argument("--lr", type=float, default=3e-3)
@@ -358,6 +463,13 @@ def main() -> int:
     parser.add_argument("--report", type=int, default=500)
     parser.add_argument("--threads", type=int, default=0)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--mine-rounds", type=int, default=0,
+                        help="tours de fouille exhaustive des pires paires")
+    parser.add_argument("--mine-steps", type=int, default=4000)
+    parser.add_argument("--mine-keep", type=int, default=1000000)
+    parser.add_argument("--mine-mix", type=float, default=0.5,
+                        help="part du lot tirée des pires paires")
+    parser.add_argument("--mine-lr", type=float, default=5e-4)
     parser.add_argument("--decision-corpus", default="")
     parser.add_argument("--decision-steps", type=int, default=8000)
     parser.add_argument("--decision-batch", type=int, default=512)
@@ -386,7 +498,8 @@ def main() -> int:
     matrix, sides, features = load_domain(Path(args.matrix), Path(args.sides))
     features_t = torch.from_numpy(features).to(device)
 
-    model = Model(hidden, device)
+    model = Model(hidden, device,
+                  activation=TANH if args.output == "tanh" else IDENTITY)
     exported = model.export()
     log(f"T78 — distillation de la table exacte, {matrix.shape[0]} x {matrix.shape[0]} paires")
     log(f"  architecture {exported.sizes}, {exported.parameters} paramètres, "
@@ -400,6 +513,14 @@ def main() -> int:
     log(f"  exhaustif après régression : moyenne {after_regression['mean_abs']:.3e}  "
         f"rms {after_regression['rms']:.3e}  pire {after_regression['worst_abs']:.4f} "
         f"en {after_regression['worst_at']}  au-delà de 0,01 : {after_regression['above_0.01']}")
+
+    after_mining = None
+    if args.mine_rounds:
+        mining_stage(model, matrix, features_t, args, device, log)
+        after_mining = exhaustive_error(model, features_t, matrix, device)
+        log(f"  exhaustif après fouille : moyenne {after_mining['mean_abs']:.3e}  "
+            f"rms {after_mining['rms']:.3e}  pire {after_mining['worst_abs']:.5f}  "
+            f"borne décision {after_mining['guaranteed_decision_loss']:.5f}")
 
     after_decisions = None
     if args.decision_corpus:
@@ -425,16 +546,20 @@ def main() -> int:
         "parameters": exported.parameters,
         "macs": exported.macs,
         "feature_version": FEATURE_VERSION,
+        "output": args.output,
         "matrix": {"path": str(args.matrix), "sha256": sha256(Path(args.matrix))},
         "training": {
             "steps": args.steps, "batch": args.batch, "lr": args.lr,
             "seed": args.seed, "device": args.device,
+            "mine_rounds": args.mine_rounds, "mine_steps": args.mine_steps,
+            "mine_keep": args.mine_keep, "mine_mix": args.mine_mix,
             "decision_corpus": args.decision_corpus,
             "decision_steps": args.decision_steps if args.decision_corpus else 0,
             "margin": args.margin, "anchor": args.anchor,
         },
         "exhaustive_error": {
             "after_regression": after_regression,
+            "after_mining": after_mining,
             "after_decisions": after_decisions,
         },
         "weights_sha256": sha256(out),
