@@ -1344,6 +1344,86 @@ réelles.
 
 ---
 
+## T78 — Distiller la table exacte de fin de partie
+
+> **La piste que T38 a ouverte et que personne n'a suivie.** Branchée, la table bilatérale ferme
+> le trou de fin de partie **en entier** : 0,00028 → 0,00000 d'équité perdue par décision, aux
+> trois profondeurs. Mais elle pèse 1,2 Gio, donc elle reste native. Le navigateur garde le
+> réseau, et paie la queue — **0,0919 d'équité sur la pire décision mesurée**, là où GNU
+> Backgammon, qui consulte la sienne, ne dépasse jamais 0,0023.
+
+**Objectif** — quelques dizaines de kilo-octets de poids qui, dans le domaine de la table, jouent
+à la précision de la table ; et dont **la queue**, pas seulement la moyenne, soutient la
+comparaison avec gnubg.
+
+**Ce que cette tâche a d'unique dans le projet** — le signal d'entraînement est **exact** et le
+domaine est **fini** : 12 376 × 12 376 = 153 165 376 paires, calculées par programmation
+dynamique. Aucune variance, aucun arbitre discutable, et — c'est le point — l'erreur du réseau
+entraîné se rapporte **exhaustivement** plutôt que sur un échantillon. Cette tâche est le seul
+endroit du dépôt où « mesuré » peut vouloir dire « sur la totalité du domaine ».
+
+**Périmètre**
+- `tools/build_bearoff_matrix.py` — la colonne cubeless extraite en une matrice dense de
+  306 Mio, relue par le lecteur de T38 pour prouver qu'elle dit la même chose.
+- `tools/build_bearoff_decisions.py` — un corpus de décisions réelles, chaque coup légal noté
+  **exactement**, en forme compressée par lignes.
+- `tools/train_bearoff_net.py` — deux étages, et le second est le sujet de la fiche :
+  **régression** uniforme sur le domaine (la moyenne, la forme), puis **affinage par décision**
+  avec une charnière pondérée par le coût — chaque candidat qui dépasse le vrai meilleur est
+  pénalisé *à proportion de l'équité qu'il ferait perdre*. Une erreur commune à tous les
+  candidats d'une décision ne coûte rien en jeu ; elle ne doit rien coûter dans la perte.
+- `python/gammonnet/bearoff_net.py` — les caractéristiques, le format de poids et la passe avant,
+  **sans aucune dépendance à la table** : c'est tout l'objet.
+- `bench/bearoff_distill.py` — la mesure, qui **importe** le tirage et la notation de
+  `bench/exact_gap.py` : à graine égale, ce sont les décisions de T38, donc les colonnes se
+  comparent aux chiffres publiés sans réserve.
+
+**Critères d'acceptation**
+- **Seuil de succès, décidé avant la mesure** : perte moyenne par décision **≤ 0,00005** (cinq
+  fois mieux que les 0,00028 du réseau actuel) **et** pire cas sur ≥ 8 000 décisions
+  **≤ 0,0023** — le pire cas de GNU Backgammon dans T38. C'est la queue qui décide, pas la
+  moyenne : un réseau qui améliorerait la moyenne sans réduire la queue **échoue** cette fiche.
+- L'erreur absolue est rapportée **exhaustivement** sur les 153 165 376 paires du domaine :
+  moyenne, rms, maximum, et la paire où il se produit.
+- La taille du fichier de poids est mesurée en float32 et en float16, et la courbe
+  qualité/taille est publiée pour au moins trois gabarits — le choix se justifie par une mesure,
+  pas par un goût.
+- Le domaine du réseau (`contains`, la décomposition en deux camps) est **croisé contre le
+  lecteur de T38** dans les tests : une seconde écriture du même prédicat est une seconde chose
+  capable de se tromper en silence.
+- Aucun chiffre annoncé sans le `json` du banc dans `docs/mesures/`.
+
+**Résultat — mesuré le 2026-08-28**, fiche
+[`docs/mesures/2026-08-28-T78-distillation-bearoff.md`](docs/mesures/2026-08-28-T78-distillation-bearoff.md).
+
+**Le seuil est franchi par un candidat.** Sur les 8 000 décisions de T38, à sa graine et par son
+tirage importé, `code 16` (256→128, 1,03 Mio en float32, **528 Kio en float16**) rend :
+
+| | perte moyenne | pire cas | décisions > 0,0023 |
+|---|---|---|---|
+| notre grand réseau, 1-ply | 0,00020 | **0,0919** | 157 |
+| **le distillé `code 16`** | **0,0000017** | **0,0014** | **0** |
+| GNU Backgammon 0-ply *(avec sa table)* | 0,0000010 | 0,0023 | 0 |
+
+La queue passe de 0,0919 à 0,0014 — **un facteur 65** — et sous le pire cas de gnubg, pour
+2 400 fois moins d'octets que la table. `code 8` (244 Kio en float16) manque le seuil de
+0,00005 point : 0,00235 contre 0,0023, une décision sur 8 000.
+
+Trois constats que la mesure a imposés contre l'intuition : un **code appris par disposition**
+dépense ses octets bien mieux que de la profondeur (285 Kio battent 725 Kio) ; la **tanh** ne
+coûte rien en moyenne et **double la queue** ; et la borne exhaustive « 2 × erreur maximale »,
+qui était l'argument le plus fort de la fiche, **n'est pas atteinte** — les pires paires du
+domaine sont des positions du dernier jet auxquelles aucune décision n'est sensible. La fiche est
+franchie par la mesure, pas par la borne.
+
+**Ce que cette fiche ne fait pas** — le branchement dans `gn_search` (côté C) et le portage
+WebAssembly. Le verdict d'abord : si le réseau distillé ne bat pas la queue, il n'y a rien à
+brancher. Si elle est battue, le branchement est une fiche à part, avec son propre coût mesuré —
+et un bénéfice secondaire à chiffrer, car 20 000 MACs remplaceraient 470 000 sur toute feuille
+de fin de partie.
+
+---
+
 # Phase 5 — Publication
 
 ## T50 — Publier l'artefact

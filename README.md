@@ -126,6 +126,10 @@ node verify/api_invariants.mjs   # the API answers what it promises
 decision on average — and up to 0.0919 in the worst case observed. The
 [limits page](https://kevung.github.io/gammonNet/en/manuel/limits.html) lists every one of them.
 
+A replacement has been measured but is **not wired in yet**: a 528 KiB network distilled from the
+exact table plays the same 8 000 decisions with a worst case of 0.0014, below GNU Backgammon's own
+0.0023 — see [T78](docs/mesures/2026-08-28-T78-distillation-bearoff.md).
+
 ## Building from source
 
 ```bash

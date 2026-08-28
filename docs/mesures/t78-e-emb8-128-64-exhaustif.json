@@ -1,0 +1,57 @@
+{
+  "task": "T78",
+  "network": {
+    "path": "/home/kunger/t78-logs/run-e-emb8-128-64.bin",
+    "sizes": [
+      112,
+      128,
+      64,
+      1
+    ],
+    "parameters": 121793,
+    "macs": 22592,
+    "bytes": 487220
+  },
+  "scan": {
+    "float32": {
+      "pairs": 153140625,
+      "mean_abs": 0.0005366693685500917,
+      "rms": 0.0007045775717380026,
+      "worst_abs": 0.02202528715133667,
+      "worst_at": [
+        90,
+        8
+      ],
+      "guaranteed_decision_loss": 0.04405057430267334,
+      "pairs_above_half_gnubg": 14238163,
+      "row_bound": {
+        "median": 0.006929636001586914,
+        "p90": 0.011260342597961426,
+        "p99": 0.020221805572509785,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 96.80606769991573
+    },
+    "float16": {
+      "pairs": 153140625,
+      "mean_abs": 0.0005419864353410395,
+      "rms": 0.000710035579362032,
+      "worst_abs": 0.022177577018737793,
+      "worst_at": [
+        90,
+        8
+      ],
+      "guaranteed_decision_loss": 0.044355154037475586,
+      "pairs_above_half_gnubg": 14546676,
+      "row_bound": {
+        "median": 0.006906628608703613,
+        "p90": 0.011212641000747682,
+        "p99": 0.020243256092071536,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 99.06785268592648
+    }
+  }
+}

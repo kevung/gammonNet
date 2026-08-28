@@ -1,0 +1,57 @@
+{
+  "task": "T78",
+  "network": {
+    "path": "/home/kunger/t78-logs/run-a-128-64-lin.bin",
+    "sizes": [
+      96,
+      128,
+      64,
+      1
+    ],
+    "parameters": 20737,
+    "macs": 20544,
+    "bytes": 82996
+  },
+  "scan": {
+    "float32": {
+      "pairs": 153140625,
+      "mean_abs": 0.0038326851371160734,
+      "rms": 0.005071362785836697,
+      "worst_abs": 0.265262246131897,
+      "worst_at": [
+        9,
+        1
+      ],
+      "guaranteed_decision_loss": 0.530524492263794,
+      "pairs_above_half_gnubg": 120770805,
+      "row_bound": {
+        "median": 0.045465826988220215,
+        "p90": 0.07180468142032624,
+        "p99": 0.15150664836168293,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 96.62873906001914
+    },
+    "float16": {
+      "pairs": 153140625,
+      "mean_abs": 0.00383403197815491,
+      "rms": 0.005072877650851602,
+      "worst_abs": 0.26548856496810913,
+      "worst_at": [
+        9,
+        1
+      ],
+      "guaranteed_decision_loss": 0.5309771299362183,
+      "pairs_above_half_gnubg": 120792943,
+      "row_bound": {
+        "median": 0.04542744159698486,
+        "p90": 0.07196733951568604,
+        "p99": 0.15177136540412905,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 95.22183358902112
+    }
+  }
+}

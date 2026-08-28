@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/home/kunger/t78-logs/abl-g2-fouille.bin",
+    "sizes": [
+      128,
+      256,
+      128,
+      1
+    ],
+    "parameters": 264065,
+    "macs": 65664,
+    "bytes": 1056308
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.96125,
+      "mean_loss": 1.4713511863889473e-05,
+      "mean_loss_when_wrong": 0.0003797035319713412,
+      "p99": 0.000457770656900891,
+      "p999": 0.0016480659189746065,
+      "worst_loss": 0.003112840466926059,
+      "above_gnubg_worst": 4
+    }
+  ]
+}

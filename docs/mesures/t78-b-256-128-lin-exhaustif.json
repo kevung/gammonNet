@@ -1,0 +1,57 @@
+{
+  "task": "T78",
+  "network": {
+    "path": "/home/kunger/t78-logs/run-b-256-128-lin.bin",
+    "sizes": [
+      96,
+      256,
+      128,
+      1
+    ],
+    "parameters": 57857,
+    "macs": 57472,
+    "bytes": 231476
+  },
+  "scan": {
+    "float32": {
+      "pairs": 153140625,
+      "mean_abs": 0.002048134265946072,
+      "rms": 0.0026646398375083213,
+      "worst_abs": 0.09464854001998901,
+      "worst_at": [
+        9,
+        1
+      ],
+      "guaranteed_decision_loss": 0.18929708003997803,
+      "pairs_above_half_gnubg": 97028879,
+      "row_bound": {
+        "median": 0.023861169815063477,
+        "p90": 0.03712427616119385,
+        "p99": 0.07258440762758261,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 199.95460455399007
+    },
+    "float16": {
+      "pairs": 153140625,
+      "mean_abs": 0.0020494382370905588,
+      "rms": 0.0026662203554771165,
+      "worst_abs": 0.09454697370529175,
+      "worst_at": [
+        9,
+        1
+      ],
+      "guaranteed_decision_loss": 0.1890939474105835,
+      "pairs_above_half_gnubg": 97061896,
+      "row_bound": {
+        "median": 0.023862123489379883,
+        "p90": 0.03716456890106201,
+        "p99": 0.07270670205354697,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 199.2957561330404
+    }
+  }
+}

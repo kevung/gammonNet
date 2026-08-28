@@ -1,0 +1,79 @@
+{
+  "task": "T78",
+  "written": "2026-08-28T03:51:00+00:00",
+  "architecture": [
+    96,
+    512,
+    256,
+    1
+  ],
+  "parameters": 181249,
+  "macs": 180480,
+  "feature_version": 1,
+  "output": "linear",
+  "matrix": {
+    "path": "/home/kunger/gammonNet-t78/build/ts6x11_cubeless.u16",
+    "sha256": "6bf02189daf960beb775e67edb45d09f79ee224a278ec7da737004a9cd1fccc1"
+  },
+  "training": {
+    "steps": 80000,
+    "batch": 8192,
+    "lr": 0.003,
+    "seed": 20260828,
+    "device": "cpu",
+    "mine_rounds": 10,
+    "mine_steps": 4000,
+    "mine_keep": 1000000,
+    "mine_mix": 0.5,
+    "decision_corpus": "build/bearoff_decisions.npz",
+    "decision_steps": 20000,
+    "margin": 0.002,
+    "anchor": 1.0,
+    "threads": 7,
+    "threads_source": "relev\u00e9 dans le journal d'entra\u00eenement ; le champ n'existait pas encore dans le script au moment de la campagne. Sur CPU, torch n'est reproductible au bit pr\u00e8s qu'\u00e0 nombre de fils constant."
+  },
+  "exhaustive_error": {
+    "after_regression": {
+      "pairs": 153140625,
+      "mean_abs": 0.0015432753745831102,
+      "rms": 0.0020274028697578853,
+      "worst_abs": 0.11129438877105713,
+      "worst_at": [
+        9,
+        7
+      ],
+      "above_0.01": 107438,
+      "guaranteed_decision_loss": 0.22258877754211426
+    },
+    "after_mining": {
+      "pairs": 153140625,
+      "mean_abs": 0.0018560803096861927,
+      "rms": 0.0023931988303628393,
+      "worst_abs": 0.04053014516830444,
+      "worst_at": [
+        35,
+        9
+      ],
+      "above_0.01": 114465,
+      "guaranteed_decision_loss": 0.08106029033660889
+    },
+    "after_decisions": {
+      "pairs": 153140625,
+      "mean_abs": 0.0014595605785602235,
+      "rms": 0.0018817679186980657,
+      "worst_abs": 0.05099529027938843,
+      "worst_at": [
+        9,
+        2
+      ],
+      "above_0.01": 32299,
+      "guaranteed_decision_loss": 0.10199058055877686
+    }
+  },
+  "weights_sha256": "c3c254f4fd26d5705ea4eec381ab3cb93709894be9d5f4ea83140f9c154fab1f",
+  "minutes": 226.756994215465,
+  "name": "bearoff_512_256",
+  "candidate": "run-d-512-256-lin",
+  "weights_sha256_as_written": "ebfbac0d7e9efb800dc5b4f2577a6067dc09619c9ed845012743e4d15c5efb97",
+  "format_note": "En-t\u00eate migr\u00e9 apr\u00e8s l'entra\u00eenement : le format a re\u00e7u le champ \u00ab largeur du code appris \u00bb pendant la campagne, et ces poids ont \u00e9t\u00e9 \u00e9crits avant. Quatre octets de z\u00e9ro ins\u00e9r\u00e9s dans l'en-t\u00eate, aucun poids touch\u00e9 \u2014 v\u00e9rifi\u00e9 en rejouant le balayage exhaustif, qui rend les m\u00eames chiffres qu'\u00e0 l'entra\u00eenement."
+}

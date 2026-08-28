@@ -1,0 +1,79 @@
+{
+  "task": "T78",
+  "written": "2026-08-28T01:53:13+00:00",
+  "architecture": [
+    112,
+    128,
+    64,
+    1
+  ],
+  "parameters": 121793,
+  "macs": 22592,
+  "feature_version": 1,
+  "output": "linear",
+  "embedding": 8,
+  "matrix": {
+    "path": "/home/kunger/gammonNet-t78/build/ts6x11_cubeless.u16",
+    "sha256": "6bf02189daf960beb775e67edb45d09f79ee224a278ec7da737004a9cd1fccc1"
+  },
+  "training": {
+    "steps": 80000,
+    "batch": 8192,
+    "lr": 0.003,
+    "seed": 20260828,
+    "device": "cpu",
+    "mine_rounds": 10,
+    "mine_steps": 4000,
+    "mine_keep": 1000000,
+    "mine_mix": 0.5,
+    "decision_corpus": "build/bearoff_decisions.npz",
+    "decision_steps": 20000,
+    "margin": 0.002,
+    "anchor": 1.0,
+    "threads": 6,
+    "threads_source": "relev\u00e9 dans le journal d'entra\u00eenement ; le champ n'existait pas encore dans le script au moment de la campagne. Sur CPU, torch n'est reproductible au bit pr\u00e8s qu'\u00e0 nombre de fils constant."
+  },
+  "exhaustive_error": {
+    "after_regression": {
+      "pairs": 153140625,
+      "mean_abs": 0.0005724186034508596,
+      "rms": 0.0007575122042049383,
+      "worst_abs": 0.036258161067962646,
+      "worst_at": [
+        209,
+        7
+      ],
+      "above_0.01": 2030,
+      "guaranteed_decision_loss": 0.07251632213592529
+    },
+    "after_mining": {
+      "pairs": 153140625,
+      "mean_abs": 0.0007023556299660111,
+      "rms": 0.0009321047370298457,
+      "worst_abs": 0.015365958213806152,
+      "worst_at": [
+        175,
+        6
+      ],
+      "above_0.01": 14,
+      "guaranteed_decision_loss": 0.030731916427612305
+    },
+    "after_decisions": {
+      "pairs": 153140625,
+      "mean_abs": 0.0005366695295959914,
+      "rms": 0.0007045777478742332,
+      "worst_abs": 0.02202516794204712,
+      "worst_at": [
+        90,
+        8
+      ],
+      "above_0.01": 529,
+      "guaranteed_decision_loss": 0.04405033588409424
+    }
+  },
+  "weights_sha256": "ed9cdba0307703f8c67a49d4ad5e035c0269396b38c855dd3797be6940421c7c",
+  "minutes": 70.43485962445071,
+  "name": "bearoff_code8_128_64",
+  "candidate": "run-e-emb8-128-64",
+  "format_note": "\u00c9crit directement au format courant."
+}
