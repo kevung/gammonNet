@@ -56,7 +56,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
-from gammonnet.bearoff_net import TANH, BearoffNet, side_features  # noqa: E402
+from gammonnet.bearoff_net import TANH, BearoffNet  # noqa: E402
 
 DEFAULT_MATRIX = ROOT / "build" / "ts6x11_cubeless.u16"
 DEFAULT_SIDES = ROOT / "build" / "ts6x11_sides.npy"
@@ -75,8 +75,10 @@ def to_fp16(net: BearoffNet) -> BearoffNet:
     """
     layers = [(w.astype(np.float16).astype(np.float32),
                b.astype(np.float16).astype(np.float32)) for w, b in net.layers]
+    embedding = (None if net.embedding is None
+                 else net.embedding.astype(np.float16).astype(np.float32))
     return BearoffNet(layers, feature_version=net.feature_version,
-                      activation=net.activation)
+                      activation=net.activation, embedding=embedding)
 
 
 def scan(net: BearoffNet, features: np.ndarray, matrix, rows: int = 64):
@@ -87,7 +89,7 @@ def scan(net: BearoffNet, features: np.ndarray, matrix, rows: int = 64):
     interrogé dessus.
     """
     first_w, first_b = net.layers[0]
-    half = features.shape[1]
+    half = net.side_width
     mine = features @ first_w[:half]
     theirs = features @ first_w[half:]
 
@@ -161,8 +163,10 @@ def main() -> int:
     positions = sides.shape[0]
     matrix = np.memmap(args.matrix, dtype="<u2", mode="r",
                        shape=(positions, positions))
-    features = side_features(sides)
     net = BearoffNet.load(args.net)
+    # `encode` adds the layout code when the network has one; without it this
+    # is exactly `side_features`.
+    features = net.encode(sides)
 
     print(f"T78 — balayage exhaustif : {positions} x {positions} = "
           f"{(positions - 1) ** 2} paires")

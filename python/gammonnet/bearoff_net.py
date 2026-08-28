@@ -21,6 +21,24 @@ cross-checks the predicate and the side decomposition against the table reader
 on random positions, because two implementations of the same domain are two
 things that can disagree, and a disagreement here would be silent.
 
+## The two families, and why the second exists
+
+**Hand features alone** ask the network to rediscover, from six counts, what a
+bearoff race is. That is the small artefact -- tens of kilobytes -- and it is
+the first thing to try.
+
+**Hand features plus a learned code per layout** is the second family. There
+are only 12 376 layouts per side, so a table of `d` numbers each is a legitimate
+part of the artefact: at `d = 12` it is 297 Kio in float32, 149 Kio in float16,
+against the 1,2 Gio it replaces. Mathematically this is the same network fed a
+one-hot identity of the layout; practically it is a lookup, and it lets the
+network hold what a race *is* rather than deduce it from counts every time.
+
+Which family wins is a measurement, and both are measured. The layout code
+needs the combinatorial rank of a layout at inference -- `side_index` -- which
+is the same rank `bearoff.bearoff_index` computes, tabulated once here so that
+a batch is a `searchsorted` rather than twelve thousand python loops.
+
 ## The weight file
 
 A deliberately plain format (`GNBONET1`), not BGNN. The BGNN writer in
@@ -31,8 +49,10 @@ buy nothing and cost a reader that lies.
     magic   8 bytes  b"GNBONET1"
     int32   feature version
     int32   output activation: 0 = tanh, 1 = identity
+    int32   layout-code width d (0 when there is none)
     int32   number of layers L
     L x (int32 in, int32 out)
+    then, when d > 0, the 12 376 x d float32 layout codes
     then, per layer, `in * out` float32 weights (row-major, out-major) and
     `out` float32 biases -- little-endian throughout.
 """
@@ -61,6 +81,45 @@ SIDE_FEATURES = POINTS * 7 + 6
 INPUT_SIZE = 2 * SIDE_FEATURES
 
 MAGIC = b"GNBONET1"
+
+#: Every layout of the domain, at the combinatorial rank gnubg gives it, and
+#: the sorted keys that turn a batch of layouts into one `searchsorted`.
+def _layout_table():
+    from .bearoff import bearoff_index
+    layouts = []
+
+    def walk(prefix, remaining):
+        if len(prefix) == POINTS:
+            layouts.append(tuple(prefix))
+            return
+        for count in range(remaining + 1):
+            walk(prefix + [count], remaining - count)
+
+    walk([], CHEQUERS)
+    counts = np.array(layouts, dtype=np.int16)
+    ranks = np.array([bearoff_index(layout, POINTS) for layout in layouts],
+                     dtype=np.int32)
+    keys = counts.astype(np.int64) @ ((CHEQUERS + 1) **
+                                      np.arange(POINTS, dtype=np.int64))
+    order = np.argsort(keys)
+    return keys[order], ranks[order], counts.shape[0]
+
+
+_KEYS, _RANKS, LAYOUTS = _layout_table()
+
+
+def side_index(counts: np.ndarray) -> np.ndarray:
+    """The combinatorial rank of each layout, `(N, 6)` counts in.
+
+    The same rank as `bearoff.bearoff_index`, which the tests check pairwise --
+    two ways of computing an index are two ways of being off by one.
+    """
+    counts = np.asarray(counts, dtype=np.int64).reshape(-1, POINTS)
+    keys = counts @ ((CHEQUERS + 1) ** np.arange(POINTS, dtype=np.int64))
+    found = np.searchsorted(_KEYS, keys)
+    if np.any(found >= _KEYS.size) or np.any(_KEYS[np.minimum(found, _KEYS.size - 1)] != keys):
+        raise KeyError("layout outside the domain")
+    return _RANKS[found]
 
 #: How the last layer is finished. `tanh` keeps the output inside the range an
 #: equity can take; `identity` does not, and trains better where it matters --
@@ -154,14 +213,20 @@ class BearoffNet:
 
     def __init__(self, layers: list[tuple[np.ndarray, np.ndarray]],
                  feature_version: int = FEATURE_VERSION,
-                 activation: int = TANH):
+                 activation: int = TANH,
+                 embedding: np.ndarray | None = None):
         if feature_version != FEATURE_VERSION:
             raise ValueError(
                 f"weights encode features v{feature_version}, this module is "
                 f"v{FEATURE_VERSION} -- retrain rather than reinterpret")
-        if layers[0][0].shape[0] != INPUT_SIZE:
+        self.embedding = (None if embedding is None
+                          else np.ascontiguousarray(embedding, dtype=np.float32))
+        width = SIDE_FEATURES + (0 if self.embedding is None
+                                 else self.embedding.shape[1])
+        if layers[0][0].shape[0] != 2 * width:
             raise ValueError(f"first layer takes {layers[0][0].shape[0]} inputs, "
-                             f"features give {INPUT_SIZE}")
+                             f"the encoding gives {2 * width}")
+        self.side_width = width
         if layers[-1][0].shape[1] != 1:
             raise ValueError("the last layer must produce a single equity")
         self.layers = [(np.ascontiguousarray(w, dtype=np.float32),
@@ -180,7 +245,8 @@ class BearoffNet:
 
     @property
     def parameters(self) -> int:
-        return sum(w.size + b.size for w, b in self.layers)
+        table = 0 if self.embedding is None else self.embedding.size
+        return sum(w.size + b.size for w, b in self.layers) + table
 
     @property
     def macs(self) -> int:
@@ -197,10 +263,17 @@ class BearoffNet:
         out = x[:, 0]
         return np.tanh(out) if self.activation == TANH else out
 
+    def encode(self, counts: np.ndarray) -> np.ndarray:
+        """One side's input block: its features, and its layout code if there is one."""
+        features = side_features(counts)
+        if self.embedding is None:
+            return features
+        return np.concatenate([features, self.embedding[side_index(counts)]], axis=1)
+
     def equities_from_counts(self, mine: np.ndarray, theirs: np.ndarray) -> np.ndarray:
         """Equity for the side on roll, from both layouts, `(N, 6)` each."""
-        features = np.concatenate([side_features(mine), side_features(theirs)], axis=1)
-        return self.forward(features)
+        return self.forward(np.concatenate([self.encode(mine), self.encode(theirs)],
+                                           axis=1))
 
     def equity(self, position) -> float:
         """Equity of `position`, seen by `position.turn`. Raises off-domain."""
@@ -216,10 +289,13 @@ class BearoffNet:
         path = Path(path)
         with path.open("wb") as handle:
             handle.write(MAGIC)
-            handle.write(struct.pack("<iii", self.feature_version, self.activation,
-                                     len(self.layers)))
+            width = 0 if self.embedding is None else self.embedding.shape[1]
+            handle.write(struct.pack("<iiii", self.feature_version, self.activation,
+                                     width, len(self.layers)))
             for w, _ in self.layers:
                 handle.write(struct.pack("<ii", w.shape[0], w.shape[1]))
+            if self.embedding is not None:
+                handle.write(np.ascontiguousarray(self.embedding, dtype="<f4").tobytes())
             for w, b in self.layers:
                 handle.write(np.ascontiguousarray(w.T, dtype="<f4").tobytes())
                 handle.write(np.ascontiguousarray(b, dtype="<f4").tobytes())
@@ -229,12 +305,17 @@ class BearoffNet:
         raw = Path(path).read_bytes()
         if raw[:8] != MAGIC:
             raise ValueError(f"{path} is not a {MAGIC.decode()} file")
-        version, activation, count = struct.unpack_from("<iii", raw, 8)
-        offset = 20
+        version, activation, width, count = struct.unpack_from("<iiii", raw, 8)
+        offset = 24
         shapes = []
         for _ in range(count):
             shapes.append(struct.unpack_from("<ii", raw, offset))
             offset += 8
+        embedding = None
+        if width:
+            embedding = np.frombuffer(raw, dtype="<f4", count=LAYOUTS * width,
+                                      offset=offset).reshape(LAYOUTS, width).copy()
+            offset += 4 * LAYOUTS * width
         layers = []
         for rows, cols in shapes:
             weights = np.frombuffer(raw, dtype="<f4", count=rows * cols,
@@ -245,4 +326,5 @@ class BearoffNet:
             layers.append((weights, bias))
         if offset != len(raw):
             raise ValueError(f"{path}: {len(raw) - offset} trailing bytes")
-        return cls(layers, feature_version=version, activation=activation)
+        return cls(layers, feature_version=version, activation=activation,
+                   embedding=embedding)

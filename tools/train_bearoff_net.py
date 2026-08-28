@@ -69,7 +69,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
 from gammonnet.bearoff_net import (  # noqa: E402
-    FEATURE_VERSION, IDENTITY, INPUT_SIZE, SIDE_FEATURES, TANH, BearoffNet,
+    FEATURE_VERSION, IDENTITY, LAYOUTS, SIDE_FEATURES, TANH, BearoffNet,
     side_features,
 )
 
@@ -97,11 +97,25 @@ def set_seeds(seed: int) -> None:
 
 
 class Model:
-    """A thin torch wrapper that can hand its weights to `BearoffNet`."""
+    """A thin torch wrapper that can hand its weights to `BearoffNet`.
 
-    def __init__(self, hidden: list[int], device, activation: int = TANH):
+    It owns the side encoding as well as the layers: a side is addressed by its
+    combinatorial rank everywhere in this script, so that the optional layout
+    code is a lookup on the same index the features are.
+    """
+
+    def __init__(self, hidden: list[int], device, features, activation: int = TANH,
+                 embedding: int = 0):
+        import torch
         import torch.nn as nn
-        sizes = [INPUT_SIZE] + hidden + [1]
+        self.features = features
+        self.embedding = (nn.Embedding(LAYOUTS, embedding).to(device)
+                          if embedding else None)
+        if self.embedding is not None:
+            nn.init.normal_(self.embedding.weight, std=0.1)
+        self.side_width = SIDE_FEATURES + embedding
+
+        sizes = [2 * self.side_width] + hidden + [1]
         layers = []
         for index in range(len(sizes) - 1):
             layers.append(nn.Linear(sizes[index], sizes[index + 1]))
@@ -113,6 +127,24 @@ class Model:
         self.sizes = sizes
         self.activation = activation
 
+    def parameters(self):
+        import itertools
+        if self.embedding is None:
+            return self.net.parameters()
+        return itertools.chain(self.net.parameters(), self.embedding.parameters())
+
+    def encode(self, index):
+        import torch
+        block = self.features[index]
+        if self.embedding is None:
+            return block
+        return torch.cat([block, self.embedding(index)], dim=1)
+
+    def value(self, i, j):
+        """The network's equity for the side `i` on roll against `j`."""
+        import torch
+        return self.net(torch.cat([self.encode(i), self.encode(j)], dim=1))[:, 0]
+
     def export(self) -> BearoffNet:
         import torch.nn as nn
         weights = []
@@ -120,8 +152,10 @@ class Model:
             if isinstance(module, nn.Linear):
                 weights.append((module.weight.detach().cpu().numpy().T.copy(),
                                 module.bias.detach().cpu().numpy().copy()))
+        table = (None if self.embedding is None
+                 else self.embedding.weight.detach().cpu().numpy().copy())
         return BearoffNet(weights, feature_version=FEATURE_VERSION,
-                          activation=self.activation)
+                          activation=self.activation, embedding=table)
 
 
 def load_domain(matrix_path: Path, sides_path: Path):
@@ -136,7 +170,7 @@ def load_domain(matrix_path: Path, sides_path: Path):
     return np.asarray(raw), sides, features
 
 
-def scan_domain(model, features_t, matrix, device, chunk: int = 16, keep: int = 0):
+def scan_domain(model, matrix, device, chunk: int = 16, keep: int = 0):
     """Every pair of the domain, index 0 aside: the error, and the worst of it.
 
     Index 0 is the empty layout -- a side with no checkers has already won, and
@@ -168,16 +202,14 @@ def scan_domain(model, features_t, matrix, device, chunk: int = 16, keep: int = 
     per_chunk = max(1, keep // 64) if keep else 0
 
     with torch.no_grad():
-        others = features_t[1:]
+        columns = torch.arange(1, positions, device=device)
         for start in range(1, positions, chunk):
             stop = min(start + chunk, positions)
-            rows = features_t[start:stop]
             n_rows = stop - start
-            batch = torch.cat([
-                rows[:, None, :].expand(n_rows, others.shape[0], SIDE_FEATURES),
-                others[None, :, :].expand(n_rows, others.shape[0], SIDE_FEATURES),
-            ], dim=2).reshape(-1, INPUT_SIZE)
-            predicted = model.net(batch).reshape(n_rows, -1)
+            rows = torch.arange(start, stop, device=device)
+            i = rows.repeat_interleave(positions - 1)
+            j = columns.repeat(n_rows)
+            predicted = model.value(i, j).reshape(n_rows, -1)
             # numpy's uint16 has no torch counterpart -- the widening happens
             # here rather than through a dtype torch would refuse.
             target = torch.from_numpy(
@@ -224,28 +256,27 @@ def scan_domain(model, features_t, matrix, device, chunk: int = 16, keep: int = 
     return stats, indices[chosen]
 
 
-def exhaustive_error(model, features_t, matrix, device, chunk: int = 16):
-    stats, _ = scan_domain(model, features_t, matrix, device, chunk=chunk)
+def exhaustive_error(model, matrix, device, chunk: int = 16):
+    stats, _ = scan_domain(model, matrix, device, chunk=chunk)
     return stats
 
 
-def sample_batch(matrix, positions, batch, rng, device, features_t):
+def sample_batch(model, matrix, positions, batch, rng, device):
+    """A uniform batch of pairs, with the table's own value as the target."""
     import torch
     i = rng.integers(1, positions, size=batch)
     j = rng.integers(1, positions, size=batch)
     target = matrix[i, j].astype(np.float32) * SCALE - 1.0
     i_t = torch.from_numpy(i.astype(np.int64)).to(device)
     j_t = torch.from_numpy(j.astype(np.int64)).to(device)
-    x = torch.cat([features_t[i_t], features_t[j_t]], dim=1)
-    y = torch.from_numpy(target).to(device)
-    return x, y
+    return i_t, j_t, torch.from_numpy(target).to(device)
 
 
-def regression_stage(model, matrix, features_t, args, device, log):
+def regression_stage(model, matrix, args, device, log):
     import torch
     positions = matrix.shape[0]
     rng = np.random.default_rng(args.seed)
-    optimiser = torch.optim.AdamW(model.net.parameters(), lr=args.lr,
+    optimiser = torch.optim.AdamW(model.parameters(), lr=args.lr,
                                   weight_decay=args.weight_decay)
     schedule = torch.optim.lr_scheduler.OneCycleLR(
         optimiser, max_lr=args.lr, total_steps=args.steps, pct_start=0.05)
@@ -254,9 +285,8 @@ def regression_stage(model, matrix, features_t, args, device, log):
     start = time.perf_counter()
     running = 0.0
     for step in range(1, args.steps + 1):
-        x, y = sample_batch(matrix, positions, args.batch, rng, device, features_t)
-        predicted = model.net(x)[:, 0]
-        loss = loss_fn(predicted, y)
+        i, j, y = sample_batch(model, matrix, positions, args.batch, rng, device)
+        loss = loss_fn(model.value(i, j), y)
         optimiser.zero_grad(set_to_none=True)
         loss.backward()
         optimiser.step()
@@ -271,7 +301,7 @@ def regression_stage(model, matrix, features_t, args, device, log):
     return model
 
 
-def mining_stage(model, matrix, features_t, args, device, log):
+def mining_stage(model, matrix, args, device, log):
     """Chase the maximum error itself, on the pairs that actually carry it.
 
     The domain is finite, so the hardest pairs are not guessed at: they are
@@ -284,7 +314,7 @@ def mining_stage(model, matrix, features_t, args, device, log):
     import torch
     positions = matrix.shape[0]
     rng = np.random.default_rng(args.seed + 3)
-    optimiser = torch.optim.AdamW(model.net.parameters(), lr=args.mine_lr,
+    optimiser = torch.optim.AdamW(model.parameters(), lr=args.mine_lr,
                                   weight_decay=args.weight_decay)
     schedule = torch.optim.lr_scheduler.OneCycleLR(
         optimiser, max_lr=args.mine_lr,
@@ -295,8 +325,7 @@ def mining_stage(model, matrix, features_t, args, device, log):
 
     for round_index in range(1, args.mine_rounds + 1):
         started = time.perf_counter()
-        stats, hard = scan_domain(model, features_t, matrix, device,
-                                  keep=args.mine_keep)
+        stats, hard = scan_domain(model, matrix, device, keep=args.mine_keep)
         log(f"  mine {round_index}/{args.mine_rounds}  moyenne {stats['mean_abs']:.3e}  "
             f"rms {stats['rms']:.3e}  pire {stats['worst_abs']:.5f}  "
             f"borne décision {stats['guaranteed_decision_loss']:.5f}  "
@@ -310,11 +339,10 @@ def mining_stage(model, matrix, features_t, args, device, log):
             j = np.concatenate([hard[picked, 1],
                                 rng.integers(1, positions, size=easy_size)])
             target = matrix[i, j].astype(np.float32) * SCALE - 1.0
-            x = torch.cat([features_t[torch.from_numpy(i.astype(np.int64)).to(device)],
-                           features_t[torch.from_numpy(j.astype(np.int64)).to(device)]],
-                          dim=1)
+            i_t = torch.from_numpy(i.astype(np.int64)).to(device)
+            j_t = torch.from_numpy(j.astype(np.int64)).to(device)
             y = torch.from_numpy(target).to(device)
-            loss = loss_fn(model.net(x)[:, 0], y)
+            loss = loss_fn(model.value(i_t, j_t), y)
             optimiser.zero_grad(set_to_none=True)
             loss.backward()
             optimiser.step()
@@ -359,7 +387,7 @@ def gather_decisions(picked, offsets):
     return flat, group, lengths
 
 
-def decision_stage(model, matrix, features_t, corpus, args, device, log):
+def decision_stage(model, matrix, corpus, args, device, log):
     """Cost-weighted pairwise hinge on real decisions -- the tail stage.
 
     A candidate is stored as the pair `(opponent_on_roll, mover)` **after** the
@@ -384,7 +412,7 @@ def decision_stage(model, matrix, features_t, corpus, args, device, log):
 
     rng = np.random.default_rng(args.seed + 1)
     reg_rng = np.random.default_rng(args.seed + 2)
-    optimiser = torch.optim.AdamW(model.net.parameters(), lr=args.decision_lr,
+    optimiser = torch.optim.AdamW(model.parameters(), lr=args.decision_lr,
                                   weight_decay=args.weight_decay)
     schedule = torch.optim.lr_scheduler.OneCycleLR(
         optimiser, max_lr=args.decision_lr, total_steps=args.decision_steps,
@@ -404,9 +432,8 @@ def decision_stage(model, matrix, features_t, corpus, args, device, log):
         exact = torch.from_numpy(values[flat]).to(device)
         group_t = torch.from_numpy(group).to(device)
 
-        x = torch.cat([features_t[torch.from_numpy(index[:, 0]).to(device)],
-                       features_t[torch.from_numpy(index[:, 1]).to(device)]], dim=1)
-        value = -model.net(x)[:, 0]
+        value = -model.value(torch.from_numpy(index[:, 0]).to(device),
+                             torch.from_numpy(index[:, 1]).to(device))
         value = torch.where(terminal, torch.ones_like(value), value)
 
         # The best candidate is known exactly, so no segment maximum is needed:
@@ -415,10 +442,8 @@ def decision_stage(model, matrix, features_t, corpus, args, device, log):
         best_block = pairs[best[picked]]
         best_terminal = torch.from_numpy(best_block[:, 0] < 0).to(device)
         best_index = np.clip(best_block, 0, None).astype(np.int64)
-        best_x = torch.cat(
-            [features_t[torch.from_numpy(best_index[:, 0]).to(device)],
-             features_t[torch.from_numpy(best_index[:, 1]).to(device)]], dim=1)
-        best_value = -model.net(best_x)[:, 0]
+        best_value = -model.value(torch.from_numpy(best_index[:, 0]).to(device),
+                                  torch.from_numpy(best_index[:, 1]).to(device))
         best_value = torch.where(best_terminal, torch.ones_like(best_value), best_value)
         top = torch.from_numpy(values[best[picked]]).to(device)
 
@@ -426,9 +451,9 @@ def decision_stage(model, matrix, features_t, corpus, args, device, log):
         hinge = (cost * torch.relu(value - best_value[group_t] + args.margin)).sum()
         hinge = hinge / picked.shape[0]
 
-        anchor_x, anchor_y = sample_batch(matrix, positions, args.decision_regression,
-                                          reg_rng, device, features_t)
-        anchor = torch.nn.functional.mse_loss(model.net(anchor_x)[:, 0], anchor_y)
+        anchor_i, anchor_j, anchor_y = sample_batch(
+            model, matrix, positions, args.decision_regression, reg_rng, device)
+        anchor = torch.nn.functional.mse_loss(model.value(anchor_i, anchor_j), anchor_y)
 
         loss = hinge + args.anchor * anchor
         optimiser.zero_grad(set_to_none=True)
@@ -455,6 +480,8 @@ def main() -> int:
     parser.add_argument("--hidden", default="128,64")
     parser.add_argument("--output", default="tanh", choices=["tanh", "linear"],
                         help="activation de sortie ; « linear » ne sature pas")
+    parser.add_argument("--embedding", type=int, default=0,
+                        help="largeur du code appris par disposition (0 : aucun)")
     parser.add_argument("--steps", type=int, default=40000)
     parser.add_argument("--batch", type=int, default=16384)
     parser.add_argument("--lr", type=float, default=3e-3)
@@ -498,8 +525,9 @@ def main() -> int:
     matrix, sides, features = load_domain(Path(args.matrix), Path(args.sides))
     features_t = torch.from_numpy(features).to(device)
 
-    model = Model(hidden, device,
-                  activation=TANH if args.output == "tanh" else IDENTITY)
+    model = Model(hidden, device, features_t,
+                  activation=TANH if args.output == "tanh" else IDENTITY,
+                  embedding=args.embedding)
     exported = model.export()
     log(f"T78 — distillation de la table exacte, {matrix.shape[0]} x {matrix.shape[0]} paires")
     log(f"  architecture {exported.sizes}, {exported.parameters} paramètres, "
@@ -508,16 +536,16 @@ def main() -> int:
         f"{torch.get_num_threads()} fils, lot {args.batch}")
 
     started = time.perf_counter()
-    regression_stage(model, matrix, features_t, args, device, log)
-    after_regression = exhaustive_error(model, features_t, matrix, device)
+    regression_stage(model, matrix, args, device, log)
+    after_regression = exhaustive_error(model, matrix, device)
     log(f"  exhaustif après régression : moyenne {after_regression['mean_abs']:.3e}  "
         f"rms {after_regression['rms']:.3e}  pire {after_regression['worst_abs']:.4f} "
         f"en {after_regression['worst_at']}  au-delà de 0,01 : {after_regression['above_0.01']}")
 
     after_mining = None
     if args.mine_rounds:
-        mining_stage(model, matrix, features_t, args, device, log)
-        after_mining = exhaustive_error(model, features_t, matrix, device)
+        mining_stage(model, matrix, args, device, log)
+        after_mining = exhaustive_error(model, matrix, device)
         log(f"  exhaustif après fouille : moyenne {after_mining['mean_abs']:.3e}  "
             f"rms {after_mining['rms']:.3e}  pire {after_mining['worst_abs']:.5f}  "
             f"borne décision {after_mining['guaranteed_decision_loss']:.5f}")
@@ -527,8 +555,8 @@ def main() -> int:
         corpus = load_decisions(Path(args.decision_corpus))
         log(f"  corpus de décisions : {corpus['decisions']} décisions, "
             f"{corpus['candidates']} coups candidats")
-        decision_stage(model, matrix, features_t, corpus, args, device, log)
-        after_decisions = exhaustive_error(model, features_t, matrix, device)
+        decision_stage(model, matrix, corpus, args, device, log)
+        after_decisions = exhaustive_error(model, matrix, device)
         log(f"  exhaustif après décisions : moyenne {after_decisions['mean_abs']:.3e}  "
             f"rms {after_decisions['rms']:.3e}  pire {after_decisions['worst_abs']:.4f} "
             f"en {after_decisions['worst_at']}  au-delà de 0,01 : "
@@ -547,6 +575,7 @@ def main() -> int:
         "macs": exported.macs,
         "feature_version": FEATURE_VERSION,
         "output": args.output,
+        "embedding": args.embedding,
         "matrix": {"path": str(args.matrix), "sha256": sha256(Path(args.matrix))},
         "training": {
             "steps": args.steps, "batch": args.batch, "lr": args.lr,
