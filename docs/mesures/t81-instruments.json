@@ -1,0 +1,895 @@
+{
+  "task": "T81/T82 \u2014 instruments de falsification",
+  "generated": "2026-08-28T10:51:34.955546+00:00",
+  "model": "models/cubeless_prob5_512_512_256_128.bin",
+  "max_away": 25,
+  "threshold": 0.005,
+  "efficiency_t34": [
+    0.6880000000000001,
+    0.5660000000000001,
+    0.687
+  ],
+  "sweep_controls": [
+    {
+      "x": 0.0,
+      "cash_point_swept": 0.7499999701976776,
+      "cash_point_closed_form": 0.75,
+      "take_point_swept": 0.2500000298023224,
+      "take_point_closed_form": 0.25,
+      "double_point_swept": 0.5000000298023224,
+      "textbook_take_point": 0.25,
+      "gap_closed_form": 2.9802322387695312e-08,
+      "gap_textbook": 2.9802322387695312e-08
+    },
+    {
+      "x": 0.6880000000000001,
+      "cash_point_swept": 0.786689430475235,
+      "cash_point_closed_form": 0.7866894197952219,
+      "take_point_swept": 0.21331056952476501,
+      "take_point_closed_form": 0.21331058020477817,
+      "double_point_swept": 0.6942771375179291,
+      "textbook_take_point": null,
+      "gap_closed_form": 1.0680013096120433e-08,
+      "gap_textbook": null
+    },
+    {
+      "x": 0.5660000000000001,
+      "cash_point_swept": 0.7809899151325226,
+      "cash_point_closed_form": 0.7809899255365746,
+      "take_point_swept": 0.21901008486747742,
+      "take_point_closed_form": 0.21901007446342532,
+      "double_point_swept": 0.6562385261058807,
+      "textbook_take_point": null,
+      "gap_closed_form": 1.0404052064316716e-08,
+      "gap_textbook": null
+    },
+    {
+      "x": 0.687,
+      "cash_point_swept": 0.7866438925266266,
+      "cash_point_closed_form": 0.7866439086835929,
+      "take_point_swept": 0.2133561074733734,
+      "take_point_closed_form": 0.21335609131640706,
+      "double_point_swept": 0.693958193063736,
+      "textbook_take_point": null,
+      "gap_closed_form": 1.6156966320401978e-08,
+      "gap_textbook": null
+    },
+    {
+      "x": 1.0,
+      "cash_point_swept": 0.7999999821186066,
+      "cash_point_closed_form": 0.8,
+      "take_point_swept": 0.20000001788139343,
+      "take_point_closed_form": 0.2,
+      "double_point_swept": 0.7999999821186066,
+      "textbook_take_point": 0.2,
+      "gap_closed_form": 1.788139347702611e-08,
+      "gap_textbook": 1.7881393421514957e-08
+    }
+  ],
+  "sweep_worst_gap_closed_form": 2.9802322387695312e-08,
+  "sweep_worst_gap_textbook": 2.9802322387695312e-08,
+  "properties": [
+    {
+      "name": "antisym\u00e9trie",
+      "passed": true,
+      "worst_case": "",
+      "worst_error": 0.0,
+      "tolerance": 1e-09
+    },
+    {
+      "name": "monotonies",
+      "passed": true,
+      "worst_case": "",
+      "worst_error": 0.0,
+      "tolerance": 1e-09
+    },
+    {
+      "name": "identit\u00e9 DMP",
+      "passed": true,
+      "worst_case": "",
+      "worst_error": 0.0,
+      "tolerance": 1e-09
+    },
+    {
+      "name": "pivot -2/-1 Crawford",
+      "passed": true,
+      "worst_case": "lu 0.3226",
+      "worst_error": 0.00046000000000001595,
+      "tolerance": 0.005
+    },
+    {
+      "name": "signature de parit\u00e9 du free drop",
+      "passed": true,
+      "worst_case": "rythme pair/impair pr\u00e9sent partout",
+      "worst_error": 0.0,
+      "tolerance": 0.0
+    }
+  ],
+  "opening_evaluation": [
+    0.5135871767997742,
+    0.1452283263206482,
+    0.006786745972931385,
+    0.133417010307312,
+    0.005733273923397064
+  ],
+  "fixed_point_residual": {
+    "mean_abs": 0.0036454206640748367,
+    "worst_cell": [
+      2,
+      4
+    ],
+    "worst_value": 0.05380709144234663,
+    "cells_above_threshold": 116,
+    "cells_total": 625,
+    "above": [
+      {
+        "away_on_roll": 2,
+        "away_opponent": 4,
+        "residual": 0.05380709144234663
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 2,
+        "residual": -0.04441322648607193
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 3,
+        "residual": 0.040001204059720075
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 2,
+        "residual": -0.02780836351774635
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 5,
+        "residual": 0.02717662955872724
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 6,
+        "residual": 0.023980014687105977
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 4,
+        "residual": 0.023417629233263293
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 2,
+        "residual": -0.019681866115341007
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 7,
+        "residual": 0.01813125246621672
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 2,
+        "residual": -0.01778601806000804
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 7,
+        "residual": 0.01761718218464392
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 6,
+        "residual": 0.017424938973346737
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 8,
+        "residual": 0.017203131482657175
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 5,
+        "residual": 0.017158764986405117
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 8,
+        "residual": 0.01697726182349024
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 3,
+        "residual": -0.015583061549020893
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 9,
+        "residual": 0.014989844811465591
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 1,
+        "residual": 0.01358717679977417
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 2,
+        "residual": -0.013367068432150409
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 2,
+        "residual": -0.013162603413974863
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 2,
+        "residual": 0.012725083246231117
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 3,
+        "residual": -0.012711236355230165
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 10,
+        "residual": 0.012650347990066702
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 3,
+        "residual": -0.012363502865498893
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 9,
+        "residual": 0.012130259141996391
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 11,
+        "residual": 0.011390088173551471
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 3,
+        "residual": -0.0112337892086245
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 3,
+        "residual": -0.011174036203939475
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 10,
+        "residual": 0.010545311924129774
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 8,
+        "residual": 0.010483038695855096
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 8,
+        "residual": 0.01038023128698573
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 3,
+        "residual": -0.010206491470271695
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 9,
+        "residual": 0.00980631462525583
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 12,
+        "residual": 0.009569662541994872
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 10,
+        "residual": 0.009497392217989953
+      },
+      {
+        "away_on_roll": 10,
+        "away_opponent": 3,
+        "residual": -0.009463564820634193
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 11,
+        "residual": 0.009304592970525882
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 2,
+        "residual": -0.00916751749402843
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 9,
+        "residual": 0.008991929918536812
+      },
+      {
+        "away_on_roll": 11,
+        "away_opponent": 3,
+        "residual": -0.008770883659681303
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 12,
+        "residual": 0.008760589688139975
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 2,
+        "residual": 0.008630446352958732
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 7,
+        "residual": 0.008596710417717701
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 13,
+        "residual": 0.008405211152694214
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 10,
+        "residual": 0.008333659424019091
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 13,
+        "residual": 0.00822478672704563
+      },
+      {
+        "away_on_roll": 10,
+        "away_opponent": 2,
+        "residual": -0.008158212903108461
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 11,
+        "residual": 0.007927678019195805
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 11,
+        "residual": 0.007888701302289025
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 7,
+        "residual": 0.007746594795053907
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 12,
+        "residual": 0.007506483061075264
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 3,
+        "residual": 0.007392311318516698
+      },
+      {
+        "away_on_roll": 12,
+        "away_opponent": 3,
+        "residual": -0.007380960882898413
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 12,
+        "residual": 0.0072816347818627225
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 14,
+        "residual": 0.00723732953672751
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 12,
+        "residual": 0.007199664121354088
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 10,
+        "residual": 0.0071673858108286526
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 11,
+        "residual": 0.0070755305696483806
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 13,
+        "residual": 0.006985688452183392
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 8,
+        "residual": 0.006969543231716391
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 6,
+        "residual": 0.006824284177916029
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 13,
+        "residual": 0.006814442441091972
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 14,
+        "residual": 0.006800688639442276
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 11,
+        "residual": 0.006796198357503003
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 1,
+        "residual": 0.006767751560211199
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 14,
+        "residual": 0.00676429037128945
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 12,
+        "residual": 0.0067054301782845105
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 10,
+        "residual": 0.006680488244768301
+      },
+      {
+        "away_on_roll": 13,
+        "away_opponent": 3,
+        "residual": -0.0066176469837734425
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 15,
+        "residual": 0.006598655336011339
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 13,
+        "residual": 0.006592419865502075
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 4,
+        "residual": 0.0065693000990897366
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 1,
+        "residual": 0.006537705946117661
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 15,
+        "residual": 0.006424791159298171
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 9,
+        "residual": 0.0064053945231624665
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 14,
+        "residual": 0.006387757170261854
+      },
+      {
+        "away_on_roll": 11,
+        "away_opponent": 2,
+        "residual": -0.006074934687789524
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 16,
+        "residual": 0.006036193481505081
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 15,
+        "residual": 0.005925095599181085
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 6,
+        "residual": 0.005920130892945408
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 15,
+        "residual": 0.0058951408041585385
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 4,
+        "residual": -0.005884551365999496
+      },
+      {
+        "away_on_roll": 11,
+        "away_opponent": 5,
+        "residual": -0.005875855170231287
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 14,
+        "residual": 0.00584629902226852
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 16,
+        "residual": 0.005795986834565059
+      },
+      {
+        "away_on_roll": 12,
+        "away_opponent": 5,
+        "residual": -0.005757752301332547
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 14,
+        "residual": 0.005706428838992528
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 16,
+        "residual": 0.005701817329052727
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 5,
+        "residual": -0.0056894658138695875
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 14,
+        "residual": 0.005688715777033115
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 8,
+        "residual": 0.005634583986727559
+      },
+      {
+        "away_on_roll": 13,
+        "away_opponent": 5,
+        "residual": -0.005619359178184541
+      },
+      {
+        "away_on_roll": 10,
+        "away_opponent": 5,
+        "residual": -0.005595297951735578
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 17,
+        "residual": 0.0055326977201699545
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 16,
+        "residual": 0.005527351101908828
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 15,
+        "residual": 0.005526890381326033
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 15,
+        "residual": 0.005499207799179451
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 13,
+        "residual": 0.00549448934428487
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 17,
+        "residual": 0.005480804259715533
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 5,
+        "residual": -0.005460897545600307
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 9,
+        "residual": 0.00544085767923852
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 12,
+        "residual": 0.005393854579385349
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 16,
+        "residual": 0.005387277838699522
+      },
+      {
+        "away_on_roll": 14,
+        "away_opponent": 3,
+        "residual": -0.005317149715127423
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 17,
+        "residual": 0.0052900245514270194
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 13,
+        "residual": 0.00525195682709656
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 18,
+        "residual": 0.005231339739350749
+      },
+      {
+        "away_on_roll": 12,
+        "away_opponent": 2,
+        "residual": -0.005217674784265457
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 13,
+        "residual": 0.005112570943601513
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 17,
+        "residual": 0.005106643396457833
+      },
+      {
+        "away_on_roll": 10,
+        "away_opponent": 16,
+        "residual": 0.00510335736877654
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 15,
+        "residual": 0.005096389682060054
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 18,
+        "residual": 0.005048018790945408
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 4,
+        "residual": -0.0050434472864586966
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 12,
+        "residual": 0.0050372561827563
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 18,
+        "residual": 0.005003380908166877
+      }
+    ]
+  },
+  "fixed_point_residual_cubeful": {
+    "mean_abs": 0.0030174390750868805,
+    "worst_cell": [
+      2,
+      1
+    ],
+    "worst_value": 0.12413521848678594,
+    "cells_above_threshold": 35,
+    "cells_total": 625,
+    "shrink_factor": 1.2081174046471426,
+    "above": [
+      {
+        "away_on_roll": 2,
+        "away_opponent": 1,
+        "residual": 0.12413521848678594
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 2,
+        "residual": -0.10870547638893124
+      },
+      {
+        "away_on_roll": 4,
+        "away_opponent": 1,
+        "residual": 0.09555526689218988
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 4,
+        "residual": -0.08054447349801108
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 1,
+        "residual": 0.05719517732861404
+      },
+      {
+        "away_on_roll": 6,
+        "away_opponent": 1,
+        "residual": 0.05295592922714716
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 6,
+        "residual": -0.0432842885689545
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 3,
+        "residual": -0.03943794159521574
+      },
+      {
+        "away_on_roll": 8,
+        "away_opponent": 1,
+        "residual": 0.03160057893295665
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 1,
+        "residual": 0.026449518776959863
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 8,
+        "residual": -0.025818990231269434
+      },
+      {
+        "away_on_roll": 10,
+        "away_opponent": 1,
+        "residual": 0.018521338859898664
+      },
+      {
+        "away_on_roll": 7,
+        "away_opponent": 1,
+        "residual": 0.018125911527242813
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 4,
+        "residual": 0.016622216428880177
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 5,
+        "residual": -0.015884460812096046
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 3,
+        "residual": 0.015192043632678787
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 10,
+        "residual": -0.015068997792795247
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 1,
+        "residual": 0.01358717679977417
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 2,
+        "residual": 0.012040676900367808
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 7,
+        "residual": -0.0117597403845775
+      },
+      {
+        "away_on_roll": 12,
+        "away_opponent": 1,
+        "residual": 0.011076049708768729
+      },
+      {
+        "away_on_roll": 9,
+        "away_opponent": 1,
+        "residual": 0.010838566412484846
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 4,
+        "residual": 0.010117562248122214
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 12,
+        "residual": -0.009005921998077704
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 5,
+        "residual": 0.007214952213024151
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 5,
+        "residual": 0.007082084753308293
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 9,
+        "residual": -0.007005682169225813
+      },
+      {
+        "away_on_roll": 11,
+        "away_opponent": 1,
+        "residual": 0.006683482147796939
+      },
+      {
+        "away_on_roll": 14,
+        "away_opponent": 1,
+        "residual": 0.006579750418150943
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 3,
+        "residual": 0.006193561934003888
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 6,
+        "residual": 0.00601202405538781
+      },
+      {
+        "away_on_roll": 2,
+        "away_opponent": 6,
+        "residual": 0.005727527831928758
+      },
+      {
+        "away_on_roll": 1,
+        "away_opponent": 14,
+        "residual": -0.005339027132686636
+      },
+      {
+        "away_on_roll": 5,
+        "away_opponent": 4,
+        "residual": 0.005321744994533195
+      },
+      {
+        "away_on_roll": 3,
+        "away_opponent": 7,
+        "residual": 0.005163609846077777
+      }
+    ]
+  }
+}
