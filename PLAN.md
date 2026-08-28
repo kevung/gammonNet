@@ -1424,6 +1424,104 @@ de fin de partie.
 
 ---
 
+## T81 — La tête de videau, à tronc gelé : B0 contre B
+
+> **La marche 1 de l'axe « videau appris ».** L'axe a été instruit trois fois (DS-08
+> sous-question 7, étude et plan du 2026-08-19) puis écarté le 2026-08-27 au profit de T75. Il
+> rouvre par ce qui **réfute** en heures, jamais par ce qui **confirme** en semaines. La forme est
+> fixée par [l'ADR 0002](docs/adr/0002-fusion-tardive-du-score.md) : une tête, jamais le tronc.
+
+**Objectif** — répondre à une question que personne n'a publiée : **le videau se réduit-il aux
+cinq probabilités ?**
+
+**Périmètre** — Deux têtes, tronc `prob5` **gelé**, en **money** (Jacoby) :
+- **B0** = `(5 probabilités, état du videau) → équité cubeful` ;
+- **B** = `(goulot enrichi — les 5 probabilités plus les auxiliaires de dispersion de T71) →
+  équité cubeful`.
+
+Étiquettes produites par le moteur de rollout de T39, volume **mesuré et publié en début de
+fiche**, pas extrapolé. Entraînement en deux étages, comme T78 : régression, puis **affinage par
+décision** — une charnière sur le signe de la marge, pondérée par ce que le verdict inverse
+coûterait. Le témoin est la voie classique : Janowski aux `x` mesurés en T34
+(0,688 / 0,566 / 0,687).
+
+**Exclut** — le score, le match, et tout réentraînement du tronc.
+
+**Critères d'acceptation**
+- Le **taux d'erreur arbitré** de B0, de B et de la voie classique est rendu sur **le même
+  corpus, aux mêmes graines** (les 6 000 décisions de T39), dans la discipline T39 : jamais une
+  colonne de rollout présentée seule.
+- Les **deux défauts nommés** de la voie classique sont examinés explicitement : la sur-double des
+  fenêtres fines de contact (26–60, p = 1,6×10⁻⁴) et la sous-double de course hors domaine.
+- **L'écart B0 → B est publié** : c'est la mesure de ce que vaut « l'efficacité de videau » — la
+  part de la valeur cubeful qui dépend de la position et non de la seule distribution. Elle
+  produit un résultat dans les deux sens, et personne ne l'a publiée.
+- **La survie sous recherche est vérifiée**, protocole T36 : un avantage 0-ply qui s'annule au
+  2-ply ne compte pas. C'est la leçon explicite de T36 et de Whittington.
+- Le coût d'inférence de la tête est **mesuré** (MACs et éval/s au banc), pas compté.
+
+**Porte de sortie** — **si B n'améliore pas la voie classique en money, l'axe se referme ici.** Le
+match ne rattrape pas ce que le money ne donne pas : c'est le même apprentissage avec un
+conditionnement en plus.
+
+**Dépendances** — B0 ne dépend de rien. **B attend la tête auxiliaire de volatilité de T71**, qui
+la produit comme sous-produit gratuit. T70 n'est pas un prérequis : le juge de cette fiche est le
+corpus T39 existant.
+
+**Machine** — la machine de calcul pour les étiquettes, le bureau pour l'entraînement (tronc
+gelé). **Coût** — *hypothèse* : heures, à requalifier par la mesure de volume du premier jour.
+
+## T82 — Le score dans la tête : la MET organique
+
+> **La marche 2.** Faire émerger la table d'équité de match au lieu de la lire —
+> `MET(a,b) ≡ V(position initiale, a-away, b-away, videau centré)`. La MET n'est pas une
+> information extérieure : c'est une marginale de la fonction qu'on entraîne déjà, et
+> Kazaross-XG2 est elle-même sortie de rollouts.
+
+**Objectif** — un videau de match sans MET lue ni formule de point de prise, et **falsifiable en
+minutes**.
+
+**Périmètre** — La tête de T81, étendue au contexte : away one-hot des deux côtés (**plafonné,
+avec refus au-delà** — jamais d'approximation, `CLAUDE.md` règle n°2), Crawford, post-Crawford,
+valeur du videau, possession, `is_cube_action`. Sortie = MWC cubeful du joueur au trait. Départs
+**tirés uniformément sur la grille des scores** (*exploring starts*) — un schéma d'échantillonnage,
+pas une connaissance injectée. Le tronc reste gelé et aveugle au score (ADR 0002).
+
+**Les instruments, et ils passent d'abord sur la pile classique** — un extracteur qui ne rend pas
+la réponse connue n'instrumente rien :
+- **MET implicite extraite** (les 625 couples, en secondes) et comparée **cellule par cellule** à
+  Kazaross-XG2, employée en **instrument** et jamais en entrée ;
+- **identité DMP** à 1-away/1-away : les gammons cessent de compter, vérifié et non supposé ;
+- **antisymétrie** `MWC(a,b) = 1 − MWC(b,a)` et monotonies — tests de propriété, pas
+  d'échantillon ;
+- **ancre exacte** : les décisions de videau du domaine de la table bilatérale (T38, et le réseau
+  de T80) ont une réponse sans variance ;
+- le **free drop** d'après-Crawford doit être **trouvé** par le modèle, jamais injecté.
+
+**Critères d'acceptation**
+- Les cinq instruments sont passés sur la pile classique **avant** tout entraînement : la MET
+  extraite y rend Kazaross-XG2 à l'identité, les points de prise extraits y rendent les courbes de
+  Janowski aux `x` mesurés.
+- Les cellules qui divergent au-delà d'un seuil **annoncé d'avance** sont **arbitrées par rollout
+  de match**, pas expliquées — un écart n'est pas nécessairement une erreur, la table est
+  elle-même une mesure.
+- Les contextes de score où l'appris **perd** sont publiés au même titre que ceux où il gagne.
+- Le taux de succès du cache d'évaluation est **re-mesuré** : l'ADR 0002 prédit qu'il ne bouge
+  pas, et une prédiction se vérifie.
+
+**Porte de sortie** — si la MET implicite s'écarte de manière **structurée** (un biais, pas du
+bruit) et que les rollouts donnent tort au modèle, c'est l'échantillonnage ou l'ancrage qui sont
+en cause : deux itérations, puis arrêt.
+
+**Exclut** — le tronc conscient du score (la marche 3), fermée par l'ADR 0002 tant que T81 et T82
+n'ont pas montré qu'il y a quelque chose à gagner ; et la campagne de matchs, qui est le poste
+cher et qui attend T70.
+
+**Dépendances** — T81 franchie. L'arbitre de match de T39 existe depuis le 2026-08-08.
+
+**Machine** — la machine de calcul. **Coût** — *hypothèse* : ×2 à ×5 les étiquettes de T81,
+démarrage à chaud depuis ses poids.
+
 # Phase 5 — Publication
 
 ## T50 — Publier l'artefact
