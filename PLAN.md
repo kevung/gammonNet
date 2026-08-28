@@ -1393,6 +1393,29 @@ endroit du dépôt où « mesuré » peut vouloir dire « sur la totalité du do
   capable de se tromper en silence.
 - Aucun chiffre annoncé sans le `json` du banc dans `docs/mesures/`.
 
+**Résultat — mesuré le 2026-08-28**, fiche
+[`docs/mesures/2026-08-28-T78-distillation-bearoff.md`](docs/mesures/2026-08-28-T78-distillation-bearoff.md).
+
+**Le seuil est franchi par un candidat.** Sur les 8 000 décisions de T38, à sa graine et par son
+tirage importé, `code 16` (256→128, 1,03 Mio en float32, **528 Kio en float16**) rend :
+
+| | perte moyenne | pire cas | décisions > 0,0023 |
+|---|---|---|---|
+| notre grand réseau, 1-ply | 0,00020 | **0,0919** | 157 |
+| **le distillé `code 16`** | **0,0000017** | **0,0014** | **0** |
+| GNU Backgammon 0-ply *(avec sa table)* | 0,0000010 | 0,0023 | 0 |
+
+La queue passe de 0,0919 à 0,0014 — **un facteur 65** — et sous le pire cas de gnubg, pour
+2 400 fois moins d'octets que la table. `code 8` (244 Kio en float16) manque le seuil de
+0,00005 point : 0,00235 contre 0,0023, une décision sur 8 000.
+
+Trois constats que la mesure a imposés contre l'intuition : un **code appris par disposition**
+dépense ses octets bien mieux que de la profondeur (285 Kio battent 725 Kio) ; la **tanh** ne
+coûte rien en moyenne et **double la queue** ; et la borne exhaustive « 2 × erreur maximale »,
+qui était l'argument le plus fort de la fiche, **n'est pas atteinte** — les pires paires du
+domaine sont des positions du dernier jet auxquelles aucune décision n'est sensible. La fiche est
+franchie par la mesure, pas par la borne.
+
 **Ce que cette fiche ne fait pas** — le branchement dans `gn_search` (côté C) et le portage
 WebAssembly. Le verdict d'abord : si le réseau distillé ne bat pas la queue, il n'y a rien à
 brancher. Si elle est battue, le branchement est une fiche à part, avec son propre coût mesuré —

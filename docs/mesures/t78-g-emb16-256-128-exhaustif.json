@@ -1,0 +1,57 @@
+{
+  "task": "T78",
+  "network": {
+    "path": "/home/kunger/t78-logs/run-g-emb16-256-128.bin",
+    "sizes": [
+      128,
+      256,
+      128,
+      1
+    ],
+    "parameters": 264065,
+    "macs": 65664,
+    "bytes": 1056308
+  },
+  "scan": {
+    "float32": {
+      "pairs": 153140625,
+      "mean_abs": 0.0004289642994957741,
+      "rms": 0.0005660148334502897,
+      "worst_abs": 0.015486747026443481,
+      "worst_at": [
+        17,
+        3
+      ],
+      "guaranteed_decision_loss": 0.030973494052886963,
+      "pairs_above_half_gnubg": 6955267,
+      "row_bound": {
+        "median": 0.0059986114501953125,
+        "p90": 0.00886657238006592,
+        "p99": 0.014127628803253179,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 194.5520231439732
+    },
+    "float16": {
+      "pairs": 153140625,
+      "mean_abs": 0.0004301918086333733,
+      "rms": 0.0005674097517496222,
+      "worst_abs": 0.0155009925365448,
+      "worst_at": [
+        17,
+        3
+      ],
+      "guaranteed_decision_loss": 0.0310019850730896,
+      "pairs_above_half_gnubg": 7013892,
+      "row_bound": {
+        "median": 0.006031394004821777,
+        "p90": 0.00887809991836548,
+        "p99": 0.014128458499908453,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 192.48386710800696
+    }
+  }
+}

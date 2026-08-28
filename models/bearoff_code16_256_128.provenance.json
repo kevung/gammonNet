@@ -1,0 +1,77 @@
+{
+  "task": "T78",
+  "written": "2026-08-28T03:22:33+00:00",
+  "architecture": [
+    128,
+    256,
+    128,
+    1
+  ],
+  "parameters": 264065,
+  "macs": 65664,
+  "feature_version": 1,
+  "output": "linear",
+  "embedding": 16,
+  "matrix": {
+    "path": "/home/kunger/gammonNet-t78/build/ts6x11_cubeless.u16",
+    "sha256": "6bf02189daf960beb775e67edb45d09f79ee224a278ec7da737004a9cd1fccc1"
+  },
+  "training": {
+    "steps": 80000,
+    "batch": 8192,
+    "lr": 0.003,
+    "seed": 20260828,
+    "device": "cpu",
+    "mine_rounds": 10,
+    "mine_steps": 4000,
+    "mine_keep": 1000000,
+    "mine_mix": 0.5,
+    "decision_corpus": "build/bearoff_decisions.npz",
+    "decision_steps": 20000,
+    "margin": 0.002,
+    "anchor": 1.0
+  },
+  "exhaustive_error": {
+    "after_regression": {
+      "pairs": 153140625,
+      "mean_abs": 0.0004546112789531202,
+      "rms": 0.0006020891166859653,
+      "worst_abs": 0.025895774364471436,
+      "worst_at": [
+        175,
+        1
+      ],
+      "above_0.01": 363,
+      "guaranteed_decision_loss": 0.05179154872894287
+    },
+    "after_mining": {
+      "pairs": 153140625,
+      "mean_abs": 0.0005472411478659703,
+      "rms": 0.000735578258851489,
+      "worst_abs": 0.008157908916473389,
+      "worst_at": [
+        12176,
+        12370
+      ],
+      "above_0.01": 0,
+      "guaranteed_decision_loss": 0.016315817832946777
+    },
+    "after_decisions": {
+      "pairs": 153140625,
+      "mean_abs": 0.00042896438062761455,
+      "rms": 0.000566014802374551,
+      "worst_abs": 0.015486687421798706,
+      "worst_at": [
+        17,
+        3
+      ],
+      "above_0.01": 64,
+      "guaranteed_decision_loss": 0.030973374843597412
+    }
+  },
+  "weights_sha256": "79dfe145a84d80788b97e81087e38cf183fafd73e26cdbc3a1ab08640c619619",
+  "minutes": 133.99385975061645,
+  "name": "bearoff_code16_256_128",
+  "candidate": "run-g-emb16-256-128",
+  "format_note": "\u00c9crit directement au format courant."
+}

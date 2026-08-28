@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/home/kunger/t78-logs/run-d-512-256-lin.bin",
+    "sizes": [
+      96,
+      512,
+      256,
+      1
+    ],
+    "parameters": 181249,
+    "macs": 180480,
+    "bytes": 725044
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.9775,
+      "mean_loss": 1.3282978561074216e-05,
+      "mean_loss_when_wrong": 0.0005903546027144096,
+      "p99": 0.0002746623941405346,
+      "p999": 0.0028381780727855244,
+      "worst_loss": 0.004638742656595696,
+      "above_gnubg_worst": 12
+    }
+  ]
+}

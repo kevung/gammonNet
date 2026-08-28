@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/home/kunger/t78-logs/run-f-emb4-128-64.bin",
+    "sizes": [
+      104,
+      128,
+      64,
+      1
+    ],
+    "parameters": 71265,
+    "macs": 21568,
+    "bytes": 285108
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.985875,
+      "mean_loss": 4.768444342717643e-06,
+      "mean_loss_when_wrong": 0.00033758898001540834,
+      "p99": 3.082322423133332e-05,
+      "p999": 0.0008545052262149966,
+      "worst_loss": 0.004638742656595696,
+      "above_gnubg_worst": 2
+    }
+  ]
+}

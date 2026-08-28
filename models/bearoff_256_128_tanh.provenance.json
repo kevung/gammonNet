@@ -1,0 +1,77 @@
+{
+  "task": "T78",
+  "written": "2026-08-28T02:47:36+00:00",
+  "architecture": [
+    96,
+    256,
+    128,
+    1
+  ],
+  "parameters": 57857,
+  "macs": 57472,
+  "feature_version": 1,
+  "output": "tanh",
+  "matrix": {
+    "path": "/home/kunger/gammonNet-t78/build/ts6x11_cubeless.u16",
+    "sha256": "6bf02189daf960beb775e67edb45d09f79ee224a278ec7da737004a9cd1fccc1"
+  },
+  "training": {
+    "steps": 80000,
+    "batch": 8192,
+    "lr": 0.003,
+    "seed": 20260828,
+    "device": "cpu",
+    "mine_rounds": 10,
+    "mine_steps": 4000,
+    "mine_keep": 1000000,
+    "mine_mix": 0.5,
+    "decision_corpus": "build/bearoff_decisions.npz",
+    "decision_steps": 20000,
+    "margin": 0.002,
+    "anchor": 1.0
+  },
+  "exhaustive_error": {
+    "after_regression": {
+      "pairs": 153140625,
+      "mean_abs": 0.002070104176132378,
+      "rms": 0.0028106344335265807,
+      "worst_abs": 0.18408435583114624,
+      "worst_at": [
+        9,
+        7
+      ],
+      "above_0.01": 638177,
+      "guaranteed_decision_loss": 0.3681687116622925
+    },
+    "after_mining": {
+      "pairs": 153140625,
+      "mean_abs": 0.0027844002239039304,
+      "rms": 0.003732359768073442,
+      "worst_abs": 0.06136959791183472,
+      "worst_at": [
+        27,
+        1
+      ],
+      "above_0.01": 2563583,
+      "guaranteed_decision_loss": 0.12273919582366943
+    },
+    "after_decisions": {
+      "pairs": 153140625,
+      "mean_abs": 0.0019911845066680456,
+      "rms": 0.0026425803589614437,
+      "worst_abs": 0.16200727224349976,
+      "worst_at": [
+        4,
+        2
+      ],
+      "above_0.01": 340724,
+      "guaranteed_decision_loss": 0.3240145444869995
+    }
+  },
+  "weights_sha256": "2542356023f49d3c1300e7a1ea126fd79b0838bbf948d7d04df1e6edcda89fa0",
+  "minutes": 163.37139867511772,
+  "name": "bearoff_256_128_tanh",
+  "candidate": "run-c-256-128-tanh",
+  "weights_sha256_as_written": "debf0d3f928435b6c3e7f21bdeab9287dd43cfd06b05d31b9e19664bb3dc77c3",
+  "format_note": "En-t\u00eate migr\u00e9 apr\u00e8s l'entra\u00eenement : le format a re\u00e7u le champ \u00ab largeur du code appris \u00bb pendant la campagne, et ces poids ont \u00e9t\u00e9 \u00e9crits avant. Quatre octets de z\u00e9ro ins\u00e9r\u00e9s dans l'en-t\u00eate, aucun poids touch\u00e9 \u2014 v\u00e9rifi\u00e9 en rejouant le balayage exhaustif, qui rend les m\u00eames chiffres qu'\u00e0 l'entra\u00eenement."
+}

@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/home/kunger/t78-logs/run-e-emb8-128-64.bin",
+    "sizes": [
+      112,
+      128,
+      64,
+      1
+    ],
+    "parameters": 121793,
+    "macs": 22592,
+    "bytes": 487220
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.991,
+      "mean_loss": 2.5635156786450173e-06,
+      "mean_loss_when_wrong": 0.00028483507540500195,
+      "p99": 0.0,
+      "p999": 0.0007325246051728244,
+      "worst_loss": 0.0023498893720912406,
+      "above_gnubg_worst": 1
+    }
+  ]
+}

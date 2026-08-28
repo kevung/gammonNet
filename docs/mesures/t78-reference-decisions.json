@@ -1,0 +1,74 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/home/kunger/t78-logs/run-e-emb8-128-64.bin",
+    "sizes": [
+      112,
+      128,
+      64,
+      1
+    ],
+    "parameters": 121793,
+    "macs": 22592,
+    "bytes": 487220
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.991,
+      "mean_loss": 2.5635156786450173e-06,
+      "mean_loss_when_wrong": 0.00028483507540500195,
+      "p99": 0.0,
+      "p999": 0.0007325246051728244,
+      "worst_loss": 0.0023498893720912406,
+      "above_gnubg_worst": 1
+    },
+    {
+      "engine": "gammonnet-0ply",
+      "decisions": 8000,
+      "agreement": 0.944625,
+      "mean_loss": 0.0002773327229724573,
+      "mean_loss_when_wrong": 0.0050082658776064515,
+      "p99": 0.009003128099488798,
+      "p999": 0.03097715724422092,
+      "worst_loss": 0.04739452201113892,
+      "above_gnubg_worst": 213
+    },
+    {
+      "engine": "gammonnet-1ply",
+      "decisions": 8000,
+      "agreement": 0.95325,
+      "mean_loss": 0.0002028229190508888,
+      "mean_loss_when_wrong": 0.0043384581615163375,
+      "p99": 0.006532387273975858,
+      "p999": 0.02490348668650346,
+      "worst_loss": 0.09192034790569925,
+      "above_gnubg_worst": 157
+    },
+    {
+      "engine": "gnubg-0ply",
+      "decisions": 8000,
+      "agreement": 0.997625,
+      "mean_loss": 1.0299839780270049e-06,
+      "mean_loss_when_wrong": 0.00043367746443242306,
+      "p99": 0.0,
+      "p999": 0.00027469291218433424,
+      "worst_loss": 0.002288853284504455,
+      "above_gnubg_worst": 0
+    },
+    {
+      "engine": "gnubg-1ply",
+      "decisions": 8000,
+      "agreement": 0.99775,
+      "mean_loss": 9.15541313801782e-07,
+      "mean_loss_when_wrong": 0.0004069072505785698,
+      "p99": 0.0,
+      "p999": 0.00021368734264134837,
+      "worst_loss": 0.002288853284504455,
+      "above_gnubg_worst": 0
+    }
+  ]
+}

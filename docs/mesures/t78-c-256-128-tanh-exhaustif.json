@@ -1,0 +1,57 @@
+{
+  "task": "T78",
+  "network": {
+    "path": "/home/kunger/t78-logs/run-c-256-128-tanh.bin",
+    "sizes": [
+      96,
+      256,
+      128,
+      1
+    ],
+    "parameters": 57857,
+    "macs": 57472,
+    "bytes": 231476
+  },
+  "scan": {
+    "float32": {
+      "pairs": 153140625,
+      "mean_abs": 0.001991183898850485,
+      "rms": 0.0026425803480050925,
+      "worst_abs": 0.16200733184814453,
+      "worst_at": [
+        4,
+        2
+      ],
+      "guaranteed_decision_loss": 0.32401466369628906,
+      "pairs_above_half_gnubg": 92757346,
+      "row_bound": {
+        "median": 0.024619996547698975,
+        "p90": 0.03819965720176697,
+        "p99": 0.07641578659415246,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 193.03048672992736
+    },
+    "float16": {
+      "pairs": 153140625,
+      "mean_abs": 0.001993456147182933,
+      "rms": 0.0026456964731906172,
+      "worst_abs": 0.16191869974136353,
+      "worst_at": [
+        4,
+        2
+      ],
+      "guaranteed_decision_loss": 0.32383739948272705,
+      "pairs_above_half_gnubg": 92807236,
+      "row_bound": {
+        "median": 0.024694442749023438,
+        "p90": 0.03823940753936768,
+        "p99": 0.0764453136920929,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 191.4923577089794
+    }
+  }
+}
