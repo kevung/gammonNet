@@ -477,6 +477,9 @@ def main() -> int:
                              "2026-08-28), donc 64 ferait 17,8 h sans une seule "
                              "écriture au journal — la reprise ne protégerait "
                              "plus rien pendant presque une journée.")
+    parser.add_argument("--offset", type=int, default=0,
+                        help="ne traiter que les décisions d'index >= OFFSET — "
+                             "le découpage entre MACHINES, pas entre processus")
     parser.add_argument("--journal-only", action="store_true",
                         help="ne rien arbitrer : reconstruire le registre depuis "
                              "le journal d'une campagne interrompue")
@@ -526,6 +529,21 @@ def main() -> int:
     if done:
         print(f"  reprise : {len(done)} décisions déjà arbitrées dans {journal.name}")
     todo = [row for row in rows if row["index"] not in done]
+    if args.offset:
+        # Le découpage entre machines se fait ICI, et pas plus haut, pour trois
+        # raisons qui sont toutes des façons de ne pas fabriquer deux mesures
+        # incomparables : l'en-tête de protocole est calculé sur le corpus
+        # ENTIER (donc les deux journaux se reconnaissent), l'échantillon
+        # d'audit aussi (donc les deux machines auditent les mêmes décisions),
+        # et la graine d'une décision vaut `seed + 7919 * index` — l'index
+        # ABSOLU, jamais un rang dans une tranche. Deux journaux produits sur
+        # deux machines à des offsets disjoints se recollent alors par simple
+        # concaténation, et une décision faite deux fois rend deux fois la
+        # même ligne.
+        before = len(todo)
+        todo = [row for row in todo if row["index"] >= args.offset]
+        print(f"  tranche : index >= {args.offset}, "
+              f"{len(todo)} décisions sur {before}")
     if not todo:
         print("  rien à arbitrer : le journal est complet.")
 
