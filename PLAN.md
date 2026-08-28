@@ -1482,6 +1482,12 @@ sur une décision de seuil ; et son domaine est le plus discrétisé du jeu. T80
 d'existence** — « un réseau *peut* battre Janowski sur une décision de videau » — pas un pronostic
 pour le contact ni pour le match.
 
+**Ce que cette fiche offre à l'axe « videau appris » (T81/T82)** — une **vérité de terrain sans
+variance**. T81 demande si le videau se réduit aux cinq probabilités, et le juge sur des
+étiquettes de rollout, avec leur bruit. Dans le domaine de la table, la réponse exacte existe :
+une tête B0 qui s'y tromperait de façon systématique serait réfutée en minutes, sans arbitre
+discutable. Les deux fiches se croisent là, et le banc de T80 est le lieu du croisement.
+
 **Ce que cette fiche ne fait pas** — le branchement, ni le videau **en match** (la table est
 money ; l'équité de match a sa propre récursion, T32/T34 §9). Elle ne touche pas non plus au
 modèle de Janowski, qui reste ce qui répond hors du domaine.
