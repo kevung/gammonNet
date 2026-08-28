@@ -152,7 +152,12 @@ def main() -> int:
         print(f"    {'total':22s}  {total:6d}")
 
     # ── la récolte en cours ────────────────────────────────────────────────
-    states = harvest_state()
+    # Si AUCUN processus de récolte ne tourne, les fichiers de suivi qui
+    # traînent appartiennent tous à des tranches finies. Les lire alors ne peut
+    # produire qu'une fausse alarme — c'est ce qui est arrivé deux fois, la
+    # cible n'étant plus lisible sur une ligne de commande disparue, donc aucune
+    # récolte ne pouvant être reconnue comme terminée.
+    states = harvest_state() if running("python.*build_corpus_t70[.]py") else []
     if states:
         target = harvest_target()
         print(f"\n  récoltes en cours : {len(states)}")

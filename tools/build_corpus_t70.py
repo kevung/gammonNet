@@ -204,7 +204,12 @@ def harvest(payload):
         gnubg_state = make_state(0, MatchState(state.away_opponent,
                                                state.away_on_roll,
                                                state.cube, state.crawford),
-                                 jacoby=False, beavers=False)
+                                 jacoby=False)  # pas de `beavers` : ce
+        # paramètre n'existe dans aucune signature de `gnubg_state`, et cette
+        # ligne levait donc un TypeError. Elle ne s'exécute que pour un contexte
+        # de SCORE — money passe `state = None` et saute la branche entière —
+        # d'où un chemin jamais exercé jusqu'au 2026-08-28, où les huit tranches
+        # des quatre contextes ont échoué en quelques secondes.
 
     rng = random.Random(seed)
     # Un tirage SÉPARÉ pour gnubg. `choose` ne consomme pas de hasard

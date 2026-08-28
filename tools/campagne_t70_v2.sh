@@ -140,6 +140,15 @@ for entry in $ALL; do
     say ""
     say "═══ contexte $ctx ═══"
 
+    # Idempotence : un contexte dont l'étalon existe est fait. Sans ce garde,
+    # relancer la campagne — ce qu'on fait après chaque correction — refait un
+    # étalon qui coûte des heures, pour le même chiffre.
+    if [ -s "docs/mesures/t70-etalon-$ctx.json" ] \
+       && [ -s "$OUT/registre-$ctx.jsonl" ]; then
+        say "  déjà traité (registre + étalon présents) — passé"
+        continue
+    fi
+
     say "── fusion des tranches"
     slices=$(ls -d "$TRANCHES"/${ctx}-* 2>/dev/null || true)
     [ "$ctx" = "money" ] && slices="$slices $(ls -d "$TRANCHES"/tranche-* 2>/dev/null || true)"
