@@ -141,8 +141,33 @@ Le tableau se lit en trois temps, et le troisième est le plus instructif :
   la perte par décision, et un étage qui échange du maximum inutile contre du classement utile
   fait précisément son travail.
 
-Ce que les trois étages ont rapporté **sur la métrique qui décide** est mesuré séparément, par
-ablation, plus bas.
+### L'ablation : ce que chaque étage rapporte sur la métrique qui décide
+
+Le tableau ci-dessus dit ce que les étages font à l'erreur ; il ne dit pas ce qu'ils font à la
+**perte par décision**, qui est la seule chose que la fiche juge. Le gagnant a donc été
+réentraîné tronqué — même graine, mêmes réglages, seuls les étages changent — et remesuré sur les
+mêmes 8 000 décisions :
+
+| recette | accord | perte moy. | si désaccord | p99,9 | pire | > 0,0023 |
+|---|---|---|---|---|---|---|
+| régression seule | 96,0 % | 0,0000200 | 0,00051 | 0,0031 | 0,0062 | 18 |
+| \+ fouille exhaustive | 96,1 % | 0,0000122 | 0,00038 | 0,0016 | 0,0031 | 4 |
+| \+ affinage par décision *(le réseau publié)* | **99,2 %** | **0,0000017** | **0,00022** | **0,0006** | **0,0014** | **0** |
+
+**Les trois étages gagnent leur place, et le dernier est le plus rentable.** La fouille divise le
+pire cas par deux (0,0062 → 0,0031) sans presque toucher au taux d'accord — elle corrige des
+erreurs rares et grosses, ce pour quoi elle est faite. L'affinage par décision, lui, fait les deux
+à la fois : l'accord saute de 96,1 % à 99,2 % et le pire cas est encore divisé par deux. C'est
+attendu et c'est mesuré : il est le seul étage dont la perte *est* la quantité qu'on publie.
+
+**Une réserve de lignée, et sa taille.** Les deux premières lignes sont la même lignée ; la
+troisième est le réseau publié, entraîné avec **six** fils là où l'ablation en a eu sept. Or
+l'entraînement torch sur CPU n'est reproductible au bit près qu'à **nombre de fils constant** :
+les deux ablations, lancées ensemble à sept fils, rendent après régression exactement les mêmes
+chiffres (moyenne 4,643e-4, pire 0,0233 en (140, 2)), tandis que le réseau publié rendait
+4,546e-4 et 0,0259. L'écart entre lignées est donc de 2 % sur la moyenne et 10 % sur le maximum —
+dix fois plus petit que les effets qu'on lit dans le tableau, mais il est réel et il est écrit.
+La provenance de chaque réseau enregistre son nombre de fils pour cette raison.
 
 ## Le coût d'évaluation — un compte, pas une vitesse
 

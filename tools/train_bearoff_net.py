@@ -580,6 +580,11 @@ def main() -> int:
         "training": {
             "steps": args.steps, "batch": args.batch, "lr": args.lr,
             "seed": args.seed, "device": args.device,
+            # Le nombre de fils fait partie de la recette : sur CPU, torch n'est
+            # reproductible au bit près qu'à nombre de fils constant (mesuré en
+            # T78 — deux lignées à 6 et 7 fils s'écartent de 2 % sur l'erreur
+            # moyenne et de 10 % sur le maximum).
+            "threads": torch.get_num_threads(),
             "mine_rounds": args.mine_rounds, "mine_steps": args.mine_steps,
             "mine_keep": args.mine_keep, "mine_mix": args.mine_mix,
             "decision_corpus": args.decision_corpus,

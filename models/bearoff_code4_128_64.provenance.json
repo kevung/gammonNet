@@ -29,7 +29,9 @@
     "decision_corpus": "build/bearoff_decisions.npz",
     "decision_steps": 20000,
     "margin": 0.002,
-    "anchor": 1.0
+    "anchor": 1.0,
+    "threads": 6,
+    "threads_source": "relev\u00e9 dans le journal d'entra\u00eenement ; le champ n'existait pas encore dans le script au moment de la campagne. Sur CPU, torch n'est reproductible au bit pr\u00e8s qu'\u00e0 nombre de fils constant."
   },
   "exhaustive_error": {
     "after_regression": {
