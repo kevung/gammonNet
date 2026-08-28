@@ -178,10 +178,15 @@ completion — the only case `win_prob` is an observed frequency rather than the
 truncated rollout reports (`gn_rollout.h`: a truncated trial ends on an evaluation, not an
 outcome).
 
-`probs` — `{win, win_g, win_bg, lose_g, lose_bg}` — carries the network's five raw nested
+`probs` — `{win, win_g, win_bg, lose_g, lose_bg}` — carries the network's five nested
 probabilities alongside the equity, per `gn_infer.h`'s own insistence that the distribution is the
-real output. `/v1/eval` omits it for a candidate scored below the network (`ply >= 2`, where the
-number would describe a shallow ranking pass, not the move). `/v1/cube`'s `probs` is always the
+real output. **On `/v1/eval` they are the mover's**, the same point of view as the `equity` beside
+them, so `2·win + win_g + win_bg − lose_g − lose_bg − 1` reproduces that equity exactly — a client
+can check it, and `tests/test_serve.py` does. (Underneath, `GnCandidate.probs` holds the *resulting*
+position's distribution, hence the opponent's; the server mirrors it. A mirrored nested
+distribution is still perfectly nested, so nothing but that identity catches the confusion.)
+`/v1/eval` omits `probs` for a candidate scored below the network (`ply >= 2`, where the number
+would describe a shallow ranking pass, not the move). `/v1/cube`'s `probs` is always the
 **decider's own** distribution (`decider_on_roll: false` mirrors it), while the four cube equities
 are always the **doubler's**; `take`/`pass` (kind `"take"`) are their exact negation. Crawford is
 not part of this contract and is assumed false — a documented limitation, not a silent guess.

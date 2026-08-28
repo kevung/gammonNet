@@ -269,7 +269,15 @@ def handle_eval(engine: Engine, body: dict) -> dict:
             "move": format_play(c, position.turn),
             "equity": c.equity,
         }
-        entry["probs"] = _probs_json(c.evaluation) if c.evaluation is not None else None
+        # `GnCandidate.probs` describes the RESULTING position, so the
+        # opponent, while `equity` on the same candidate is already the
+        # mover's. Handing both out unmirrored puts two opposite points of
+        # view side by side in one object, and a mirrored nested distribution
+        # is still perfectly nested — nothing downstream can notice. Both
+        # fields leave here as the mover's.
+        entry["probs"] = (
+            _probs_json(c.evaluation.mirrored()) if c.evaluation is not None else None
+        )
         out_candidates.append(entry)
 
     result: dict[str, Any] = {
@@ -279,7 +287,7 @@ def handle_eval(engine: Engine, body: dict) -> dict:
         "ply": applied_ply,
     }
     if best.evaluation is not None:
-        result["probs"] = _probs_json(best.evaluation)
+        result["probs"] = _probs_json(best.evaluation.mirrored())
     return result
 
 
@@ -490,7 +498,12 @@ _ENGINE_LOCK = threading.Lock()
 
 class Handler(http.server.BaseHTTPRequestHandler):
     engine: Engine  # set on the class by `main()` before serving
-    server_version = "gammonNet-serve/1"
+    #: Bumped to /2 when `/v1/eval` stopped handing out the opponent's
+    #: distribution under the mover's equity. The ROUTE stays `/v1` — the old
+    #: numbers were wrong, not a different contract someone could still want —
+    #: but a client that cached a response, or a gold file recorded against
+    #: the old server, is stale, and this header is what tells it apart.
+    server_version = "gammonNet-serve/2"
 
     def log_message(self, fmt: str, *args) -> None:  # quieter, structured-ish
         sys.stderr.write(f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {self.address_string()} {fmt % args}\n")
