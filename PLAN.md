@@ -1452,6 +1452,28 @@ distillé — le second en pure hypothèse, il ne touche pas à la partie.
   pions) ; l'écart entre les deux pertes par décision est rapporté, car il mesure à quel point le
   tirage uniforme flatte ou punit.
 
+**Résultat — mesuré le 2026-08-28**, fiche
+[`docs/mesures/2026-08-28-T79-poids-du-domaine.md`](docs/mesures/2026-08-28-T79-poids-du-domaine.md).
+
+**Le domaine pèse 4,28 % des décisions** (1,88 par partie, 42,7 % des parties l'atteignent), et le
+branchement du distillé vaudrait, **contre le 2-ply qui est le réglage servi**, **0,000073 d'équité
+par partie** [0,000039 ; 0,000107] — soit **0,00083 PR** contre un PR de 0,273. **Trois pour mille
+de l'erreur restante du moteur.**
+
+Le gain est réel (l'intervalle exclut zéro à quatre écarts-types) et petit, parce que **la
+recherche comble déjà l'essentiel du trou** : de 0 à 2 plis, la perte par décision de fin de
+partie tombe de 0,000278 à 0,000043. Le premier passage, joué à 0-ply, donnait 0,000552 par
+partie ; ce chiffre ne vaut que pour un moteur 0-ply, et le publier seul aurait été juste et
+trompeur.
+
+**Ce qui ne se comble pas par la recherche, c'est la queue** : pire décision 0,0170 au 2-ply
+contre 0,00217 pour le distillé, un facteur huit. C'est le seul argument de qualité qui survive —
+avec la vitesse, qui reste à mesurer.
+
+Deux contrôles gratuits au passage : le tirage uniforme de T78 est **représentatif** du jeu réel
+(0,00028 contre 0,000278 en jeu), et la mesure du 2-ply de T38 **se reproduit** sur une autre
+distribution (0,00004 contre 0,000043).
+
 **Ce que cette fiche ne fait pas** — elle ne mesure pas le videau (T80), ni le coût en vitesse, ni
 le jeu au-delà du 0-ply. Le moteur qui joue est à 0-ply, pour le volume ; c'est écrit dans la
 fiche de mesure plutôt que laissé à deviner.

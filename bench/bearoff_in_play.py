@@ -14,6 +14,22 @@ Ce banc produit le multiplicateur, et le produit **sur la distribution qui
 compte** : non pas des positions tirées au hasard dans la table, mais celles
 qu'une partie traverse réellement.
 
+## Le joueur et les jugés, séparés — et pourquoi
+
+Ce qui coûte cher, c'est **jouer** la partie : quarante-quatre décisions, dont
+quarante-deux hors du domaine. Ce qu'on veut mesurer ne concerne que les deux
+autres. La partie est donc jouée par un moteur **0-ply** — qui définit le
+chemin, et dont la profondeur ne change presque rien à la fréquence des fins de
+partie — tandis que les moteurs **jugés** (`--measure-plies`) ne sont
+interrogés que sur les décisions du domaine. Un 2-ply mesuré ainsi coûte
+vingt-trois fois moins qu'un 2-ply qui jouerait, pour la même quantité.
+
+Ce que cette séparation assume est nommé : la *distribution* des positions de
+fin de partie est celle qu'un moteur 0-ply produit. Elle est mesurée, elle
+n'est pas supposée identique à celle d'un 2-ply — mais l'écart porterait sur
+la fréquence, pas sur la perte par décision, qui est jugée position par
+position.
+
 ## Ce qu'il mesure
 
 Des parties d'argent sans videau, jouées par notre moteur. À chaque décision de
@@ -82,23 +98,25 @@ def configuration(ply: int) -> SearchConfig:
 
 
 def play_and_observe(payload):
-    (database, model, net_path, ply, seed, games, progress) = payload
+    (database, model, net_path, ply, judged, seed, games, progress) = payload
 
     table = TwoSidedBearoff(database)
     network = Network.load(model)
     net = BearoffNet.load(net_path)
     search = configuration(ply)
+    # Les moteurs jugés : le joueur lui-même, les autres profondeurs demandées,
+    # et le distillé. Aucun d'eux ne touche à la partie.
+    judged_configs = {f"gammonnet-{p}ply": configuration(p) for p in judged}
 
     decisions = 0
     forced = 0
     in_domain = 0
     reached = 0
-    engine_losses: list[float] = []
-    distilled_losses: list[float] = []
+    names = [f"gammonnet-{ply}ply (celui qui joue)"] + list(judged_configs) + ["distillé"]
+    losses = {name: [] for name in names}
     # Par partie, pour l'intervalle : les décisions d'une même partie ne sont
     # pas indépendantes, la partie l'est.
-    per_game_engine: list[float] = []
-    per_game_distilled: list[float] = []
+    per_game = {name: [] for name in names}
     entry_checkers: list[int] = []
     turns_total = 0
     stalled = 0
@@ -112,8 +130,7 @@ def play_and_observe(payload):
             position = position.swapped_turn()
 
         seen_domain = False
-        game_engine = 0.0
-        game_distilled = 0.0
+        game = {name: 0.0 for name in names}
         turns = 0
         while turns < MAX_TURNS:
             plays = position.legal_plays(d1, d2)
@@ -143,20 +160,28 @@ def play_and_observe(payload):
                 # donc le meilleur, donc ce que le coup joué a coûté.
                 scored = score_all(table, position, plays)
                 top = max(scored)
-                played = None
-                for play, equity in zip(plays, scored):
-                    if chosen is not None and play.result == chosen.result:
-                        played = equity
-                        break
-                if played is None:
-                    raise AssertionError("le moteur a joué un coup que nous ne générons pas")
-                engine_losses.append(top - played)
-                game_engine += top - played
+
+                def loss_of(candidate) -> float:
+                    for play, equity in zip(plays, scored):
+                        if candidate is not None and play.result == candidate.result:
+                            return top - equity
+                    raise AssertionError("un moteur a joué un coup que nous ne générons pas")
+
+                player_name = names[0]
+                losses[player_name].append(loss_of(chosen))
+                game[player_name] += losses[player_name][-1]
+
+                for name, config in judged_configs.items():
+                    ranked = search_plays(network, position, d1, d2, config)
+                    value = loss_of(ranked[0].play if ranked else None)
+                    losses[name].append(value)
+                    game[name] += value
+
                 # Le distillé ne joue pas : on lui demande seulement ce qu'il
                 # aurait fait de cette décision-là.
-                distilled_loss = top - scored[distilled_choice(net, position, plays)]
-                distilled_losses.append(distilled_loss)
-                game_distilled += distilled_loss
+                distilled = top - scored[distilled_choice(net, position, plays)]
+                losses["distillé"].append(distilled)
+                game["distillé"] += distilled
 
             position = chosen.result if chosen is not None else position.swapped_turn()
             turns += 1
@@ -166,8 +191,8 @@ def play_and_observe(payload):
         else:
             stalled += 1
         turns_total += turns
-        per_game_engine.append(game_engine)
-        per_game_distilled.append(game_distilled)
+        for name in names:
+            per_game[name].append(game[name])
 
         if progress and (index + 1) % 50 == 0:
             with open(progress, "a") as handle:
@@ -178,8 +203,7 @@ def play_and_observe(payload):
         "games": games, "decisions": decisions, "forced": forced,
         "in_domain": in_domain, "reached": reached, "stalled": stalled,
         "turns": turns_total,
-        "engine_losses": engine_losses, "distilled_losses": distilled_losses,
-        "per_game_engine": per_game_engine, "per_game_distilled": per_game_distilled,
+        "names": names, "losses": losses, "per_game": per_game,
         "entry_checkers": entry_checkers,
     }
 
@@ -224,6 +248,10 @@ def main() -> int:
     parser.add_argument("--games", type=int, default=5000)
     parser.add_argument("--ply", type=int, default=0,
                         help="profondeur du moteur qui joue (0 pour le volume)")
+    parser.add_argument("--measure-plies", default="",
+                        help="profondeurs JUGÉES sur les seules décisions du "
+                             "domaine, ex. « 1,2 » — bien moins cher que de les "
+                             "faire jouer")
     parser.add_argument("--workers", type=int, default=26)
     parser.add_argument("--seed", type=int, default=20260828)
     parser.add_argument("--database", default=str(DEFAULT_DATABASE))
@@ -236,13 +264,17 @@ def main() -> int:
     workers = max(1, min(args.workers, args.games))
     share = [args.games // workers + (1 if i < args.games % workers else 0)
              for i in range(workers)]
-    payloads = [(args.database, model, args.net, args.ply,
+    judged = [int(p) for p in args.measure_plies.split(",") if p.strip()]
+    payloads = [(args.database, model, args.net, args.ply, judged,
                  args.seed + 1_000_003 * i, n, args.progress)
                 for i, n in enumerate(share) if n]
 
     print(f"T79 — le poids de la fin de partie dans une vraie partie")
     print(f"  {args.games} parties d'argent sans videau, moteur à {args.ply}-ply, "
           f"{len(payloads)} processus")
+    if judged:
+        print(f"  jugés en plus, sur les seules décisions du domaine : "
+              f"{', '.join(f'{p}-ply' for p in judged)}")
     print(f"  distillé mesuré en parallèle, sans jouer : {Path(args.net).name}")
     print(f"  suivi : {args.progress}\n", flush=True)
 
@@ -257,10 +289,11 @@ def main() -> int:
     total = {k: sum(p[k] for p in parts)
              for k in ("games", "decisions", "forced", "in_domain", "reached",
                        "stalled", "turns")}
-    engine = np.array([v for p in parts for v in p["engine_losses"]])
-    distilled = np.array([v for p in parts for v in p["distilled_losses"]])
-    game_engine = np.array([v for p in parts for v in p["per_game_engine"]])
-    game_distilled = np.array([v for p in parts for v in p["per_game_distilled"]])
+    names = parts[0]["names"]
+    losses = {name: np.array([v for p in parts for v in p["losses"][name]])
+              for name in names}
+    per_game = {name: np.array([v for p in parts for v in p["per_game"][name]])
+                for name in names}
     entry = np.array([v for p in parts for v in p["entry_checkers"]])
 
     print(f"{total['games']} parties en {elapsed / 60:.1f} min "
@@ -272,38 +305,36 @@ def main() -> int:
     print(f"  parties qui atteignent le domaine            : {total['reached']}"
           f"  ({total['reached'] / total['games'] * 100:.1f} %)")
     print(f"  décisions du domaine par partie              : "
-          f"{total['in_domain'] / total['games']:.2f}")
+          f"{total['in_domain'] / total['games']:.3f}")
     if entry.size:
         print(f"  pions restants à l'entrée dans le domaine    : "
               f"médiane {np.median(entry):.0f}, moyenne {entry.mean():.1f}")
 
-    rows = {"grand réseau (celui qui joue)": summarise(engine, total["games"]),
-            "distillé T78": summarise(distilled, total["games"])}
-    print(f"\n{'moteur':<30}{'accord':>9}{'perte moy.':>12}{'pire':>10}"
+    rows = {name: summarise(losses[name], total["games"]) for name in names}
+    print(f"\n{'moteur':<34}{'accord':>9}{'perte moy.':>13}{'pire':>10}"
           f"{'équité/partie':>15}")
-    for name, row in rows.items():
+    for name in names:
+        row = rows[name]
         if not row:
             continue
-        print(f"{name:<30}{row['agreement'] * 100:>8.1f} %{row['mean_loss']:>12.6f}"
+        print(f"{name:<34}{row['agreement'] * 100:>8.1f} %{row['mean_loss']:>13.6f}"
               f"{row['worst_loss']:>10.4f}{row['equity_per_game']:>15.6f}")
 
-    mean_engine, lo_engine, hi_engine = interval(game_engine)
-    mean_distilled, lo_distilled, hi_distilled = interval(game_distilled)
-    mean_gain, lo_gain, hi_gain = interval(game_engine - game_distilled)
-    intervals = {
-        "engine_per_game": [mean_engine, lo_engine, hi_engine],
-        "distilled_per_game": [mean_distilled, lo_distilled, hi_distilled],
-        "gain_per_game": [mean_gain, lo_gain, hi_gain],
-    }
-
+    # L'intervalle porte sur la DIFFÉRENCE APPARIÉE avec le distillé : les deux
+    # moteurs tranchent les mêmes décisions, donc la variance des parties —
+    # qui domine tout — s'annule au lieu d'être comptée deux fois.
+    intervals = {}
     print(f"\néquité perdue par partie, du fait de la fin de partie seule "
-          f"({game_engine.size} parties, IC 95 %) :")
-    print(f"  moteur actuel        {mean_engine:.6f}  "
-          f"[{lo_engine:.6f} ; {hi_engine:.6f}]")
-    print(f"  avec le distillé     {mean_distilled:.6f}  "
-          f"[{lo_distilled:.6f} ; {hi_distilled:.6f}]")
-    print(f"  **le branchement rapporterait {mean_gain:.6f}**  "
-          f"[{lo_gain:.6f} ; {hi_gain:.6f}]  — intervalle apparié")
+          f"({total['games']} parties, IC 95 %) :")
+    for name in names:
+        mean, low, high = interval(per_game[name])
+        intervals[name] = [mean, low, high]
+        print(f"  {name:<34}{mean:>11.6f}  [{low:.6f} ; {high:.6f}]")
+    for name in names[:-1]:
+        mean, low, high = interval(per_game[name] - per_game["distillé"])
+        intervals[f"gain vs {name}"] = [mean, low, high]
+        print(f"  **gain contre {name:<20}{mean:>11.6f}**  [{low:.6f} ; {high:.6f}]")
+
     print("\nLecture : gain de fin de partie SEUL, en parties d'argent sans videau.")
     print("Il se compare à l'écart entre deux moteurs, jamais à zéro.")
 
@@ -312,6 +343,7 @@ def main() -> int:
             "task": "T79", "seed": args.seed, "ply": args.ply,
             "network": str(args.net), "totals": total,
             "engines": rows, "intervals": intervals,
+            "decisions_per_game": total["decisions"] / total["games"],
             "entry_checkers": {"median": float(np.median(entry)) if entry.size else None,
                                "mean": float(entry.mean()) if entry.size else None},
         }, indent=2) + "\n")
