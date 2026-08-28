@@ -61,6 +61,7 @@ import http.server
 import json
 import socketserver
 import sys
+import threading
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -461,6 +462,32 @@ ROUTES = {
 }
 
 
+#: #20 -- serializes every call into `engine` across the ThreadingServer's
+#: worker threads.
+#:
+#: Root cause: `Network.evaluate`/`evaluate_batch`, `search_plays`, and
+#: `run_rollout` are each, underneath, ONE `ctypes` call into the native
+#: library (`gn_search_plays`, `gn_rollout`, ...). `ctypes.CDLL` releases the
+#: GIL for the duration of such a call, and the C side reuses per-model
+#: scratch buffers across calls (`NNModel.buf_a`/`buf_b` in
+#: `vendor/backgammon-ai-engine/c_inference/nn_eval.c`, allocated once at load
+#: time) rather than allocating fresh ones each time. A search or rollout
+#: loops over `gn_evaluate` many times INSIDE that one C call, entirely
+#: without returning to Python -- so a lock around only the Python-level
+#: `Network.evaluate` wrapper would not protect that internal fanout. Two
+#: threads inside the native code at once race on the same buffers and
+#: corrupt each other's forward pass; `tests/test_serve_concurrency.py`
+#: measured this at 682/800 (85%) responses corrupted with no lock.
+#:
+#: Serializing here, at the single seam every route already funnels through
+#: (`handler(self.engine, body)`), covers every native entry point without
+#: having to enumerate or keep up with each one individually. The cost is
+#: real but small: 0-ply is ~86 us/eval (`docs/mesures/`), and
+#: `tests/test_serve_concurrency.py` measures the actual throughput this
+#: leaves under concurrent load -- a number, not an assumption.
+_ENGINE_LOCK = threading.Lock()
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     engine: Engine  # set on the class by `main()` before serving
     server_version = "gammonNet-serve/1"
@@ -503,7 +530,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
 
         try:
-            result = handler(self.engine, body)
+            with _ENGINE_LOCK:
+                result = handler(self.engine, body)
         except ApiError as exc:
             self._write_json(exc.status, {"error": exc.message})
             return
