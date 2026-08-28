@@ -144,7 +144,7 @@ for entry in $ALL; do
     # relancer la campagne — ce qu'on fait après chaque correction — refait un
     # étalon qui coûte des heures, pour le même chiffre.
     if [ -s "docs/mesures/t70-etalon-$ctx.json" ] \
-       && [ -s "$OUT/registre-$ctx.jsonl" ]; then
+       && [ -s "docs/corpus/t70/$ctx-${ARBITRATE:-10000}/registre-$ctx.jsonl" ]; then
         say "  déjà traité (registre + étalon présents) — passé"
         continue
     fi
@@ -175,9 +175,30 @@ for entry in $ALL; do
         fi
     fi
 
+    if [ "$ctx" != "money" ]; then
+        # Décision du 2026-08-28 : les contextes de score sont RÉCOLTÉS et
+        # versés, pas arbitrés. À 16,7 min·cœur la décision — mesuré, machine
+        # libre — arbitrer leurs 40 000 décisions coûterait 370 heures. Le
+        # corpus, lui, est acquis : l'arbitrer plus tard ne demandera pas de le
+        # refaire. Le critère d'acceptation « stratifié par contexte de score »
+        # est donc à moitié rendu, et ce rapport le dit plutôt que de le taire.
+        say "  contexte de score : corpus versé, arbitrage NON engagé (décision du 2026-08-28)"
+        continue
+    fi
+
+    # money s'arbitre sur un SOUS-ÉCHANTILLON stratifié : 10 000 des 28 374,
+    # soit ~93 h au lieu de 262. Index et poids d'origine conservés, donc
+    # arbitrer le reste plus tard prolongera ce même registre.
+    say "── sous-échantillon à arbitrer"
+    "$PYTHON" -u tools/subsample_corpus_t70.py \
+        --corpus "$CORPUS" --target "${ARBITRATE:-10000}" \
+        --out "docs/corpus/t70/$ctx-${ARBITRATE:-10000}" || continue
+    OUT="docs/corpus/t70/$ctx-${ARBITRATE:-10000}"
+    CORPUS="$OUT/corpus-$ctx.jsonl"
+
     say "── arbitrage escaladé ($ctx)"
     "$PYTHON" -u bench/arbitrate_t70.py \
-        --corpus "$CORPUS" --workers "$WORKERS" --chunk "${CHUNK:-64}" \
+        --corpus "$CORPUS" --workers "$WORKERS" --chunk "${CHUNK:-4}" \
         --truncate "${TRUNCATE:-9}" --deep-truncate "${DEEP_TRUNCATE:-21}" \
         || { say "  ✗ arbitrage interrompu — le journal est conservé, relancer"
              say "    ce script reprendra les décisions manquantes."; continue; }

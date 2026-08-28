@@ -470,9 +470,13 @@ def main() -> int:
     parser.add_argument("--audit", type=float, default=0.05,
                         help="part des décisions tranchées en passe 1 rejouées en passe 2")
     parser.add_argument("--limit", type=int, default=0)
-    parser.add_argument("--chunk", type=int, default=64,
+    parser.add_argument("--chunk", type=int, default=4,
                         help="taille maximale d'une tranche rendue au parent ; "
-                             "borne ce qu'une coupure fait perdre")
+                             "borne ce qu'une coupure fait perdre. 4 et non 64 : "
+                             "une décision coûte ~16,7 min·cœur (mesuré le "
+                             "2026-08-28), donc 64 ferait 17,8 h sans une seule "
+                             "écriture au journal — la reprise ne protégerait "
+                             "plus rien pendant presque une journée.")
     parser.add_argument("--journal-only", action="store_true",
                         help="ne rien arbitrer : reconstruire le registre depuis "
                              "le journal d'une campagne interrompue")
