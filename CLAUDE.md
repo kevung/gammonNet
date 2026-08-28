@@ -130,7 +130,7 @@ mesurable.
 | **3** | Profondeur & exactitude | T30–T35 | Le PR descend conformément à la référence (1,06 → 0,50 → 0,22) |
 | **4** | Modèle propre au projet | T40–T42 | **Conditionnelle, restée fermée** — T35 n'a pas révélé de plafond ; T41 est remplacée par T71 |
 | **5** | Publication de l'artefact | T50 | Force mesurée, notice et attribution en place |
-| **7** | Dépasser — programme du plan de recherche (`docs/recherche/`, §14–§15) | T70–T78 | **Choisie le 2026-08-27** — l'avantage 2-ply par décision sort de zéro (T71, arbitré par T70) et la vitesse gagnée est mesurée (T72–T73) |
+| **7** | Dépasser — programme du plan de recherche (`docs/recherche/`, §14–§15) | T70–T79 | **Choisie le 2026-08-27** — l'avantage 2-ply par décision sort de zéro (T71, arbitré par T70) et la vitesse gagnée est mesurée (T72–T73) |
 
 **Chemin critique** : `T00 → T01 → T02 → T10 → T20 → T21 → T30 → T32 → T35 → T50`.
 **T02 (le codec de position) est le goulot** — une erreur y est silencieuse et contamine toutes

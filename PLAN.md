@@ -1424,6 +1424,40 @@ de fin de partie.
 
 ---
 
+## T79 — Ce que la fin de partie pèse réellement
+
+> **Le multiplicateur qui manquait à T78.** T78 a mesuré ce que le réseau perd *par décision de
+> bearoff* — 0,00028 en moyenne, 0,0919 au pire — et ce que le distillé y ramène. Ces chiffres ne
+> décident rien tant qu'on ignore **quelle part des décisions d'une partie tombe dans ce
+> domaine**. `BRIEF.md` §9 avertit exactement de cela : un corpus riche en fins de partie flatte
+> qui a une table.
+
+**Objectif** — convertir le gain de T78 en **équité par partie**, la seule forme sous laquelle il
+se compare à autre chose dans ce projet.
+
+**Périmètre** — `bench/bearoff_in_play.py` : des parties d'argent sans videau, jouées par notre
+moteur ; à chaque décision de coup, on compte, et si elle est dans le domaine de la table on note
+**exactement** tous les coups légaux et on relève ce que perdent le moteur qui joue *et* le
+distillé — le second en pure hypothèse, il ne touche pas à la partie.
+
+**Critères d'acceptation**
+- La fraction des décisions dans le domaine est mesurée, ainsi que la part des parties qui
+  l'atteignent et le nombre de pions restants à l'entrée.
+- Le gain du branchement est donné **en équité par partie, avec son intervalle à 95 %**, calculé
+  sur la **différence appariée** — les deux moteurs tranchent les mêmes décisions, donc la
+  variance des parties s'annule et ne doit pas être comptée deux fois.
+- Le volume est dimensionné pour que l'intervalle soit dix fois plus petit que le gain, ou le
+  contraire est dit.
+- La distribution des positions est celle du **jeu**, pas celle de T78 (uniforme sur le nombre de
+  pions) ; l'écart entre les deux pertes par décision est rapporté, car il mesure à quel point le
+  tirage uniforme flatte ou punit.
+
+**Ce que cette fiche ne fait pas** — elle ne mesure pas le videau (T80), ni le coût en vitesse, ni
+le jeu au-delà du 0-ply. Le moteur qui joue est à 0-ply, pour le volume ; c'est écrit dans la
+fiche de mesure plutôt que laissé à deviner.
+
+---
+
 # Phase 5 — Publication
 
 ## T50 — Publier l'artefact
