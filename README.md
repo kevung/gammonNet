@@ -143,6 +143,63 @@ Python ≥ 3.10 and a C compiler; Emscripten for the browser target. Note that `
 in the repository — the weights are rebuilt from Alexander Strehl's vendored sources at a pinned
 commit, which also verifies on every release that the export chain still works.
 
+## HTTP server (`serve`)
+
+A standalone process that speaks HTTP instead of exposing a library — the `blunderdb serve` shape
+applied here: one generic evaluator, any consumer (gammonGo today, Desktop/blunderDB tomorrow —
+[kevung/blunderDB#119](https://github.com/kevung/blunderDB/issues/119)) points at it over the
+network instead of embedding this repository. It loads the **same pinned float16 artifact the
+WebAssembly target ships**, verifies its SHA-256 before opening a socket, and refuses to start on
+a mismatch — never a server answering on the wrong weights ([#18](https://github.com/kevung/gammonNet/issues/18)).
+
+```bash
+python tools/fetch_release.py           # downloads the pinned network + pruning weights
+python tools/serve.py --port 8080       # 0-ply by default, 4-ply at most, --max-ply to cap lower
+curl -s localhost:8080/healthz
+```
+
+Three endpoints, JSON in, JSON out, a non-200 status on any error (invalid XGID, illegal
+position, bad parameters) — never a 200 with an error disguised as a result:
+
+| Route | Request | Response |
+|---|---|---|
+| `POST /v1/eval` | `{xgid, ply}` | `{best_move, equity, candidates: [{move, equity, probs}], ply, probs}` |
+| `POST /v1/cube` | `{xgid, kind: "double"\|"take", decider_away, opponent_away, cube, decider_on_roll}` | `{should_double, too_good, no_double, double_take, double_pass, should_take, take, pass, probs}` |
+| `POST /v1/rollout` | `{xgid, trials, max_depth, seed}` | `{trials, equity, std_err, win_prob}` |
+
+`ply` in the response is the depth **actually applied**, never the one requested — a caller must
+read it back rather than assume its request was honoured (the same discipline gammonGo's own
+client already applies to `evald`). `/v1/eval` needs an XGID that carries a roll (the two dice
+digits in its 4th field); `/v1/cube` does not — the decider's away scores and the cube value are
+explicit request fields, not read from the XGID's own score/cube fields, so the same call works
+for money (either away score `0`) and match play. `/v1/rollout` ignores any dice the XGID carries:
+a rollout answers for the position *before* a roll, and `max_depth: 0` plays every trial to
+completion — the only case `win_prob` is an observed frequency rather than the honest `0.0` a
+truncated rollout reports (`gn_rollout.h`: a truncated trial ends on an evaluation, not an
+outcome).
+
+`probs` — `{win, win_g, win_bg, lose_g, lose_bg}` — carries the network's five raw nested
+probabilities alongside the equity, per `gn_infer.h`'s own insistence that the distribution is the
+real output. `/v1/eval` omits it for a candidate scored below the network (`ply >= 2`, where the
+number would describe a shallow ranking pass, not the move). `/v1/cube`'s `probs` is always the
+**decider's own** distribution (`decider_on_roll: false` mirrors it), while the four cube equities
+are always the **doubler's**; `take`/`pass` (kind `"take"`) are their exact negation. Crawford is
+not part of this contract and is assumed false — a documented limitation, not a silent guess.
+
+Measured, not assumed: 100 sequential `/v1/eval` requests over loopback HTTP, 0-ply, this
+machine — **2.4 ms/request**. A single 2-ply decision with the default `k=12` pruning network —
+**≈ 15 s**, which is why `--max-ply` exists and why a production deployment should set it with the
+caller's own latency budget in mind, not this repository's.
+
+Containerised (`Dockerfile`): the image fetches the pinned weights at *build* time and bakes them
+in — no network access needed at run time, and the SHA-256 gate still runs on every start as the
+final check that the image's own bytes were not altered afterwards.
+
+```bash
+docker build -t gammonnet-serve .
+docker run --rm -p 8080:8080 gammonnet-serve
+```
+
 ## What is reused, what is written here
 
 The network weights come from

@@ -9,6 +9,8 @@
 #   make test    joue la suite de tests
 #   make bench   joue le banc de débit
 #   make env     consigne la machine et la chaîne d'outils d'une mesure
+#   make fetch-release  télécharge et vérifie l'artefact float16 épinglé (#18)
+#   make serve   démarre le serveur HTTP (mode `serve`, #18)
 
 SHELL := /bin/bash
 VENV ?= $(HOME)/venv-gammonnet
@@ -319,6 +321,20 @@ $(BENCH_DECISION): bench/bench_decision.c $(OBJECTS) $(VENDOR_OBJECTS)
 
 bench-decision: build $(BENCH_DECISION) $(MODEL)
 	$(BENCH_DECISION) $(MODEL) 20
+
+# ── Serveur HTTP (#18) ───────────────────────────────────────────────
+
+.PHONY: fetch-release serve
+
+# Télécharge et vérifie l'artefact float16 épinglé (models/release_pin.json)
+# — le même que la cible WebAssembly. N'a besoin ni de PyTorch ni de gnubg-nn :
+# stdlib seule, donc le Python système suffit si le venv n'existe pas encore.
+fetch-release:
+	$(PYTHON) tools/fetch_release.py
+
+# `make build` d'abord : le serveur charge build/libgammonnet.so.
+serve: build fetch-release
+	$(PYTHON) tools/serve.py
 
 clean:
 	rm -rf build/
