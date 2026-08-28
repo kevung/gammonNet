@@ -44,6 +44,7 @@ import argparse
 import collections
 import json
 import math
+import statistics
 import sys
 from pathlib import Path
 
@@ -81,6 +82,11 @@ DESIGN_EFFECT = {
     "backgame": 3.4,
 }
 DESIGN_EFFECT_DEFAULT = 1.5
+
+#: À partir de ce nombre de tranches, l'écart-type OBSERVÉ entre elles remplace
+#: le binomial corrigé : quatre réplications indépendantes valent mieux qu'un
+#: modèle d'erreur, et n'en supposent aucun.
+EMPIRICAL_MIN = 4
 
 
 def binomial_se(rate: float, n: int) -> float:
@@ -203,25 +209,51 @@ def main() -> int:
     samples = [(path.name, m["natural"], m["natural_sample"]) for path, m, _ in loaded]
     classes = sorted({k for _, n, _ in samples for k in n if n[k] > 0},
                      key=lambda k: -samples[0][1].get(k, 0.0))
-    print("   (l'écart est rapporté au bruit CORRIGÉ de l'effet de grappe : des")
-    print("    positions consécutives d'une même partie ne sont pas indépendantes)")
+    if len(samples) >= EMPIRICAL_MIN:
+        print(f"   ({len(samples)} réplications indépendantes : la colonne « σ observé » EST")
+        print("    l'erreur, mesurée entre tranches, et aucun modèle n'est supposé)")
+    else:
+        print("   (l'écart est rapporté au bruit CORRIGÉ de l'effet de grappe : des")
+        print("    positions consécutives d'une même partie ne sont pas indépendantes)")
     header = "  " + f"{'classe':22s}" + "".join(f"{n:>12s}" for n, _, _ in samples)
-    print(header + f"{'grappe':>9s}{'écart max':>11s}")
+    label = "σ observé" if len(samples) >= EMPIRICAL_MIN else "grappe"
+    print(header + f"{label:>9s}{'écart max':>11s}")
     for klass in classes:
         values = [(n.get(klass, 0.0), s) for _, n, s in samples]
         cells = "".join(f"{100 * v:11.2f}%" for v, _ in values)
-        deff = max(1.0, DESIGN_EFFECT.get(klass, DESIGN_EFFECT_DEFAULT))
+        # AVEC ASSEZ DE RÉPLICATIONS, ON NE MODÉLISE PLUS : ON MESURE.
+        #
+        # Chaque tranche estime la distribution naturelle sur son propre
+        # échantillon, tiré d'une graine indépendante. Dès qu'il y en a assez,
+        # leur écart-type EST l'erreur — plus besoin d'un binomial corrigé d'un
+        # facteur de grappe estimé ailleurs. C'était annoncé le 2026-08-27 :
+        # « les six tranches donneront six estimations à 20 000 échantillons, et
+        # la dispersion se lira alors directement ».
+        #
+        # Le facteur tabulé ne sert plus que de repli sous quatre tranches, où
+        # un écart-type sur trois points ne vaut pas grand-chose.
+        if len(values) >= EMPIRICAL_MIN:
+            observed = statistics.stdev(v for v, _ in values)
+            deff = None
+        else:
+            observed = None
+            deff = max(1.0, DESIGN_EFFECT.get(klass, DESIGN_EFFECT_DEFAULT))
         worst = 0.0
         for i in range(len(values)):
             for j in range(i + 1, len(values)):
                 (v1, n1), (v2, n2) = values[i], values[j]
-                spread = deff * math.sqrt(binomial_se(v1, n1) ** 2
-                                          + binomial_se(v2, n2) ** 2)
+                if observed is not None:
+                    spread = observed * math.sqrt(2)
+                else:
+                    spread = deff * math.sqrt(binomial_se(v1, n1) ** 2
+                                              + binomial_se(v2, n2) ** 2)
                 worst = max(worst, abs(v1 - v2) / spread if spread else 0.0)
         flag = "  ✗" if worst >= SIGMA_ALARM else ""
         if worst >= SIGMA_ALARM:
             problems += 1
-        print(f"  {klass:22s}{cells}{deff:8.1f}×{worst:10.2f}σ{flag}")
+        shown = (f"{100 * observed:7.3f}%" if observed is not None
+                 else f"{deff:7.1f}×")
+        print(f"  {klass:22s}{cells}{shown}{worst:10.2f}σ{flag}")
 
     # ── le remplissage des strates ─────────────────────────────────────────
     print("\n── remplissage des strates (le facteur d'examen fait-il son office ?)")
