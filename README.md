@@ -101,6 +101,12 @@ evaluator.loadPrune(prune, files.prune_k);   // ×3.65, strongly recommended
 const level = Evaluator.level("normal");   // ply, move filters, pruning width
 
 // The 5 best moves, each with win / gammon / backgammon probabilities and equity.
+// Perspective: `equity` is the mover's, the five probabilities are the RESULTING
+// position's — so the opponent's. Mirror them (`1-win`, and swap the win/lose
+// gammon pairs) to show the mover's own chances. This is `GnCandidate`'s contract
+// (`gn_search.h`), which the WASM surface passes through unchanged; `/v1/eval`
+// over HTTP is the one place that mirrors for you. `cubeDecision` differs again:
+// its probabilities are already the decider's.
 const moves = evaluator.rankPlays("4HPwATDgc/ABMA", 0, 3, 1, { ...level, max: 5 });
 
 // Cube decision: no-double, double-take and double-pass equities, and the verdict.
