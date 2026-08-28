@@ -17,6 +17,35 @@ qu'elle se défait très cher une fois qu'un entraînement l'a rendue implicite.
 **Décision : le tronc reste aveugle au score. Le score, l'état du videau et le drapeau Crawford
 n'entrent que dans une tête appliquée après le goulot.**
 
+## Pourquoi ce n'est pas une amputation
+
+« Tronc aveugle au score » ne veut pas dire « moteur aveugle au score ». Le choix de coup est
+l'`argmax` de la MWC rendue par la tête, et cette MWC dépend du score : à 1-away/1-away les
+gammons cessent de compter, à 2-away/2-away le prix du gammon du leader tombe à zéro, et le moteur
+le voit — exactement comme le fait aujourd'hui la pile classique via la MET. Lin retient de son
+architecture qu'elle apprend l'influence du score *« not just [on] further cube decisions, but
+checker play as well »* : la fusion tardive obtient cette influence aussi, par la valeur.
+
+La raison de fond n'est pas un compromis, c'est une propriété :
+
+> **Pour la partie cubeless, les cinq probabilités sont une statistique exactement suffisante, et
+> le score n'entre que dans les coefficients.**
+
+C'est la formule même de la MET — `MWC = Σ pᵢ · MWC(score résultant après l'issue i)`, une somme
+pondérée des six issues disjointes où le score ne touche que les poids. Donner le score au tronc
+n'ajoute là **aucun pouvoir de représentation** : cela rend score-dépendant un calcul qui ne l'est
+pas, au prix du cache et du facteur ~5 ci-dessous.
+
+Là où `prob5` cesse d'être suffisant, c'est le **videau**, dont la valeur dépend de la dispersion
+et non de la moyenne. Le risque de la fusion tardive est donc **confiné à la partie cubeful**, et
+c'est exactement ce que l'ablation B0 contre B mesure, en heures.
+
+**Ce qu'on perd malgré tout** : un tronc conscient du score pourrait *allouer sa capacité* selon le
+contexte — cesser d'estimer finement les gammons à DMP, où ils ne valent rien, et dépenser ces
+neurones sur `P(gain)`. C'est un gain de **capacité**, pas de représentation ; il est réel, il
+n'est chiffré nulle part, et il ne s'achète qu'au prix du cache. Il attend donc que les marches 1
+et 2 aient montré qu'il y a quelque chose à gagner. `[HYPOTHÈSE]`
+
 ## L'arbitrage
 
 La voie naturelle, et celle de la seule publication du domaine — Andrew Lin, TAAI 2020, qui
