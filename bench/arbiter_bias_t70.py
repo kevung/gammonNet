@@ -229,6 +229,27 @@ def main() -> int:
     # des essais pour rien.
     unbiased = abs(mean / mean_error) < 3.0
     calibrated = 0.5 < deviation < 2.0
+    # LE FACTEUR DE CALIBRATION, dit en clair.
+    #
+    # `z = (mesuré − vrai) / erreur annoncée`. Si son écart-type vaut 2, la
+    # dispersion réelle est le double de l'erreur annoncée : l'arbitre se
+    # déclare deux fois plus sûr qu'il ne l'est. Ce n'est PAS un biais — la
+    # moyenne des z reste nulle — mais tout intervalle qu'il publie est trop
+    # étroit d'autant, et la frontière « résolu / resté ouvert » est tracée au
+    # mauvais endroit.
+    #
+    # Le verdict binaire ci-dessous accepte jusqu'à 2,0. Un banc qui rendrait
+    # 1,99 et afficherait « calibré » sans plus dirait quelque chose de vrai et
+    # de trompeur à la fois. D'où cette ligne, qui n'est pas un seuil mais un
+    # nombre à reporter.
+    print(f"\n  facteur de calibration : ×{deviation:.2f}")
+    print(f"    Les intervalles annoncés par l'arbitre sont "
+          f"{'trop étroits' if deviation > 1 else 'trop larges'} d'un facteur "
+          f"{deviation:.2f}.")
+    if deviation > 1.2:
+        print(f"    Une résolution annoncée à 0,005 vaut en réalité "
+              f"~{0.005 * deviation:.3f}. Tout intervalle du registre doit être "
+              f"multiplié par ce facteur avant d'être publié.")
     print(f"\n  verdict : "
           f"{'non biaisé' if unbiased else 'BIAIS DÉTECTÉ'}, "
           f"{'intervalles calibrés' if calibrated else 'INTERVALLES MAL CALIBRÉS'}")
@@ -237,6 +258,7 @@ def main() -> int:
               "ne doit tourner avec ces réglages (T39, règle reprise par T70).")
 
     result = {"decisions": len(built), "pairs": n, "mean_z": mean,
+              "calibration_factor": deviation,
               "mean_z_error": mean_error, "sd_z": deviation,
               "inside_1_96": inside, "unbiased": unbiased,
               "calibrated": calibrated, "seconds": elapsed,
