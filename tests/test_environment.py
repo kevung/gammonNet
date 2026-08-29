@@ -75,7 +75,12 @@ def test_reference_model_is_present():
 
 def test_reference_model_produces_five_probabilities(reference_on_path):
     """The retained model must expose the prob5 distribution, not a money scalar."""
-    import torch
+    # `importorskip` et non `import` : c'est la convention du dépôt
+    # (`test_infer.py`, `test_oracle.py`, `test_codec.py`), et ce test était le
+    # seul endroit à la manquer. Un `import` nu rend un ÉCHEC rouge là où il
+    # n'y a qu'une dépendance absente — et un rouge permanent qu'on apprend à
+    # ignorer masque les rouges qui, eux, disent quelque chose.
+    torch = pytest.importorskip("torch", reason="PyTorch absent — lancer `make venv`")
 
     checkpoint = torch.load(MODEL, map_location="cpu", weights_only=False)
 

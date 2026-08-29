@@ -128,8 +128,16 @@ def main() -> int:
     parser.add_argument("--format", choices=("int8", "fp16"), default="int8")
     parser.add_argument(
         "--biases", action="store_true",
+        # `%%` ET NON `%` : argparse traite les chaînes d'aide comme des
+        # gabarits de formatage (`%(default)s`), et Python 3.14 les VALIDE à
+        # `add_argument` au lieu de laisser passer. Un `%` nu y devient une
+        # `ValueError: badly formed help string` levée avant `parse_args`,
+        # c'est-à-dire avant que l'outil ait rien fait : `quantize_model.py`
+        # était intégralement inutilisable, et le seul test qui l'appelle
+        # (`test_fp16.py::test_the_two_readers_agree_bit_for_bit`) tombait
+        # sur un `CalledProcessError` qui ne nommait pas la cause.
         help="quantifier aussi les biais (par défaut ils restent en float32 : "
-             "ils pèsent 1 408 valeurs sur 528 389, soit 0,27 %, et les "
+             "ils pèsent 1 408 valeurs sur 528 389, soit 0,27 %%, et les "
              "quantifier coûterait de la précision pour rien)",
     )
     args = parser.parse_args()
