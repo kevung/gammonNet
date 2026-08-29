@@ -361,18 +361,39 @@ int gnw_enable_cache(int log2_entries)
  * `out` reçoit, par candidat et dans cet ordre :
  *
  *     [0]   équité du coup, du point de vue de celui qui le joue
- *     [1..5] les cinq probabilités de la position RÉSULTANTE
+ *     [1..5] les cinq probabilités, DU MÊME POINT DE VUE
  *     [6..12] l'identifiant de la position résultante, 14 octets + NUL,
  *             écrits par `out_ids` et non ici
  *
  * soit 6 flottants par candidat dans `out`, et 15 octets par candidat dans
  * `out_ids`. Rend le nombre de candidats écrits, ou -1.
  *
- * LES PROBABILITÉS SONT CELLES DE LA POSITION RÉSULTANTE, donc vues par
- * l'ADVERSAIRE — c'est la convention de `GnCandidate`, et l'inverser
- * silencieusement produirait cinq nombres parfaitement plausibles. Une
- * interface qui veut les afficher du point de vue du joueur doit les
- * retourner : P(gain) devient 1 − P(gain), et les gammons échangent de camp.
+ * UN SEUL RÉFÉRENTIEL, ET C'EST CELUI DU JOUEUR QUI JOUE (v1.1.0).
+ *
+ * `GnCandidate.probs` décrit la position RÉSULTANTE — donc l'adversaire,
+ * comme `gn_search.h` le dit sans détour — tandis que `GnCandidate.equity` du
+ * même candidat est déjà retournée du côté du joueur. Cette fonction laissait
+ * passer les deux tels quels : deux points de vue opposés dans le même objet,
+ * et rien en aval ne pouvait s'en apercevoir, une distribution imbriquée
+ * retournée restant parfaitement imbriquée. Sur l'ouverture 3-1, un appelant
+ * lisait « 44,56 % de victoires » sous une équité de +0,166 ; c'est arrivé,
+ * deux fois, chez le même consommateur.
+ *
+ * `handle_eval` de `tools/serve.py` a retourné la distribution le 2026-08-29
+ * pour `/v1/eval`. Les deux surfaces publiées de gammonNet disent donc
+ * maintenant la même chose, et c'est ce que v1.1.0 acte. Le contrôle qui mord
+ * est l'identité elle-même : l'équité cubeless money est une fonction DES
+ * cinq probabilités, donc à 0-ply, recalculer l'une depuis les autres doit
+ * reproduire l'autre — `verify/api_invariants.mjs` le vérifie, et aucune
+ * tolérance ne cache une inversion.
+ *
+ * CE QUI RESTE VRAI ET QU'IL FAUT SAVOIR : au-delà de 0-ply, ces cinq nombres
+ * viennent de la passe superficielle qui a servi à classer, pas de la
+ * recherche profonde qui a produit l'équité (`gn_search.h`, `GnCandidate`).
+ * Le référentiel est le bon ; la PROFONDEUR ne l'est pas. `/v1/eval` tranche
+ * autrement — il les omet dès que `ply > 0` plutôt que d'en montrer d'une
+ * autre profondeur. Ici on les garde, parce qu'une interface d'analyse les
+ * affiche, et on le dit.
  */
 EMSCRIPTEN_KEEPALIVE
 int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
@@ -460,10 +481,18 @@ int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
     const int count = (ranked < max_out) ? ranked : max_out;
 
     for (int i = 0; i < count; i++) {
+        const float *p = candidates[i].probs;
         out[i * 6 + 0] = (float)candidates[i].equity;
-        for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
-            out[i * 6 + 1 + k] = candidates[i].probs[k];
-        }
+        /* Le retournement, ici et une seule fois : mes gammons perdus sont ses
+         * gammons gagnés, et P(gain) se complémente. Même opération que
+         * `invert_probs` dans `gn_search.c` et que `Evaluation.mirrored()` en
+         * Python — trois écritures d'un fait, aucune n'étant l'endroit où le
+         * mettre en commun sans traverser la frontière du module. */
+        out[i * 6 + 1 + GN_P_WIN]     = 1.0f - p[GN_P_WIN];
+        out[i * 6 + 1 + GN_P_WIN_G]   = p[GN_P_LOSE_G];
+        out[i * 6 + 1 + GN_P_WIN_BG]  = p[GN_P_LOSE_BG];
+        out[i * 6 + 1 + GN_P_LOSE_G]  = p[GN_P_WIN_G];
+        out[i * 6 + 1 + GN_P_LOSE_BG] = p[GN_P_WIN_BG];
         if (out_ids != NULL) {
             gn_position_id(&candidates[i].play.result, out_ids + (size_t)i * 15);
         }

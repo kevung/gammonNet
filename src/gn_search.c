@@ -358,6 +358,10 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
 static int rank_plays_deepen(const GnNetwork *net, const GnSearchConfig *config,
                              int depth, GnMatchState state, int owner,
                              GnCandidate *out, int written);
+/* All the mass on the one outcome that happened. Declared here because the
+ * shallow fill needs it: a play that ends the game has a distribution, and it
+ * is a KNOWN one -- see `shallow_fill`. */
+static void terminal_probs(const GnPosition *pos, float out[GN_NUM_OUTPUTS]);
 
 static int compare_candidates(const void *a, const void *b)
 {
@@ -390,8 +394,14 @@ static int compare_candidates(const void *a, const void *b)
  *     rest of the process, to every later search, silently -- the single most
  *     damaging line this feature could have contained.
  *
- * Terminal positions are computed, never evaluated (see gn_terminal_equity);
- * their `probs` are zeroed and the value sweep handles them.
+ * Terminal positions are computed, never evaluated (see gn_terminal_equity).
+ * The value sweep takes their equity from `terminal_value` and never reads
+ * their `probs` -- but a CALLER does, and a zero vector is not "no answer",
+ * it is a perfectly formed distribution saying the game is lost outright.
+ * A play that bears off the last checker has a distribution, and it is known
+ * exactly: `terminal_probs` writes it. This costs nothing (no evaluation) and
+ * closes the one place where `GnCandidate.probs` used to be plausible and
+ * wrong -- CLAUDE.md rule 2's failure mode, on the last play of every game.
  *
  * WHY BOTH NETWORKS BATCH, AGAINST WHAT THE MICRO-BENCHMARK SAID
  *
@@ -441,7 +451,7 @@ static int shallow_fill(const GnNetwork *net, GnCandidate *out, int n,
             const GnPosition *result = &out[i].play.result;
 
             if (gn_position_is_over(result)) {
-                memset(out[i].probs, 0, sizeof(out[i].probs));
+                terminal_probs(result, out[i].probs);
                 continue;
             }
             if (is_prune ? evaluate_exact(result, out[i].probs)

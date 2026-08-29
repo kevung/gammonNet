@@ -88,7 +88,67 @@ const probsOk = reference.every((c) =>
   && c.probs.every((p) => Number.isFinite(p) && p >= 0 && p <= 1));
 check("cinq probabilités finies et dans [0,1] par candidat", probsOk);
 
-/* 5. La décision de videau rend ses trois équités, et un verdict connu. */
+/* 5. LES PROBABILITÉS ET L'ÉQUITÉ DÉCRIVENT LE MÊME JOUEUR.
+ *
+ * Le second défaut silencieux de cette API, et le plus difficile à voir :
+ * `GnCandidate.probs` décrit la position RÉSULTANTE — donc l'adversaire —
+ * alors que `GnCandidate.equity` du même candidat est déjà retournée du côté
+ * du joueur. `gnw_rank_plays` recopiait les deux tels quels. Sur l'ouverture
+ * 3-1, un appelant lisait « 44,56 % de victoires » sous une équité de +0,166.
+ *
+ * AUCUN CONTRÔLE D'IMBRICATION NE PEUT LE VOIR : une distribution retournée
+ * reste parfaitement imbriquée (c'est le contrôle 4 ci-dessus, qui passait des
+ * deux côtés). Ce qui mord, c'est l'identité elle-même — l'équité cubeless
+ * money EST une fonction des cinq probabilités, donc si les deux champs
+ * parlent du même joueur, recalculer l'une depuis les autres doit reproduire
+ * l'autre. Sous l'inversion, la reconstruction sort avec le signe opposé, et
+ * aucune tolérance ne cache ça.
+ *
+ * À 0-PLY SEULEMENT, et c'est une limite honnête : au-delà, l'équité vient de
+ * la recherche profonde tandis que les cinq probabilités restent celles de la
+ * passe superficielle de classement (`gn_search.h`, `GnCandidate`). Le côté
+ * est le bon à toute profondeur ; l'identité, non. */
+const money = ([w, wg, wbg, lg, lbg]) => 2 * w + wg + wbg - lg - lbg - 1;
+
+const zeroPly = evaluator.rankPlays(POSITION, 0, 3, 1,
+                                    { ply: 0, filterTop: 0, filterInner: 0, max: 40 });
+const identity = zeroPly.every((c) => Math.abs(money(c.probs) - c.equity) < 1e-6);
+const worst = zeroPly.reduce((a, c) =>
+  Math.max(a, Math.abs(money(c.probs) - c.equity)), 0);
+check("0-ply : l'équité se recalcule depuis les cinq probabilités", identity,
+      `max|Δ| = ${worst.toExponential(2)}`);
+
+/* Et la lecture nue, celle qu'une interface affiche : faire le point de 5 à
+ * l'ouverture 3-1 laisse celui qui joue AU-DESSUS de la moitié. C'est le
+ * nombre que deux consommateurs ont lu à l'envers. */
+check("le meilleur coup d'ouverture donne >50 % au joueur qui le joue",
+      zeroPly[0].probs[0] > 0.5, `P(gain) = ${zeroPly[0].probs[0].toFixed(4)}`);
+
+/* 5b. LE COUP QUI FINIT LA PARTIE.
+ *
+ * `shallow_fill` mettait les probabilités d'un résultat terminal à zéro — un
+ * vecteur nul n'est pas « pas de réponse », c'est une distribution
+ * parfaitement formée qui dit « partie perdue sèche ». Retournée pour
+ * l'affichage, elle devenait « gain certain, aucun gammon » sur une sortie
+ * qui GAGNE un gammon : équité +2, probabilités disant +1. C'est le dernier
+ * coup de chaque partie, donc pas un cas de bord.
+ *
+ * Position : Blanc a un pion sur son point 2 et quatorze sortis, Noir a ses
+ * quinze pions dans sa zone intérieure et aucun sorti. Le 3-2 n'a qu'un coup,
+ * il sort le dernier pion, et c'est un gammon — jamais un backgammon, aucun
+ * pion noir ne traînant chez Blanc. */
+const FINISHER = "+L4PAAACAAAAAA";
+const last = evaluator.rankPlays(FINISHER, 0, 3, 2, { ply: 0, max: 5 });
+check("la sortie gagnante rend une seule ligne", last.length === 1, `${last.length}`);
+if (last.length === 1) {
+  const [w, wg, wbg, lg, lbg] = last[0].probs;
+  check("gammon gagné : (1, 1, 0, 0, 0) et équité +2",
+        w === 1 && wg === 1 && wbg === 0 && lg === 0 && lbg === 0
+        && Math.abs(last[0].equity - 2) < 1e-6,
+        `(${last[0].probs.join(", ")}) équité ${last[0].equity}`);
+}
+
+/* 6. La décision de videau rend ses trois équités, et un verdict connu. */
 const cube = evaluator.cubeDecision(POSITION, 0, { ...level, owner: 0 });
 const VERDICTS = new Set(["no-double", "double-take", "double-pass", "too-good"]);
 check("verdict de videau connu", VERDICTS.has(cube.action), cube.action);

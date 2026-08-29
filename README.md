@@ -101,12 +101,12 @@ evaluator.loadPrune(prune, files.prune_k);   // ×3.65, strongly recommended
 const level = Evaluator.level("normal");   // ply, move filters, pruning width
 
 // The 5 best moves, each with win / gammon / backgammon probabilities and equity.
-// Perspective: `equity` is the mover's, the five probabilities are the RESULTING
-// position's — so the opponent's. Mirror them (`1-win`, and swap the win/lose
-// gammon pairs) to show the mover's own chances. This is `GnCandidate`'s contract
-// (`gn_search.h`), which the WASM surface passes through unchanged; `/v1/eval`
-// over HTTP is the one place that mirrors for you. `cubeDecision` differs again:
-// its probabilities are already the decider's.
+// Perspective (v1.1.0): `probs` is the MOVER's, the same side as the `equity`
+// beside it — and the same side as `/v1/eval` over HTTP and as `cubeDecision`.
+// gammonNet has one convention now. `probs` is `[win, win_g, win_bg, lose_g,
+// lose_bg]`, nested. Before v1.1.0 it was the resulting position's (so the
+// opponent's) and a `forMover` field carried the mirror; `forMover` is gone
+// rather than left beside an already-mirrored `probs`.
 const moves = evaluator.rankPlays("4HPwATDgc/ABMA", 0, 3, 1, { ...level, max: 5 });
 
 // Cube decision: no-double, double-take and double-pass equities, and the verdict.
@@ -186,16 +186,23 @@ outcome).
 
 `probs` — `{win, win_g, win_bg, lose_g, lose_bg}` — carries the network's five nested
 probabilities alongside the equity, per `gn_infer.h`'s own insistence that the distribution is the
-real output. **On `/v1/eval` they are the mover's**, the same point of view as the `equity` beside
-them, so `2·win + win_g + win_bg − lose_g − lose_bg − 1` reproduces that equity exactly — a client
-can check it, and `tests/test_serve.py` does. (Underneath, `GnCandidate.probs` holds the *resulting*
-position's distribution, hence the opponent's; the server mirrors it. A mirrored nested
-distribution is still perfectly nested, so nothing but that identity catches the confusion.)
-`/v1/eval` omits `probs` for a candidate scored below the network (`ply >= 2`, where the number
-would describe a shallow ranking pass, not the move). `/v1/cube`'s `probs` is always the
-**decider's own** distribution (`decider_on_roll: false` mirrors it), while the four cube equities
-are always the **doubler's**; `take`/`pass` (kind `"take"`) are their exact negation. Crawford is
-not part of this contract and is assumed false — a documented limitation, not a silent guess.
+real output. **Everywhere gammonNet hands out a distribution next to an equity, both describe the
+same player** — the mover on `/v1/eval` and on the WASM `rankPlays`, the decider on `/v1/cube` and
+on `cubeDecision`. So `2·win + win_g + win_bg − lose_g − lose_bg − 1` reproduces that equity
+exactly; a client can check it, and `tests/test_serve.py` and `verify/api_invariants.mjs` both do.
+(Underneath, `GnCandidate.probs` holds the *resulting* position's distribution, hence the
+opponent's; the two published surfaces mirror it. A mirrored nested distribution is still perfectly
+nested, so nothing but that identity catches the confusion — which is how the inversion survived a
+monotonicity test on both sides.)
+
+The two surfaces still differ on **depth**, and deliberately: past 0-ply the five numbers come from
+the shallow ranking pass while the equity comes from the deep search (`gn_search.h`, `GnCandidate`).
+`/v1/eval` therefore omits `probs` for any candidate once `ply >= 1`; the WASM `rankPlays` keeps
+them, because an analysis UI displays them, and says so in its own doc comment. Same side, not the
+same depth. `/v1/cube`'s `probs` is always the **decider's own** distribution
+(`decider_on_roll: false` mirrors it), while the four cube equities are always the **doubler's**;
+`take`/`pass` (kind `"take"`) are their exact negation. Crawford is not part of this contract and is
+assumed false — a documented limitation, not a silent guess.
 
 Measured, not assumed: 100 sequential `/v1/eval` requests over loopback HTTP, 0-ply, this
 machine — **2.4 ms/request**. A single 2-ply decision with the default `k=12` pruning network —

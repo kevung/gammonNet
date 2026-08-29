@@ -25,8 +25,17 @@ node verify/api_invariants.mjs
 
 Parity says the module **computes** like the native engine. This says it **answers what it
 promises** — that the ranked candidate list is ordered by equity, that its first entry is the move
-`bestPlay` returns, that every candidate carries five usable probabilities, and that with the move
-filter off, the N best moves do not depend on N.
+`bestPlay` returns, that every candidate carries five usable probabilities, that those probabilities
+describe **the same player as the equity beside them**, and that with the move filter off, the N
+best moves do not depend on N.
+
+The frame-of-reference check is the newest, and it took two misreadings by the same consumer to get
+written. A nesting check cannot do it: a mirrored distribution is still perfectly nested. What bites
+is the identity — cubeless money equity **is** a function of the five probabilities, so at 0-ply,
+recomputing one from the others must reproduce it. Under an inversion the reconstruction comes out
+with the opposite sign, and no tolerance hides that. Alongside it, the move that **ends** the game:
+its probabilities were zeroed, which, mirrored, said "certain win, no gammon" on a bear-off that
+wins a gammon.
 
 That last one is not decoration. `rankPlays` once sized its candidate buffer to the number of moves
 you asked for, and the search truncates to its buffer **before evaluating anything**, in

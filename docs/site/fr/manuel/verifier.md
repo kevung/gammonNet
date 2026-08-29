@@ -51,8 +51,18 @@ node verify/api_invariants.mjs
 
 La parité dit que le module **calcule** comme le moteur natif. Ceci dit qu'il **répond ce qu'il
 promet** : que la liste des coups candidats est ordonnée par équité, que son premier élément est
-bien le coup que rend `bestPlay`, que chaque candidat porte cinq probabilités exploitables, et que,
-filtre de coups éteint, les N meilleurs coups ne dépendent pas de N.
+bien le coup que rend `bestPlay`, que chaque candidat porte cinq probabilités exploitables, que
+celles-ci décrivent **le même joueur que l'équité posée à côté d'elles**, et que, filtre de coups
+éteint, les N meilleurs coups ne dépendent pas de N.
+
+Le contrôle de référentiel est le plus récent, et il a fallu deux erreurs de lecture chez le même
+consommateur pour l'écrire. Il ne peut pas se faire par une vérification d'imbrication : une
+distribution retournée reste parfaitement imbriquée. Ce qui mord, c'est l'identité — l'équité
+cubeless money **est** une fonction des cinq probabilités, donc à 0-ply, recalculer l'une depuis
+les autres doit reproduire l'autre, au signe près. Sous une inversion, la reconstruction sort avec
+le signe opposé, et aucune tolérance ne cache ça. S'y ajoute le coup qui **finit** la partie : ses
+probabilités valaient zéro, ce qui, retourné, disait « gain certain, aucun gammon » sur une sortie
+qui gagne un gammon.
 
 Ce dernier point n'est pas décoratif. `rankPlays` dimensionnait son tampon de candidats sur le
 nombre de coups demandé, et la recherche tronque à la taille de son tampon **avant d'évaluer quoi
