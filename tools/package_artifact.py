@@ -339,10 +339,69 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 """
 
 
+#: CE QUI CHANGE DANS CETTE VERSION, en tête des notes.
+#:
+#: Une archive dont les notes ne disent que la force mesurée laisse un
+#: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
+#: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
+#: faut pas lui demander.
+CHANGES = """## Ce qui change depuis v1.0.1 — À LIRE AVANT DE METTRE À JOUR
+
+**`rankPlays` rend maintenant les probabilités du JOUEUR QUI JOUE le coup**, du
+même côté que l'`equity` posée à côté d'elles. Jusqu'en v1.0.1 elles décrivaient
+la position *résultante*, donc l'adversaire, et un champ `forMover` portait le
+retournement.
+
+| | v1.0.1 | v1.1.0 |
+|---|---|---|
+| `probs` | position résultante (adversaire) | **le joueur qui joue** |
+| `forMover` | le retournement, à afficher | **supprimé** |
+
+Sur l'ouverture 3-1, le meilleur coup passe donc de `probs[0] = 0,4456` à
+**0,5544** — la valeur que `/v1/eval` rend déjà en HTTP, et celle qu'une
+interface affiche.
+
+**Ce que vous devez faire** : si vous lisiez `probs`, retirez votre
+retournement. Si vous lisiez `forMover`, lisez `probs`. `forMover` a été
+supprimé plutôt que laissé en place à côté d'un `probs` déjà retourné : un
+appelant qui ne relit pas ces notes obtient `undefined`, ce qui casse tout de
+suite — au contraire de cinq nombres parfaitement plausibles et faux.
+
+**Comment le vérifier vous-même** : à `ply: 0`, `2·w + wg + wbg − lg − lbg − 1`
+reproduit l'équité du même candidat. `verify/api_invariants.mjs` le contrôle sur
+les douze coups de l'ouverture 3-1 (max|Δ| mesuré : 7,68e-8). Aucune
+vérification d'imbrication ne peut voir une inversion de référentiel — une
+distribution retournée reste parfaitement imbriquée — et c'est par là que
+celle-ci est passée.
+
+**Un défaut corrigé au passage** : les probabilités d'un coup qui TERMINE la
+partie valaient zéro. Retournées pour l'affichage, elles disaient « gain
+certain, aucun gammon » sur une sortie qui gagne un gammon (équité +2,
+probabilités disant +1). C'est le dernier coup de chaque partie. Elles portent
+désormais l'issue exacte, calculée et non évaluée.
+
+**Ce qui NE change pas** : les poids, bit pour bit — mêmes SHA-256 que ceux de
+v1.0.1, seuls les noms de fichiers portent la nouvelle version (`BRIEF.md` §8 :
+un réseau ne devient un autre réseau que si ses poids changent). Aucune équité
+ne bouge, aucune mesure de force ci-dessous n'est affectée, et la parité
+WebAssembly ↔ natif reste à 0 en scalaire et 6,407e-7 en SIMD.
+
+**Ce qui reste divergent, et délibérément** : au-delà de 0-ply, ces cinq nombres
+viennent de la passe superficielle qui a servi à classer les coups, pas de la
+recherche profonde qui a produit l'équité. Le côté est le bon à toute
+profondeur ; la profondeur, non. `/v1/eval` tranche autrement — il les omet dès
+`ply >= 1`. `rankPlays` les garde, parce qu'une interface d'analyse les affiche,
+et le dit dans sa propre documentation.
+
+"""
+
+
 def release_notes(version: str, date: str, files: list[tuple[str, str, int]]) -> str:
     listing = "\n".join(f"| `{name}` | {size:,} | `{digest}` |".replace(",", " ")
                         for name, digest, size in files)
     return f"""# gammonNet {version} — {date}
+
+{CHANGES}
 
 ## La force, telle qu'elle est mesurée
 

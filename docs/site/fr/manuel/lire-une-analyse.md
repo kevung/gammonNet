@@ -13,18 +13,33 @@ Chaque candidat porte :
 |---|---|
 | `equity` | l'équité du coup, **du point de vue de celui qui le joue** |
 | `resultId` | l'identifiant de la position atteinte |
-| `probs` | les cinq probabilités de la position **résultante** |
-| `forMover` | les mêmes, **retournées** pour l'affichage |
+| `probs` | les cinq probabilités, **du même point de vue que `equity`** : `[gain, gammon, backgammon, gammon adverse, backgammon adverse]` |
 
-```{admonition} Le piège des probabilités
+```{admonition} Un seul référentiel, depuis la v1.1.0
+:class: note
+
+Les cinq probabilités sont celles du **joueur qui joue le coup** — le même côté que l'`equity`
+posée à côté d'elles, et le même que celui de `cubeDecision` et de `/v1/eval`. Vous pouvez le
+vérifier vous-même : à `ply: 0`,
+
+    2·gain + gammon + backgammon − gammon adverse − backgammon adverse − 1 = equity
+
+C'est le contrôle qui a fermé le piège, parce qu'aucun autre ne le pouvait : une distribution
+retournée reste parfaitement imbriquée, donc parfaitement plausible.
+
+**Avant la v1.1.0**, `probs` décrivait la position *résultante* — donc l'adversaire — et un champ
+`forMover` portait le retournement. `forMover` n'existe plus : le laisser à côté d'un `probs` déjà
+retourné aurait recréé le piège. Un code qui l'utilisait lit `undefined`, ce qui est bruyant.
+```
+
+```{admonition} Le côté est le bon, la profondeur ne l'est pas
 :class: warning
 
-Les cinq probabilités décrivent la position **résultante** — donc vues par l'**adversaire**, qui a
-maintenant le trait. C'est la convention du moteur, et l'inverser en silence produirait cinq nombres
-parfaitement plausibles et faux.
-
-`forMover` fait la conversion : `win` devient `1 − P(gain)`, et les gammons changent de camp.
-Affichez celui-là.
+Au-delà de `ply: 0`, les cinq probabilités viennent de la **passe superficielle** qui a servi à
+classer les coups, alors que l'équité vient de la recherche profonde. Elles restent une lecture
+0-ply légitime de la position atteinte, mais l'identité ci-dessus ne tient plus, et ce ne sont pas
+les nombres qui ont produit l'équité affichée à côté. `/v1/eval` tranche autrement : il les omet
+dès `ply >= 1` plutôt que d'en montrer d'une autre profondeur.
 ```
 
 Exemple réel, position de départ et jet 3-1, au niveau « normal » :

@@ -90,10 +90,24 @@ export class Evaluator {
    * ANALYSER. Ici chaque candidat porte son équité, les cinq probabilités et
    * l'identifiant de la position résultante.
    *
-   * ATTENTION AUX PROBABILITÉS : elles décrivent la position RÉSULTANTE, donc
-   * vues par l'ADVERSAIRE — la convention du moteur. `forMover` les retourne
-   * pour l'affichage ; les inverser en silence produirait cinq nombres
-   * parfaitement plausibles et faux.
+   * LE RÉFÉRENTIEL DES PROBABILITÉS EST CELUI DU JOUEUR QUI JOUE — le même
+   * que celui de `equity`, à côté d'elles, et le même que celui de
+   * `/v1/eval` et de `cubeDecision`. gammonNet n'a plus qu'une convention.
+   *
+   * Avant v1.1.0 elles décrivaient la position RÉSULTANTE, donc l'adversaire,
+   * et `forMover` portait le retournement. `forMover` A DISPARU : le laisser
+   * à côté d'un `probs` déjà retourné aurait recréé le piège au lieu de le
+   * fermer. Un code qui l'utilisait lit désormais `undefined`, ce qui est
+   * bruyant — au contraire de cinq nombres parfaitement plausibles et faux.
+   *
+   * `probs` est un tableau de cinq : `[gain, gammon gagné, backgammon gagné,
+   * gammon perdu, backgammon perdu]`, imbriqués (un backgammon est un gammon
+   * est un gain).
+   *
+   * CE QU'ELLES NE SONT PAS : au-delà de `ply: 0`, elles viennent de la passe
+   * superficielle qui a servi à classer les coups, pas de la recherche
+   * profonde qui a produit l'équité. Le côté est le bon, la profondeur non —
+   * `2·gain + gammon − gammonPerdu … = equity` ne tient donc qu'à 0-ply.
    */
   rankPlays(positionId, turn, d1, d2, {
     ply = 0, filterTop = 0, filterInner = 0,
@@ -125,14 +139,9 @@ export class Evaluator {
         out.push({
           equity: m.HEAPF32[base],
           resultId: m.UTF8ToString(idPtr + i * 15),
-          // Vues par l'adversaire, comme le moteur les produit.
+          // Du côté du joueur qui joue, comme `equity` : `gnw_rank_plays`
+          // retourne la distribution une fois pour toutes.
           probs,
-          // Et retournées, pour l'affichage.
-          forMover: {
-            win: 1 - probs[0],
-            winGammon: probs[3], winBackgammon: probs[4],
-            loseGammon: probs[1], loseBackgammon: probs[2],
-          },
         });
       }
       return out;

@@ -11,17 +11,32 @@ const plays = evaluator.rankPlays("4HPwATDgc/ABMA", 0, 3, 1,
 |---|---|
 | `equity` | the equity of the move, **from the point of view of the player making it** |
 | `resultId` | the identifier of the position reached |
-| `probs` | the five probabilities of the **resulting** position |
-| `forMover` | the same, **flipped** for display |
+| `probs` | the five probabilities, **from the same point of view as `equity`**: `[win, gammon, backgammon, opponent gammon, opponent backgammon]` |
 
-```{admonition} The probability trap
+```{admonition} One frame of reference, since v1.1.0
+:class: note
+
+The five probabilities are the **mover's** — the same side as the `equity` next to them, and the
+same side as `cubeDecision` and `/v1/eval`. You can check it yourself: at `ply: 0`,
+
+    2·win + gammon + backgammon − opp. gammon − opp. backgammon − 1 = equity
+
+That is the check that closed the trap, because nothing else could: a mirrored distribution is
+still perfectly nested, hence perfectly plausible.
+
+**Before v1.1.0**, `probs` described the *resulting* position — the opponent's — and a `forMover`
+field carried the flip. `forMover` is gone: leaving it beside an already-mirrored `probs` would
+have rebuilt the trap. Code that used it now reads `undefined`, which is loud.
+```
+
+```{admonition} Right side, wrong depth
 :class: warning
 
-The five probabilities describe the **resulting** position — so they are seen by the **opponent**,
-who now has the roll. That is the engine's convention, and flipping it silently would produce five
-perfectly plausible, wrong numbers.
-
-`forMover` does the conversion. Display that one.
+Past `ply: 0` the five probabilities come from the **shallow ranking pass**, while the equity comes
+from the deep search. They remain a legitimate 0-ply reading of the position reached, but the
+identity above no longer holds, and they are not the numbers that produced the equity beside them.
+`/v1/eval` decides the other way: it omits them once `ply >= 1` rather than show a distribution
+from a different depth.
 ```
 
 Real example, opening position, roll 3-1, at the "normal" level:
