@@ -144,10 +144,12 @@ def main() -> int:
     # passerait son entraînement à compenser un mauvais choix d'unité. UNE
     # échelle PAR COUCHE (2026-08-31) : une échelle unique se calibre sur son
     # propre écrêtage par défaut et sous-estime les couches profondes — voir
-    # la docstring de `calibrate_activation_scales`.
+    # la docstring de `calibrate_activation_scales`. `scales[0]` calibre
+    # `student.input_quant` (fait par l'appel lui-même) ; `scales[1:]`
+    # calibrent les ClippedReLU du tronc, dans l'ordre.
     scales = calibrate_activation_scales(student, hold_x[:2048])
     relu_modules = [m for m in student.trunk if hasattr(m, "scale")]
-    for module, scale in zip(relu_modules, scales):
+    for module, scale in zip(relu_modules, scales[1:]):
         module.scale = scale
     print(f"  échelles d'activation calibrées : "
           f"{[f'2^{int(np.log2(s))}' for s in scales]}")

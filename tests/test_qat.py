@@ -145,9 +145,21 @@ def test_a_mismatched_architecture_is_refused():
 def test_the_calibrated_activation_scales_are_powers_of_two():
     net = QuantizedProb5(hidden_sizes=(32, 16))
     scales = calibrate_activation_scales(net, torch.rand(64, 196))
-    assert len(scales) == 2
+    # One for `input_quant` (the raw features) plus one per hidden layer.
+    assert len(scales) == 3
     for scale in scales:
         assert math.log2(scale) == int(math.log2(scale))
+
+
+def test_calibration_sets_input_quant_too():
+    """The deployed C kernel has no float entry point -- it takes uint8
+    input, full stop. `input_quant` must be calibrated and set exactly like
+    every other ClippedReLU, not left at the constructor's default."""
+    net = QuantizedProb5(hidden_sizes=(32, 16), activation_scale=1.0 / 64.0)
+    features = torch.rand(64, 196) * 5.0  # matches the real corpus's range
+    scales = calibrate_activation_scales(net, features)
+    assert net.input_quant.scale == scales[0]
+    assert net.input_quant.scale != 1.0 / 64.0
 
 
 def test_calibration_does_not_self_contaminate_across_layers():
@@ -166,7 +178,8 @@ def test_calibration_does_not_self_contaminate_across_layers():
         linears = [m for m in net.trunk if isinstance(m, QuantizedLinear)]
         linears[1].linear.weight.mul_(50.0)
     scales = calibrate_activation_scales(net, torch.rand(64, 196))
-    assert scales[1] > scales[0]
+    # scales[0] is input_quant's; scales[1]/[2] are the two hidden layers'.
+    assert scales[2] > scales[1]
 
 
 def test_the_scale_helper_never_saturates():

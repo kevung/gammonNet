@@ -54,6 +54,34 @@ def round_ste(x: torch.Tensor) -> torch.Tensor:
     return _RoundStraightThrough.apply(x)
 
 
+class _FloorStraightThrough(torch.autograd.Function):
+    """`floor` à l'aller, identité au retour.
+
+    `gn_gemm_int8_relu[_pc]` requantifie par un décalage arithmétique pur
+    (`accumulateur >> shift`), délibérément SANS terme d'arrondi — le
+    commentaire du noyau C le dit : « a rounding multiply here would be the
+    one place the two targets could disagree ; a shift cannot ». Un décalage
+    arithmétique est un PLANCHER, pas un arrondi au plus proche. Simuler
+    l'activation avec `round_ste` pendant l'entraînement — ce que faisait ce
+    module jusqu'au 2026-08-31 — apprend donc des poids optimisés pour une
+    quantification que le noyau ne fait pas : un biais systématique vers le
+    bas, qui s'accumule couche après couche (mesuré : diff moyenne 0,015 à la
+    couche 0, 0,62 à la couche 3, sur un réseau à quatre couches cachées).
+    """
+
+    @staticmethod
+    def forward(ctx, x):
+        return torch.floor(x)
+
+    @staticmethod
+    def backward(ctx, grad):
+        return grad
+
+
+def floor_ste(x: torch.Tensor) -> torch.Tensor:
+    return _FloorStraightThrough.apply(x)
+
+
 def power_of_two_scale(maximum: torch.Tensor, levels: int) -> torch.Tensor:
     """L'échelle `2^k` la plus fine qui ne sature pas, par canal.
 
@@ -109,6 +137,12 @@ class ClippedReLU(nn.Module):
     `ceiling` est en unités de l'activation quantifiée. À l'exécution les
     activations sont des entiers de 0 à 127 ; ici on simule leur grille sans
     quitter le flottant, pour que le gradient continue de circuler.
+
+    `floor_ste`, pas `round_ste` : le noyau C requantifie par un décalage
+    arithmétique pur (`>> shift`), un PLANCHER, jamais un arrondi au plus
+    proche — voir la docstring de `_FloorStraightThrough`. Simuler l'autre
+    arrondi ici entraînerait des poids optimisés pour une arithmétique que le
+    déploiement n'exécute pas.
     """
 
     def __init__(self, levels: int = ACTIVATION_MAX, scale: float = 1.0 / 64.0):
@@ -118,7 +152,7 @@ class ClippedReLU(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         clamped = torch.clamp(x, min=0.0, max=self.levels * self.scale)
-        return round_ste(clamped / self.scale) * self.scale
+        return floor_ste(clamped / self.scale) * self.scale
 
     def extra_repr(self) -> str:
         return f"levels={self.levels}, scale={self.scale}"
@@ -137,6 +171,15 @@ class QuantizedProb5(nn.Module):
     def __init__(self, hidden_sizes=(512, 512, 256, 128), input_size: int = 196,
                  activation_scale: float = 1.0 / 64.0):
         super().__init__()
+        # The deployed C kernel (`gn_gemm_int8_relu_pc`) takes uint8 input --
+        # there is no float entry point. Simulating that grid on the RAW
+        # features here, not just between hidden layers, is what makes
+        # `forward()` a faithful rehearsal of what deployment will compute;
+        # omitting it trains a network for an input precision the kernel
+        # never gets to use (found 2026-08-31, comparing an export against
+        # the real kernel: a mean gap of ~0.016 on the five probabilities
+        # that this one line removes).
+        self.input_quant = ClippedReLU(scale=activation_scale)
         layers = []
         previous = input_size
         for size in hidden_sizes:
@@ -150,7 +193,7 @@ class QuantizedProb5(nn.Module):
         self.activation_scale = activation_scale
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return torch.sigmoid(self.head(self.trunk(x)))
+        return torch.sigmoid(self.head(self.trunk(self.input_quant(x))))
 
     def load_float_weights(self, state: dict) -> None:
         """Amorce depuis le réseau flottant : les poids, tels quels.
@@ -195,11 +238,21 @@ def calibrate_activation_scales(model: nn.Module, samples: torch.Tensor,
     suivante : son propre maximum devient son échelle, appliquée (écrêtage ET
     arrondi comme à l'exécution) avant de mesurer la couche d'après. C'est la
     même chaîne que `ClippedReLU.forward`, rejouée à l'avance.
+
+    `scales[0]` est l'échelle de `model.input_quant` (les caractéristiques
+    BRUTES, avant toute couche) ; `scales[1:]` sont celles des couches
+    cachées, une par `ClippedReLU` du tronc, dans l'ordre.
     """
     model.eval()
     scales: list[float] = []
     with torch.no_grad():
-        activations = samples
+        maximum = float(samples.clamp(min=0).max())
+        input_scale = (1.0 / 64.0 if maximum <= 0.0
+                       else 2.0 ** math.ceil(math.log2(maximum / levels)))
+        scales.append(input_scale)
+        model.input_quant.scale = input_scale
+        activations = model.input_quant(samples)
+
         for module in model.trunk:
             if isinstance(module, QuantizedLinear):
                 integers, weight_scale = module.quantized_weight()
