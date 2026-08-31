@@ -58,3 +58,32 @@ entre les deux n'a été mesuré.
   noyau) n'est pas isolé — il fait partie du nombre mesuré, pas soustrait.
 - Aucune mesure WebAssembly : `Int8Network` est un chemin Python natif, pas
   câblé dans `gn_wasm.c`.
+
+## Mise à jour — le lot, câblé (2026-08-31, même jour)
+
+`Int8Network.forward_batch` (un seul aller-retour `gn_gemm_int8_relu_pc` par
+couche pour TOUS les candidats d'une décision, dédupliqués par résultat) et
+`Int8NetworkEngine.choose` réécrit pour l'utiliser plutôt que boucler sur
+`forward`. Bit-exact contre `forward` (testé : `forward_batch` sur N
+positions rend exactement ce que N appels à `forward` rendraient).
+
+Remesuré sur `melbaa`, mêmes conditions :
+
+| | float32 | int8 (avec lot) | rapport |
+|---|---|---|---|
+| décision complète | 83 décisions/s | **108 décisions/s** | **×1,30** |
+
+**Le seuil DS-09 (×1,30) est franchi en situation réelle, pas seulement au
+banc du noyau nu.** `forward` seul (une position à la fois, sans lot) reste
+inchangé à ×0,24 — c'est attendu et documenté plus haut : c'est
+`forward_batch`, pas `forward`, qui est le chemin réellement rapide.
+
+Un garde-fou du noyau est apparu en le mesurant : l'accumulateur de
+`gn_gemm_int8_relu_pc` plafonne un lot à 256 (`int32_t[256]`, un plafond du
+noyau, pas un réglage). Sur les 500 décisions de la marche aléatoire de ce
+banc, **une** en a demandé 305 avant déduplication — la marche navigue vers
+des positions qu'aucune partie réelle ne visite (aucune politique ne la
+guide), pas un cas qui inquiète en jeu réel. `Int8NetworkEngine.choose`
+déduplique déjà par résultat (plusieurs ordres de coups aboutissent souvent
+à la même position, surtout aux doubles) ; le banc écarte simplement les
+décisions qui dépassent encore le plafond après déduplication, et le dit.

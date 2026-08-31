@@ -33,6 +33,13 @@ from .rules import _LIB
 ACTIVATION_MAX = 127
 MAGIC = b"BGQ8"
 
+#: `gn_gemm_int8_relu_pc`'s own accumulator buffer is `int32_t[256]`
+#: (`src/gn_gemm_int8.c`) -- a hard kernel limit, not a tuning knob. Refused
+#: here rather than silently chunked: a decision with over 256 candidate
+#: plays does not happen in this game, and a caller that ever saw one would
+#: want to know, not have it quietly split into two calls.
+MAX_BATCH = 256
+
 _LIB.gn_gemm_int8_relu_pc.argtypes = [
     ctypes.POINTER(ctypes.c_int8),
     ctypes.c_int,
@@ -148,3 +155,49 @@ class Int8Network:
             np.float64) * last_scale
         totals = self.head_bias + self.head_weight @ dequantized
         return list(1.0 / (1.0 + np.exp(-totals)))
+
+    def forward_batch(self, features_batch) -> list[list[float]]:
+        """N positions, N×5 probabilités, EN UN SEUL aller-retour C par
+        couche — pas une boucle sur `forward`.
+
+        La raison d'être de cette méthode est chiffrée, pas supposée :
+        `docs/mesures/2026-08-31-T73-int8-debit-taille.md` mesure `forward`
+        (une position à la fois, batch=1) à ×0,22 de float32 — le noyau
+        déterministe PERD sans lot (`bench_gemm_int8.c` : ×0,79 au lot 1,
+        contre ×2,13 au lot 32, le point que DS-09 a franchi). Cette méthode
+        est ce qui permet à un appelant d'atteindre CE point-là.
+        """
+        batch = len(features_batch)
+        if batch == 0:
+            return []
+        if batch > MAX_BATCH:
+            raise ValueError(
+                f"{batch} positions, au-delà du lot maximal du noyau ({MAX_BATCH})")
+        for features in features_batch:
+            if len(features) != self.input_size:
+                raise ValueError(
+                    f"{len(features)} caractéristiques, {self.input_size} attendues")
+
+        # Feature-major, comme le noyau l'exige : input[j*batch + n].
+        activations = (ctypes.c_uint8 * (self.input_size * batch))()
+        for n, features in enumerate(features_batch):
+            for j, x in enumerate(features):
+                activations[j * batch + n] = max(
+                    0, min(ACTIVATION_MAX, round(x / self.input_scale)))
+
+        for layer in self.layers:
+            out = (ctypes.c_uint8 * (layer.rows * batch))()
+            status = _LIB.gn_gemm_int8_relu_pc(
+                layer.weights, layer.rows, layer.cols, layer.bias,
+                activations, batch, layer.shifts, out)
+            if status != 0:
+                raise ValueError("gn_gemm_int8_relu_pc a refusé cette couche")
+            activations = out
+
+        last_scale = self.output_scales[-1]
+        width = self.hidden_sizes[-1]
+        dequantized = np.frombuffer(activations, dtype=np.uint8).astype(
+            np.float64).reshape(width, batch) * last_scale
+        totals = self.head_bias[:, None] + self.head_weight @ dequantized  # (5, batch)
+        probs = 1.0 / (1.0 + np.exp(-totals))
+        return [probs[:, n].tolist() for n in range(batch)]

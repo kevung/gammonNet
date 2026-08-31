@@ -95,7 +95,28 @@ def main() -> int:
     print(f"  rapport   ×{int8_rate / float_rate:.2f} (>1 = int8 plus rapide)\n")
 
     # ── 2. La décision complète : choisir un coup, tous ses candidats ───
-    cases = walk(args.decisions, seed=20260832)
+    from gammonnet.infer_int8 import MAX_BATCH
+
+    raw_cases = walk(args.decisions, seed=20260832)
+    cases = []
+    skipped = 0
+    for position, d1, d2 in raw_cases:
+        results = {p.result for p in position.legal_plays(d1, d2)
+                  if not p.result.is_over()}
+        if len(results) > MAX_BATCH:
+            # La marche aléatoire de `walk` erre vers des positions qu'un
+            # jeu réel ne visite quasi jamais (aucune politique ne la
+            # guide) ; le noyau plafonne son lot à 256 par construction
+            # (`gn_gemm_int8_relu_pc`, accumulateur int32_t[256]) — un
+            # décompte réel, pas une approximation à masquer.
+            skipped += 1
+            continue
+        cases.append((position, d1, d2))
+    if skipped:
+        print(f"  ({skipped} décisions écartées : plus de {MAX_BATCH} résultats "
+              f"distincts — la marche aléatoire de ce banc, pas une décision "
+              f"de jeu réel)\n")
+
     float_engine = NetworkEngine()
     int8_engine = Int8NetworkEngine()
     rng = random.Random(0)

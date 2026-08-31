@@ -264,6 +264,25 @@ class Int8NetworkEngine:
             return None
 
         network = self._load()
+
+        # All non-terminal candidates in ONE call to `Int8Network.forward_batch`,
+        # not a loop over `forward` — the whole reason for its existence
+        # (`docs/mesures/2026-08-31-T73-int8-debit-taille.md`): the kernel
+        # LOSES to float32 at batch=1 (×0,22 measured), and a decision's
+        # candidates are exactly the batch that gets it back.
+        #
+        # Deduplicated by RESULT, not one entry per play: many move orderings
+        # land on the same final position (doubles especially), and the
+        # kernel's accumulator caps a batch at 256 — evaluating the same
+        # position twice would spend that budget on nothing.
+        unique_results = list({play.result for play in plays
+                               if not play.result.is_over()})
+        probs_by_play = {}
+        if unique_results:
+            batch = network.forward_batch(
+                [codec.encode(result) for result in unique_results])
+            probs_by_play = dict(zip(unique_results, batch))
+
         best, best_equity = None, None
         for play in plays:
             if play.result.is_over():
@@ -271,7 +290,7 @@ class Int8NetworkEngine:
                 # hence the minus.
                 equity = -float(game_value(play.result, position.turn))
             else:
-                w, wg, wbg, lg, lbg = network.forward(codec.encode(play.result))
+                w, wg, wbg, lg, lbg = probs_by_play[play.result]
                 equity = 2.0 * w + wg + wbg - lg - lbg - 1.0
 
             if best_equity is None or equity < best_equity:

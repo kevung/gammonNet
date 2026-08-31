@@ -132,3 +132,59 @@ def test_forward_refuses_the_wrong_feature_count():
 
     with pytest.raises(ValueError):
         net.forward([0.0] * 10)
+
+
+def _load_tmp_net(model, scales, name: str) -> Int8Network:
+    buffer = io.BytesIO()
+    write_int8_model(buffer, model, hidden_sizes=[8, 4], input_size=16,
+                     input_scale=scales[0], output_scales=scales[1:])
+    path = ROOT / "build" / f"test_infer_int8_{name}.bin"
+    path.write_bytes(buffer.getvalue())
+    try:
+        return Int8Network.load(path)
+    finally:
+        path.unlink(missing_ok=True)
+
+
+@needs_lib
+def test_forward_batch_matches_forward_bit_for_bit():
+    """The whole point of `forward_batch`
+    (`docs/mesures/2026-08-31-T73-int8-debit-taille.md`: `forward` loses to
+    float32 at batch=1, ×0,22 measured) is speed, not a different answer —
+    it must render EXACTLY what N calls to `forward` would, not merely
+    something close."""
+    model, scales = _tiny_model_and_scales()
+    net = _load_tmp_net(model, scales, "batch_match")
+
+    rng = torch.Generator().manual_seed(7)
+    features = (torch.rand(15, 16, generator=rng) * 3.0).tolist()
+
+    individually = [net.forward(f) for f in features]
+    batched = net.forward_batch(features)
+
+    assert len(batched) == len(individually)
+    for single, together in zip(individually, batched):
+        assert single == together
+
+
+@needs_lib
+def test_forward_batch_handles_a_single_candidate_and_an_empty_batch():
+    model, scales = _tiny_model_and_scales()
+    net = _load_tmp_net(model, scales, "batch_edges")
+
+    assert net.forward_batch([]) == []
+
+    features = torch.rand(16).tolist()
+    assert net.forward_batch([features]) == [net.forward(features)]
+
+
+@needs_lib
+def test_forward_batch_refuses_more_than_the_kernels_accumulator_holds():
+    from gammonnet.infer_int8 import MAX_BATCH
+
+    model, scales = _tiny_model_and_scales()
+    net = _load_tmp_net(model, scales, "batch_overflow")
+
+    features = torch.rand(16).tolist()
+    with pytest.raises(ValueError):
+        net.forward_batch([features] * (MAX_BATCH + 1))
