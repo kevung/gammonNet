@@ -40,6 +40,7 @@
 #include "gn_bearoff.h"
 #include "gn_cube.h"
 #include "gn_evalcache.h"
+#include "gn_gemm_int8.h"
 #include "gn_infer.h"
 
 static GnNetwork *g_network = NULL;
@@ -631,4 +632,28 @@ double gnw_best_play(const char *position_id, int turn, int d1, int d2,
         *out_evaluations = (int)gn_search_evaluations();
     }
     return best.equity;
+}
+
+/*
+ * T73 -- the deterministic int8 GEMM, exposed raw for the native<->Wasm
+ * parity check (`wasm-parity-int8`). Not wired into inference yet: no
+ * exported model is quantised. This is the kernel alone, on synthetic
+ * vectors the native side already computed -- a thin passthrough, like
+ * every other export in this file.
+ */
+
+EMSCRIPTEN_KEEPALIVE
+int gnw_gemm_int8_relu(const int8_t *weights, int rows, int cols,
+                       const int32_t *bias, const uint8_t *input, int batch,
+                       int shift, uint8_t *out)
+{
+    return gn_gemm_int8_relu(weights, rows, cols, bias, input, batch, shift, out);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int gnw_gemm_int8_raw(const int8_t *weights, int rows, int cols,
+                      const int32_t *bias, const uint8_t *input, int batch,
+                      int32_t *out)
+{
+    return gn_gemm_int8_raw(weights, rows, cols, bias, input, batch, out);
 }
