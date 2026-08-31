@@ -18,6 +18,27 @@
  * for, not a wider one nobody has measured. */
 #define GN_INT8_CHUNK 32
 
+/* The widest layer (input or hidden) these static scratch buffers can hold.
+ * `gn_int8_model_load` refuses anything wider, the same shape of refusal
+ * the float32 path's `BATCH_MAX_WIDTH` (1024) already makes -- matched here
+ * on purpose, not picked independently.
+ *
+ * STATIC, not malloc'd per call: measured 2026-08-31
+ * (docs/mesures/2026-08-31-T73-int8-natif-debit.md) that four
+ * malloc/free pairs per `gn_evaluate_batch` call -- paid on every search
+ * node, not once per decision -- was the dominant cost keeping the native
+ * int8 path at 0,39x float32's through `gn_search.c`, well under what the
+ * kernel itself does at the same batch width. This project is
+ * single-threaded per process (parallelism is by process,
+ * `python/gammonnet/arena.py`), the same precondition the float32 batch
+ * path's own static buffers already rest on. */
+#define GN_INT8_MAX_WIDTH 1024
+
+static uint8_t g_int8_quantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+static uint8_t g_int8_scratch_a[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+static uint8_t g_int8_scratch_b[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+static float g_int8_dequantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+
 #define ACTIVATION_MAX 127
 
 static int read_i32(FILE *f, int *out)
@@ -113,6 +134,12 @@ int gn_int8_model_load(GnInt8Model *model, const char *path)
         }
     }
 
+    if (input_size > GN_INT8_MAX_WIDTH) {
+        fclose(file);
+        gn_int8_model_free(model);
+        return -1;
+    }
+
     int cols = input_size;
     for (int i = 0; i < num_hidden; i++) {
         const int rows = model->hidden_sizes[i];
@@ -123,6 +150,14 @@ int gn_int8_model_load(GnInt8Model *model, const char *path)
         /* Refused here rather than discovered mid-evaluation: the kernel
          * assumes this precondition, it does not re-check it per call. */
         if (gn_gemm_int8_headroom(cols) < 1.0) {
+            fclose(file);
+            gn_int8_model_free(model);
+            return -1;
+        }
+        /* The static scratch buffers this file forwards through cap at
+         * GN_INT8_MAX_WIDTH -- refused here, once, rather than overflowing
+         * them silently on the first evaluation of a wider model. */
+        if (rows > GN_INT8_MAX_WIDTH) {
             fclose(file);
             gn_int8_model_free(model);
             return -1;
@@ -225,33 +260,13 @@ int gn_int8_model_evaluate(const GnInt8Model *model, const float *features,
     const int input_size = model->input_size;
     const int width = model->hidden_sizes[model->num_hidden - 1];
 
-    /* The ping-pong scratch buffers hold whichever hidden layer's output is
-     * widest, not necessarily the LAST one: this network narrows
-     * (512, 512, 256, 128), but nothing here assumes narrowing is the only
-     * shape a model will ever have. Sizing by `width` (the last layer's,
-     * 128) instead of this maximum (512, layers 0 and 1) let
-     * `gn_gemm_int8_relu_pc` write past the allocation on every layer
-     * wider than the last -- found by AddressSanitizer, not by the earlier
-     * count=1 check, which happens to touch only the narrowing tail. */
-    int max_width = input_size;
-    for (int i = 0; i < model->num_hidden; i++) {
-        if (model->hidden_sizes[i] > max_width) {
-            max_width = model->hidden_sizes[i];
-        }
-    }
-
-    uint8_t *quantised = malloc((size_t)input_size * GN_INT8_CHUNK);
-    uint8_t *scratch_a = malloc((size_t)max_width * GN_INT8_CHUNK);
-    uint8_t *scratch_b = malloc((size_t)max_width * GN_INT8_CHUNK);
-    float *dequantised = malloc((size_t)width * GN_INT8_CHUNK * sizeof(float));
-    if (quantised == NULL || scratch_a == NULL || scratch_b == NULL ||
-        dequantised == NULL) {
-        free(quantised);
-        free(scratch_a);
-        free(scratch_b);
-        free(dequantised);
-        return -1;
-    }
+    /* Static buffers (declared at file scope), not malloc'd here -- see the
+     * comment on GN_INT8_MAX_WIDTH. `gn_int8_model_load` already refused
+     * any model whose input or any hidden layer would not fit them. */
+    uint8_t *const quantised = g_int8_quantised;
+    uint8_t *const scratch_a = g_int8_scratch_a;
+    uint8_t *const scratch_b = g_int8_scratch_b;
+    float *const dequantised = g_int8_dequantised;
 
     int status = 0;
     for (int base = 0; base < count && status == 0; base += GN_INT8_CHUNK) {
@@ -303,9 +318,6 @@ int gn_int8_model_evaluate(const GnInt8Model *model, const float *features,
         }
     }
 
-    free(quantised);
-    free(scratch_a);
-    free(scratch_b);
-    free(dequantised);
+    /* Nothing to free: the four buffers above are static. */
     return status;
 }
