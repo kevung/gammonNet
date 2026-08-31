@@ -116,11 +116,27 @@ double gn_match_winning_chance(const GnMatchState *state,
                                const float probs[GN_NUM_OUTPUTS]);
 
 /*
- * Cubeless match equity, in the "equivalent to money" scale that engines print.
+ * Cubeless match equity on the MATCH scale: `2 * mwc - 1`, so that 0 is an even
+ * match, +1 a certain match win and -1 a certain match loss.
  *
- * `2 * mwc - 1`, so that 0 is an even match and +1 is a certain win. Convenient
- * for comparing against a money equity, and meaningless as an input to anything
- * else -- the match winning chance is the real quantity.
+ * NOT the equity engines print. XG and GNUbg display NORMALISED equity
+ * (GNUbg's `mwc2eq`), anchored on the CURRENT CUBE rather than on the match:
+ *
+ *     eq = (2*mwc - cash - pass) / (cash - pass)
+ *
+ * with `cash`/`pass` the MWC after collecting/conceding the cube's own value
+ * dry (`gn_met_after(state, cube, ...)`). The value below is that same formula
+ * with cash = 1 and pass = 0, so the two coincide at double match point and
+ * NOWHERE else: at 5-away/5-away this scale is 6.4x smaller than the printed
+ * one, and at a lopsided score it is shifted as well, `cash + pass` no longer
+ * being 1.
+ *
+ * That makes it a valid INTERNAL scale -- a search ranking and a cube verdict
+ * are invariant under any increasing affine map of the MWC, which is all this
+ * is -- and a wrong one to hand to a user or to store next to another engine's
+ * numbers. An earlier version of this comment called it "the equivalent to
+ * money scale that engines print"; a consumer believed it and displayed match
+ * equities six times too small (blunderDB ADR-0019). Convert at the edge.
  */
 double gn_match_equity(const GnMatchState *state,
                        const float probs[GN_NUM_OUTPUTS]);
