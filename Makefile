@@ -9,6 +9,8 @@
 #   make test    joue la suite de tests
 #   make bench   joue le banc de débit
 #   make env     consigne la machine et la chaîne d'outils d'une mesure
+#   make fetch-release  télécharge et vérifie l'artefact float16 épinglé (#18)
+#   make serve   démarre le serveur HTTP (mode `serve`, #18)
 
 SHELL := /bin/bash
 VENV ?= $(HOME)/venv-gammonnet
@@ -37,7 +39,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench bench-infer bench-encoding bench-decision env clean help
+.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision artifact env clean help
 
 all: help
 
@@ -161,6 +163,7 @@ $(LIBRARY): $(OBJECTS) $(VENDOR_OBJECTS)
 # ── Modèle ───────────────────────────────────────────────────────────
 
 MODEL := models/cubeless_prob5_512_512_256_128.bin
+PRUNE_MODEL := models/prune_32.bin
 
 model: $(MODEL)
 
@@ -184,9 +187,21 @@ EMCC ?= $(firstword $(shell command -v emcc) /usr/lib/emscripten/emcc)
 WASM_DIR := wasm
 WASM_BUILD := $(BUILD)/wasm
 
+# Cette liste doit suivre $(SOURCES) : `gn_search.c` est le MÊME fichier des
+# deux côtés, et la phase 3 lui a donné des dépendances — table de fin de
+# partie, cache d'évaluation, videau. Les omettre ici ne produit pas un module
+# amputé mais une erreur de lien, ce qui est la bonne façon d'échouer ; c'est
+# ainsi que la dérive s'est vue le 2026-08-27, la cible WebAssembly n'ayant
+# plus été construite depuis le 2026-08-03.
+#
+# `gn_bearoff.c` entre dans le module sans sa table : `gn_bearoff_shared()`
+# rend NULL tant que rien ne l'a chargée, et la recherche retombe sur le
+# réseau. Servir la table à un navigateur est une décision d'artefact — sa
+# taille est en jeu — qui appartient à T50, pas à une liste de sources.
 WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
                 src/gn_rules_reference.c src/gn_encoding.c \
                 src/gn_position_id.c src/gn_infer_reference.c \
+                src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
                 src/gn_search.c src/gn_met.c src/gn_choose.c \
                 $(REFERENCE)/c_engine/bg_engine.c \
                 $(REFERENCE)/c_inference/nn_eval.c
@@ -198,7 +213,7 @@ WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
 # sous Node. Le même artefact sert donc au test de parité et au banc, ce qui
 # évite de mesurer un binaire et d'en vérifier un autre.
 #
-# --pre-js notice.js : la notice MIT vit dans l'artefact lui-même. Un module
+# --extern-pre-js notice.js : la notice MIT vit dans l'artefact lui-même. Un module
 # servi à un navigateur est une copie distribuée — BRIEF.md §7.
 # Réassociation flottante : ×3,9 sur le débit navigateur, mesuré en T21.
 #
@@ -223,9 +238,9 @@ WASM_FLAGS := -O3 -std=c11 $(WASM_EXTRA) $(INCLUDES) \
   -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node \
   -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 \
-  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPF32,HEAPU8,HEAP32,UTF8ToString \
-  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play \
-  --pre-js $(WASM_DIR)/notice.js
+  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPF32,HEAPF64,HEAPU8,HEAP32,UTF8ToString \
+  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache \
+  --extern-pre-js $(WASM_DIR)/notice.js
 
 .PHONY: wasm wasm-simd wasm-scalar wasm-parity
 
@@ -248,6 +263,12 @@ $(WASM_BUILD)/gammonnet-simd.mjs: $(WASM_SOURCES) $(HEADERS) $(WASM_DIR)/notice.
 wasm-parity: wasm $(MODEL)
 	$(PYTHON) tools/dump_reference.py
 	node $(WASM_DIR)/parity.mjs
+
+# Les invariants de l'API JavaScript. La parité vérifie que le module CALCULE
+# comme le natif ; ceci vérifie qu'il RÉPOND ce qu'il promet — le classement des
+# N meilleurs coups, notamment, où deux défauts silencieux ont été trouvés.
+wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
+	node $(WASM_DIR)/api_invariants.mjs
 
 # ── Mesure ───────────────────────────────────────────────────────────
 
@@ -275,11 +296,18 @@ bench-infer: build $(BENCH_INFER) $(MODEL)
 # le coût que bench-infer exclut par construction, et qui est le plancher du
 # petit réseau.
 BENCH_ENCODING := $(BUILD)/bench_encoding
-PRUNE_MODEL := models/prune_32.bin
 
 $(BENCH_ENCODING): bench/bench_encoding.c $(OBJECTS) $(VENDOR_OBJECTS)
 	@mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ -lm
+
+# T50 : l'artefact publiable. Refuse de se déclarer complet s'il manque une
+# pièce — notamment le WebAssembly, qui demande Emscripten.
+.PHONY: artifact
+artifact: build wasm
+	$(PYTHON) tools/package_artifact.py --version $(VERSION)
+
+VERSION ?= v1
 
 bench-encoding: build $(BENCH_ENCODING) $(MODEL)
 	$(BENCH_ENCODING) $(MODEL) $(PRUNE_MODEL)
@@ -312,6 +340,20 @@ $(BENCH_DECISION): bench/bench_decision.c $(OBJECTS) $(VENDOR_OBJECTS)
 
 bench-decision: build $(BENCH_DECISION) $(MODEL)
 	$(BENCH_DECISION) $(MODEL) 20
+
+# ── Serveur HTTP (#18) ───────────────────────────────────────────────
+
+.PHONY: fetch-release serve
+
+# Télécharge et vérifie l'artefact float16 épinglé (models/release_pin.json)
+# — le même que la cible WebAssembly. N'a besoin ni de PyTorch ni de gnubg-nn :
+# stdlib seule, donc le Python système suffit si le venv n'existe pas encore.
+fetch-release:
+	$(PYTHON) tools/fetch_release.py
+
+# `make build` d'abord : le serveur charge build/libgammonnet.so.
+serve: build fetch-release
+	$(PYTHON) tools/serve.py
 
 clean:
 	rm -rf build/

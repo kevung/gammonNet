@@ -90,7 +90,7 @@ d'évaluations nécessaires à une décision dans un arbre à nœuds de hasard �
   rapporte. **Signale explicitement, pour chaque technique, si elle est compatible avec le calcul
   par lots ou si elle le casse.** C'est un critère de premier ordre pour nous.
 - Tout artefact signalé arrive **avec sa licence et son lien**. Hors périmètre : poids de GNU
-  Backgammon (GPL-3), réseaux HedgeHog (clause non commerciale), bgsage (AGPL-3). Pas de
+  Backgammon (GPL-3), tout réseau sous clause non commerciale, bgsage (AGPL-3). Pas de
   transcription de code ni de constantes réglées à la main.
 
 ## Format du rendu

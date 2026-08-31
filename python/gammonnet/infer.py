@@ -124,6 +124,29 @@ class Evaluation:
             - 1.0
         )
 
+    def mirrored(self) -> "Evaluation":
+        """La même distribution, vue par **l'autre** joueur.
+
+        Une victoire de l'un est la défaite de l'autre, et un gammon gagné ici
+        est un gammon perdu là : `(w, wg, wbg, lg, lbg)` devient
+        `(1-w, lg, lbg, wg, wbg)`. L'imbrication est préservée, et
+        `money_equity` change exactement de signe — ce qui est le seul contrôle
+        qui vaille, puisqu'une distribution retournée reste parfaitement
+        plausible.
+
+        À quoi ça sert : `GnCandidate.probs` (`gn_search.h`) décrit la position
+        **résultante**, donc l'adversaire, tandis que `GnCandidate.equity` est
+        déjà retournée du côté du joueur qui a joué. Tout ce qui expose les deux
+        ensemble doit ramener l'un dans le référentiel de l'autre.
+        """
+        return Evaluation(
+            win=1.0 - self.win,
+            win_gammon=self.lose_gammon,
+            win_backgammon=self.lose_backgammon,
+            lose_gammon=self.win_gammon,
+            lose_backgammon=self.win_backgammon,
+        )
+
     @property
     def is_nested(self) -> bool:
         """Les inégalités d'imbrication, **dans l'arithmétique du moteur**.

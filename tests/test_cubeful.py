@@ -168,6 +168,28 @@ def test_a_dead_cube_asks_nobody():
     assert result.cube == 1 and result.doubles == 0
 
 
+def test_a_cube_dead_for_the_mover_alone_asks_nobody():
+    """T35 residual (2026-08-26): `away_mover <= cube < away_opponent`.
+
+    WHITE is on roll with cube=1 and away_white=1: winning this game
+    already clinches the match for WHITE regardless of stake, so
+    doubling has no upside for WHITE and only raises BLACK's gain if
+    WHITE loses. The rate of doubling here should be exactly zero — the
+    model measured 3.1% on sampled positions
+    (docs/mesures/2026-08-26-T35-verdict.md). WHITE stays dead-for-itself
+    for the whole game (its away can't grow), so it must never be asked;
+    BLACK's own away (4) is untouched by the guard and gets a real
+    (declining) policy so the game can proceed past its own turns.
+    """
+    muzzled_white = Stub(double=None, take=None)
+    declining_black = Stub(double=False, take=True)
+    dice, wr, br = streams(5)
+    result = play_cubeful_game(muzzled_white, declining_black, dice, wr, br,
+                               match=(1, 4, False),
+                               start=Position.initial())
+    assert result.cube == 1 and result.doubles == 0
+
+
 def test_a_match_ends_and_names_its_winner():
     eager = Stub(double=True, take=True)
     dice, wr, br = streams(6)

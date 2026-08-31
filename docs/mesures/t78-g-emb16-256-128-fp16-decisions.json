@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/tmp/run-g-emb16-256-128-fp16.bin",
+    "sizes": [
+      128,
+      256,
+      128,
+      1
+    ],
+    "parameters": 264065,
+    "macs": 65664,
+    "bytes": 1056308
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.99225,
+      "mean_loss": 1.7318989852750654e-06,
+      "mean_loss_when_wrong": 0.00022347083680968586,
+      "p99": 0.0,
+      "p999": 0.0005799343862058607,
+      "worst_loss": 0.0014038300144962879,
+      "above_gnubg_worst": 0
+    }
+  ]
+}

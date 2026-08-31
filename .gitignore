@@ -1,13 +1,29 @@
-build/
-# `vendor/` ET `vendor` sans slash : la forme avec slash n'ignore qu'un
+# `<dir>/` ET `<dir>` sans slash : la forme avec slash n'ignore qu'un
 # RÉPERTOIRE. Un lien symbolique du même nom passe au travers, et un `git add -A`
-# le commite — c'est arrivé le 2026-08-03, et le lien, valide sur la machine qui
-# l'a créé, pointait sur lui-même sur l'autre, écrasant le vrai répertoire.
+# le commite — c'est arrivé le 2026-08-03 pour `vendor`, et le lien, valide sur
+# la machine qui l'a créé, pointait sur lui-même sur l'autre, écrasant le vrai
+# répertoire. `build` porte le même risque (les worktrees le lient aussi, cf.
+# CLAUDE.md), donc la même paire de règles.
 vendor
 vendor/
+build
+build/
 models/*.pt
 models/*.bin
 !models/README.md
+# EXCEPTION — le réseau d'élagage est versionné, les autres poids non.
+# Le grand réseau se réexporte au bit près depuis les sources vendorées : le
+# régénérer et le publier sont la même chose. Le petit, lui, a été ENTRAÎNÉ,
+# sur GPU, et sa provenance dit que la rétro-propagation CUDA n'est pas
+# reproductible au bit près. Le régénérer donne un autre réseau — auquel les
+# mesures T3D et T3E ne s'appliquent plus. 25,9 Kio est le prix de l'identité.
+!models/prune_32.bin
+# Artefact float16 épinglé (#18, mode serve) : téléchargé par
+# `tools/fetch_release.py` depuis la release GitHub, vérifié par SHA-256 au
+# démarrage de `tools/serve.py`. Publié, immuable, jamais régénéré ici — pas
+# une source à versionner une deuxième fois. `models/release_pin.json`, lui,
+# EST versionné : c'est l'épingle {version, sha256}, pas le poids.
+models/*.bin16
 __pycache__/
 *.pyc
 .venv/
@@ -23,3 +39,4 @@ node_modules/
 gnu_bearoff_database/
 # Lien vers les bases de fin de partie, quand on travaille depuis un worktree.
 gnu_bearoff_database
+dist/

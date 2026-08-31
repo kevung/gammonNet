@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/home/kunger/t78-logs/run-a-128-64-lin.bin",
+    "sizes": [
+      96,
+      128,
+      64,
+      1
+    ],
+    "parameters": 20737,
+    "macs": 20544,
+    "bytes": 82996
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.95525,
+      "mean_loss": 8.309681849393453e-05,
+      "mean_loss_when_wrong": 0.0018569121451158552,
+      "p99": 0.0024417486839093594,
+      "p999": 0.009613550011444419,
+      "worst_loss": 0.025665674830243512,
+      "above_gnubg_worst": 87
+    }
+  ]
+}

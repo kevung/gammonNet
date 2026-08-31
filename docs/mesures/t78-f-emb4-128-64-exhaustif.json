@@ -1,0 +1,57 @@
+{
+  "task": "T78",
+  "network": {
+    "path": "/home/kunger/t78-logs/run-f-emb4-128-64.bin",
+    "sizes": [
+      104,
+      128,
+      64,
+      1
+    ],
+    "parameters": 71265,
+    "macs": 21568,
+    "bytes": 285108
+  },
+  "scan": {
+    "float32": {
+      "pairs": 153140625,
+      "mean_abs": 0.0007093707334369364,
+      "rms": 0.0009332526174231656,
+      "worst_abs": 0.02520310878753662,
+      "worst_at": [
+        91,
+        2
+      ],
+      "guaranteed_decision_loss": 0.05040621757507324,
+      "pairs_above_half_gnubg": 28778193,
+      "row_bound": {
+        "median": 0.009365320205688477,
+        "p90": 0.01467362642288208,
+        "p99": 0.025621266365051288,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 99.07957533095032
+    },
+    "float16": {
+      "pairs": 153140625,
+      "mean_abs": 0.0007133511118822688,
+      "rms": 0.0009387447946321847,
+      "worst_abs": 0.025044262409210205,
+      "worst_at": [
+        91,
+        2
+      ],
+      "guaranteed_decision_loss": 0.05008852481842041,
+      "pairs_above_half_gnubg": 29126486,
+      "row_bound": {
+        "median": 0.009390115737915039,
+        "p90": 0.014672982692718507,
+        "p99": 0.025681164264678955,
+        "rows_under_gnubg": 0,
+        "rows": 12375
+      },
+      "seconds": 97.61014409502968
+    }
+  }
+}

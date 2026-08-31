@@ -58,7 +58,7 @@ achète-t-elle de la qualité à budget de calcul par évaluation constant — e
 ## Les sous-questions
 
 1. **La preuve dans les jeux.** Quels moteurs emploient plusieurs réseaux spécialisés, et quel
-   gain **mesuré** en rapportent-ils ? Au backgammon (GNU Backgammon et ses classes, HedgeHog et
+   gain **mesuré** en rapportent-ils ? Au backgammon (GNU Backgammon et ses classes et
    ses ensembles ou son mélange d'experts, d'autres), et ailleurs (phases de partie aux échecs,
    réseaux de fin de partie). Je cherche des ablations chiffrées : « un réseau contre trois, même
    nombre total de MACs par évaluation, tel écart ».
@@ -96,7 +96,7 @@ achète-t-elle de la qualité à budget de calcul par évaluation constant — e
   qualité qu'en augmentant le calcul par évaluation ne nous sert pas. Signale explicitement, pour
   chaque piste, ce qu'elle coûte **par évaluation** et non en tout.
 - Tout artefact signalé arrive **avec sa licence et son lien**. Hors périmètre, y compris comme
-  source d'entraînement : poids de GNU Backgammon (GPL-3), réseaux HedgeHog (licence non
+  source d'entraînement : poids de GNU Backgammon (GPL-3), tout réseau sous clause non commerciale (licence non
   confirmée, réputée non commerciale). bgsage est sous MPL-2.0 : ses idées documentées sont
   recevables, mais ne me recommande pas d'en copier du code. Nous pouvons en revanche distiller
   **notre propre** réseau, et nous le faisons déjà pour notre réseau d'élagage.

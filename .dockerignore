@@ -1,0 +1,10 @@
+.git
+vendor
+build
+gnu_bearoff_database
+__pycache__
+.pytest_cache
+*.pyc
+node_modules
+docs/site
+docs/recherche

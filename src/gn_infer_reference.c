@@ -16,6 +16,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "nn_eval.h"
@@ -23,6 +24,149 @@
 struct GnNetwork {
     NNModel model;
 };
+
+/* IEEE 754 binary16 -> binary32. Exact : tout demi-flottant fini est un
+ * flottant simple, et les deux formats partagent leur arrondi. */
+static float from_half(unsigned short h)
+{
+    const unsigned int sign = (unsigned int)(h >> 15) << 31;
+    unsigned int exponent = (h >> 10) & 0x1Fu;
+    unsigned int mantissa = h & 0x3FFu;
+    unsigned int bits;
+
+    if (exponent == 0) {
+        if (mantissa == 0) {
+            bits = sign;                      /* +/-0 */
+        } else {
+            /* Sous-normal en binary16, normal en binary32 : on renormalise. */
+            exponent = 127 - 15 + 1;
+            while ((mantissa & 0x400u) == 0) {
+                mantissa <<= 1;
+                exponent--;
+            }
+            mantissa &= 0x3FFu;
+            bits = sign | (exponent << 23) | (mantissa << 13);
+        }
+    } else if (exponent == 0x1Fu) {
+        bits = sign | 0x7F800000u | (mantissa << 13);   /* inf / NaN */
+    } else {
+        bits = sign | ((exponent + 127 - 15) << 23) | (mantissa << 13);
+    }
+
+    float value;
+    memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
+/*
+ * Le format de DISTRIBUTION (T50) : `BGN6`, identique au `.bin` sauf que les
+ * poids sont des demi-flottants. Les biais restent en float32 — 0,27 % du
+ * fichier, et l'endroit où une perte de précision se propagerait le plus.
+ *
+ * Ce qui coûte dans un navigateur n'est pas le calcul mais le
+ * TÉLÉCHARGEMENT : 2,1 Mio avant la première évaluation, 1,06 Mio en float16
+ * (mesuré ×1,99). Ce que la précision coûte est mesuré ailleurs
+ * (`docs/mesures/2026-08-04-quantification.md`) : 0,015 % des décisions
+ * déplacées, ~1e-9 d'équité.
+ *
+ * À l'exécution rien ne change : le modèle rendu est en float32, comme
+ * l'autre. Ce format transporte, il ne calcule pas.
+ *
+ * DEUX LECTEURS POUR UN FORMAT, et ce qui les tient ensemble : le `.bin`
+ * float32 est lu par le lecteur vendoré (`nn_load`), celui-ci par le code
+ * ci-dessous. Le risque est qu'ils dérivent. `tests/test_fp16.py` l'interdit
+ * en exigeant que le modèle emballé se relise EXACTEMENT égal au modèle
+ * d'origine arrondi en float16 — un désaccord d'en-tête, d'ordre ou de forme
+ * y casse immédiatement.
+ */
+static int load_fp16(NNModel *model, const char *path)
+{
+    memset(model, 0, sizeof(*model));
+
+    FILE *file = fopen(path, "rb");
+    if (file == NULL) {
+        return -1;
+    }
+
+    char magic[4];
+    if (fread(magic, 1, 4, file) != 4 || memcmp(magic, "BGN6", 4) != 0) {
+        fclose(file);
+        return -1;
+    }
+    if (fread(&model->num_hidden, 4, 1, file) != 1 ||
+        fread(&model->input_size, 4, 1, file) != 1 ||
+        fread(&model->activation, 4, 1, file) != 1 ||
+        fread(&model->output_mode, 4, 1, file) != 1 ||
+        model->num_hidden < 1 || model->num_hidden > NN_MAX_LAYERS) {
+        fclose(file);
+        return -1;
+    }
+    for (int i = 0; i < model->num_hidden; i++) {
+        if (fread(&model->hidden_sizes[i], 4, 1, file) != 1) {
+            fclose(file);
+            return -1;
+        }
+    }
+
+    int previous = model->input_size, widest = model->input_size;
+    for (int i = 0; i < model->num_hidden; i++) {
+        model->layer_in[i] = previous;
+        model->layer_out[i] = model->hidden_sizes[i];
+        previous = model->hidden_sizes[i];
+        if (previous > widest) {
+            widest = previous;
+        }
+    }
+    model->layer_in[model->num_hidden] = previous;
+    model->layer_out[model->num_hidden] =
+        (model->output_mode == NN_OUTPUT_PROB5) ? NN_PROB5_OUTPUTS : 1;
+    if (model->layer_out[model->num_hidden] > widest) {
+        widest = model->layer_out[model->num_hidden];
+    }
+
+    for (int i = 0; i <= model->num_hidden; i++) {
+        const size_t rows = (size_t)model->layer_out[i];
+        const size_t cols = (size_t)model->layer_in[i];
+        model->weight[i] = malloc(rows * cols * sizeof(float));
+        model->bias[i] = malloc(rows * sizeof(float));
+        unsigned short *packed = malloc(rows * cols * sizeof(unsigned short));
+        if (!model->weight[i] || !model->bias[i] || !packed ||
+            fread(packed, sizeof(unsigned short), rows * cols, file)
+                != rows * cols ||
+            fread(model->bias[i], sizeof(float), rows, file) != rows) {
+            free(packed);
+            fclose(file);
+            nn_free(model);
+            return -1;
+        }
+        for (size_t k = 0; k < rows * cols; k++) {
+            model->weight[i][k] = from_half(packed[k]);
+        }
+        free(packed);
+    }
+    fclose(file);
+
+    model->buf_a = malloc((size_t)widest * sizeof(float));
+    model->buf_b = malloc((size_t)widest * sizeof(float));
+    if (!model->buf_a || !model->buf_b) {
+        nn_free(model);
+        return -1;
+    }
+    return 0;
+}
+
+/* Le magic du fichier, sans le lire deux fois en entier. */
+static int is_fp16(const char *path)
+{
+    FILE *file = fopen(path, "rb");
+    if (file == NULL) {
+        return 0;
+    }
+    char magic[4] = {0};
+    const int read = (int)fread(magic, 1, 4, file);
+    fclose(file);
+    return read == 4 && memcmp(magic, "BGN6", 4) == 0;
+}
 
 GnNetwork *gn_network_load(const char *path)
 {
@@ -35,7 +179,9 @@ GnNetwork *gn_network_load(const char *path)
         return NULL;
     }
 
-    if (nn_load(&net->model, path) != 0) {
+    const int loaded = is_fp16(path) ? load_fp16(&net->model, path)
+                                     : nn_load(&net->model, path);
+    if (loaded != 0) {
         free(net);
         return NULL;
     }

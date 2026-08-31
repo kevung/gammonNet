@@ -176,5 +176,4 @@ Le scénario « ça a mal tourné » est dominé par la mesure répétée, pas p
 - **Un débit positions/s officiel de gnubg par cœur** (Heled / Schønning-Johansen) : non trouvé ; seule une mesure tierce existe.
 - **Le facteur exact de réduction de variance du match dupliqué / dés communs** en backgammon (chiffre unique publié par Snowie/XG/gnubg) : non trouvé sous forme d'un facteur unique ; seules des affirmations qualitatives et le « ×50 à ×100 » des rollouts gnubg.
 - **L'écart-type cubeless par partie unique** (valeur numérique propre, hors « 3√N » qui inclut le cube) : non trouvé sous forme canonique.
-- **HedgeHog :** existence confirmée (analyseur NN dans le navigateur) mais aucun détail d'entraînement (parties, matériel, dates) publié.
 - **Retours d'expérience nominatifs directs** d'XG (Dufaure de Citres) ou BGBlitz (Berger) sur « ce qui fait exploser le budget » : non trouvés ; les leçons proviennent de gnubg, wildbg, Backgammon-NN et de l'analogie NNUE/Lc0.

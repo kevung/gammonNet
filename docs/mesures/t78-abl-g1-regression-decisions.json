@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/home/kunger/t78-logs/abl-g1-regression.bin",
+    "sizes": [
+      128,
+      256,
+      128,
+      1
+    ],
+    "parameters": 264065,
+    "macs": 65664,
+    "bytes": 1056308
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.95975,
+      "mean_loss": 2.0374608987563826e-05,
+      "mean_loss_when_wrong": 0.000506201465529536,
+      "p99": 0.0005188067444876765,
+      "p999": 0.0030823224231326662,
+      "worst_loss": 0.006195162890058725,
+      "above_gnubg_worst": 18
+    }
+  ]
+}

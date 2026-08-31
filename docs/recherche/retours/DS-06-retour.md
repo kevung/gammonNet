@@ -147,4 +147,4 @@ Tous les moteurs modernes apprennent une distribution sur les coups pour ordonne
 - **Aucun chiffre de gain d'une tête de politique au backgammon** (force ou coût de recherche), ni pour l'espace de coups dépendant du jet en dehors de Stochastic MuZero.
 - **Les chiffres numériques d'Elo/win-rate de Stochastic MuZero au backgammon** : le papier ne donne que des courbes (« égale à 1600 sims, dépasse au-delà de 10³ »), pas de tableau chiffré ni de compte de paramètres.
 - **Le détail exact de la distillation 2-ply de Whittington** (mélange soft/hard, poids par composante, LR, batch, époques) n'est pas dans le rapport ; à extraire du dépôt.
-- **Licences confirmées** pour les réseaux HedgeHog (réputée non commerciale, non confirmée) ; bgsage est **MPL-2.0** (idées recevables, pas de copie de code) ; poids gnubg **GPL-3** et réseaux XG/BGBlitz propriétaires (hors périmètre).
+- **Licences confirmées** : bgsage est **MPL-2.0** (idées recevables, pas de copie de code) ; poids gnubg **GPL-3** et réseaux XG/BGBlitz propriétaires (hors périmètre).

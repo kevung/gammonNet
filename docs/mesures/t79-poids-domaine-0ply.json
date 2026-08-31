@@ -1,0 +1,56 @@
+{
+  "task": "T79",
+  "seed": 20260828,
+  "ply": 0,
+  "network": "/home/kunger/gammonNet-t79/models/bearoff_code16_256_128.bin",
+  "totals": {
+    "games": 200000,
+    "decisions": 8795521,
+    "forced": 1216310,
+    "in_domain": 376186,
+    "reached": 85447,
+    "stalled": 0,
+    "turns": 11254398
+  },
+  "engines": {
+    "grand r\u00e9seau (celui qui joue)": {
+      "decisions": 376186,
+      "agreement": 0.9485493878028423,
+      "mean_loss": 0.00029553160705585597,
+      "mean_loss_when_wrong": 0.005743986211930469,
+      "p999": 0.032007782101167316,
+      "worst_loss": 0.07513542381933325,
+      "equity_per_game": 0.0005558742656595712
+    },
+    "distill\u00e9 T78": {
+      "decisions": 376186,
+      "agreement": 0.9927137107707358,
+      "mean_loss": 2.1937789823675723e-06,
+      "mean_loss_when_wrong": 0.0003010831595260589,
+      "p999": 0.0006103608758678547,
+      "worst_loss": 0.004638742656595696,
+      "equity_per_game": 4.126344701304638e-06
+    }
+  },
+  "intervals": {
+    "engine_per_game": [
+      0.0005558742656595712,
+      0.0005414022313636605,
+      0.0005703462999554819
+    ],
+    "distilled_per_game": [
+      4.126344701304638e-06,
+      3.863194900024853e-06,
+      4.389494502584423e-06
+    ],
+    "gain_per_game": [
+      0.0005517479209582666,
+      0.0005372823223181583,
+      0.0005662135195983748
+    ]
+  },
+  "entry_checkers": {
+    "median": 9.0,
+    "mean": 8.3375308670872
+  }
+}

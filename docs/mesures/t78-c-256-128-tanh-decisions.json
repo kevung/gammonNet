@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/home/kunger/t78-logs/run-c-256-128-tanh.bin",
+    "sizes": [
+      96,
+      256,
+      128,
+      1
+    ],
+    "parameters": 57857,
+    "macs": 57472,
+    "bytes": 231476
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.98075,
+      "mean_loss": 2.683299000534066e-05,
+      "mean_loss_when_wrong": 0.0013939215587189953,
+      "p99": 0.0005194171053635577,
+      "p999": 0.004456275272755131,
+      "worst_loss": 0.014129854276341058,
+      "above_gnubg_worst": 30
+    }
+  ]
+}

@@ -538,8 +538,8 @@ d'inférence ; exposition des **cinq probabilités brutes**.
 puis cubeful.
 
 **Critères d'acceptation**
-- Le ppg mesuré est comparé au **+0,0673 publié** (benchmark HedgeHog, `colossus` vs `gnubg`,
-  0-ply cubeful) et au **+57,8 mEq/partie** annoncé par l'auteur en 0-ply.
+- Le ppg mesuré est comparé au **+57,8 mEq/partie** annoncé par l'auteur du modèle en 0-ply —
+  la seule référence externe que ce dépôt cherche à reproduire.
 - **Si l'écart dépasse les intervalles de confiance, il est expliqué avant de continuer** :
   protocole différent, traitement du videau, sur-représentation des fins de partie. Un écart
   inexpliqué **arrête la phase 2**.
@@ -599,9 +599,9 @@ et ≥ 1 mobile réel (pas un émulateur), avec et sans SIMD, en fil principal e
 
 **Objectif** — trancher entre les candidats, sur mesure.
 
-**Périmètre** — Comparer : (i) le C du dépôt de référence, (ii) le C++ de `hedgehog-public`
-complété du layout `DENSE_FLOAT` qu'il refuse délibérément. Critères : débit WebAssembly, taille
-de l'artefact, effort d'intégration, dette.
+**Périmètre** — Comparer : (i) le C du dépôt de référence, (ii) un moteur d'inférence C++ tiers,
+complété du layout dense qu'il ne prend pas en charge. Critères : débit WebAssembly, taille de
+l'artefact, effort d'intégration, dette.
 
 **Livrable** — une note de décision **chiffrée**, versionnée dans le dépôt.
 
@@ -685,8 +685,8 @@ post-Crawford.
 
 ## T33 — Tables de fin de partie
 
-**Objectif** — combler le trou que ni le build public de HedgeHog ni le modèle de référence ne
-comblent.
+**Objectif** — combler le trou qu'un réseau seul, sans table exacte, laisse en course et en
+bearoff profond.
 
 **Périmètre** — Charger les tables au format GNU Backgammon, **ou** les recalculer par
 programmation dynamique. Chemin de repli sur le réseau quand la position sort de la table.
@@ -1177,7 +1177,7 @@ de volatilité exacte** sur les 21 jets (sous-produit gratuit du backup, poids d
 du principal) ; entraînement **from scratch** (le warm-start nuit), architecture constante,
 cross-entropy sur les 5 probabilités + MSE sur la volatilité.
 
-**Exclut** — tout professeur externe : gnubg, XG, HedgeHog — règle de licence du dépôt, y compris
+**Exclut** — tout professeur externe (gnubg, XG, ou tout autre moteur) — règle de licence du dépôt, y compris
 pour l'étiquetage (la recommandation contraire de DS-14 est rejetée, voir son retour) ;
 l'agrandissement du réseau (mesuré indiscernable à movetime égal) ; les caractéristiques
 expertes en entrée (trois négatifs mesurés — H2 dormante).
@@ -1343,6 +1343,239 @@ réelles.
   spécialise pas par principe.
 
 ---
+
+## T78 — Distiller la table exacte de fin de partie
+
+> **La piste que T38 a ouverte et que personne n'a suivie.** Branchée, la table bilatérale ferme
+> le trou de fin de partie **en entier** : 0,00028 → 0,00000 d'équité perdue par décision, aux
+> trois profondeurs. Mais elle pèse 1,2 Gio, donc elle reste native. Le navigateur garde le
+> réseau, et paie la queue — **0,0919 d'équité sur la pire décision mesurée**, là où GNU
+> Backgammon, qui consulte la sienne, ne dépasse jamais 0,0023.
+
+**Objectif** — quelques dizaines de kilo-octets de poids qui, dans le domaine de la table, jouent
+à la précision de la table ; et dont **la queue**, pas seulement la moyenne, soutient la
+comparaison avec gnubg.
+
+**Ce que cette tâche a d'unique dans le projet** — le signal d'entraînement est **exact** et le
+domaine est **fini** : 12 376 × 12 376 = 153 165 376 paires, calculées par programmation
+dynamique. Aucune variance, aucun arbitre discutable, et — c'est le point — l'erreur du réseau
+entraîné se rapporte **exhaustivement** plutôt que sur un échantillon. Cette tâche est le seul
+endroit du dépôt où « mesuré » peut vouloir dire « sur la totalité du domaine ».
+
+**Périmètre**
+- `tools/build_bearoff_matrix.py` — la colonne cubeless extraite en une matrice dense de
+  306 Mio, relue par le lecteur de T38 pour prouver qu'elle dit la même chose.
+- `tools/build_bearoff_decisions.py` — un corpus de décisions réelles, chaque coup légal noté
+  **exactement**, en forme compressée par lignes.
+- `tools/train_bearoff_net.py` — deux étages, et le second est le sujet de la fiche :
+  **régression** uniforme sur le domaine (la moyenne, la forme), puis **affinage par décision**
+  avec une charnière pondérée par le coût — chaque candidat qui dépasse le vrai meilleur est
+  pénalisé *à proportion de l'équité qu'il ferait perdre*. Une erreur commune à tous les
+  candidats d'une décision ne coûte rien en jeu ; elle ne doit rien coûter dans la perte.
+- `python/gammonnet/bearoff_net.py` — les caractéristiques, le format de poids et la passe avant,
+  **sans aucune dépendance à la table** : c'est tout l'objet.
+- `bench/bearoff_distill.py` — la mesure, qui **importe** le tirage et la notation de
+  `bench/exact_gap.py` : à graine égale, ce sont les décisions de T38, donc les colonnes se
+  comparent aux chiffres publiés sans réserve.
+
+**Critères d'acceptation**
+- **Seuil de succès, décidé avant la mesure** : perte moyenne par décision **≤ 0,00005** (cinq
+  fois mieux que les 0,00028 du réseau actuel) **et** pire cas sur ≥ 8 000 décisions
+  **≤ 0,0023** — le pire cas de GNU Backgammon dans T38. C'est la queue qui décide, pas la
+  moyenne : un réseau qui améliorerait la moyenne sans réduire la queue **échoue** cette fiche.
+- L'erreur absolue est rapportée **exhaustivement** sur les 153 165 376 paires du domaine :
+  moyenne, rms, maximum, et la paire où il se produit.
+- La taille du fichier de poids est mesurée en float32 et en float16, et la courbe
+  qualité/taille est publiée pour au moins trois gabarits — le choix se justifie par une mesure,
+  pas par un goût.
+- Le domaine du réseau (`contains`, la décomposition en deux camps) est **croisé contre le
+  lecteur de T38** dans les tests : une seconde écriture du même prédicat est une seconde chose
+  capable de se tromper en silence.
+- Aucun chiffre annoncé sans le `json` du banc dans `docs/mesures/`.
+
+**Résultat — mesuré le 2026-08-28**, fiche
+[`docs/mesures/2026-08-28-T78-distillation-bearoff.md`](docs/mesures/2026-08-28-T78-distillation-bearoff.md).
+
+**Le seuil est franchi par un candidat.** Sur les 8 000 décisions de T38, à sa graine et par son
+tirage importé, `code 16` (256→128, 1,03 Mio en float32, **528 Kio en float16**) rend :
+
+| | perte moyenne | pire cas | décisions > 0,0023 |
+|---|---|---|---|
+| notre grand réseau, 1-ply | 0,00020 | **0,0919** | 157 |
+| **le distillé `code 16`** | **0,0000017** | **0,0014** | **0** |
+| GNU Backgammon 0-ply *(avec sa table)* | 0,0000010 | 0,0023 | 0 |
+
+La queue passe de 0,0919 à 0,0014 — **un facteur 65** — et sous le pire cas de gnubg, pour
+2 400 fois moins d'octets que la table. `code 8` (244 Kio en float16) manque le seuil de
+0,00005 point : 0,00235 contre 0,0023, une décision sur 8 000.
+
+Trois constats que la mesure a imposés contre l'intuition : un **code appris par disposition**
+dépense ses octets bien mieux que de la profondeur (285 Kio battent 725 Kio) ; la **tanh** ne
+coûte rien en moyenne et **double la queue** ; et la borne exhaustive « 2 × erreur maximale »,
+qui était l'argument le plus fort de la fiche, **n'est pas atteinte** — les pires paires du
+domaine sont des positions du dernier jet auxquelles aucune décision n'est sensible. La fiche est
+franchie par la mesure, pas par la borne.
+
+**Ce que cette fiche ne fait pas** — le branchement dans `gn_search` (côté C) et le portage
+WebAssembly. Le verdict d'abord : si le réseau distillé ne bat pas la queue, il n'y a rien à
+brancher. Si elle est battue, le branchement est une fiche à part, avec son propre coût mesuré —
+et un bénéfice secondaire à chiffrer, car 20 000 MACs remplaceraient 470 000 sur toute feuille
+de fin de partie.
+
+---
+
+## T79 — Ce que la fin de partie pèse réellement
+
+> **Le multiplicateur qui manquait à T78.** T78 a mesuré ce que le réseau perd *par décision de
+> bearoff* — 0,00028 en moyenne, 0,0919 au pire — et ce que le distillé y ramène. Ces chiffres ne
+> décident rien tant qu'on ignore **quelle part des décisions d'une partie tombe dans ce
+> domaine**. `BRIEF.md` §9 avertit exactement de cela : un corpus riche en fins de partie flatte
+> qui a une table.
+
+**Objectif** — convertir le gain de T78 en **équité par partie**, la seule forme sous laquelle il
+se compare à autre chose dans ce projet.
+
+**Périmètre** — `bench/bearoff_in_play.py` : des parties d'argent sans videau, jouées par notre
+moteur ; à chaque décision de coup, on compte, et si elle est dans le domaine de la table on note
+**exactement** tous les coups légaux et on relève ce que perdent le moteur qui joue *et* le
+distillé — le second en pure hypothèse, il ne touche pas à la partie.
+
+**Critères d'acceptation**
+- La fraction des décisions dans le domaine est mesurée, ainsi que la part des parties qui
+  l'atteignent et le nombre de pions restants à l'entrée.
+- Le gain du branchement est donné **en équité par partie, avec son intervalle à 95 %**, calculé
+  sur la **différence appariée** — les deux moteurs tranchent les mêmes décisions, donc la
+  variance des parties s'annule et ne doit pas être comptée deux fois.
+- Le volume est dimensionné pour que l'intervalle soit dix fois plus petit que le gain, ou le
+  contraire est dit.
+- La distribution des positions est celle du **jeu**, pas celle de T78 (uniforme sur le nombre de
+  pions) ; l'écart entre les deux pertes par décision est rapporté, car il mesure à quel point le
+  tirage uniforme flatte ou punit.
+
+**Résultat — mesuré le 2026-08-28**, fiche
+[`docs/mesures/2026-08-28-T79-poids-du-domaine.md`](docs/mesures/2026-08-28-T79-poids-du-domaine.md).
+
+**Le domaine pèse 4,28 % des décisions** (1,88 par partie, 42,7 % des parties l'atteignent), et le
+branchement du distillé vaudrait, **contre le 2-ply qui est le réglage servi**, **0,000073 d'équité
+par partie** [0,000039 ; 0,000107] — soit **0,00083 PR** contre un PR de 0,273. **Trois pour mille
+de l'erreur restante du moteur.**
+
+Le gain est réel (l'intervalle exclut zéro à quatre écarts-types) et petit, parce que **la
+recherche comble déjà l'essentiel du trou** : de 0 à 2 plis, la perte par décision de fin de
+partie tombe de 0,000278 à 0,000043. Le premier passage, joué à 0-ply, donnait 0,000552 par
+partie ; ce chiffre ne vaut que pour un moteur 0-ply, et le publier seul aurait été juste et
+trompeur.
+
+**Ce qui ne se comble pas par la recherche, c'est la queue** : pire décision 0,0170 au 2-ply
+contre 0,00217 pour le distillé, un facteur huit. C'est le seul argument de qualité qui survive —
+avec la vitesse, qui reste à mesurer.
+
+Deux contrôles gratuits au passage : le tirage uniforme de T78 est **représentatif** du jeu réel
+(0,00028 contre 0,000278 en jeu), et la mesure du 2-ply de T38 **se reproduit** sur une autre
+distribution (0,00004 contre 0,000043).
+
+**Ce que cette fiche ne fait pas** — elle ne mesure pas le videau (T80), ni le coût en vitesse, ni
+le jeu au-delà du 0-ply. Le moteur qui joue est à 0-ply, pour le volume ; c'est écrit dans la
+fiche de mesure plutôt que laissé à deviner.
+
+---
+## T81 — La tête de videau, à tronc gelé : B0 contre B
+
+> **La marche 1 de l'axe « videau appris ».** L'axe a été instruit trois fois (DS-08
+> sous-question 7, étude et plan du 2026-08-19) puis écarté le 2026-08-27 au profit de T75. Il
+> rouvre par ce qui **réfute** en heures, jamais par ce qui **confirme** en semaines. La forme est
+> fixée par [l'ADR 0002](docs/adr/0002-fusion-tardive-du-score.md) : une tête, jamais le tronc.
+
+**Objectif** — répondre à une question que personne n'a publiée : **le videau se réduit-il aux
+cinq probabilités ?**
+
+**Périmètre** — Deux têtes, tronc `prob5` **gelé**, en **money** (Jacoby) :
+- **B0** = `(5 probabilités, état du videau) → équité cubeful` ;
+- **B** = `(goulot enrichi — les 5 probabilités plus les auxiliaires de dispersion de T71) →
+  équité cubeful`.
+
+Étiquettes produites par le moteur de rollout de T39, volume **mesuré et publié en début de
+fiche**, pas extrapolé. Entraînement en deux étages, comme T78 : régression, puis **affinage par
+décision** — une charnière sur le signe de la marge, pondérée par ce que le verdict inverse
+coûterait. Le témoin est la voie classique : Janowski aux `x` mesurés en T34
+(0,688 / 0,566 / 0,687).
+
+**Exclut** — le score, le match, et tout réentraînement du tronc.
+
+**Critères d'acceptation**
+- Le **taux d'erreur arbitré** de B0, de B et de la voie classique est rendu sur **le même
+  corpus, aux mêmes graines** (les 6 000 décisions de T39), dans la discipline T39 : jamais une
+  colonne de rollout présentée seule.
+- Les **deux défauts nommés** de la voie classique sont examinés explicitement : la sur-double des
+  fenêtres fines de contact (26–60, p = 1,6×10⁻⁴) et la sous-double de course hors domaine.
+- **L'écart B0 → B est publié** : c'est la mesure de ce que vaut « l'efficacité de videau » — la
+  part de la valeur cubeful qui dépend de la position et non de la seule distribution. Elle
+  produit un résultat dans les deux sens, et personne ne l'a publiée.
+- **La survie sous recherche est vérifiée**, protocole T36 : un avantage 0-ply qui s'annule au
+  2-ply ne compte pas. C'est la leçon explicite de T36 et de Whittington.
+- Le coût d'inférence de la tête est **mesuré** (MACs et éval/s au banc), pas compté.
+
+**Porte de sortie** — **si B n'améliore pas la voie classique en money, l'axe se referme ici.** Le
+match ne rattrape pas ce que le money ne donne pas : c'est le même apprentissage avec un
+conditionnement en plus.
+
+**Dépendances** — B0 ne dépend de rien. **B attend la tête auxiliaire de volatilité de T71**, qui
+la produit comme sous-produit gratuit. T70 n'est pas un prérequis : le juge de cette fiche est le
+corpus T39 existant.
+
+**Machine** — la machine de calcul pour les étiquettes, le bureau pour l'entraînement (tronc
+gelé). **Coût** — *hypothèse* : heures, à requalifier par la mesure de volume du premier jour.
+
+## T82 — Le score dans la tête : la MET organique
+
+> **La marche 2.** Faire émerger la table d'équité de match au lieu de la lire —
+> `MET(a,b) ≡ V(position initiale, a-away, b-away, videau centré)`. La MET n'est pas une
+> information extérieure : c'est une marginale de la fonction qu'on entraîne déjà, et
+> Kazaross-XG2 est elle-même sortie de rollouts.
+
+**Objectif** — un videau de match sans MET lue ni formule de point de prise, et **falsifiable en
+minutes**.
+
+**Périmètre** — La tête de T81, étendue au contexte : away one-hot des deux côtés (**plafonné,
+avec refus au-delà** — jamais d'approximation, `CLAUDE.md` règle n°2), Crawford, post-Crawford,
+valeur du videau, possession, `is_cube_action`. Sortie = MWC cubeful du joueur au trait. Départs
+**tirés uniformément sur la grille des scores** (*exploring starts*) — un schéma d'échantillonnage,
+pas une connaissance injectée. Le tronc reste gelé et aveugle au score (ADR 0002).
+
+**Les instruments, et ils passent d'abord sur la pile classique** — un extracteur qui ne rend pas
+la réponse connue n'instrumente rien :
+- **MET implicite extraite** (les 625 couples, en secondes) et comparée **cellule par cellule** à
+  Kazaross-XG2, employée en **instrument** et jamais en entrée ;
+- **identité DMP** à 1-away/1-away : les gammons cessent de compter, vérifié et non supposé ;
+- **antisymétrie** `MWC(a,b) = 1 − MWC(b,a)` et monotonies — tests de propriété, pas
+  d'échantillon ;
+- **ancre exacte** : les décisions de videau du domaine de la table bilatérale (T38, et le réseau
+  de T80) ont une réponse sans variance ;
+- le **free drop** d'après-Crawford doit être **trouvé** par le modèle, jamais injecté.
+
+**Critères d'acceptation**
+- Les cinq instruments sont passés sur la pile classique **avant** tout entraînement : la MET
+  extraite y rend Kazaross-XG2 à l'identité, les points de prise extraits y rendent les courbes de
+  Janowski aux `x` mesurés.
+- Les cellules qui divergent au-delà d'un seuil **annoncé d'avance** sont **arbitrées par rollout
+  de match**, pas expliquées — un écart n'est pas nécessairement une erreur, la table est
+  elle-même une mesure.
+- Les contextes de score où l'appris **perd** sont publiés au même titre que ceux où il gagne.
+- Le taux de succès du cache d'évaluation est **re-mesuré** : l'ADR 0002 prédit qu'il ne bouge
+  pas, et une prédiction se vérifie.
+
+**Porte de sortie** — si la MET implicite s'écarte de manière **structurée** (un biais, pas du
+bruit) et que les rollouts donnent tort au modèle, c'est l'échantillonnage ou l'ancrage qui sont
+en cause : deux itérations, puis arrêt.
+
+**Exclut** — le tronc conscient du score (la marche 3), fermée par l'ADR 0002 tant que T81 et T82
+n'ont pas montré qu'il y a quelque chose à gagner ; et la campagne de matchs, qui est le poste
+cher et qui attend T70.
+
+**Dépendances** — T81 franchie. L'arbitre de match de T39 existe depuis le 2026-08-08.
+
+**Machine** — la machine de calcul. **Coût** — *hypothèse* : ×2 à ×5 les étiquettes de T81,
+démarrage à chaud depuis ses poids.
 
 # Phase 5 — Publication
 

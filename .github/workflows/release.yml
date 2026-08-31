@@ -1,0 +1,140 @@
+# Publier l'artefact — poids, WebAssembly, API, et de quoi le vérifier.
+#
+# CE QUE CE WORKFLOW GARANTIT, ET CE QU'IL REFUSE
+#
+# `tools/package_artifact.py` traite les cinq conditions de T50 comme des
+# conditions : il rejoue le corpus de non-régression AVANT d'écrire quoi que ce
+# soit, et refuse de produire un répertoire incomplet. Ce workflow s'appuie
+# dessus plutôt que de les revérifier autrement — une seconde définition de
+# « publiable » finirait par diverger de la première.
+#
+# LES POIDS NE SONT PAS DANS LE DÉPÔT. `models/*.bin` est gitignoré : les poids
+# viennent du dépôt vendoré d'Alexander Strehl, à un commit épinglé par
+# `tools/fetch_vendor.py`. La CI les reconstruit donc, ce qui a un mérite
+# secondaire : elle vérifie à chaque publication que la chaîne d'export
+# fonctionne encore.
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version de l'artefact (ex. v1)"
+        required: true
+        default: "v1"
+
+permissions:
+  contents: write
+
+jobs:
+  artefact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.64
+          actions-cache-folder: emsdk-cache
+
+      - name: GNU Backgammon
+        # L'oracle n'est pas nécessaire pour PUBLIER — il l'est pour mesurer.
+        # `ORACLE=0` évite d'installer `gnubg-nn` ici.
+        run: sudo apt-get update && sudo apt-get install -y gnubg
+
+      - name: Dépendances Python
+        # DANS LE VENV QUE LE MAKEFILE ATTEND, pas à côté. `make` résout
+        # `$(HOME)/venv-gammonnet/bin/python` ; installer dans le Python du
+        # runner laissait `wasm-parity` échouer sur un interpréteur absent.
+        # Ajouter son `bin/` au PATH fait que `python` et `make` désignent le
+        # même interpréteur — une seule vérité, comme en local.
+        run: |
+          python3 -m venv "$HOME/venv-gammonnet"
+          echo "$HOME/venv-gammonnet/bin" >> "$GITHUB_PATH"
+          "$HOME/venv-gammonnet/bin/python" -m pip install --upgrade pip
+          # La roue CPU : torch ne sert qu'à convertir les poids, et la roue
+          # CUDA pèserait dix fois plus pour rien.
+          "$HOME/venv-gammonnet/bin/pip" install torch --index-url https://download.pytorch.org/whl/cpu
+          "$HOME/venv-gammonnet/bin/pip" install numpy pytest
+
+      - name: Sources vendorées, au commit épinglé
+        run: python tools/fetch_vendor.py
+
+      - name: Poids du grand réseau
+        # Une CONVERSION de format, pas un entraînement : bit-reproductible
+        # depuis les sources vendorées au commit épinglé. `package_artifact.py`
+        # le vérifie ensuite contre le sha256 de sa provenance.
+        run: python tools/export_model.py
+
+      - name: Bibliothèque native
+        # AVANT tout ce qui importe `gammonnet` : le paquet Python charge
+        # `build/libgammonnet.so` à l'import.
+        run: make build
+
+      # LE RÉSEAU D'ÉLAGAGE N'EST PAS RÉENTRAÎNÉ ICI, ET C'EST DÉLIBÉRÉ.
+      #
+      # Il l'a été une fois, sur GPU, et sa provenance dit ce que cela implique :
+      # l'accumulation atomique de la rétro-propagation CUDA n'est pas
+      # reproductible au bit près. Un runner sans GPU retombe silencieusement
+      # sur le CPU (`train_prune.py` le fait sans broncher) et produit un réseau
+      # DIFFÉRENT — proche, mais autre — auquel les mesures de T3D (`k=12` ne
+      # coûte rien de mesurable) et de T3E (PR 0,273) ne s'appliquent plus.
+      #
+      # Rien ne l'aurait attrapé : le corpus de non-régression T12 évalue le
+      # grand réseau et ne touche pas l'élagage. La panne aurait été muette.
+      #
+      # Il est donc versionné (`models/prune_32.bin`, 25,9 Kio) et
+      # `package_artifact.py` REFUSE de publier si son sha256 s'écarte de sa
+      # provenance. Ce n'était pas non plus une affaire de temps : le corpus
+      # coûte ~50 s à deux ouvriers, mesuré.
+
+      - name: WebAssembly, scalaire et SIMD
+        run: make wasm
+
+      - name: Parité WebAssembly ↔ natif
+        # AVANT tout le reste : un artefact dont le module ne répond pas comme
+        # le moteur natif ne doit pas sortir, quels que soient ses autres
+        # mérites.
+        run: make wasm-parity
+
+      - name: Invariants de l'API JavaScript
+        # La parité dit que le module CALCULE comme le natif. Ceci dit qu'il
+        # RÉPOND ce qu'il promet : deux défauts silencieux du classement des N
+        # meilleurs coups ont été trouvés là où la parité ne voyait rien.
+        run: make wasm-api
+
+      - name: Tests
+        run: python -m pytest tests/ -q
+
+      - name: Assembler
+        run: |
+          VERSION="${{ github.event.inputs.version || github.ref_name }}"
+          python tools/package_artifact.py --version "$VERSION"
+
+      - name: Archive
+        run: |
+          VERSION="${{ github.event.inputs.version || github.ref_name }}"
+          cd dist && tar czf "gammonnet-$VERSION.tar.gz" "gammonnet-$VERSION"
+          sha256sum "gammonnet-$VERSION.tar.gz" | tee "gammonnet-$VERSION.tar.gz.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gammonnet-artefact
+          path: dist/
+
+      - name: Publier la release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.sha256
+          body_path: dist/gammonnet-${{ github.ref_name }}/RELEASE.md

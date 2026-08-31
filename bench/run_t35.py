@@ -228,6 +228,12 @@ def main() -> int:
                         help="budget de temps du lot (0 = sans limite)")
     parser.add_argument("--ours-ply", type=int, default=2)
     parser.add_argument("--ours-filter", default="0,1,1")
+    parser.add_argument("--ours-prune-k", type=int, default=12,
+                        help="candidats laissés passer par le réseau "
+                             "d'élagage ; 0 le désactive")
+    parser.add_argument("--theirs-prune-k", type=int, default=None,
+                        help="idem pour le second joueur en mode --theirs self "
+                             "(défaut : le même)")
     parser.add_argument("--ours-cube-ply", type=int, default=None,
                         help="défaut : la profondeur de jeu")
     parser.add_argument("--theirs", choices=("gnubg", "self"), default="gnubg",
@@ -242,12 +248,16 @@ def main() -> int:
     ours_cube = args.ours_cube_ply if args.ours_cube_ply is not None else args.ours_ply
     ours = GammonNetCubePlayer(ply=args.ours_ply,
                                filter=parse_filter(args.ours_filter),
-                               cube_ply=ours_cube)
+                               cube_ply=ours_cube,
+                               prune_k=args.ours_prune_k)
     if args.theirs == "self":
+        other_k = (args.theirs_prune_k if args.theirs_prune_k is not None
+                   else args.ours_prune_k)
         theirs = GammonNetCubePlayer(ply=args.ours_ply,
                                      filter=parse_filter(args.ours_filter),
                                      cube_ply=ours_cube,
-                                     name=ours.name + "-bis")
+                                     prune_k=other_k,
+                                     name=(ours.name + "-bis") if other_k == args.ours_prune_k else None)
     else:
         gnubg_cube = (args.gnubg_cube_ply if args.gnubg_cube_ply is not None
                       else args.gnubg_ply)

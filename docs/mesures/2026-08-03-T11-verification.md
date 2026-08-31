@@ -26,7 +26,6 @@ gammonnet-0ply  contre  gnubg-0ply,  money sans videau
 
 | Référence | Valeur | Dans notre intervalle ? |
 |---|---|---|
-| HedgeHog, `colossus` vs `gnubg`, 0-ply **cubeful** | +0,0673 ppg | **Non** |
 | Auteur du modèle, 0-ply, IC publié [+0,0561 ; +0,0596] | +0,0578 ppg | **Non** — intervalles **disjoints** |
 
 Le critère de T11 est sans ambiguïté : *un écart inexpliqué arrête la phase 2*. Il fallait donc
@@ -92,7 +91,7 @@ mêmes proportions — ce qui est précisément ce qu'on observe.
 
 1. rejouer contre la version de `gnubg-nn` employée par l'auteur, si elle est identifiable ;
 2. rejouer contre **GNU Backgammon lui-même** plutôt que contre `gnubg-nn`, qui en est un fork
-   ancien — c'est d'ailleurs ce qu'emploie le benchmark HedgeHog ;
+   ancien ;
 3. comparer, position par position, les évaluations de `gnubg-nn` 1.1.0a9 à celles d'un autre
    build sur le corpus de T12.
 
@@ -105,8 +104,9 @@ mêmes proportions — ce qui est précisément ce qu'on observe.
 - **Le critère de choix du modèle diffère-t-il ?** Non : le `ProbAgent` de référence fait un
   argmin 0-ply sur `2P(w)+P(wg)+P(wbg)−P(lg)−P(lbg)−1`, identique au nôtre, vérifié par lecture
   du code.
-- **Le +0,0673 de HedgeHog** est **cubeful**. Ce n'est pas le même jeu, et il n'est pas
-  comparable à une mesure sans videau. Il est cité pour mémoire, pas comme cible.
+- **Un round-robin public entre moteurs commerciaux** avait servi de second point de
+  comparaison. Il est **cubeful**, donc pas le même jeu qu'une mesure sans videau, et il a été
+  retiré des références : la seule cible externe de T11 est le chiffre de l'auteur du modèle.
 
 ## Ce que cela change pour la suite
 

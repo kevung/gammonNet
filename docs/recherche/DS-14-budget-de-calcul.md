@@ -61,7 +61,7 @@ backgammon de ce type — et qu'est-ce qui, historiquement, fait exploser ce bud
 ## Les sous-questions
 
 1. **Ce que les autres ont dépensé.** Pour chaque moteur dont c'est documenté — TD-Gammon, GNU
-   Backgammon, les moteurs commerciaux, HedgeHog, `wildbg`,
+   Backgammon, les moteurs commerciaux, `wildbg`,
    `alexstrehl/backgammon-ai-engine` — combien de parties de self-play, combien d'heures ou de
    jours de machine, sur quel matériel, et **à quelle date** (le matériel de 1995 et celui de 2026
    ne se comparent pas sans conversion). Ce sont les seules ancres réelles dont je dispose.

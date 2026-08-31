@@ -194,8 +194,21 @@ GnSearchConfig gn_search_config_match(int ply, const GnMatchState *state);
 
 typedef struct {
     GnPlay play;
-    /* Of the resulting position, so from the OPPONENT's point of view. Only
-     * meaningful at ply 0; deeper, the value comes from the search. */
+    /*
+     * Of the resulting position, so from the OPPONENT's point of view -- the
+     * ENGINE's convention, and the opposite side from `equity` just below.
+     * Anything that hands both to a caller must bring one into the other's
+     * frame first; `gn_wasm.c` and `tools/serve.py`, the two published
+     * surfaces, both do, and both say so.
+     *
+     * Meaningful at ply 0, and at a terminal result (`terminal_probs`, all
+     * the mass on the outcome that happened). DEEPER IT IS THE SHALLOW PASS's
+     * distribution, not the search's: the recursion returns a scalar, so the
+     * equity below comes from depth while these five numbers do not. They
+     * remain a legitimate 0-ply reading of the resulting position; they are
+     * not the distribution behind `equity`. `gn_search_probs` is what
+     * computes THAT, and it costs its own walk.
+     */
     float probs[GN_NUM_OUTPUTS];
     /* Cubeless money equity of the play, from the point of view of the player
      * who made it. Already negated. */

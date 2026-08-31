@@ -71,7 +71,7 @@ retenu (§14)** en fiches `PLAN.md` (série T7x), éclairée par le **budget (§
 Chaque prompt répète ces contraintes, parce qu'il doit tenir seul. Elles sont ici pour mémoire :
 
 - **Licence.** Le module WebAssembly servi à un navigateur **est une distribution**. Poids de GNU
-  Backgammon (GPL-3) et réseaux HedgeHog (licence non confirmée, réputée non commerciale) sont
+  Backgammon (GPL-3) et tout réseau sous clause non commerciale sont
   hors périmètre — y compris comme source d'entraînement. bgsage est en réalité sous **MPL-2.0**
   (vérifié le 2026-08-27, et non AGPL-3 comme d'abord noté) : idées et benchmark réétudiables,
   pas de copie de code sans décision.

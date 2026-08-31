@@ -146,7 +146,7 @@ Conclusion : le « plat en profondeur » de gnubg vient de ce que le movefilter 
 
 **Ne pas faire** : MCTS (aucune preuve de supériorité au backgammon, séquentiel) ; persistance de l'arbre inter-décisions (plafonnée par le jet).
 
-**Artefacts / licences.** Hors périmètre comme demandé : poids de GNU Backgammon (GPL-3, https://www.gnu.org/software/gnubg/), réseaux HedgeHog (clause non commerciale), bgsage (AGPL-3). Utiles pour la *documentation d'algorithme* (movefilters, réseaux d'élagage, réduction de variance) sans transcription de code ni de constantes réglées à la main.
+**Artefacts / licences.** Hors périmètre comme demandé : poids de GNU Backgammon (GPL-3, https://www.gnu.org/software/gnubg/), tout réseau sous clause non commerciale, bgsage (AGPL-3). Utiles pour la *documentation d'algorithme* (movefilters, réseaux d'élagage, réduction de variance) sans transcription de code ni de constantes réglées à la main.
 
 **Sources principales (avec liens, consultées le 26 août 2026) :**
 Ballard 1983, *The *-Minimax Search Procedure for Trees Containing Chance Nodes*, Artificial Intelligence 21(3):327–350 — https://www.sciencedirect.com/science/article/abs/pii/S0004370283800150 (PDF : https://www.cs.uleth.ca/~benkoczi/3750/data/ballard83-star_alpha_beta.pdf) ·

@@ -127,22 +127,34 @@ class GammonNetCubePlayer:
     filter: tuple[int, ...] = ()
     cube_ply: int = 0
     model: str = MODEL
+    #: Le réseau d'élagage (T3A), et combien de candidats il laisse passer.
+    #: `prune_k = 0` le désactive et rend la recherche d'avant, bit pour bit.
+    #: Le défaut est 12 : mesuré 98,3 % d'accord avec la recherche non élaguée
+    #: en contact et une perte dans le bruit (+0,00023 [−0,00000 ; +0,00067]),
+    #: pour ×3,9 de vitesse. Les k plus serrés achètent la vitesse en payant de
+    #: la qualité — +0,00389 à k=3, dix-huit fois ce qu'un ply rapporte.
+    prune_model: str = "models/prune_32.bin"
+    prune_k: int = 12
     database: str | None = DATABASE
     efficiency: tuple[float, float, float] | None = None
     jacoby: bool = True
     name: str = field(default="")
     _network: object = field(default=None, repr=False, compare=False)
     _exact: object = field(default=None, repr=False, compare=False)
+    _prune: object = field(default=None, repr=False, compare=False)
 
     def __post_init__(self):
         if not self.name:
             suffix = "-f" + "/".join(str(k) for k in self.filter) if self.filter else ""
-            self.name = f"gammonnet-{self.ply}ply{suffix}-cube{self.cube_ply}"
+            pruned = f"-p{self.prune_k}" if self.prune_k else ""
+            self.name = (f"gammonnet-{self.ply}ply{suffix}-cube{self.cube_ply}"
+                         f"{pruned}")
 
     def __getstate__(self):
         state = self.__dict__.copy()
         state["_network"] = None
         state["_exact"] = None
+        state["_prune"] = None
         return state
 
     def _load(self):
@@ -169,6 +181,19 @@ class GammonNetCubePlayer:
 
             if self.efficiency is None:
                 self.efficiency = measured_efficiency()
+
+            if self.prune_k and self._prune is None:
+                small = Path(self.prune_model)
+                if not small.is_absolute():
+                    small = _ROOT / small
+                # Refusé, pas ignoré : un élagage silencieusement inactif
+                # ferait tourner une configuration qui n'est pas celle que le
+                # nom du joueur annonce.
+                if not small.exists():
+                    raise FileNotFoundError(
+                        f"réseau d'élagage absent : {small} — "
+                        f"poser prune_k=0 pour s'en passer explicitement")
+                self._prune = Network.load(small)
         return self._network
 
     # ── Les pions ────────────────────────────────────────────────────
@@ -178,12 +203,14 @@ class GammonNetCubePlayer:
 
         network = self._load()
         if match is None:
-            config = SearchConfig(ply=self.ply, filter=self.filter)
+            config = SearchConfig(ply=self.ply, filter=self.filter,
+                                  prune_net=self._prune, prune_k=self.prune_k)
         else:
             if not match.is_valid:
                 raise ValueError(f"état de match non évaluable : {match}")
             config = SearchConfig(ply=self.ply, filter=self.filter,
-                                  use_match=True, match=match)
+                                  use_match=True, match=match,
+                                  prune_net=self._prune, prune_k=self.prune_k)
         candidate = best_play(network, position, d1, d2, config)
         return candidate.play if candidate is not None else None
 
@@ -193,7 +220,8 @@ class GammonNetCubePlayer:
         from .search import SearchConfig, position_probs
 
         config = SearchConfig(ply=self.cube_ply, filter=self.filter,
-                              use_match=match is not None, match=match)
+                              use_match=match is not None, match=match,
+                              prune_net=self._prune, prune_k=self.prune_k)
         return position_probs(self._load(), position, config)
 
     def wants_double(self, position, cube, owner, match=None):
@@ -349,11 +377,23 @@ def play_cubeful_game(white, black, dice, white_rng, black_rng,
                 may = may and cube < cap
             else:
                 away_white, away_black, crawford = match
+                away_on_roll = away_white if mover == WHITE else away_black
                 # The dead-cube guard of `gn_rollout.c::match_cube_is_dead`:
                 # nobody is consulted during Crawford, or once the cube
                 # covers both remaining scores.
                 may = may and not crawford
                 may = may and not (cube >= away_white and cube >= away_black)
+                # T35 residual (2026-08-26): the guard above only skips a
+                # cube dead for BOTH sides. A cube already at or beyond the
+                # MOVER's own away is dead for the mover alone — winning
+                # this game already clinches the match regardless of stake,
+                # so doubling has no upside and only raises the opponent's
+                # gain if the mover loses. Measured redoubling there in
+                # 3.1% of sampled positions where the correct rate is zero
+                # (docs/mesures/2026-08-26-T35-verdict.md); the model's own
+                # judgment isn't trusted to suppress it, so it's a hard
+                # guard, like Crawford above.
+                may = may and not (cube >= away_on_roll)
             if may:
                 state = _mover_view(match, mover, cube)
                 owner = CubeOwner.CENTRED if cube_owner is None else CubeOwner.OWNED

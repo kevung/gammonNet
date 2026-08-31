@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "/home/kunger/t78-logs/run-g-emb16-256-128.bin",
+    "sizes": [
+      128,
+      256,
+      128,
+      1
+    ],
+    "parameters": 264065,
+    "macs": 65664,
+    "bytes": 1056308
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.992125,
+      "mean_loss": 1.7395284962234137e-06,
+      "mean_loss_when_wrong": 0.00022089250745694142,
+      "p99": 0.0,
+      "p999": 0.0005799343862058607,
+      "worst_loss": 0.0014038300144962879,
+      "above_gnubg_worst": 0
+    }
+  ]
+}

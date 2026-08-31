@@ -165,7 +165,7 @@ avant.
 Ils ne sont pas négociables, et chaque prompt les répète :
 
 1. **Rien de non libre dans un artefact distribué.** Toute brique rapportée par une recherche doit
-   arriver avec sa licence. Poids gnubg (GPL-3) et réseaux HedgeHog (licence non confirmée à la
+   arriver avec sa licence. Poids gnubg (GPL-3) et tout réseau sous clause non commerciale (licence non confirmée à la
    source, réputée non commerciale — exclus par prudence) sont hors périmètre — y compris comme
    source d'entraînement. bgsage, d'abord noté AGPL-3, est en réalité sous **MPL-2.0** (LICENSE
    du dépôt, vérifié le 2026-08-27) : ses idées et son benchmark sont réétudiables, mais aucun
@@ -218,9 +218,9 @@ l'instrument de confirmation finale (≥ 100 matchs, test apparié).
 
 - **bgsage est MPL-2.0**, pas AGPL-3 (LICENSE du dépôt, vérifié le 2026-08-27). Réétudiable comme
   documentation et repère de benchmark ; pas de copie de code sans décision explicite du dépôt.
-- **HedgeHog** : la « clause non commerciale » n'a pas de source primaire vérifiable ; les réseaux
-  forts sont côté serveur, propriétaires de fait. Reste exclu, le motif devient « licence non
-  confirmée ».
+- **Les moteurs à réseaux propriétaires côté serveur** : leurs clauses de licence n'ont pas
+  toujours de source primaire vérifiable, et les réseaux forts restent propriétaires de fait. Ils
+  restent exclus, le motif étant « licence non confirmée ».
 
 ### La suite
 
@@ -395,7 +395,7 @@ par classe (neutre, Whittington), la largeur de recherche (nulle, deux mesures),
 (fermée trois fois), les caractéristiques expertes en entrée (trois négatifs mesurés — H2
 dormante), NNUE incrémental (entrées denses, lots), WebGPU pour l'évaluateur (dispatch-bound),
 les bibliothèques d'inférence génériques, les corpus externes et tout professeur non libre
-(gnubg, XG, HedgeHog — règle de licence).
+(gnubg, XG, et tout autre moteur — règle de licence).
 
 ## 15. Le budget et les paliers (DS-14, rentré le 2026-08-27)
 

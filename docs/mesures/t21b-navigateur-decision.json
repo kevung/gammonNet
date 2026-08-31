@@ -1,0 +1,72 @@
+{
+  "browser": "firefox",
+  "headless": true,
+  "test": "decision",
+  "build": "gammonnet-simd",
+  "simd": true,
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:154.0) Gecko/20100101 Firefox/154.0",
+  "hardwareConcurrency": 28,
+  "results": [
+    {
+      "ply": 0,
+      "pruneK": 0,
+      "filter": "0/0",
+      "medianMs": 6,
+      "evaluations": 16,
+      "equity": 0.16583183407783508,
+      "sameMoveAsNative": true,
+      "sameEvaluationCount": true,
+      "equityGap": 1.6592216492417045e-7,
+      "msPerEvaluation": 0.375
+    },
+    {
+      "ply": 1,
+      "pruneK": 0,
+      "filter": "0/0",
+      "medianMs": 2289,
+      "evaluations": 7475,
+      "equity": 0.16434442210528585,
+      "sameMoveAsNative": true,
+      "sameEvaluationCount": true,
+      "equityGap": 4.2210528586328344e-7,
+      "msPerEvaluation": 0.30622073578595316
+    },
+    {
+      "ply": 2,
+      "pruneK": 0,
+      "filter": "1/1",
+      "medianMs": 3629,
+      "evaluations": 12951,
+      "equity": 0.16689868275949982,
+      "sameMoveAsNative": true,
+      "sameEvaluationCount": true,
+      "equityGap": 3.1724050017500893e-7,
+      "msPerEvaluation": 0.28021002239209325
+    },
+    {
+      "ply": 2,
+      "pruneK": 0,
+      "filter": "3/1",
+      "medianMs": 9813,
+      "evaluations": 38721,
+      "equity": 0.16689868275949982,
+      "sameMoveAsNative": true,
+      "sameEvaluationCount": true,
+      "equityGap": 3.1724050017500893e-7,
+      "msPerEvaluation": 0.2534283722011312
+    },
+    {
+      "ply": 2,
+      "pruneK": 12,
+      "filter": "3/1",
+      "medianMs": 2689,
+      "evaluations": 15142,
+      "equity": 0.16689868718040762,
+      "sameMoveAsNative": true,
+      "sameEvaluationCount": true,
+      "equityGap": 3.128195923685073e-7,
+      "msPerEvaluation": 0.1775855237088892
+    }
+  ],
+  "overheadRatio": 0.1775855237088892
+}

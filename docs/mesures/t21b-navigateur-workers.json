@@ -1,0 +1,44 @@
+{
+  "browser": "firefox",
+  "headless": true,
+  "test": "workers",
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:154.0) Gecko/20100101 Firefox/154.0",
+  "hardwareConcurrency": 28,
+  "positions": 2000,
+  "scaling": [
+    {
+      "workers": 1,
+      "ms": 465,
+      "evalsPerSecond": 4301,
+      "speedup": 1,
+      "worstDelta": 6.407499313354492e-7,
+      "mainThreadWorstGapMs": 1
+    },
+    {
+      "workers": 2,
+      "ms": 268,
+      "evalsPerSecond": 7463,
+      "speedup": 1.74,
+      "worstDelta": 6.407499313354492e-7,
+      "mainThreadWorstGapMs": 1
+    },
+    {
+      "workers": 4,
+      "ms": 150,
+      "evalsPerSecond": 13333,
+      "speedup": 3.1,
+      "worstDelta": 6.407499313354492e-7,
+      "mainThreadWorstGapMs": 1
+    },
+    {
+      "workers": 8,
+      "ms": 75,
+      "evalsPerSecond": 26667,
+      "speedup": 6.2,
+      "worstDelta": 6.407499313354492e-7,
+      "mainThreadWorstGapMs": 4
+    }
+  ],
+  "cancellationHonoured": true,
+  "usableAfterCancel": true
+}

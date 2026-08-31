@@ -4,16 +4,17 @@ date: 2026-08-03
 tâche: T22
 ---
 
-# Le moteur d'inférence est celui du dépôt de référence, pas `hedgehog-public`
+# Le moteur d'inférence est celui du dépôt de référence, et non un moteur tiers
 
-`PLAN.md` ouvrait T22 comme un arbitrage entre deux candidats — le C d'Alexander Strehl et le C++
-de `hedgehog-public` complété du layout dense qu'il refuse. **Nous retenons le premier**, et nous
+`PLAN.md` ouvrait T22 comme un arbitrage entre deux candidats — le C d'Alexander Strehl et un
+moteur d'inférence C++ tiers, complété du layout dense qu'il ne prend pas en charge. **Nous
+retenons le premier**, et nous
 **n'avons pas construit le second**, parce que la question que T22 devait trancher a reçu une
 réponse mécanique plutôt que comparative.
 
 ## Ce qui a fait la décision
 
-**Le gain de HedgeHog est plafonné par arithmétique, pas par estimation.** Son argument de vitesse
+**Le gain du candidat est plafonné par arithmétique, pas par estimation.** Son argument de vitesse
 est l'accumulation incrémentale NNUE, qui n'optimise que la couche d'entrée. Sur ce réseau, celle-ci
 pèse **100 352 des 528 389 MACs, soit 19 %** — et le mode dense la désactive de toute façon
 (`DenseFeatureLayout` : *« DENSE_FLOAT = 4 // Dense float input vector (NNUE disabled) »*). Aux
@@ -24,11 +25,11 @@ la réputation de NNUE, et c'est pourquoi elle ne se transporte pas ici.
 unique ; l'addition flottante n'étant pas associative, le compilateur ne pouvait ni dérouler ni
 vectoriser. Lever l'interdiction a rendu **×4,1**, et le traitement par lot **×2,2** de plus, exact
 au bit près — soit **×9 au total**, sans rien emprunter. Aucune de ces deux causes ne dépendait du
-moteur : elles auraient frappé HedgeHog de la même façon.
+moteur : elles auraient frappé l'autre candidat de la même façon.
 
 **Les trois briques qu'on aurait voulu lui déléguer n'y sont pas** : pas de packaging WebAssembly
-de l'évaluateur (*« only the OGXM library is WASM-packaged here »*), une recherche annoncée
-*« Community expectiminimax »* **sans filtrage de coups**, et des tables de fin de partie en
+de l'évaluateur (seule une bibliothèque de format de match l'est), une recherche de base **sans
+filtrage de coups** — or c'est lui qui rend le 2-ply praticable — et des tables de fin de partie en
 **stubs**. Elles sont à écrire dans les deux scénarios.
 
 ## Le critère d'acceptation, amendé et pourquoi
@@ -44,14 +45,6 @@ exemple, indépendant de NNUE — nous ne le saurions pas. La décision est donc
 chemin l'est aussi : `nn_dense_layout_supported()` accepte le layout `CUSTOM`, `nn_forward_dense()`
 existe et est compilé, et l'extracteur manquant est notre T02, déjà écrit. Le mur est mince ; c'est
 sa récompense qui est faible.
-
-## Ce que HedgeHog nous apporte quand même, et qui doit rester dit
-
-Leur **benchmark public est notre étalon de mesure** — le `colossus` vs `gnubg` que T11 confronte.
-Leur discipline *« refused, not approximated »* est devenue la règle n° 2 de `CLAUDE.md`. Et leur
-code reste lisible et instructif. Ne pas embarquer leur moteur n'est pas ne rien leur devoir, et
-`THIRD-PARTY.md` les porte désormais comme **consultés, non embarqués** plutôt que comme une
-dépendance qui n'a jamais eu lieu.
 
 ## Conséquences
 
