@@ -85,6 +85,19 @@ int gn_gemm_int8_relu(const int8_t *weights, int rows, int cols,
                       int shift, uint8_t *out);
 
 /*
+ * The same, but `shifts` is ONE PER ROW instead of one for the whole layer.
+ * Training quantises weights per-channel (one scale per output neuron); a
+ * layer-wide shift cannot represent that scale WITHOUT throwing away exactly
+ * the precision QAT was trained to keep. Deploying a per-channel-trained
+ * model needs this entry point, not `gn_gemm_int8_relu`.
+ *
+ * `shifts` has `rows` entries. Same bounds as `shift` above, checked per row.
+ */
+int gn_gemm_int8_relu_pc(const int8_t *weights, int rows, int cols,
+                         const int32_t *bias, const uint8_t *input, int batch,
+                         const int32_t *shifts, uint8_t *out);
+
+/*
  * The same, without activation or requantisation: raw int32 accumulators,
  * `rows` x `batch`, feature-major. This is the output layer, whose five values
  * become probabilities in float -- the only place a float appears on this path.

@@ -218,3 +218,59 @@ int gn_gemm_int8_relu(const int8_t *weights, int rows, int cols,
     }
     return 0;
 }
+
+int gn_gemm_int8_relu_pc(const int8_t *weights, int rows, int cols,
+                         const int32_t *bias, const uint8_t *input, int batch,
+                         const int32_t *shifts, uint8_t *out)
+{
+    /* Same kernel as `gn_gemm_int8_relu`, ONE requantisation shift PER ROW
+     * instead of one for the whole layer. Training quantises weights
+     * per-channel (`QuantizedLinear.quantized_weight`, one scale per output
+     * neuron -- deliberately, a layer-wide scale would waste resolution on
+     * every channel narrower than the widest one). A single layer-wide shift
+     * cannot represent that without discarding exactly the precision QAT was
+     * trained to keep, so a deployed per-channel-trained model needs this. The
+     * accumulation loop is untouched -- it does not know about shift at all,
+     * per-row or otherwise -- only the epilogue changes. */
+    if (arguments_refused(weights, rows, cols, input, batch, out)) {
+        return -1;
+    }
+    if (shifts == NULL) {
+        return -1;
+    }
+
+    int32_t accumulator[256];
+    if (batch > (int)(sizeof accumulator / sizeof accumulator[0])) {
+        return -1;
+    }
+
+    for (int i = 0; i < rows; i++) {
+        if (shifts[i] < 0 || shifts[i] > 31) {
+            return -1;
+        }
+    }
+
+    for (int i = 0; i < rows; i++) {
+        const int8_t *row = weights + (size_t)i * cols;
+        for (int n = 0; n < batch; n++) {
+            accumulator[n] = bias != NULL ? bias[i] : 0;
+        }
+        for (int j = 0; j < cols; j++) {
+            const int32_t w = row[j];
+            if (w == 0) {
+                continue;
+            }
+            accumulate_lane(accumulator, w, input + (size_t)j * batch, batch);
+        }
+        uint8_t *dst = out + (size_t)i * batch;
+        const int shift = shifts[i];
+        for (int n = 0; n < batch; n++) {
+            const int32_t scaled = accumulator[n] >> shift;
+            dst[n] = scaled <= 0 ? 0
+                   : (scaled >= GN_INT8_ACTIVATION_MAX
+                          ? (uint8_t)GN_INT8_ACTIVATION_MAX
+                          : (uint8_t)scaled);
+        }
+    }
+    return 0;
+}

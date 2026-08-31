@@ -44,6 +44,18 @@ _LIB.gn_gemm_int8_relu.argtypes = [
 ]
 _LIB.gn_gemm_int8_relu.restype = ctypes.c_int
 
+_LIB.gn_gemm_int8_relu_pc.argtypes = [
+    ctypes.POINTER(ctypes.c_int8),
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_int32),
+    ctypes.POINTER(ctypes.c_uint8),
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_int32),
+    ctypes.POINTER(ctypes.c_uint8),
+]
+_LIB.gn_gemm_int8_relu_pc.restype = ctypes.c_int
+
 #: Le plafond de la ClippedReLU, répété du C. Les activations tiennent dans
 #: 0..127 pour qu'un poids int8 les multiplie sans étape d'élargissement.
 ACTIVATION_MAX = 127
@@ -99,3 +111,16 @@ def relu(weights, rows: int, cols: int, bias, activations, batch: int,
                               _input(activations), batch, shift, out) != 0:
         raise ValueError("gn_gemm_int8_relu a refusé ces arguments")
     return list(out)
+
+
+def relu_pc(weights, rows: int, cols: int, bias, activations, batch: int,
+            shifts, out=None) -> list[int]:
+    """Comme `relu`, mais UN DÉCALAGE PAR RANGÉE — ce que la QAT entraîne
+    réellement (`QuantizedLinear.quantized_weight`, une échelle par canal de
+    sortie). `shifts` a `rows` éléments."""
+    buffer = out if out is not None else (ctypes.c_uint8 * (rows * batch))()
+    if _LIB.gn_gemm_int8_relu_pc(
+            _weights(weights), rows, cols, _bias(bias), _input(activations),
+            batch, (ctypes.c_int32 * len(shifts))(*shifts), buffer) != 0:
+        raise ValueError("gn_gemm_int8_relu_pc a refusé ces arguments")
+    return list(buffer)

@@ -15,7 +15,7 @@ import random
 
 import pytest
 
-from gammonnet.gemm_int8 import ACTIVATION_MAX, headroom, path, raw, relu
+from gammonnet.gemm_int8 import ACTIVATION_MAX, headroom, path, raw, relu, relu_pc
 
 #: Les formes du réseau embarqué (196 → 512 → 512 → 256 → 128 → 5), plus des
 #: formes tordues : c'est dans les épilogues que les noyaux vectoriels se
@@ -123,3 +123,56 @@ def test_refusals_are_refusals():
 
 def test_the_path_is_named_so_a_number_can_say_who_produced_it():
     assert path() in {"scalar", "simd128", "sse2", "avx2"}
+
+
+# ── Le décalage par canal : ce que la QAT entraîne réellement ──────────────
+
+
+@pytest.mark.parametrize("rows,cols", SHAPES)
+@pytest.mark.parametrize("batch", [1, 8, 32])
+def test_relu_pc_with_uniform_shifts_equals_relu(rows, cols, batch):
+    """Un même décalage répété `rows` fois doit rendre exactement `relu` —
+    `relu_pc` n'est pas une arithmétique différente, seulement plus fine."""
+    weights, bias, activations = sample(rows, cols, batch, seed=rows * 17 + cols)
+    shift = 5
+    uniform = relu(weights, rows, cols, bias, activations, batch, shift=shift)
+    per_channel = relu_pc(weights, rows, cols, bias, activations, batch,
+                          shifts=[shift] * rows)
+    assert uniform == per_channel
+
+
+def test_relu_pc_shifts_are_genuinely_independent_per_row():
+    """Chaque rangée doit répondre à SON PROPRE décalage, pas à celui de la
+    rangée voisine — la raison d'être de cette fonction."""
+    rows, cols, batch = 3, 4, 1
+    weights = [1, 1, 1, 1] * rows
+    activations = [100, 100, 100, 100]  # accumulateur = 400 par rangée
+    out = relu_pc(weights, rows, cols, None, activations, batch,
+                  shifts=[0, 2, 3])
+    assert out == [127, 100, 50]  # mêmes valeurs que le test scalaire de `relu`
+
+
+def test_relu_pc_matches_a_manual_per_row_reference():
+    """Reconstruit la sortie rangée par rangée avec `raw` (accumulateurs bruts,
+    non décalés) et un décalage propre à chaque rangée — une seconde voie,
+    indépendante de `relu_pc`, vers le même nombre."""
+    rows, cols, batch = 6, 32, 8
+    weights, bias, activations = sample(rows, cols, batch, seed=99)
+    shifts = [(i * 3) % 8 for i in range(rows)]
+
+    accumulators = raw(weights, rows, cols, bias, activations, batch)
+    expected = []
+    for i in range(rows):
+        row_acc = accumulators[i * batch:(i + 1) * batch]
+        for value in row_acc:
+            scaled = value >> shifts[i]
+            expected.append(max(0, min(ACTIVATION_MAX, scaled)))
+
+    assert relu_pc(weights, rows, cols, bias, activations, batch, shifts) == expected
+
+
+def test_relu_pc_refuses_a_shift_out_of_range_on_any_row():
+    with pytest.raises(ValueError):
+        relu_pc([1] * 4, 2, 2, None, [1, 1], 1, shifts=[0, -1])
+    with pytest.raises(ValueError):
+        relu_pc([1] * 4, 2, 2, None, [1, 1], 1, shifts=[32, 0])
