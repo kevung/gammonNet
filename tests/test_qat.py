@@ -25,7 +25,7 @@ from gammonnet.qat import (  # noqa: E402
     ClippedReLU,
     QuantizedLinear,
     QuantizedProb5,
-    calibrate_activation_scale,
+    calibrate_activation_scales,
     power_of_two_scale,
     round_ste,
 )
@@ -142,10 +142,31 @@ def test_a_mismatched_architecture_is_refused():
         net.load_float_weights(float_net.state_dict())
 
 
-def test_the_calibrated_activation_scale_is_a_power_of_two():
+def test_the_calibrated_activation_scales_are_powers_of_two():
     net = QuantizedProb5(hidden_sizes=(32, 16))
-    scale = calibrate_activation_scale(net, torch.rand(64, 196))
-    assert math.log2(scale) == int(math.log2(scale))
+    scales = calibrate_activation_scales(net, torch.rand(64, 196))
+    assert len(scales) == 2
+    for scale in scales:
+        assert math.log2(scale) == int(math.log2(scale))
+
+
+def test_calibration_does_not_self_contaminate_across_layers():
+    """T73 residual (2026-08-31): a single scale calibrated in one blind pass
+    self-contaminates — every ClippedReLU still carries the constructor's
+    default (1/64, ceiling ~2.0) while measuring, so a deep layer's true
+    range gets clipped away before it can be measured, and the resulting
+    scale under-covers that layer. Per-layer, sequential calibration must
+    let a layer with a genuinely larger natural range settle on a coarser
+    scale than an earlier, narrower layer — not be capped by it.
+    """
+    net = QuantizedProb5(hidden_sizes=(8, 8))
+    with torch.no_grad():
+        # Blow up the second layer's weights so its pre-activation range is
+        # far wider than the first layer's default init range.
+        linears = [m for m in net.trunk if isinstance(m, QuantizedLinear)]
+        linears[1].linear.weight.mul_(50.0)
+    scales = calibrate_activation_scales(net, torch.rand(64, 196))
+    assert scales[1] > scales[0]
 
 
 def test_the_scale_helper_never_saturates():

@@ -175,27 +175,41 @@ class QuantizedProb5(nn.Module):
         self.head.bias.data.copy_(state["head.bias"])
 
 
-def calibrate_activation_scale(model: nn.Module, samples: torch.Tensor,
-                               levels: int = ACTIVATION_MAX) -> float:
-    """L'échelle d'activation `2^-k` qui couvre ce que le tronc produit vraiment.
+def calibrate_activation_scales(model: nn.Module, samples: torch.Tensor,
+                                levels: int = ACTIVATION_MAX) -> list[float]:
+    """Une échelle `2^-k` PAR COUCHE, calibrée séquentiellement.
 
-    Prise sur un échantillon réel plutôt que devinée : une échelle trop
-    grossière perd de la résolution partout, une trop fine écrête les
-    activations les plus fortes — et ce sont justement elles qui portent les
-    positions tranchées.
+    Une échelle UNIQUE calibrée en un seul aller — la première version de
+    cette fonction — se contamine elle-même : chaque `ClippedReLU` du tronc
+    porte encore l'échelle par défaut du CONSTRUCTEUR (1/64, plafond ≈ 2,0)
+    tant que l'appelant ne l'a pas remplacée, donc la couche 2 est mesurée sur
+    une sortie de couche 1 déjà écrêtée à un plafond arbitraire — et l'échelle
+    unique qui en sort sous-estime toute couche plus profonde que celle qui a
+    fixé le maximum. Mesuré (2026-08-31, `docs/mesures/2026-08-31-T73-qat-echelle-diagnostic.md`) :
+    sur le réseau embarqué, la dernière couche cachée atteint 52,75 avant
+    quantification quand l'échelle unique alors choisie (2^-3) ne couvre que
+    127 × 2^-3 ≈ 15,9 — un facteur ~3,3 de saturation, dans la couche la plus
+    proche de la sortie.
+
+    Ici chaque couche est calibrée sur la sortie RÉELLEMENT vue par la
+    suivante : son propre maximum devient son échelle, appliquée (écrêtage ET
+    arrondi comme à l'exécution) avant de mesurer la couche d'après. C'est la
+    même chaîne que `ClippedReLU.forward`, rejouée à l'avance.
     """
     model.eval()
-    maximum = 0.0
+    scales: list[float] = []
     with torch.no_grad():
         activations = samples
         for module in model.trunk:
             if isinstance(module, QuantizedLinear):
-                integers, scale = module.quantized_weight()
-                activations = nn.functional.linear(activations, integers * scale,
-                                                   module.linear.bias)
-                maximum = max(maximum, float(activations.clamp(min=0).max()))
+                integers, weight_scale = module.quantized_weight()
+                activations = nn.functional.linear(
+                    activations, integers * weight_scale, module.linear.bias)
+                maximum = float(activations.clamp(min=0).max())
+                scale = (1.0 / 64.0 if maximum <= 0.0
+                         else 2.0 ** math.ceil(math.log2(maximum / levels)))
+                scales.append(scale)
             else:
+                module.scale = scales[-1]
                 activations = module(activations)
-    if maximum <= 0.0:
-        return 1.0 / 64.0
-    return 2.0 ** math.ceil(math.log2(maximum / levels))
+    return scales

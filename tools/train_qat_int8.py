@@ -84,7 +84,7 @@ def main() -> int:
     import torch
     from torch import nn
 
-    from gammonnet.qat import QuantizedProb5, calibrate_activation_scale
+    from gammonnet.qat import QuantizedProb5, calibrate_activation_scales
 
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -141,12 +141,16 @@ def main() -> int:
 
     # L'échelle d'activation est calibrée sur des données réelles AVANT
     # d'entraîner : une échelle devinée écrête ou gaspille, et le réseau
-    # passerait son entraînement à compenser un mauvais choix d'unité.
-    scale = calibrate_activation_scale(student, hold_x[:2048])
-    for module in student.trunk:
-        if hasattr(module, "scale"):
-            module.scale = scale
-    print(f"  échelle d'activation calibrée : 2^{int(np.log2(scale))}")
+    # passerait son entraînement à compenser un mauvais choix d'unité. UNE
+    # échelle PAR COUCHE (2026-08-31) : une échelle unique se calibre sur son
+    # propre écrêtage par défaut et sous-estime les couches profondes — voir
+    # la docstring de `calibrate_activation_scales`.
+    scales = calibrate_activation_scales(student, hold_x[:2048])
+    relu_modules = [m for m in student.trunk if hasattr(m, "scale")]
+    for module, scale in zip(relu_modules, scales):
+        module.scale = scale
+    print(f"  échelles d'activation calibrées : "
+          f"{[f'2^{int(np.log2(s))}' for s in scales]}")
 
     optimiser = torch.optim.Adam(student.parameters(), lr=args.lr)
     loss_fn = nn.MSELoss()
@@ -209,7 +213,7 @@ def main() -> int:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     torch.save({"state_dict": student.state_dict(), "hidden_sizes": hidden,
-                "input_size": features.shape[1], "activation_scale": scale,
+                "input_size": features.shape[1], "activation_scales": scales,
                 "holdout_loss": best, "mean_equity_gap": mean_gap,
                 "corpus": str(args.corpus), "teacher": str(args.teacher),
                 "seed": args.seed, "date": str(date.today())}, args.out)
