@@ -224,6 +224,63 @@ class NetworkEngine:
 
 
 @dataclass
+class Int8NetworkEngine:
+    """T73's real int8 path (`gammonnet.infer_int8.Int8Network`), choosing at
+    0-ply — the first engine that can actually PLAY with it, not just be
+    measured against it (`tools/measure_qat_decision_loss.py` already did
+    the measuring; this is what turns the same evaluator into a player this
+    harness can run in a game, a duplicate pair, or a round-robin).
+
+    There is no C-level `gn_best_play_0ply` equivalent for this path yet —
+    `Int8Network` is a Python object calling `gn_gemm_int8_relu_pc` directly,
+    not a `GnNetwork*` the search machinery knows about — so this IS the only
+    path, not a slow readable cross-check of a fast one like `NetworkEngine`
+    keeps. `SearchEngine` at ply ≥ 1 has no int8 counterpart either: this
+    engine is 0-ply only, and stays that way until `gn_search.c` itself
+    learns to dispatch to the int8 kernel.
+    """
+
+    model: str = "models/qat_int8.bin"
+    name: str = "gammonnet-int8-0ply"
+    _network: object = field(default=None, repr=False, compare=False)
+
+    def _load(self):
+        if self._network is None:
+            from pathlib import Path
+
+            from .infer_int8 import Int8Network
+
+            path = Path(self.model)
+            if not path.is_absolute():
+                path = Path(__file__).resolve().parent.parent.parent / self.model
+            self._network = Int8Network.load(path)
+        return self._network
+
+    def choose(self, position: Position, d1: int, d2: int, rng: random.Random) -> Play | None:
+        from . import codec
+
+        plays = position.legal_plays(d1, d2)
+        if not plays:
+            return None
+
+        network = self._load()
+        best, best_equity = None, None
+        for play in plays:
+            if play.result.is_over():
+                # Same convention as `NetworkEngine`: seen from the opponent,
+                # hence the minus.
+                equity = -float(game_value(play.result, position.turn))
+            else:
+                w, wg, wbg, lg, lbg = network.forward(codec.encode(play.result))
+                equity = 2.0 * w + wg + wbg - lg - lbg - 1.0
+
+            if best_equity is None or equity < best_equity:
+                best, best_equity = play, equity
+
+        return best
+
+
+@dataclass
 class SearchEngine:
     """gammonNet at an arbitrary depth, through `gn_search`.
 
