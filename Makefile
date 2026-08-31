@@ -101,11 +101,11 @@ SOURCES := src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
            src/gn_rollout.c src/gn_bearoff.c src/gn_evalcache.c \
            src/gn_search.c \
            src/gn_infer_reference.c src/gn_choose.c src/gn_met.c src/gn_cube.c \
-           src/gn_gemm_int8.c
+           src/gn_gemm_int8.c src/gn_int8_model.c
 HEADERS := src/gn_rules.h src/gn_encoding.h src/gn_position_id.h src/gn_infer.h \
            src/gn_rollout.h src/gn_bearoff.h src/gn_evalcache.h \
            src/gn_choose.h src/gn_search.h src/gn_met.h src/gn_met_table.h \
-           src/gn_cube.h src/gn_gemm_int8.h
+           src/gn_cube.h src/gn_gemm_int8.h src/gn_int8_model.h
 OBJECTS := $(patsubst src/%.c,$(BUILD)/%.o,$(SOURCES))
 
 # Sources vendorées, compilées telles quelles — voir VENDOR_CFLAGS.
@@ -274,7 +274,7 @@ wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 DUMP_INT8 := $(BUILD)/dump_reference_int8
 $(DUMP_INT8): tools/dump_reference_int8.c src/gn_gemm_int8.c $(HEADERS)
 	@mkdir -p $(BUILD)
-	$(CC) $(CFLAGS) -Isrc -o $@ tools/dump_reference_int8.c src/gn_gemm_int8.c
+	$(CC) $(CFLAGS) -Isrc -o $@ tools/dump_reference_int8.c src/gn_gemm_int8.c src/gn_int8_model.c
 
 # Parité du chemin int8 DÉTERMINISTE (gn_gemm_int8) : le repère est produit par
 # le noyau natif dispatché sur cette machine (scalaire/SSE2/AVX2), rejoué au
