@@ -377,11 +377,23 @@ def play_cubeful_game(white, black, dice, white_rng, black_rng,
                 may = may and cube < cap
             else:
                 away_white, away_black, crawford = match
+                away_on_roll = away_white if mover == WHITE else away_black
                 # The dead-cube guard of `gn_rollout.c::match_cube_is_dead`:
                 # nobody is consulted during Crawford, or once the cube
                 # covers both remaining scores.
                 may = may and not crawford
                 may = may and not (cube >= away_white and cube >= away_black)
+                # T35 residual (2026-08-26): the guard above only skips a
+                # cube dead for BOTH sides. A cube already at or beyond the
+                # MOVER's own away is dead for the mover alone — winning
+                # this game already clinches the match regardless of stake,
+                # so doubling has no upside and only raises the opponent's
+                # gain if the mover loses. Measured redoubling there in
+                # 3.1% of sampled positions where the correct rate is zero
+                # (docs/mesures/2026-08-26-T35-verdict.md); the model's own
+                # judgment isn't trusted to suppress it, so it's a hard
+                # guard, like Crawford above.
+                may = may and not (cube >= away_on_roll)
             if may:
                 state = _mover_view(match, mover, cube)
                 owner = CubeOwner.CENTRED if cube_owner is None else CubeOwner.OWNED
