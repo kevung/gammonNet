@@ -345,53 +345,71 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.0.1 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.1.0 — À LIRE AVANT DE METTRE À JOUR
 
-**`rankPlays` rend maintenant les probabilités du JOUEUR QUI JOUE le coup**, du
-même côté que l'`equity` posée à côté d'elles. Jusqu'en v1.0.1 elles décrivaient
-la position *résultante*, donc l'adversaire, et un champ `forMover` portait le
-retournement.
+**`cubeDecision` peut enfin rendre « trop bon pour doubler ».** La courbe vivante
+du modèle de videau avait ses deux extrémités aplaties : au-dessus du point de
+cash elle plafonnait à `max(1, e(p))`, sous le point de prise elle butait à
+`min(−1, e(p))`. Le segment manquant — `(CP_live, +1)` vers `(1, +W)` — est la
+valeur du videau qu'on CONSERVE en jouant la partie pour le gammon plutôt que
+d'encaisser. En le supprimant, on prisait ce videau à zéro.
 
-| | v1.0.1 | v1.1.0 |
-|---|---|---|
-| `probs` | position résultante (adversaire) | **le joueur qui joue** |
-| `forMover` | le retournement, à afficher | **supprimé** |
+Conséquence, et c'est toute la portée du défaut : `E_nd > +1` devenait
+impossible tant que l'équité **cubeless** ne dépassait pas déjà un point. Le
+verdict `GN_TOO_GOOD` — la valeur d'énumération, la ligne `TOO_GOOD` de la
+spécification §4 — décrivait donc un état que le moteur ne pouvait pas
+produire sur une position réelle. Balayé à 73 % de gains, il basculait à 55 %
+de gammon, c'est-à-dire là où `e(p)` franchit 1,000, et non là où jouer la
+suite se met à battre l'encaissement.
 
-Sur l'ouverture 3-1, le meilleur coup passe donc de `probs[0] = 0,4456` à
-**0,5544** — la valeur que `/v1/eval` rend déjà en HTTP, et celle qu'une
-interface affiche.
+Sur `XGID=bB-B--C-A---eE---c-caa--B-:0:0:1:00:0:0:0:0:0`, money, videau centré :
 
-**Ce que vous devez faire** : si vous lisiez `probs`, retirez votre
-retournement. Si vous lisiez `forMover`, lisez `probs`. `forMover` a été
-supprimé plutôt que laissé en place à côté d'un `probs` déjà retourné : un
-appelant qui ne relit pas ces notes obtient `undefined`, ce qui casse tout de
-suite — au contraire de cinq nombres parfaitement plausibles et faux.
+| | cubeless | ne pas doubler | doubler/prendre | verdict |
+|---|---|---|---|---|
+| v1.1.0 | +0,983 | **+0,995** | +1,780 | double, passe |
+| **v1.2.0** | +0,983 | **+1,142** | +1,780 | **trop bon, passe** |
+| GNU Backgammon 2-ply | +0,949 | +1,099 | +1,707 | trop bon, passe |
+| XG Roller++ | +0,935 | +1,082 | +1,678 | trop bon, passe |
 
-**Comment le vérifier vous-même** : à `ply: 0`, `2·w + wg + wbg − lg − lbg − 1`
-reproduit l'équité du même candidat. `verify/api_invariants.mjs` le contrôle sur
-les douze coups de l'ouverture 3-1 (max|Δ| mesuré : 7,68e-8). Aucune
-vérification d'imbrication ne peut voir une inversion de référentiel — une
-distribution retournée reste parfaitement imbriquée — et c'est par là que
-celle-ci est passée.
+**Ce que vous devez faire** : rien dans le code appelant — ni signature, ni
+champ, ni unité. Mais si vous avez STOCKÉ des décisions de videau produites par
+v1.1.0 ou antérieur, celles des positions au-delà du point de cash sont fausses
+et doivent être recalculées. Un appelant qui affiche le verdict verra
+apparaître un quatrième cas qu'il n'avait jamais reçu jusqu'ici.
 
-**Un défaut corrigé au passage** : les probabilités d'un coup qui TERMINE la
-partie valaient zéro. Retournées pour l'affichage, elles disaient « gain
-certain, aucun gammon » sur une sortie qui gagne un gammon (équité +2,
-probabilités disant +1). C'est le dernier coup de chaque partie. Elles portent
-désormais l'issue exacte, calculée et non évaluée.
+**Comment le vérifier vous-même** : la courbe vivante doit valoir `+W` en
+`p = 1` et `−L` en `p = 0`, dans les trois états du videau. C'est l'ancrage que
+la version précédente violait, et le premier des trois tests neufs de
+`tests/test_cube.py`.
+
+**Le plafond était la règle de Jacoby**, appliquée en permanence au lieu de
+l'être quand elle vaut. Les gammons ne comptent pas avant que le videau soit
+tourné : la branche « ne pas doubler » est alors réellement bornée par
+l'encaissement. `gn_cube_decide` l'applique déjà là où elle appartient, en
+ramenant `W` et `L` à 1 sur cette branche — ce qui aplatit le segment corrigé
+tout seul, sans cas particulier. Les deux mécanismes n'en étaient pas un.
 
 **Ce qui NE change pas** : les poids, bit pour bit — mêmes SHA-256 que ceux de
-v1.0.1, seuls les noms de fichiers portent la nouvelle version (`BRIEF.md` §8 :
-un réseau ne devient un autre réseau que si ses poids changent). Aucune équité
-ne bouge, aucune mesure de force ci-dessous n'est affectée, et la parité
-WebAssembly ↔ natif reste à 0 en scalaire et 6,407e-7 en SIMD.
+v1.0.1 et v1.1.0, seuls les noms de fichiers portent la nouvelle version
+(`BRIEF.md` §8 : un réseau ne devient un autre réseau que si ses poids
+changent). Aucune probabilité, aucune équité de COUP, aucune mesure de force
+ci-dessous n'est affectée : la recherche évalue des coups, pas des états de
+videau. La parité WebAssembly ↔ natif reste à 0 en scalaire et 6,407e-7 en SIMD.
 
-**Ce qui reste divergent, et délibérément** : au-delà de 0-ply, ces cinq nombres
-viennent de la passe superficielle qui a servi à classer les coups, pas de la
-recherche profonde qui a produit l'équité. Le côté est le bon à toute
-profondeur ; la profondeur, non. `/v1/eval` tranche autrement — il les omet dès
-`ply >= 1`. `rankPlays` les garde, parce qu'une interface d'analyse les affiche,
-et le dit dans sa propre documentation.
+**Le calibrage de l'efficacité `x` n'est pas touché non plus**, et c'est
+démontrable plutôt que supposé : à `W = L = 1` — le domaine sans gammon de la
+table bilatérale contre laquelle `x` a été ajusté (T34) — la queue corrigée
+vaut `1 + (W−1)·(…) = 1`, exactement l'ancien plafond. La correction est
+l'identité sur tout le domaine d'ajustement, et ne mord que sur les positions
+à gammons, précisément celles que la spécification §3 disait n'être validées
+que par comparaison externe. Un test fige cette invariance.
+
+**Provenance** : la note de tête de `docs/specs/t34-videau-spec.md` affirmait
+qu'aucune source de GNU Backgammon n'avait été lue. Ce n'est plus vrai et le
+document le dit désormais : le diagnostic vient de la confrontation avec
+`MoneyLive()` (`gnubg/eval.c`, GPL), qui interpole là où nous plafonnions.
+Aucune ligne n'a été copiée — la forme rétablie est celle de Rick Janowski
+(*Take-Points in Money Games*, 1993), et gammonNet reste sous licence MIT.
 
 """
 
