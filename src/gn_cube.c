@@ -52,15 +52,35 @@ static void live_points(double W, double L, double *tp_live, double *cp_live)
     *cp_live = (L + 1.0) / denom;
 }
 
+/* The value at `p` of the straight line through (x0, y0) and (x1, y1). Every
+ * piece of every live curve in this file is one of these, so the pieces are
+ * named by their endpoints -- the spec's own notation -- rather than by an
+ * expanded slope a sign slip could hide in. A degenerate segment (x1 <= x0,
+ * which a bisected breakpoint can produce at the extremes) returns its own
+ * endpoint rather than dividing by zero. */
+static double segment(double p, double x0, double y0, double x1, double y1)
+{
+    if (x1 - x0 <= 0.0)
+        return y1;
+    return y0 + (y1 - y0) * ((p - x0) / (x1 - x0));
+}
+
 /*
  * The Janowski equity of ONE cube state, per unit of cube, at efficiency `x`.
  *
- * `dead` is `e(p)`, used unclamped for the dead branch and as the "too good"
- * continuation for the live one -- spec §2's own words, "trop bon traité par
- * la continuation morte": beyond the point where a live cube's value saturates
- * at the cash equivalent, playing on is scored by the plain cubeless equity,
- * because that IS what happens once nobody has anything left to gain by
- * turning the cube.
+ * `dead` is `e(p)`, the dead branch verbatim. The live branch is piecewise
+ * linear across the WHOLE of [0, 1], tails included: it runs from (0, -L) to
+ * (1, +W), bending at the breakpoints the cube state puts in its way.
+ *
+ * THE TAILS ARE NOT PLATEAUX, and this is the whole of the "too good"
+ * verdict. Above CP_live a cube holder does not stop at the cash equivalent
+ * of +1: he plays the game on for the gammon, still holding the cube, and
+ * the curve rises to the average win W at p = 1. Below TP_live its mirror
+ * falls to -L. Flattening either tail (this file did, until 2026-09-01,
+ * capping the top at max(1, e(p))) prices the retained cube at zero and
+ * makes E_nd > +1 impossible unless the CUBELESS equity already exceeds a
+ * point -- which is to say it makes GN_TOO_GOOD unreachable on every real
+ * position. See spec §2 and the regression test that pins this position.
  */
 static double janowski_equity(double p, double W, double L, GnCubeOwner owner,
                               double efficiency)
@@ -72,34 +92,27 @@ static double janowski_equity(double p, double W, double L, GnCubeOwner owner,
 
     switch (owner) {
     case GN_CUBE_OWNED:
-        /* (0, -L) to (CP_live, +1); beyond, max(1, e(p)). */
-        if (p <= cp_live) {
-            live = -L + (1.0 + L) * (p / cp_live);
-        } else {
-            live = (dead > 1.0) ? dead : 1.0;
-        }
+        /* (0, -L) to (CP_live, +1) to (1, +W). */
+        live = (p <= cp_live) ? segment(p, 0.0, -L, cp_live, 1.0)
+                              : segment(p, cp_live, 1.0, 1.0, W);
         break;
 
     case GN_CUBE_OPPONENT:
-        /* Below TP_live, min(-1, e(p)); above, (TP_live, -1) to (1, W). */
-        if (p <= tp_live) {
-            live = (dead < -1.0) ? dead : -1.0;
-        } else {
-            live = -1.0 + (W + 1.0) * ((p - tp_live) / (1.0 - tp_live));
-        }
+        /* (0, -L) to (TP_live, -1) to (1, +W). */
+        live = (p <= tp_live) ? segment(p, 0.0, -L, tp_live, -1.0)
+                              : segment(p, tp_live, -1.0, 1.0, W);
         break;
 
     case GN_CUBE_CENTRED:
     default:
-        /* min(-1, e(p)) below TP_live; (TP_live,-1) to (CP_live,1); above,
-         * max(1, e(p)). The centred curve is the other two glued together. */
-        if (p <= tp_live) {
-            live = (dead < -1.0) ? dead : -1.0;
-        } else if (p <= cp_live) {
-            live = -1.0 + 2.0 * ((p - tp_live) / (cp_live - tp_live));
-        } else {
-            live = (dead > 1.0) ? dead : 1.0;
-        }
+        /* The other two glued together: (0, -L) to (TP_live, -1) to
+         * (CP_live, +1) to (1, +W). */
+        if (p <= tp_live)
+            live = segment(p, 0.0, -L, tp_live, -1.0);
+        else if (p <= cp_live)
+            live = segment(p, tp_live, -1.0, cp_live, 1.0);
+        else
+            live = segment(p, cp_live, 1.0, 1.0, W);
         break;
     }
 
@@ -286,35 +299,38 @@ static double level_dead(const GnMatchLevel *lv, double p)
  * collapses to the dead line for every cube state: §9's base case, "mort
  * partout", is a return statement, not a special caller.
  *
- * Monotone non-decreasing in `p` for each state (each branch rises, and the
- * min/max clamps splice non-decreasing pieces) -- the property every
- * bisection below stands on.
+ * Money's endpoints (0, -L) and (1, +W) become this level's own MWC anchors,
+ * `lose_avg` and `win_avg`, and its cash equivalents +/-1 become `cash` and
+ * `pass`. The tails run to the anchors here for the same reason they do in
+ * money: past the cash point the game is played on, not conceded, and the
+ * level is worth its winning anchor at p = 1.
+ *
+ * Monotone non-decreasing in `p` for each state -- lose_avg <= pass <= cash
+ * <= win_avg holds by construction (conceding k dry points beats losing an
+ * average of k, 2k, 3k; collecting k is worse than winning that average), so
+ * every piece rises. That is the property every bisection below stands on.
  */
 static double level_live(const GnMatchLevel *lv, double p, GnCubeOwner owner)
 {
-    const double dead = level_dead(lv, p);
-
     if (lv->dead)
-        return dead;
+        return level_dead(lv, p);
 
     switch (owner) {
     case GN_CUBE_OWNED:
-        if (p <= lv->cp)
-            return lv->lose_avg + (lv->cash - lv->lose_avg) * (p / lv->cp);
-        return (dead > lv->cash) ? dead : lv->cash;
+        return (p <= lv->cp) ? segment(p, 0.0, lv->lose_avg, lv->cp, lv->cash)
+                             : segment(p, lv->cp, lv->cash, 1.0, lv->win_avg);
 
     case GN_CUBE_OPPONENT:
-        if (p <= lv->tp)
-            return (dead < lv->pass) ? dead : lv->pass;
-        return lv->pass + (lv->win_avg - lv->pass) * ((p - lv->tp) / (1.0 - lv->tp));
+        return (p <= lv->tp) ? segment(p, 0.0, lv->lose_avg, lv->tp, lv->pass)
+                             : segment(p, lv->tp, lv->pass, 1.0, lv->win_avg);
 
     case GN_CUBE_CENTRED:
     default:
         if (p <= lv->tp)
-            return (dead < lv->pass) ? dead : lv->pass;
+            return segment(p, 0.0, lv->lose_avg, lv->tp, lv->pass);
         if (p <= lv->cp)
-            return lv->pass + (lv->cash - lv->pass) * ((p - lv->tp) / (lv->cp - lv->tp));
-        return (dead > lv->cash) ? dead : lv->cash;
+            return segment(p, lv->tp, lv->pass, lv->cp, lv->cash);
+        return segment(p, lv->cp, lv->cash, 1.0, lv->win_avg);
     }
 }
 
