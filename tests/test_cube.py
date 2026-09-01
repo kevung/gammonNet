@@ -343,6 +343,48 @@ def test_crawford_never_doubles():
         assert result.action == CubeAction.NO_DOUBLE
 
 
+def test_crawford_values_a_dead_cube():
+    """Pendant la partie de Crawford, la VALEUR est celle du videau mort --
+    l'équité de match cubeless, quels que soient le possesseur et `x`.
+
+    Trouvé le 2026-09-02 en confrontant les jets d'ouverture à gnubg :
+    `gn_cube_decide` savait ne jamais doubler, mais `gn_cube_value` déroulait
+    quand même la chaîne §9 et valuait l'ouverture à 4-away/1-away Crawford
+    à +0,68 (échelle normalisée) contre +0,16 pour le videau mort -- gnubg,
+    lui, rend cubeful == cubeless dans cette partie. Le verdict était juste,
+    le nombre à côté ne l'était pas.
+    """
+    from gammonnet.cube import value
+
+    for away_on_roll, away_opponent in ((4, 1), (1, 4), (2, 1), (1, 1)):
+        state = MatchState(away_on_roll=away_on_roll, away_opponent=away_opponent,
+                           cube=1, crawford=True)
+        for q in (gammonless(0.3), gammonless(0.72), with_gammons(0.55, 0.2, 0.1),
+                  with_gammons(0.9, 0.5, 0.02)):
+            dead = state.equity(q)
+            for owner in CubeOwner:
+                for x in (0.0, 0.3, 0.688, 1.0):
+                    assert value(q, owner, x, state=state) == pytest.approx(dead, abs=1e-9), (
+                        f"{away_on_roll}/{away_opponent} {q} {owner} x={x}")
+            result = decide(q, CubeOwner.CENTRED, X, state=state)
+            assert result.action == CubeAction.NO_DOUBLE
+            # Sur l'échelle MWC de `decide` : la valeur morte, et aucune branche
+            # « double » qui vaudrait autre chose que ne pas doubler.
+            assert result.equity_no_double == pytest.approx(state.winning_chance(q), abs=1e-9)
+            assert result.equity_double == pytest.approx(result.equity_no_double, abs=1e-12)
+
+
+def test_post_crawford_is_not_flattened_by_the_crawford_fix():
+    """Le contrôle inverse : post-Crawford (drapeau à faux, un joueur à
+    1-away), le videau est vivant et la valeur cubeful DIFFÈRE de la valeur
+    morte -- le mené double, et cela se voit dans le nombre."""
+    from gammonnet.cube import value
+
+    state = MatchState(away_on_roll=2, away_opponent=1, cube=1, crawford=False)
+    q = gammonless(0.5)
+    assert abs(value(q, CubeOwner.CENTRED, X, state=state) - state.equity(q)) > 0.05
+
+
 def test_post_crawford_trailer_at_two_away_doubles_systematically():
     """ÉMERGENT, pas codé : à 2-away contre un meneur à la balle de match, le
     mené double à toute probabilité de gain testée — jamais `NO_DOUBLE`.

@@ -474,6 +474,15 @@ double gn_cube_value(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
             if (failed) *failed = 1;
             return 0.0;
         }
+        /* The Crawford game has no cube in play at all (spec §5) -- the
+         * same flat fact `gn_cube_decide` applies to its verdict. It applies
+         * to the VALUE too: the §9 chain prices doublings the rules forbid,
+         * and walking it here valued the opening at 4-away/1-away Crawford
+         * at +0.68 against +0.16 for the dead cube (gnubg cubeful == gnubg
+         * cubeless in that game, probe of 2026-09-02). Dead value at the
+         * current stake, whoever "owns" a cube nobody can turn. */
+        if (state->crawford)
+            return 2.0 * level_dead(&levels[0], inputs.win) - 1.0;
         /* On the same `2 * MWC - 1` scale as the cubeless match search --
          * what makes the two valuations swappable inside one recursion. */
         return 2.0 * level_blend(&levels[0], inputs.win, owner, efficiency) - 1.0;
@@ -578,6 +587,16 @@ int gn_cube_decide(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
         e_dt = level_blend(&levels[1], inputs.win, GN_CUBE_OPPONENT, efficiency);
         e_dp = levels[0].cash;
         e_double = (e_dt < e_dp) ? e_dt : e_dp;
+        if (state->crawford) {
+            /* No cube in play: the position is worth its dead value (see
+             * gn_cube_value), and there is no double branch to price -- it
+             * is reported worth exactly what not doubling is, so a caller
+             * subtracting the two reads a zero-cost non-option, never a
+             * "missed double" in a game where doubling is illegal. */
+            e_nd = level_dead(&levels[0], inputs.win);
+            e_dt = e_nd;
+            e_double = e_nd;
+        }
 
         out->equity_no_double = e_nd;
         out->equity_double = e_double;
