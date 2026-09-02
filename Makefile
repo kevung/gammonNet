@@ -39,7 +39,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube artifact env clean help
+.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube tie-census artifact env clean help
 
 all: help
 
@@ -98,11 +98,13 @@ INCLUDES := -Isrc -I$(REFERENCE)/c_engine -I$(REFERENCE)/c_inference
 build: $(LIBRARY)
 
 SOURCES := src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
+           src/gn_notation.c \
            src/gn_rollout.c src/gn_bearoff.c src/gn_evalcache.c \
            src/gn_search.c \
            src/gn_infer_reference.c src/gn_choose.c src/gn_met.c src/gn_cube.c \
            src/gn_gemm_int8.c src/gn_int8_model.c
 HEADERS := src/gn_rules.h src/gn_encoding.h src/gn_position_id.h src/gn_infer.h \
+           src/gn_notation.h \
            src/gn_rollout.h src/gn_bearoff.h src/gn_evalcache.h \
            src/gn_choose.h src/gn_search.h src/gn_met.h src/gn_met_table.h \
            src/gn_cube.h src/gn_gemm_int8.h src/gn_int8_model.h
@@ -200,10 +202,10 @@ WASM_BUILD := $(BUILD)/wasm
 # taille est en jeu — qui appartient à T50, pas à une liste de sources.
 WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
                 src/gn_rules_reference.c src/gn_encoding.c \
-                src/gn_position_id.c src/gn_infer_reference.c \
+                src/gn_position_id.c src/gn_notation.c src/gn_infer_reference.c \
                 src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
                 src/gn_search.c src/gn_met.c src/gn_choose.c \
-                src/gn_gemm_int8.c \
+                src/gn_gemm_int8.c src/gn_int8_model.c \
                 $(REFERENCE)/c_engine/bg_engine.c \
                 $(REFERENCE)/c_inference/nn_eval.c
 
@@ -240,10 +242,10 @@ WASM_FLAGS := -O3 -std=c11 $(WASM_EXTRA) $(INCLUDES) \
   -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 \
   -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPF32,HEAPF64,HEAP8,HEAPU8,HEAP32,UTF8ToString \
-  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw \
+  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw,_gnw_position_encode,_gnw_position_decode,_gnw_xgid_encode,_gnw_xgid_decode,_gnw_pip_count \
   --extern-pre-js $(WASM_DIR)/notice.js
 
-.PHONY: wasm wasm-simd wasm-scalar wasm-parity wasm-parity-int8
+.PHONY: wasm wasm-simd wasm-scalar wasm-parity wasm-parity-int8 wasm-codec
 
 wasm: wasm-scalar wasm-simd
 
@@ -268,13 +270,29 @@ wasm-parity: wasm $(MODEL)
 # Les invariants de l'API JavaScript. La parité vérifie que le module CALCULE
 # comme le natif ; ceci vérifie qu'il RÉPOND ce qu'il promet — le classement des
 # N meilleurs coups, notamment, où deux défauts silencieux ont été trouvés.
+#
+# Deux surfaces, deux fichiers. `api_invariants` interroge le module ;
+# `worker_invariants` interroge le PROTOCOLE DE WORKER, qui est la surface que
+# le navigateur voit réellement et qui, faute d'être testée, a laissé trois
+# points d'entrée exportés rester inatteignables (T86).
 wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/api_invariants.mjs
+	node $(WASM_DIR)/worker_invariants.mjs
+
+# La parité du CODEC, sur le corpus T12 entier et à l'égalité EXACTE — un
+# identifiant est une chaîne, il n'y a pas de tolérance à lui accorder. Le
+# repère vient du C natif (`tools/dump_codec_reference.py`), jamais de
+# l'écriture JavaScript que ces exports remplacent : la vérifier contre elle
+# serait circulaire, puisqu'elle a été validée contre ce module.
+.PHONY: wasm-codec
+wasm-codec: wasm build
+	$(PYTHON) tools/dump_codec_reference.py
+	node $(WASM_DIR)/codec_parity.mjs
 
 DUMP_INT8 := $(BUILD)/dump_reference_int8
 $(DUMP_INT8): tools/dump_reference_int8.c src/gn_gemm_int8.c $(HEADERS)
 	@mkdir -p $(BUILD)
-	$(CC) $(CFLAGS) -Isrc -o $@ tools/dump_reference_int8.c src/gn_gemm_int8.c src/gn_int8_model.c
+	$(CC) $(CFLAGS) -Isrc -o $@ tools/dump_reference_int8.c src/gn_gemm_int8.c src/gn_int8_model.c -lm
 
 # Parité du chemin int8 DÉTERMINISTE (gn_gemm_int8) : le repère est produit par
 # le noyau natif dispatché sur cette machine (scalaire/SSE2/AVX2), rejoué au
@@ -344,6 +362,49 @@ $(BUILD)/bench_gemm_int8_sse2: bench/bench_gemm_int8.c src/gn_gemm_int8.c $(HEAD
 
 bench-gemm-sse2: $(BUILD)/bench_gemm_int8_sse2
 	$(BUILD)/bench_gemm_int8_sse2 2000 --json docs/mesures/t73-gemm-int8-sse2.json
+
+# ── Le census des ex æquo (T88) ──────────────────────────────────────
+#
+# Combien de fois deux coups candidats portent-ils EXACTEMENT la même équité ?
+# Tant que la réponse n'est pas mesurée, « le classement n'est pas
+# déterministe » reste une lecture de code — ce que la règle 3 de CLAUDE.md
+# interdit de transformer en conclusion.
+#
+# Le binaire est compilé À PART, avec -DGN_TIE_CENSUS, parce que les compteurs
+# n'ont rien à faire dans la bibliothèque livrée. `gn_search.c` garde son
+# -ffp-contract=off : sans lui, ce banc mesurerait les ex æquo d'un AUTRE
+# moteur que celui qui est livré.
+#
+#   make tie-census                 ply 0, tout le corpus T12, 21 lancers
+#   make tie-census PLY=2 K=12 N=60 la forme canonique, sur 60 positions
+#
+# `--dump` (TIE_DUMP=1) écrit le classement lui-même sur la sortie standard :
+# c'est le seul moyen de VOIR une permutation, les équités étant par
+# définition identiques.
+TIE_CENSUS := $(BUILD)/tie_census
+TIE_SOURCES := $(filter-out src/gn_search.c,$(SOURCES))
+PLY ?= 0
+K ?= 0
+N ?= 0
+CORPUS ?= tests/data/corpus_t12.jsonl
+
+$(TIE_CENSUS): bench/tie_census.c $(TIE_SOURCES) src/gn_search.c $(HEADERS) \
+               $(REFERENCE)/c_engine/bg_engine.c $(REFERENCE)/c_inference/nn_eval.c
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) -ffp-contract=off -DGN_TIE_CENSUS $(INCLUDES) \
+	      -c src/gn_search.c -o $(BUILD)/gn_search_census.o
+	$(CC) $(VENDOR_CFLAGS) $(INCLUDES) -c $(REFERENCE)/c_engine/bg_engine.c \
+	      -o $(BUILD)/bg_engine_census.o
+	$(CC) $(VENDOR_CFLAGS) $(INCLUDES) -c $(REFERENCE)/c_inference/nn_eval.c \
+	      -o $(BUILD)/nn_eval_census.o
+	$(CC) $(CFLAGS) -DGN_TIE_CENSUS $(INCLUDES) -o $@ \
+	      bench/tie_census.c $(TIE_SOURCES) $(BUILD)/gn_search_census.o \
+	      $(BUILD)/bg_engine_census.o $(BUILD)/nn_eval_census.o -lm
+
+tie-census: $(TIE_CENSUS) $(MODEL)
+	$(TIE_CENSUS) $(MODEL) $(CORPUS) $(PLY) \
+	    $(if $(filter-out 0,$(K)),$(PRUNE_MODEL),-) $(K) $(N) \
+	    $(if $(filter-out 0,$(TIE_DUMP)),--dump,)
 
 BENCH_DECISION := $(BUILD)/bench_decision
 

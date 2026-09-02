@@ -1856,6 +1856,15 @@ donnent déjà, et cesse de le réécrire à côté.
   Le seul défaut du dépôt est le mauvais, et il est dans l'artefact distribué. **Le remède n'est
   pas de changer 0,566 en 0,688** : c'est de faire ce que le C fait — pas de défaut, ou un défaut
   **indexé par `owner`**.
+  > **FAIT le 2026-09-02** (ce seul point ; le reste de la fiche est ouvert). Retenu : **pas
+  > de défaut du tout**, comme en C — le paramètre est exigé et son absence lève une erreur
+  > qui nomme la valeur à passer, plus une constante exportée `MEASURED_EFFICIENCY`
+  > `[centré, possédé, adverse]` pour que l'appelant n'ait pas à la deviner. Ce qu'inventer
+  > la valeur coûtait, mesuré : **point de prise 0,726436 à x = 0,688 contre 0,720610 à
+  > x = 0,566**, même position — de quoi retourner un verdict à la marge sans jamais avoir
+  > l'air faux. Et gammonGo avait déjà payé en rétro-ingénierie, ayant **retrouvé 0,688 par
+  > bissection** contre un cas d'or. Détail :
+  > `docs/mesures/2026-09-02-T88-census-ex-aequo.md` §6.
 - **Une source unique pour les formes canoniques** (`prune_k = 12`, filtre `(0,1,3)`,
   profondeur 2), aujourd'hui recopiées quatre fois. Le `PRUNE_K_FAST = 3` que gammonGo introduit
   sans mesure amont en a une ici : `k=3` perd +0,00389 d'équité par décision
@@ -1958,6 +1967,35 @@ voir.
 **Ce que les consommateurs reprennent** — la règle de départage, à l'identique. C'est le type même
 de la décision conceptuelle : trois implémentations qui départagent différemment sont trois
 moteurs différents.
+
+> ### FAITE — le 2026-09-02
+>
+> Mesure complète : `docs/mesures/2026-09-02-T88-census-ex-aequo.md`.
+>
+> **Le taux n'est pas nul.** Corpus T12, 21 lancers par position, égalité **bit à bit** :
+> 41 779 décisions à 0-ply, **802 (1,92 %) portent un ex æquo** et **433 (1,22 %) ont un
+> meilleur coup ex æquo** ; plus grand groupe observé, 230 candidats sur 231. À 2-ply k=12
+> le sommet est propre (0 classement rendu avec ex æquo) mais **2 coupes sur 271 565 tombent
+> DANS un ex æquo** — et une coupe qui coupe une égalité ne permute pas un affichage, elle
+> change quels coups sont cherchés.
+>
+> **La libc coupable est nommée** : le `qsort` de la glibc 2.44 est stable en pratique (0 ex
+> æquo permuté), celui d'Emscripten ne l'est pas (13 / 64 / 297 / 1 184 à n = 32 / 128 / 512
+> / 2 048, éléments de 72 octets). **La cible qui divergeait est celle du navigateur** —
+> mesuré dans le module livré : **89 des 433 décisions à meilleur coup ex æquo y annonçaient
+> un AUTRE coup que le natif**.
+>
+> **Le correctif** est le tri stable du portage Go (`sortByEquity`), écrit ici en deux formes
+> et une seule sortie (insertion sous 48, fusion au-dessus). **Coût : médiane 1,00 sur huit
+> mesures dos à dos**, c'est-à-dire rien. **Repères déplacés : aucun** — 41 779 classements
+> natifs à 0-ply et 252 à 2-ply, `diff` = 0 ligne, ce qui est cohérent avec une glibc déjà
+> stable. Parité inchangée (SIMD max|Δ| = 6,407e-7, tolérance 1e-6).
+>
+> Le corpus d'ex æquo demandé est en deux endroits : `tests/test_search_ties.py` (la règle
+> énoncée comme propriété, avec un contrôle explicite que l'échantillon **contient** des ex
+> æquo — sans quoi le test ne prouverait rien) et `wasm/api_invariants.mjs` (natif ↔
+> WebAssembly, même ordre sur une position à neuf coups d'équité égale). Instrument :
+> `make tie-census`.
 
 ## T84 — La largeur de lot, tranchée par des intrinsèques et non par le compilateur
 

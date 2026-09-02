@@ -17,9 +17,10 @@
  * D'où l'invariant central ci-dessous : LES N MEILLEURS NE DÉPENDENT PAS DE N.
  */
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { Evaluator } from "./gammonnet.mjs";
+import { Evaluator, MEASURED_EFFICIENCY } from "./gammonnet.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -148,12 +149,168 @@ if (last.length === 1) {
         `(${last[0].probs.join(", ")}) équité ${last[0].equity}`);
 }
 
-/* 6. La décision de videau rend ses trois équités, et un verdict connu. */
-const cube = evaluator.cubeDecision(POSITION, 0, { ...level, owner: 0 });
+/* 5c. L'ORDRE DES EX ÆQUO (T88).
+ *
+ * `compare_candidates` ne comparait que l'équité et `qsort` n'est pas stable :
+ * l'ordre de deux candidats de MÊME équité venait de la libc. Ici, c'est celle
+ * d'Emscripten (musl, smoothsort), et elle N'EST PAS stable — mesuré sur des
+ * éléments de 72 octets, comme `GnCandidate` : 13 / 64 / 297 / 1 184 ex æquo
+ * permutés à n = 32 / 128 / 512 / 2 048, là où la glibc n'en permute aucun.
+ * C'est donc précisément ici, dans l'artefact servi au navigateur, que le
+ * défaut sortait — et la parité ne pouvait pas le voir, puisqu'elle compare
+ * des équités à 1e-6 et qu'une permutation d'ex æquo les laisse identiques.
+ *
+ * La position ci-dessous est du corpus T12 : sur le 1-1, ses NEUF coups
+ * légaux gagnent tous immédiatement et valent tous exactement -1. Le
+ * classement n'est donc QUE l'ordre de départage, et le repère est l'ordre
+ * rendu par le natif (`make tie-census PLY=0 TIE_DUMP=1`), qui est l'ordre de
+ * génération de `gn_legal_plays` — la règle du portage Go. */
+const TIED = "AQAAfB4AAAAAAA";
+const TIED_ORDER = [
+  "3wMAAAQAAAAAAA", "vwUAAAQAAAAAAA", "7wIAAAIAAAAAAA",
+  "fwYAAAQAAAAAAA", "XwMAAAIAAAAAAA", "twEAAAEAAAAAAA",
+  "zwEAAAEAAAAAAA", "6wAAgAAAAAAAAA", "eQAAQAAAAAAAAA",
+];
+const tied = evaluator.rankPlays(TIED, 1, 1, 1, { ply: 0, max: 40 });
+check("neuf coups d'équité BIT-À-BIT égale", 
+      tied.length === TIED_ORDER.length
+      && tied.every((c) => c.equity === tied[0].equity),
+      `${tied.length} coups, équités ${new Set(tied.map((c) => c.equity)).size} distinctes`);
+check("ex æquo : le module rend l'ORDRE du natif, pas celui de sa libc",
+      tied.every((c, i) => c.resultId === TIED_ORDER[i]),
+      tied.map((c) => c.resultId).join(" "));
+
+/* 5d. LE GROS GROUPE, celui qui discrimine vraiment.
+ *
+ * Le cas ci-dessus documente la règle mais ne l'éprouve pas : le smoothsort de
+ * musl est stable en pratique sur neuf éléments — vérifié, avant comme après
+ * le correctif il rend le même ordre. Il faut un GROUPE, et le corpus T12 en
+ * donne un : 230 des 231 coups légaux de cette position sur le 1-1 valent
+ * exactement la même chose.
+ *
+ * MESURÉ sur ce cas précis : avant le tri stable, le module rendait 4 places
+ * sur 231 différentes du natif ; après, zéro.
+ *
+ * L'élagage est éteint le temps de la mesure, et il le faut : à k=12 il ne
+ * reste que douze survivants, taille à laquelle la libc ne permute plus rien —
+ * l'invariant passerait sans rien prouver. Il est rallumé juste après, les
+ * contrôles suivants en dépendant.
+ *
+ * L'ordre attendu est celui du natif, résumé par une empreinte — 231
+ * identifiants dans ce fichier le rendraient illisible pour rien. Il se
+ * régénère par `make tie-census PLY=0 TIE_DUMP=1`, ligne
+ * `DwAA4FGYYQsAAA 1 1 1`. */
+const TIED_BIG = "DwAA4FGYYQsAAA";
+const TIED_BIG_DIGEST =
+  "71e97e36c59c1ae30870be61b136a5489164042b56f60652e8b9b0a89858a49c";
+evaluator.loadPrune(null, 0);
+const big = evaluator.rankPlays(TIED_BIG, 1, 1, 1, { ply: 0, max: 2048 });
+evaluator.loadPrune(new Uint8Array(readFileSync(PRUNE)), 12);
+const bigTies = big.filter((c, i) => i > 0 && c.equity === big[i - 1].equity).length;
+check("un groupe de 230 ex æquo, assez gros pour que la libc les permute",
+      big.length === 231 && bigTies === 229,
+      `${big.length} coups, ${bigTies} paires égales`);
+const digest = createHash("sha256")
+  .update(big.map((c) => c.resultId).join(" ")).digest("hex");
+check("l'ordre du gros groupe est celui du natif, au caractère près",
+      digest === TIED_BIG_DIGEST, digest.slice(0, 16));
+
+/* 6. La décision de videau rend ses trois équités, et un verdict connu.
+ *
+ * L'efficacité est FOURNIE, et c'est le fond du correctif : ce fichier
+ * appelait `cubeDecision` avec `owner: 0` (centré) en laissant le défaut du
+ * wrapper poser 0,566, l'efficacité du videau POSSÉDÉ. Il exerçait donc
+ * exactement le défaut qu'il était censé surveiller, sans le voir passer. */
+const CENTRED = 0;
+const cube = evaluator.cubeDecision(POSITION, 0, {
+  ...level, owner: CENTRED, efficiency: MEASURED_EFFICIENCY[CENTRED],
+});
 const VERDICTS = new Set(["no-double", "double-take", "double-pass", "too-good"]);
 check("verdict de videau connu", VERDICTS.has(cube.action), cube.action);
 check("équités de videau finies",
       Number.isFinite(cube.equityNoDouble) && Number.isFinite(cube.equityDouble));
+
+/* 6b. L'EFFICACITÉ N'EST PLUS INVENTÉE.
+ *
+ * L'omettre doit refuser, bruyamment, plutôt que rendre une décision
+ * plausible calculée avec le chiffre d'un autre état de possession. */
+let refused = false;
+try {
+  evaluator.cubeDecision(POSITION, 0, { ...level, owner: CENTRED });
+} catch {
+  refused = true;
+}
+check("cubeDecision sans efficacité : refusé, jamais approximé", refused);
+
+/* Et la valeur passée est bien celle qui sert : deux efficacités différentes
+ * ne peuvent pas rendre la même équité de double. */
+const other = evaluator.cubeDecision(POSITION, 0, {
+  ...level, owner: CENTRED, efficiency: MEASURED_EFFICIENCY[1],
+});
+check("l'efficacité fournie est celle qui sert",
+      cube.takePoint !== other.takePoint,
+      `x=0,688 → point de prise ${cube.takePoint.toFixed(6)} ; ` +
+      `x=0,566 → ${other.takePoint.toFixed(6)}`);
+/* 7. LE CODEC, ET LE PIÈGE QU'IL PORTE (T86).
+ *
+ * `wasm/codec_parity.mjs` établit l'égalité exacte avec le C sur le corpus
+ * entier ; ce qui est vérifié ICI est ce qu'un appelant peut se tromper à
+ * faire avec, et c'est une seule chose : LE POSITION ID NE PORTE PAS LE
+ * JOUEUR AU TRAIT. Le `resultId` que rend `bestPlay` décrit la position
+ * d'APRÈS le coup, donc l'autre camp est au trait ; le décoder avec le `turn`
+ * de l'aller rend le plateau du mauvais côté — sans erreur, sans signe, et
+ * avec des comptes de pions parfaitement plausibles. Le consommateur qui a
+ * écrit ce codec de son côté a documenté ce piège pour l'avoir rencontré. */
+const opening = evaluator.positionFromId(POSITION, 0);
+check("le codec fait l'aller-retour", evaluator.positionId(opening) === POSITION,
+      evaluator.positionId(opening));
+check("l'ouverture compte 167 pips des deux côtés",
+      evaluator.pipCount(opening, 0) === 167 && evaluator.pipCount(opening, 1) === 167,
+      `${evaluator.pipCount(opening, 0)} / ${evaluator.pipCount(opening, 1)}`);
+
+/* Le 3-1 déplace quatre pips. Décodé avec `1 - turn` — le trait a changé —
+ * Blanc, qui vient de jouer, en a 163 et Noir toujours 167. Décodé avec le
+ * `turn` de l'aller, les deux camps sont ÉCHANGÉS : on lit 167 pour Blanc,
+ * c'est-à-dire le nombre d'avant le coup, ce qui est exactement ce qui rend
+ * l'erreur invisible. */
+const after = evaluator.positionFromId(best.resultId, 1);
+check("resultId décodé du bon côté : Blanc a joué 4 pips, 167 → 163",
+      evaluator.pipCount(after, 0) === 163 && evaluator.pipCount(after, 1) === 167,
+      `${evaluator.pipCount(after, 0)} / ${evaluator.pipCount(after, 1)}`);
+const wrongSide = evaluator.positionFromId(best.resultId, 0);
+check("décodé du mauvais côté : 167 pour Blanc, aucun signe d'erreur",
+      evaluator.pipCount(wrongSide, 0) === 167
+      && JSON.stringify(wrongSide.points) !== JSON.stringify(after.points),
+      `${evaluator.pipCount(wrongSide, 0)}`);
+
+/* Et le XGID de l'ouverture, l'ancrage même du format (`gn_position_id.h`). */
+check("le XGID de l'ouverture est l'identifiant canonique",
+      evaluator.xgid(opening).startsWith("XGID=-b----E-C---eE---c-e----B-"),
+      evaluator.xgid(opening));
+
+/* 8. LE COUP EST NOMMÉ, ET C'EST LE COUP QUE LA RECHERCHE A CHOISI (T86).
+ *
+ * `resultId` est un PLATEAU : il ne dit pas quel pion est allé où, et deux
+ * appariements peuvent le produire. La notation vient de `GnPlay.moves`, la
+ * liste ordonnée que la recherche a réellement retenue — ce n'est pas une
+ * présentation ajoutée, c'est une partie de la réponse qu'on cessait de
+ * rendre. Elle est la MÊME que celle du champ `move` de `/v1/eval` : le C
+ * l'écrit une fois (`src/gn_notation.c`) et les deux surfaces l'appellent. */
+check("le meilleur coup d'ouverture 3-1 se nomme", best.notation === "6/5 8/5",
+      `« ${best.notation} »`);
+check("chaque candidat porte sa notation",
+      reference.every((c) => typeof c.notation === "string" && c.notation.length > 0),
+      `${reference.length} candidats`);
+check("rankPlays[0] et bestPlay nomment le même coup",
+      reference[0].notation === best.notation,
+      `« ${reference[0].notation} » / « ${best.notation} »`);
+
+/* Un double regroupe ses sous-coups identiques : `13/8(2)` et non
+ * `13/8 13/8`. C'est la forme que la notation ajoute à une simple paire. */
+const heavy = evaluator.rankPlays(POSITION, 0, 5, 5, { ply: 0, max: 5 });
+check("les sous-coups répétés sont regroupés",
+      heavy.some((c) => /\(\d\)/.test(c.notation)),
+      heavy.map((c) => c.notation).join(" | "));
 
 console.log(failures === 0
   ? "\n✅ invariants de l'API tenus"

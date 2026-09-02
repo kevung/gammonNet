@@ -151,6 +151,91 @@
     log(`T21 mesurait 0,0898 ms/évaluation sur des évaluations nues.`);
     log(`Le rapport dit ce que coûtent la génération des coups et l'arbre.`);
 
+    // ── UNE DÉCISION COMPLÈTE, DANS UN WORKER, SANS UNE LIGNE DE RECHERCHE
+    //    EN JAVASCRIPT (T86) ────────────────────────────────────────────
+    //
+    // Tout ce qui précède tourne sur le thread principal. C'est ce qu'un
+    // consommateur ne peut PAS faire : une décision de 2,7 s y gèle la page.
+    // Et jusqu'à T86, la seule chose que `worker.mjs` savait relayer était un
+    // lot de caractéristiques — donc pour obtenir une décision hors du thread
+    // principal il fallait engendrer les coups et parcourir l'arbre en
+    // JavaScript, c'est-à-dire réécrire la recherche que ce module embarque.
+    //
+    // Ce bloc est la preuve de bout en bout que ce n'est plus le cas : un
+    // Position ID entre, une décision sort, et la seule chose que le
+    // JavaScript fait est de poster un message.
+    const { EvaluatorPool } = await import("/wasm/pool.mjs");
+    const factoryUrl = new URL(`/build/wasm/${build}.mjs`, location.href).href;
+    const pool = await EvaluatorPool.create(
+      1, new URL("/wasm/worker.mjs", location.href).href, factoryUrl, modelBytes,
+      { pruneBytes, pruneK: 12 });
+    const REQUEST = { positionId: POSITION.id, turn: POSITION.turn,
+                      d1: POSITION.d1, d2: POSITION.d2 };
+    const DEEP = { ply: 2, filterTop: 3, filterInner: 1 };
+
+    const workerStart = performance.now();
+    const workerJob = pool.decide([REQUEST], { kind: "bestPlay", options: DEEP });
+    const [fromWorker] = (await workerJob.done) || [null];
+    const workerMs = performance.now() - workerStart;
+    if (!fromWorker) throw new Error("le worker n'a rendu aucune décision");
+
+    // Le contrôle qui mord : le worker doit rendre EXACTEMENT ce que le natif
+    // rend. Un relais qui transforme n'est pas un relais.
+    const deepNative = NATIVE[NATIVE.length - 1];
+    const workerAgrees = fromWorker.resultId === deepNative.resultId
+      && Math.abs(fromWorker.equity - deepNative.equity) < 1e-5
+      && fromWorker.evaluations === deepNative.evaluations;
+    payload.worker = {
+      ms: Number(workerMs.toFixed(3)),
+      resultId: fromWorker.resultId,
+      // Le coup NOMMÉ, et c'est celui que la recherche a choisi : il vient de
+      // `GnPlay.moves`, pas d'une différence de plateaux. Un `resultId` seul
+      // est ambigu — deux appariements peuvent laisser le même plateau.
+      notation: fromWorker.notation,
+      equity: fromWorker.equity,
+      evaluations: fromWorker.evaluations,
+      agreesWithNative: workerAgrees,
+    };
+    log(`\ndans un worker ${workerMs.toFixed(2).padStart(12)} ` +
+        `${String(fromWorker.evaluations).padStart(9)}    ${workerAgrees ? "✅" : "❌"}`);
+    log(`coup retenu : « ${fromWorker.notation} »`);
+    log(`décision complète depuis un Position ID, zéro ligne de recherche en JS.`);
+
+    // Et l'annulation, dans les conditions réelles. Ce qui est vérifié n'est
+    // PAS qu'une décision en vol s'arrête — elle ne le peut pas, un appel WASM
+    // synchrone n'est pas interruptible sans SharedArrayBuffer — mais que le
+    // travail dépassé ne remonte pas ET que le worker reste utilisable, ses
+    // 1,06 Mo de poids en place. C'est ce que `Worker.terminate()` ne sait pas
+    // faire, et c'est le coût qu'un geste annulé paye aujourd'hui chez le
+    // consommateur.
+    //
+    // Deux décisions sont postées puis annulées. La PREMIÈRE est déjà partie
+    // dans le WASM : elle ira au bout, et le mesurer est le sujet — c'est une
+    // limite de plateforme constatée, pas supposée. La SECONDE n'a pas encore
+    // tourné : elle doit revenir abandonnée. Et le worker doit répondre à une
+    // troisième requête sans rien recharger.
+    const cancelStart = performance.now();
+    const inFlight = pool.decide([REQUEST], { kind: "bestPlay", options: DEEP });
+    const queued = pool.decide([REQUEST], { kind: "bestPlay", options: DEEP });
+    queued.cancel();
+    const [inFlightResult, queuedResult] = await Promise.all([inFlight.done, queued.done]);
+    const again = pool.decide([REQUEST], { kind: "bestPlay", options: { ply: 0 } });
+    const [reuse] = (await again.done) || [null];
+    payload.cancellation = {
+      // Attendu FAUX, et c'est le fait à publier : un appel WASM synchrone
+      // n'est pas interruptible depuis JavaScript sans SharedArrayBuffer.
+      inFlightAbandoned: inFlightResult === null,
+      // Attendu VRAI : ce qui n'a pas encore commencé s'annule pour de bon.
+      queuedAbandoned: queuedResult === null,
+      workerStillWarm: Boolean(reuse),
+      ms: Number((performance.now() - cancelStart).toFixed(3)),
+    };
+    log(`annulation : en vol abandonnée=${inFlightResult === null} ` +
+        `(attendu faux — limite de plateforme), ` +
+        `en file abandonnée=${queuedResult === null}, ` +
+        `worker encore chaud=${Boolean(reuse)} (poids NON rechargés)`);
+
+    pool.destroy();
     evaluator.destroy();
     await report(payload);
   } catch (error) {

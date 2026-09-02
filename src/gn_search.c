@@ -363,12 +363,169 @@ static int rank_plays_deepen(const GnNetwork *net, const GnSearchConfig *config,
  * is a KNOWN one -- see `shallow_fill`. */
 static void terminal_probs(const GnPosition *pos, float out[GN_NUM_OUTPUTS]);
 
-static int compare_candidates(const void *a, const void *b)
+/*
+ * ── THE ORDER OF THE CANDIDATES, AND WHY IT IS A STABLE SORT (T88) ──────
+ *
+ * Best equity first, and AT EQUAL EQUITY THE EARLIER CANDIDATE STAYS FIRST.
+ * That second half is the whole point of this block, so it is stated before
+ * the code rather than left to be inferred from it.
+ *
+ * What was here before was `qsort` with a comparator that only looked at the
+ * equity. `qsort` is not stable and the standard does not say what it does
+ * with equal elements: glibc runs a merge sort when it can allocate and an
+ * introsort when it cannot, Emscripten's musl-derived libc runs a smoothsort,
+ * and the Go port sorts stably. Three targets, three permutations of the
+ * candidates that tie -- and the parity harness compares equities at 1e-6, so
+ * a permutation of equal equities is INVISIBLE to it while changing the move
+ * that gets announced.
+ *
+ * It is not only the announced move. Two cuts read this order for its
+ * *membership*, not its presentation: `rank_plays_prune` keeps the first
+ * `prune_k`, and `rank_plays_deepen` deepens the first `filter[depth]`. A tie
+ * straddling either cut means the three targets deepen DIFFERENT plays, and
+ * from there the equities themselves diverge -- well above 1e-6.
+ *
+ * The rule chosen is the Go port's (`sortByEquity`, blunderDB
+ * `engine/gammonnet/search.go`), because the goal is agreement and that port
+ * is already stable: the tie-break is the incoming order of the array, which
+ * for the first sort is the generation order of `gn_legal_plays` and is
+ * deterministic. The alternative -- a total comparator keyed on the resulting
+ * position -- would have been just as portable but would have reordered ties
+ * that the Go port leaves alone, i.e. it would have bought determinism at the
+ * price of the agreement it exists to protect. Note that a persistent
+ * generation index would NOT reproduce Go either: the second and third sorts
+ * of a node break ties by the order the PREVIOUS sort left, not by the
+ * generation order.
+ *
+ * Two shapes, one order, exactly as in the port: an insertion sort below
+ * SORT_INSERTION_MAX (what a real search node ranks -- a few dozen plays) and
+ * a bottom-up merge sort above it (the pruning pass on a double can face
+ * hundreds, and insertion is quadratic on 72-octet candidates). Both are
+ * stable, and a stable sort's output permutation is unique, so which of the
+ * two ran can never change the result -- including when the merge falls back
+ * to insertion because the scratch buffer could not be allocated.
+ */
+
+/* Where insertion stops and merging starts. 48 is the Go port's
+ * `sortInsertionMax`; the threshold cannot change the ORDER, only the cost,
+ * so it is kept identical purely so the two files read the same. */
+#define SORT_INSERTION_MAX 48
+
+/*
+ * The tie census of T88, off unless the file is compiled with
+ * -DGN_TIE_CENSUS. It exists because "how often does this actually happen?"
+ * is a question about the data, and CLAUDE.md rule 3 forbids answering it by
+ * reading the code. `bench/tie_census.c` is its driver.
+ */
+#ifdef GN_TIE_CENSUS
+unsigned long long gn_tie_sorts = 0;          /* sorts performed */
+unsigned long long gn_tie_items = 0;          /* candidates sorted */
+unsigned long long gn_tie_sorts_with_tie = 0; /* sorts holding a bit-equal pair */
+unsigned long long gn_tie_pairs = 0;          /* bit-equal adjacent pairs */
+unsigned long long gn_tie_cuts = 0;           /* cuts taken (prune / filter) */
+unsigned long long gn_tie_cuts_split = 0;     /* cuts falling INSIDE a tie */
+
+static void tie_census(const GnCandidate *c, int n)
 {
-    const double x = ((const GnCandidate *)a)->equity;
-    const double y = ((const GnCandidate *)b)->equity;
-    /* Best first. */
-    return (x < y) - (x > y);
+    gn_tie_sorts++;
+    gn_tie_items += (unsigned long long)n;
+    int found = 0;
+    for (int i = 1; i < n; i++) {
+        if (c[i].equity == c[i - 1].equity) {
+            gn_tie_pairs++;
+            found = 1;
+        }
+    }
+    if (found) {
+        gn_tie_sorts_with_tie++;
+    }
+}
+
+/* A cut that lands between two equal equities is the case that changes more
+ * than the display order: it changes WHICH plays survive. */
+static void tie_census_cut(const GnCandidate *c, int n, int cut)
+{
+    if (cut <= 0 || cut >= n) {
+        return;
+    }
+    gn_tie_cuts++;
+    if (c[cut].equity == c[cut - 1].equity) {
+        gn_tie_cuts_split++;
+    }
+}
+#else
+#define tie_census(c, n) ((void)0)
+#define tie_census_cut(c, n, cut) ((void)0)
+#endif
+
+/* Stable, best first. `scratch` may be NULL; it is then allocated, and its
+ * absence costs time, never a different order. */
+static void merge_sort_candidates(GnCandidate *c, int n)
+{
+    GnCandidate *buf = malloc(sizeof(GnCandidate) * (size_t)n);
+    if (buf == NULL) {
+        /* Insertion is stable too, so the permutation is the same one; only
+         * the cost changes. Refusing to sort, or sorting unstably, would be
+         * the two ways to make an allocation failure change an answer. */
+        for (int i = 1; i < n; i++) {
+            GnCandidate key = c[i];
+            int j = i - 1;
+            while (j >= 0 && c[j].equity < key.equity) {
+                c[j + 1] = c[j];
+                j--;
+            }
+            c[j + 1] = key;
+        }
+        return;
+    }
+
+    GnCandidate *src = c;
+    GnCandidate *dst = buf;
+    for (int width = 1; width < n; width *= 2) {
+        for (int lo = 0; lo < n; lo += 2 * width) {
+            int mid = lo + width;
+            int hi = lo + 2 * width;
+            if (mid > n) mid = n;
+            if (hi > n) hi = n;
+            int i = lo, j = mid, k = lo;
+            /* `>` on the right-hand side, so an element from the LEFT run
+             * wins every tie. That is what makes this stable. */
+            while (i < mid && j < hi) {
+                dst[k++] = (src[j].equity > src[i].equity) ? src[j++] : src[i++];
+            }
+            while (i < mid) dst[k++] = src[i++];
+            while (j < hi) dst[k++] = src[j++];
+        }
+        GnCandidate *tmp = src; src = dst; dst = tmp;
+    }
+    if (src != c) {
+        memcpy(c, src, sizeof(GnCandidate) * (size_t)n);
+    }
+    free(buf);
+}
+
+static void sort_candidates(GnCandidate *c, int n)
+{
+    if (c == NULL || n < 2) {
+        tie_census(c, n);
+        return;
+    }
+    if (n <= SORT_INSERTION_MAX) {
+        for (int i = 1; i < n; i++) {
+            GnCandidate key = c[i];
+            int j = i - 1;
+            /* Strictly worse only: an equal neighbour is never stepped over,
+             * which is the stability. */
+            while (j >= 0 && c[j].equity < key.equity) {
+                c[j + 1] = c[j];
+                j--;
+            }
+            c[j + 1] = key;
+        }
+    } else {
+        merge_sort_candidates(c, n);
+    }
+    tie_census(c, n);
 }
 
 /*
@@ -603,10 +760,11 @@ static int rank_plays_prune(const GnPosition *pos, int d1, int d2,
         if (value_sweep(out, written, config, theirs, owner) != 0) {
             return -1;
         }
-        qsort(out, (size_t)written, sizeof(GnCandidate), compare_candidates);
+        sort_candidates(out, written);
         /* The survivors, and nothing else: what is dropped here carries the
          * SMALL network's probabilities, and no caller may see those.
          * gn_search.h states the contract. */
+        tie_census_cut(out, written, keep);
         written = keep;
     }
     return written;
@@ -637,7 +795,7 @@ static int rank_plays_finish(const GnNetwork *net,
         return -1;
     }
 
-    qsort(out, (size_t)written, sizeof(GnCandidate), compare_candidates);
+    sort_candidates(out, written);
 
     return rank_plays_deepen(net, config, depth, state, owner, out, written);
 }
@@ -660,6 +818,7 @@ static int rank_plays_deepen(const GnNetwork *net, const GnSearchConfig *config,
     int searched = written;
     const int filter = config->filter[depth];
     if (filter > 0 && filter < searched) {
+        tie_census_cut(out, searched, filter);
         searched = filter;
     }
 
@@ -686,7 +845,7 @@ static int rank_plays_deepen(const GnNetwork *net, const GnSearchConfig *config,
 
     /* Re-rank: the deep pass is allowed to disagree with the shallow one, and
      * if it never did, the deep pass would be pointless. */
-    qsort(out, (size_t)searched, sizeof(GnCandidate), compare_candidates);
+    sort_candidates(out, searched);
     return written;
 }
 
@@ -828,8 +987,7 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
                     free(grouped); free(counts); free(candidates);
                     return 0.0;
                 }
-                qsort(slot, (size_t)counts[r], sizeof(GnCandidate),
-                      compare_candidates);
+                sort_candidates(slot, counts[r]);
                 const int n = rank_plays_deepen(net, config, depth - 1, state,
                                                 owner, slot, counts[r]);
                 best = (n > 0) ? slot[0].equity : 0.0;

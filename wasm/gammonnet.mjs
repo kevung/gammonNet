@@ -13,6 +13,55 @@
 
 const F32 = 4;
 
+/*
+ * L'EFFICACITÉ DU VIDEAU, MESURÉE, INDEXÉE PAR LE POSSESSEUR — et jamais
+ * appliquée d'office.
+ *
+ * Ce module posait `efficiency = 0.566` en défaut de `rankPlays` et de
+ * `cubeDecision`, dont le défaut de possesseur est `0` = `GN_CUBE_CENTRED`.
+ * Or 0,566 est l'efficacité du videau POSSÉDÉ ; celle du videau centré vaut
+ * 0,688 (T34, `docs/mesures/t34-efficacite.json`). Le seul défaut du dépôt
+ * était donc le mauvais, et il vivait dans l'artefact distribué : le C n'a
+ * aucun défaut et EXIGE le paramètre, le Python indexe le triplet mesuré par
+ * l'état de possession, et ce wrapper inventait une valeur pour son propre
+ * compte.
+ *
+ * Ce que ça a coûté, et qui n'est pas hypothétique : gammonGo a redécouvert
+ * 0,688 EMPIRIQUEMENT, par bissection contre un cas d'or, et son commentaire
+ * conclut que le défaut du build WebAssembly n'est « pas quelque chose à
+ * croire sans le lire une seconde fois ».
+ *
+ * Le remède n'est pas 0,566 → 0,688 : un défaut juste reste un défaut, et il
+ * redeviendrait faux le jour où la mesure bougerait sans que l'appelant le
+ * sache. C'est donc, comme en C, PAS DE DÉFAUT — l'appelant fournit la valeur
+ * — plus cette constante nommée pour qu'il n'ait pas à la deviner. Elle est
+ * indexée comme `GnCubeOwner` et comme `GnRolloutConfig.cube_x` :
+ * `[centré, possédé, adverse]`.
+ *
+ * Elle est RECOPIÉE de la mesure, faute de pouvoir lire un fichier du dépôt
+ * dans un navigateur ; `measured_efficiency()` (python/gammonnet/cubeful.py)
+ * reste la lecture faisant foi, et les deux doivent bouger ensemble.
+ */
+export const MEASURED_EFFICIENCY = Object.freeze([0.688, 0.566, 0.687]);
+
+/* Le paramètre est exigé, jamais inventé : une décision de videau calculée
+ * avec l'efficacité d'un AUTRE état de possession est parfaitement plausible
+ * et fausse — exactement le mode de défaillance que CLAUDE.md nomme. */
+function requireEfficiency(value, owner, method) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  throw new Error(
+    `${method} : \`efficiency\` est obligatoire et doit être un nombre. ` +
+    "Elle se MESURE (bench/fit_efficiency.py) ; pour la mesure courante, " +
+    `passez \`efficiency: MEASURED_EFFICIENCY[${owner}]\` ` +
+    `(= ${MEASURED_EFFICIENCY[owner] ?? "?"}, T34 : ` +
+    "centré 0,688 / possédé 0,566 / adverse 0,687).");
+}
+
+/* GN_NOTATION_LENGTH (`src/gn_notation.h`) : la place d'une notation de coup. */
+const NOTATION_LENGTH = 40;
+
 /**
  * A loaded evaluator.
  *
@@ -113,21 +162,30 @@ export class Evaluator {
     ply = 0, filterTop = 0, filterInner = 0,
     useMatch = false, awayOnRoll = 0, awayOpponent = 0,
     cube = 1, crawford = false, max = 10,
-    cubeOwner = null, efficiency = 0.566,
+    cubeOwner = null, efficiency = null,
   } = {}) {
     const m = this.#module;
+    // Exigée exactement là où elle sert. `cubeOwner === null` laisse la
+    // recherche cubeless (`gn_wasm.c` : `cube_owner < 0` n'allume pas le
+    // videau), et alors aucune efficacité n'entre dans le calcul -- en
+    // réclamer une serait réclamer un chiffre que rien ne lit.
+    const x = cubeOwner === null
+      ? 0.0
+      : requireEfficiency(efficiency, cubeOwner, "rankPlays");
     const outPtr = m._malloc(4 * 6 * max);
     const idPtr = m._malloc(15 * max);
+    /* GN_NOTATION_LENGTH, comme les 15 ci-dessus sont GN_POSITION_ID_LENGTH. */
+    const notationPtr = m._malloc(NOTATION_LENGTH * max);
     try {
       const count = m.ccall(
         "gnw_rank_plays", "number",
         ["string", "number", "number", "number", "number", "number", "number",
          "number", "number", "number", "number", "number", "number", "number",
-         "number", "number", "number"],
+         "number", "number", "number", "number"],
         [positionId, turn, d1, d2, ply, filterTop, filterInner,
          useMatch ? 1 : 0, awayOnRoll, awayOpponent, cube, crawford ? 1 : 0,
-         cubeOwner === null ? -1 : cubeOwner, efficiency,
-         max, outPtr, idPtr]);
+         cubeOwner === null ? -1 : cubeOwner, x,
+         max, outPtr, idPtr, notationPtr]);
       if (count < 0) {
         throw new Error("classement refusé : position illisible, ou score " +
                         "hors de la table d'équité de match");
@@ -139,6 +197,16 @@ export class Evaluator {
         out.push({
           equity: m.HEAPF32[base],
           resultId: m.UTF8ToString(idPtr + i * 15),
+          // LE NOM DU COUP, tel que la recherche l'a retenu — « 6/5 8/5 »
+          // sur l'ouverture 3-1. L'ordre des sous-coups est celui que la
+          // recherche a produit, pas un ordre d'affichage.
+          //
+          // `resultId` est un PLATEAU, et un plateau ne dit pas quel pion est
+          // allé où : deux appariements peuvent laisser le même. Le rendre
+          // seul revenait à jeter la moitié de la réponse. Voir
+          // `src/gn_notation.h` ; c'est la MÊME notation que le champ `move`
+          // de `/v1/eval`, et non une seconde.
+          notation: m.UTF8ToString(notationPtr + i * NOTATION_LENGTH),
           // Du côté du joueur qui joue, comme `equity` : `gnw_rank_plays`
           // retourne la distribution une fois pour toutes.
           probs,
@@ -146,7 +214,7 @@ export class Evaluator {
       }
       return out;
     } finally {
-      m._free(outPtr); m._free(idPtr);
+      m._free(outPtr); m._free(idPtr); m._free(notationPtr);
     }
   }
 
@@ -158,14 +226,18 @@ export class Evaluator {
    * prise, en plus de l'action.
    *
    * `efficiency` est MESURÉE (`bench/fit_efficiency.py`), jamais empruntée à
-   * une constante publiée.
+   * une constante publiée — et elle est OBLIGATOIRE : ce wrapper n'en invente
+   * plus une, parce que celle qu'il inventait était celle d'un autre état de
+   * possession que son propre défaut d'`owner`. Pour la mesure courante,
+   * `efficiency: MEASURED_EFFICIENCY[owner]`.
    */
   cubeDecision(positionId, turn, {
     owner = 0, useMatch = false, awayOnRoll = 0, awayOpponent = 0,
-    cube = 1, crawford = false, efficiency = 0.566, jacoby = true,
+    cube = 1, crawford = false, efficiency = null, jacoby = true,
     ply = 0, filterTop = 0, filterInner = 0,
   } = {}) {
     const m = this.#module;
+    const x = requireEfficiency(efficiency, owner, "cubeDecision");
     const outPtr = m._malloc(8 * 9);
     try {
       const status = m.ccall(
@@ -173,7 +245,7 @@ export class Evaluator {
         ["string", "number", "number", "number", "number", "number", "number",
          "number", "number", "number", "number", "number", "number", "number"],
         [positionId, turn, owner, useMatch ? 1 : 0, awayOnRoll, awayOpponent,
-         cube, crawford ? 1 : 0, efficiency, jacoby ? 1 : 0,
+         cube, crawford ? 1 : 0, x, jacoby ? 1 : 0,
          ply, filterTop, filterInner, outPtr]);
       if (status !== 0) {
         throw new Error("décision de videau refusée : position illisible, ou " +
@@ -360,18 +432,20 @@ export class Evaluator {
     // une allocation dans la mesure, ce que le chemin par lot évite déjà.
     const idPtr = m._malloc(16);
     const countPtr = m._malloc(4);
+    const notationPtr = m._malloc(NOTATION_LENGTH);
     try {
       const equity = m.ccall(
         "gnw_best_play", "number",
         ["string", "number", "number", "number", "number", "number", "number",
-         "number", "number", "number", "number", "number", "number", "number"],
+         "number", "number", "number", "number", "number", "number", "number",
+         "number"],
         [positionId, turn, d1, d2, ply, filterTop, filterInner,
          match ? 1 : 0,
          match ? match.awayOnRoll : 0,
          match ? match.awayOpponent : 0,
          match ? (match.cube ?? 1) : 1,
          match ? (match.crawford ? 1 : 0) : 0,
-         idPtr, countPtr],
+         idPtr, countPtr, notationPtr],
       );
       if (equity <= -99.0) {
         // Refusé : position illisible, aucun coup légal, ou score hors table.
@@ -381,12 +455,192 @@ export class Evaluator {
       return {
         equity,
         resultId: m.UTF8ToString(idPtr),
+        // Le coup, nommé. Voir `rankPlays` ci-dessus et `src/gn_notation.h`.
+        notation: m.UTF8ToString(notationPtr),
         evaluations: m.HEAP32[countPtr >> 2],
       };
     } finally {
       m._free(idPtr);
       m._free(countPtr);
+      m._free(notationPtr);
     }
+  }
+
+  /* ── Le codec de position ────────────────────────────────────────────
+   *
+   * POURQUOI IL EST ICI (T86). Le C possède `gn_position_id`,
+   * `gn_position_from_id`, `gn_xgid` et `gn_position_from_xgid` depuis T02,
+   * croisés contre gnubg-nn sur 10 000 positions. Aucun n'était atteignable
+   * depuis JavaScript : le module prenait un identifiant en entrée et n'a
+   * jamais su en fabriquer un.
+   *
+   * Un consommateur qui part de SON plateau n'avait donc qu'une option,
+   * réécrire le codec. gammonGo l'a fait, et son en-tête est honnête sur la
+   * méthode : algorithme déduit, puis validé empiriquement contre ce module.
+   * C'est la seule des trois écritures de ce codec qui ne descende pas d'une
+   * référence indépendante — une déduction confirmée par son propre
+   * consommateur est un accord avec soi-même, pas une vérification.
+   *
+   * UN PLATEAU, dans la convention de `gn_rules.h` et sans en inventer une
+   * seconde :
+   *
+   *     { points: [24 comptes SIGNÉS, positif BLANC, négatif NOIR],
+   *       bar: [blanc, noir], off: [blanc, noir], turn: 0 | 1 }
+   *
+   * L'indice i désigne le point (i+1) pour BLANC et (24-i) pour NOIR.
+   */
+
+  /** Le tampon de 29 entiers que le C attend, alloué et rendu par l'appelant. */
+  #withBoard(board, use) {
+    const m = this.#module;
+    const ptr = m._malloc(29 * 4);
+    try {
+      const view = m.HEAP32.subarray(ptr >> 2, (ptr >> 2) + 29);
+      const points = board?.points ?? [];
+      for (let i = 0; i < 24; i++) view[i] = points[i] | 0;
+      view[24] = board?.bar?.[0] | 0;
+      view[25] = board?.bar?.[1] | 0;
+      view[26] = board?.off?.[0] | 0;
+      view[27] = board?.off?.[1] | 0;
+      view[28] = board?.turn | 0;
+      return use(ptr);
+    } finally {
+      m._free(ptr);
+    }
+  }
+
+  #readBoard(ptr) {
+    const view = this.#module.HEAP32.subarray(ptr >> 2, (ptr >> 2) + 29);
+    return {
+      points: Array.from(view.subarray(0, 24)),
+      bar: [view[24], view[25]],
+      off: [view[26], view[27]],
+      turn: view[28],
+    };
+  }
+
+  /**
+   * Le Position ID d'un plateau, vu par le joueur au trait.
+   *
+   * Refuse (lève) un plateau structurellement impossible plutôt que d'en
+   * tirer un identifiant plausible : quinze pions par camp, aucun point des
+   * deux couleurs. C'est `gn_position_is_valid` qui tranche, pas ce fichier.
+   */
+  positionId(board) {
+    const m = this.#module;
+    return this.#withBoard(board, (boardPtr) => {
+      const idPtr = m._malloc(16);
+      try {
+        if (m._gnw_position_encode(boardPtr, idPtr) !== 0) {
+          throw new Error("plateau refusé : ce n'est pas une position valide");
+        }
+        return m.UTF8ToString(idPtr);
+      } finally {
+        m._free(idPtr);
+      }
+    });
+  }
+
+  /**
+   * Le plateau d'un Position ID, `turn` au trait.
+   *
+   * `turn` EST UN PARAMÈTRE, et c'est le piège de ce format : l'identifiant
+   * ne porte pas le joueur au trait, deux positions qui n'en diffèrent que
+   * partagent leur identifiant. Le `resultId` que rend `bestPlay` décrit la
+   * position D'APRÈS le coup, donc l'autre camp est au trait — passer le même
+   * `turn` qu'à l'aller rend silencieusement le plateau du mauvais côté.
+   */
+  positionFromId(id, turn) {
+    const m = this.#module;
+    const ptr = m._malloc(29 * 4);
+    try {
+      /* `ccall` et non l'export nu : l'identifiant est une chaîne
+       * JavaScript, qu'il faut copier dans le tas du module. */
+      if (m.ccall("gnw_position_decode", "number",
+                  ["string", "number", "number"], [id, turn, ptr]) !== 0) {
+        throw new Error("identifiant de position illisible");
+      }
+      return this.#readBoard(ptr);
+    } finally {
+      m._free(ptr);
+    }
+  }
+
+  /**
+   * Le XGID d'un plateau. `fields` est optionnel — absent, le XGID décrit une
+   * partie d'argent sans videau, aucun jet posé, le trait pris du plateau.
+   *
+   * SON DEGRÉ DE VÉRIFICATION N'EST PAS CELUI DU POSITION ID, et
+   * `gn_position_id.h` le dit : le XGID est ancré sur l'identifiant
+   * d'ouverture canonique et sur l'aller-retour, faute d'implémentation
+   * indépendante contre laquelle le croiser. Orientation établie, non oraclée.
+   */
+  xgid(board, fields = null) {
+    const m = this.#module;
+    return this.#withBoard(board, (boardPtr) => {
+      const outPtr = m._malloc(64);
+      const fieldsPtr = fields ? m._malloc(10 * 4) : 0;
+      try {
+        if (fields) {
+          m.HEAP32.set(Evaluator.#xgidFieldsToInts(fields), fieldsPtr >> 2);
+        }
+        if (m._gnw_xgid_encode(boardPtr, fieldsPtr, outPtr) !== 0) {
+          throw new Error("plateau refusé : ce n'est pas une position valide");
+        }
+        return m.UTF8ToString(outPtr);
+      } finally {
+        m._free(outPtr);
+        if (fieldsPtr) m._free(fieldsPtr);
+      }
+    });
+  }
+
+  /** Le plateau et les dix champs d'un XGID. */
+  positionFromXgid(xgid) {
+    const m = this.#module;
+    const boardPtr = m._malloc(29 * 4);
+    const fieldsPtr = m._malloc(10 * 4);
+    try {
+      if (m.ccall("gnw_xgid_decode", "number",
+                  ["string", "number", "number"], [xgid, boardPtr, fieldsPtr]) !== 0) {
+        throw new Error("XGID illisible");
+      }
+      const f = m.HEAP32.subarray(fieldsPtr >> 2, (fieldsPtr >> 2) + 10);
+      return {
+        board: this.#readBoard(boardPtr),
+        fields: {
+          cubePower: f[0], cubeOwner: f[1], turn: f[2], die1: f[3], die2: f[4],
+          scoreUpper: f[5], scoreLower: f[6], flags: f[7],
+          matchLength: f[8], maxCube: f[9],
+        },
+      };
+    } finally {
+      m._free(boardPtr);
+      m._free(fieldsPtr);
+    }
+  }
+
+  static #xgidFieldsToInts(f) {
+    return Int32Array.from([
+      f.cubePower | 0, f.cubeOwner | 0, f.turn | 0, f.die1 | 0, f.die2 | 0,
+      f.scoreUpper | 0, f.scoreLower | 0, f.flags | 0,
+      f.matchLength | 0, f.maxCube | 0,
+    ]);
+  }
+
+  /**
+   * LE COMPTE DE PIPS — la sentinelle, pas un ornement.
+   *
+   * `BRIEF.md` §6 : *« si le compte de pips d'une position traduite n'est pas
+   * celui qu'on attendait, tout ce qui suit est dénué de sens. Utilisez-le
+   * chaque fois qu'une position traverse une frontière de format. »*
+   * Convertir un plateau d'application vers celui-ci EST une telle frontière.
+   */
+  pipCount(board, player) {
+    const count = this.#withBoard(board,
+      (ptr) => this.#module._gnw_pip_count(ptr, player));
+    if (count < 0) throw new Error("plateau refusé : position invalide");
+    return count;
   }
 
   destroy() {
