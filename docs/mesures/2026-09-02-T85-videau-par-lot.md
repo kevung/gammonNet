@@ -121,3 +121,141 @@ dénominateur aussi (43 218 contre 43 163). Les deux erreurs allaient en sens co
 
 **Le poste est donc réel et il vaut d'être attaqué. La suite de ce document mesure ce que la
 vectorisation sur candidats en rend.**
+
+---
+
+## 2. Ce qui a été fait, et la seule chose qui change
+
+`level_solve` est une **chaîne de dépendances sérielle** : soixante pas, chacun une division dont
+le résultat choisit l'entrée du pas suivant. Rien dans un processeur ne recouvre ça avec
+soi-même. Trois niveaux, deux points de rupture par niveau, soixante pas : ≈ 360 divisions à la
+file par candidat, ce qui, à ~20 cycles de latence pièce, **est** les 2,7 µs mesurés. Le poste
+n'est pas du travail, c'est de la latence.
+
+Les bissections de deux candidats ne partagent rien. `gn_cube_value_batch` les mène donc en pas
+cadencé — itération par itération à travers les voies, plutôt que voie par voie à travers les
+itérations — et la latence de l'une est payée par le travail de l'autre. La recherche a toujours
+une fratrie entière en main quand elle value l'un de ses membres (`value_sweep`), donc les voies
+sont là pour rien.
+
+`build_levels` est coupé en deux à l'endroit où le lot en a besoin : `build_level_anchors`
+(par candidat) et `resolve_levels` (par niveau, donc en lot).
+
+**Ce qui n'a PAS été fait, délibérément** : hoister ou dédupliquer les consultations de la table
+d'équité de match, alors même que `pass`, `cash` et les trois `gn_met_after` de `branch_mwc` ne
+dépendent que de l'état et sont identiques dans toutes les voies. Le portage Go l'a écrit, mesuré
+à 1 % et annulé. Chaque voie paie ici ses propres consultations, exactement comme le scalaire.
+
+## 3. L'exactitude — quatre preuves, aucune tolérance
+
+| preuve | portée | résultat |
+|---|---|---|
+| `tests/test_cube_batch.py`, accord avec le scalaire | 141 distributions réelles × 3 possessions × 7 états (money, 5/5, 2/4, videau à 2, 1/1, Crawford, 25/25) | `==`, **pas** `approx` — 21 cas, tous verts |
+| `tests/test_cube_batch.py`, invariance au découpage | les mêmes, en un lot / en deux moitiés coupées à 37 / une par une | bits identiques |
+| corpus T12, classements 0-ply au score | 200 positions × 3 possessions × 21 lancers = **12 600 classements**, videau actif à 5-away/5-away | `diff` = **0 ligne** |
+| corpus T12, classements 2-ply `k=12` filtre (0,1,3) | 4 positions × 3 possessions × 21 lancers = **252 classements** | `diff` = **0 ligne** |
+
+Les deux `diff` comparent les équités **en hexadécimal IEEE-754**, pas en décimal tronqué : une
+divergence d'un bit se verrait. Et ils comparent l'ORDRE en même temps que les nombres, ce que la
+leçon de T88 impose.
+
+Le même `diff` 0-ply rejoué avec `GN_CUBE_BATCH` à **16** au lieu de 32 rend les mêmes 12 600
+lignes : la largeur de voie est un paramètre de coût, jamais un paramètre du moteur.
+
+Enfin, `make bench-cube` — qui appelle le **scalaire** — lit les mêmes valeurs qu'avant
+(15,1 ns en money, 2 393 ns à 5-away/5-away) : le chemin scalaire n'a pas bougé, et la suite
+complète passe (**479 réussis, 53 ignorés, 0 échec** ; `test_serve` est mis à part, il refuse de
+démarrer faute de l'artefact float16 épinglé, ce qui est vrai sur `main` aussi).
+
+## 4. Le gain — mesuré au score et en money séparément
+
+Protocole : le binaire de référence est construit sur `e0ba8aa` (l'instrument de mesure, **sans**
+l'optimisation), le binaire mesuré sur `23c5a64`. Les deux tournent en alternance, chacun avec
+son `--ab` interne : la moitié cubeless est le **même code des deux côtés** et sert donc de
+normalisateur à l'intérieur de chaque exécution. Huit paires, `--repeat=3`, charge de 1,3 à 20.
+
+### Au score (5-away/5-away, videau centré)
+
+| | référence | par lot | rapport |
+|---|---|---|---|
+| coût du videau, par décision | **103,6 ms** | **42,7 ms** | **×2,43** |
+| par valuation | **2 401 ns** | **988 ns** | **×2,43** |
+| part d'une décision | **19,35 %** | **9,05 %** | — |
+
+Les huit paires, sans sélection :
+
+| paire | réf. ms | lot ms | réf. ns | lot ns | réf. part | lot part |
+|---|---|---|---|---|---|---|
+| 1 | 105,1 | 47,3 | 2 434 | 1 097 | 20,1 % | 9,8 % |
+| 2 | 103,4 | 42,9 | 2 396 | 995 | 19,4 % | 9,0 % |
+| 3 | 93,9 | 41,5 | 2 175 | 962 | 15,8 % | 8,5 % |
+| 4 | 103,8 | 42,4 | 2 405 | 982 | 19,3 % | 8,6 % |
+| 5 | 127,4 | 44,1 | 2 951 | 1 022 | 20,2 % | 9,1 % |
+| 6 | 111,6 | 35,4 | 2 585 | 820 | 18,9 % | 7,7 % |
+| 7 | 95,9 | 40,1 | 2 221 | 929 | 19,7 % | 9,4 % |
+| 8 | 97,1 | 46,8 | 2 250 | 1 085 | 18,4 % | 9,1 % |
+
+**Sur la décision entière, au score : ×1,13, soit 11,4 % de moins.** (Les deux moitiés cubeless
+étant le même code, `T_lot / T_réf = (1 − part_réf) / (1 − part_lot)` ; les huit paires rendent
+0,886 / 0,886 / 0,920 / 0,883 / 0,878 / 0,879 / 0,886 / 0,898, médiane **0,886**.)
+
+Le seuil d'abandon de la fiche est de **5 %** sur une décision au score. **11,4 % le passe deux
+fois.**
+
+### En money — rien, et rien n'était possible
+
+Quatre paires :
+
+| paire | référence | par lot |
+|---|---|---|
+| 1 | −0,1 % | +0,9 % |
+| 2 | −0,2 % | +0,9 % |
+| 3 | +0,7 % | −0,1 % |
+| 4 | −1,6 % | +1,3 % |
+
+Les huit relevés encadrent zéro des deux côtés. **C'est le résultat attendu et il est vérifié, pas
+supposé** : le money reste sur le chemin scalaire, à dessein — le §1.2 y a mesuré le poste à zéro,
+et une valuation money coûte 15 ns contre 2 400 ns au score. Publier un gain global moyenné aurait
+caché ce fait ; c'est pourquoi la fiche demandait les deux séparément.
+
+### La largeur de voie — un balayage NON concluant, et il faut le dire
+
+`GN_CUBE_BATCH` recompilé, ns par valuation, mesures alternées :
+
+| largeur | relevés |
+|---|---|
+| 8 | 1 787 |
+| 16 | 1 197 / 1 058 / 991 |
+| **32** | 1 047 / 887 / 982-1 097 (les huit paires ci-dessus) |
+| 64 | 1 168 / 913 |
+
+**8 est nettement moins bon** — trop peu de voies pour couvrir la latence d'une division. Entre
+**16, 32 et 64 la mesure ne tranche pas**, et l'écart entre relevés d'une même largeur est plus
+grand que l'écart entre largeurs. 32 est conservé parce qu'il est au milieu et que rien ne le
+conteste, **pas** parce qu'il aurait gagné. C'est la même honnêteté que le §8 du relevé d'entrée,
+et pour la même raison : un seul relevé par largeur sur une machine en dérive ne conclut rien.
+
+## 5. Ce que le portage Go et le module WebAssembly reprennent
+
+**Le module WebAssembly l'a déjà** : c'est le même C, il suffit de reconstruire.
+
+**Le portage Go de blunderDB** (`engine/gammonnet/cube.go`) reprend la **forme**, énoncée en
+`docs/specs/t34-videau-spec.md` §7.1 :
+
+1. Couper `buildLevels` en deux — les **ancres** d'un niveau (par candidat) et la **résolution**
+   des points de rupture (par niveau). La coupe est le tout de la fiche : c'est la seconde moitié
+   qui se met en lot.
+2. Une fonction `cubeValueBatch(probs [][]float32, owner, state, x) []float64` menant les
+   soixante pas de toutes les voies en pas cadencé, appelée depuis l'équivalent Go de
+   `value_sweep` — c'est-à-dire la boucle de fratrie, la seule qui ait des candidats en main.
+3. **Les deux dispositifs d'exactitude, non négociables** : largeur de voie fixe (la queue tourne
+   moins de voies) et nombre d'itérations fixe (soixante, toujours — jamais « jusqu'à
+   convergence des voies », qui ferait dépendre une voie de ses voisines).
+4. **Ne PAS hoister les consultations `metAfter`.** Elles sont identiques dans toutes les voies et
+   c'est précisément le piège : le portage Go a déjà mesuré ce gain à 1 % et annulé le travail.
+5. Le money reste scalaire.
+6. Le test à écrire avant le code : l'égalité **par candidat, au bit près**, contre la valuation
+   une par une, plus l'invariance au découpage — `tests/test_cube_batch.py` en donne la forme.
+
+**Ce que le portage Go NE reprend pas** : la largeur 32. C'est un paramètre de coût, il se mesure
+chez lui, et le §4 ci-dessus dit que même ici la mesure ne le tranche pas.

@@ -183,6 +183,62 @@ document impose de plus : le drapeau `jacoby`, et l'accès aux équités de bran
 `GnCubeDecision` (déjà présent). Liaison Python `python/gammonnet/cube.py` sur le modèle de
 `met.py`.
 
+### 7.1 La forme par lot *(ajouté le 2026-09-02, T85)*
+
+> **Ceci est une obligation de forme, pas seulement une note de performance.** L'ADR-0003 range
+> la vectorisation sur candidats du côté **conceptuel** — son gain survit au changement de
+> langage — et impose donc qu'elle soit décidée, mesurée et écrite ici, puis reprise par le
+> portage Go de blunderDB et par le module WebAssembly. Ce paragraphe est ce que les
+> consommateurs reprennent.
+
+`gn_cube_value_batch(probs[], n, owner, state, x, out[])` value `n` distributions qui partagent
+**un seul** état de videau. Ce n'est **pas** une révision du modèle : `out[j]` est, au bit près,
+ce que `gn_cube_value(probs[j], …)` aurait rendu seul. Les §2, §3 et §9 sont inchangés.
+
+**Ce qui est mis en lot, et pourquoi c'est celui-là.** La chaîne §9 est construite par
+`build_levels`, qui fait deux choses de nature différente :
+
+| étape | dépend de | mise en lot |
+|---|---|---|
+| les **ancres** d'un niveau (`lose_avg`, `win_avg`, `pass`, `cash`) | de ce candidat seul | non — chaque voie les calcule pour elle |
+| les **points de rupture** (`tp`, `cp`), par bissection contre le niveau `2k` | du niveau au-dessus | **oui** |
+
+`build_levels` est donc coupé en `build_level_anchors` + `resolve_levels`, et c'est la seconde
+moitié qui passe en lot. La raison est une propriété du matériel, pas du modèle : une bissection
+est une **chaîne de dépendances sérielle** — soixante pas, chacun une division dont le résultat
+choisit l'entrée du pas suivant — que rien ne peut recouvrir avec elle-même. Les bissections de
+deux candidats, elles, ne partagent rien. Menées en pas cadencé (itération par itération à
+travers les voies, plutôt que voie par voie à travers les itérations), la latence de l'une est
+payée par le travail de l'autre.
+
+**Deux invariants, que toute reprise doit tenir.** Ils sont les mêmes que ceux du noyau réseau
+(`forward_batch`), et pour la même raison : une largeur de voie est un paramètre de coût, jamais
+un paramètre du moteur.
+
+1. **Largeur de voie fixe.** Un morceau est rempli jusqu'à `GN_CUBE_BATCH` et le dernier tourne
+   simplement moins de voies. L'arithmétique d'une voie ne dépend pas du nombre de ses voisines
+   — valuer `N` candidats en un lot, en deux moitiés, ou un par un rend les mêmes bits.
+2. **Nombre d'itérations fixe.** Soixante pas, toujours, exactement comme le scalaire. **Jamais
+   « jusqu'à convergence des voies »** : ce serait faire dépendre la réponse d'une voie de celle
+   de ses voisines, ce qui est précisément l'erreur que l'invariant 1 interdit.
+
+**La forme de la chaîne est indépendante du candidat**, et une reprise doit le vérifier plutôt
+que le supposer : le nombre de niveaux et lequel est mort ne dépendent que de `state` (le drapeau
+`dead` compare l'enjeu aux deux away scores). C'est ce qui permet à toutes les voies de résoudre
+le même niveau en même temps.
+
+**Ce qui est explicitement EXCLU du lot** — précalculer ou dédupliquer les consultations de la
+table d'équité de match, bien que `pass`, `cash` et les trois `gn_met_after` de `MWCwin_avg` /
+`MWClose_avg` ne dépendent que de `state` et soient donc identiques dans toutes les voies. Le
+portage Go l'a écrit, mesuré à **1 %** et annulé ; c'est 11 % d'un poste, sous le plancher de
+bruit. **Chaque voie paie ses propres consultations**, comme le scalaire. Une reprise qui les
+hoisterait s'écarterait de ce document, et devrait d'abord le réviser.
+
+**Le money reste scalaire.** Le §3 n'a pas de récursion : une valuation money coûte 14 ns contre
+2 711 ns au score, et le poste entier a été **mesuré à zéro** par décision
+(`docs/mesures/2026-09-02-T85-videau-par-lot.md` §1.2). Le chemin money porte en outre le
+court-circuit exact de la table bilatérale, qu'un rassemblement devrait reproduire pour rien.
+
 ## 8. Phase 2 — le videau dans l'arbre *(ajouté le 2026-08-07)*
 
 > Question posée par le propriétaire du projet : le videau ne doit-il pas entrer dans l'arbre de
