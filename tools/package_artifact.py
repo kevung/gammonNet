@@ -395,11 +395,16 @@ recherche emprunte depuis. Il reste défini et mesurable, il n'a plus de
 consommateur. **Le natif n'est pas touché** : les intrinsèques y exigeraient
 `-march=native`, donc un binaire qui ne démarre plus sans AVX2.
 
-**Et l'artefact rétrécit** : `gammonnet-simd.wasm` passe de 109 240 à
-**100 992 o** (−7,6 %), `gammonnet.wasm` de 97 734 à **97 157 o**.
-L'auto-vectorisation sous réassociation déroulait la boucle chaude ; le noyau
-écrit à la main ne la déroule pas. **Les deux sommes de contrôle changent** : qui
-les épingle reprend les deux.
+**Les deux sommes de contrôle des `.wasm` changent**, et qui les épingle reprend
+les deux — leurs valeurs sont dans la table « Ce que cette version contient »
+plus bas, jamais ailleurs. Sur la taille, un avertissement qui vaut mieux qu'un
+chiffre : le noyau écrit à la main **ne déroule pas** la boucle chaude que
+l'auto-vectorisation sous réassociation déroulait, et il a fait **rétrécir**
+l'artefact de 109 240 à 100 992 o sur la machine où T91 l'a mesuré (emcc
+6.0.9-git). L'artefact **publié ici** est bâti par la CI avec emcc 3.1.64 et pèse
+**105 894 o** : le sens du changement tient, sa taille absolue **ne se transporte
+pas d'une chaîne à l'autre**. Comparez toujours deux constructions faites par la
+même chaîne.
 Détail : `docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md`.
 
 ### 3. RUPTURE — `efficiency` n'a plus de valeur par défaut
