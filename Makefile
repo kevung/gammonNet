@@ -240,10 +240,10 @@ WASM_FLAGS := -O3 -std=c11 $(WASM_EXTRA) $(INCLUDES) \
   -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 \
   -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPF32,HEAPF64,HEAP8,HEAPU8,HEAP32,UTF8ToString \
-  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw \
+  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw,_gnw_position_encode,_gnw_position_decode,_gnw_xgid_encode,_gnw_xgid_decode,_gnw_pip_count \
   --extern-pre-js $(WASM_DIR)/notice.js
 
-.PHONY: wasm wasm-simd wasm-scalar wasm-parity wasm-parity-int8
+.PHONY: wasm wasm-simd wasm-scalar wasm-parity wasm-parity-int8 wasm-codec
 
 wasm: wasm-scalar wasm-simd
 
@@ -276,6 +276,16 @@ wasm-parity: wasm $(MODEL)
 wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/api_invariants.mjs
 	node $(WASM_DIR)/worker_invariants.mjs
+
+# La parité du CODEC, sur le corpus T12 entier et à l'égalité EXACTE — un
+# identifiant est une chaîne, il n'y a pas de tolérance à lui accorder. Le
+# repère vient du C natif (`tools/dump_codec_reference.py`), jamais de
+# l'écriture JavaScript que ces exports remplacent : la vérifier contre elle
+# serait circulaire, puisqu'elle a été validée contre ce module.
+.PHONY: wasm-codec
+wasm-codec: wasm build
+	$(PYTHON) tools/dump_codec_reference.py
+	node $(WASM_DIR)/codec_parity.mjs
 
 DUMP_INT8 := $(BUILD)/dump_reference_int8
 $(DUMP_INT8): tools/dump_reference_int8.c src/gn_gemm_int8.c $(HEADERS)

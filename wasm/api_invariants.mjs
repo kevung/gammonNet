@@ -155,6 +155,43 @@ check("verdict de videau connu", VERDICTS.has(cube.action), cube.action);
 check("équités de videau finies",
       Number.isFinite(cube.equityNoDouble) && Number.isFinite(cube.equityDouble));
 
+/* 7. LE CODEC, ET LE PIÈGE QU'IL PORTE (T86).
+ *
+ * `wasm/codec_parity.mjs` établit l'égalité exacte avec le C sur le corpus
+ * entier ; ce qui est vérifié ICI est ce qu'un appelant peut se tromper à
+ * faire avec, et c'est une seule chose : LE POSITION ID NE PORTE PAS LE
+ * JOUEUR AU TRAIT. Le `resultId` que rend `bestPlay` décrit la position
+ * d'APRÈS le coup, donc l'autre camp est au trait ; le décoder avec le `turn`
+ * de l'aller rend le plateau du mauvais côté — sans erreur, sans signe, et
+ * avec des comptes de pions parfaitement plausibles. Le consommateur qui a
+ * écrit ce codec de son côté a documenté ce piège pour l'avoir rencontré. */
+const opening = evaluator.positionFromId(POSITION, 0);
+check("le codec fait l'aller-retour", evaluator.positionId(opening) === POSITION,
+      evaluator.positionId(opening));
+check("l'ouverture compte 167 pips des deux côtés",
+      evaluator.pipCount(opening, 0) === 167 && evaluator.pipCount(opening, 1) === 167,
+      `${evaluator.pipCount(opening, 0)} / ${evaluator.pipCount(opening, 1)}`);
+
+/* Le 3-1 déplace quatre pips. Décodé avec `1 - turn` — le trait a changé —
+ * Blanc, qui vient de jouer, en a 163 et Noir toujours 167. Décodé avec le
+ * `turn` de l'aller, les deux camps sont ÉCHANGÉS : on lit 167 pour Blanc,
+ * c'est-à-dire le nombre d'avant le coup, ce qui est exactement ce qui rend
+ * l'erreur invisible. */
+const after = evaluator.positionFromId(best.resultId, 1);
+check("resultId décodé du bon côté : Blanc a joué 4 pips, 167 → 163",
+      evaluator.pipCount(after, 0) === 163 && evaluator.pipCount(after, 1) === 167,
+      `${evaluator.pipCount(after, 0)} / ${evaluator.pipCount(after, 1)}`);
+const wrongSide = evaluator.positionFromId(best.resultId, 0);
+check("décodé du mauvais côté : 167 pour Blanc, aucun signe d'erreur",
+      evaluator.pipCount(wrongSide, 0) === 167
+      && JSON.stringify(wrongSide.points) !== JSON.stringify(after.points),
+      `${evaluator.pipCount(wrongSide, 0)}`);
+
+/* Et le XGID de l'ouverture, l'ancrage même du format (`gn_position_id.h`). */
+check("le XGID de l'ouverture est l'identifiant canonique",
+      evaluator.xgid(opening).startsWith("XGID=-b----E-C---eE---c-e----B-"),
+      evaluator.xgid(opening));
+
 console.log(failures === 0
   ? "\n✅ invariants de l'API tenus"
   : `\n❌ ${failures} invariant(s) rompu(s)`);
