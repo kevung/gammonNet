@@ -2042,6 +2042,51 @@ recouvrent et T73 hérite du verdict de largeur.
 > **Couche : conceptuelle.** Elle vaut pour `wasm/pool.mjs`, pour le `ProcessPoolExecutor` de
 > `python/gammonnet/arena.py`, et pour tout ordonnanceur qu'un consommateur écrirait.
 
+> ### FAIT le 2026-09-02 — mesure : `docs/mesures/2026-09-02-T87-ordonnancement.md`
+>
+> **Le poste d'ordonnancement est ABANDONNÉ dans le navigateur, et livré en Python.** Les deux
+> décisions viennent de la même mesure.
+>
+> **L'oisiveté a été instrumentée avant d'être touchée** (`ScheduleReport`, deux occupations —
+> celle du pool et celle que le worker rapporte lui-même, l'écart étant le coût du protocole),
+> puis relevée dans Chromium sur un **match complet** : les 139 décisions de `test.sgf`, 2-ply
+> `(0,1,3)`, `k=12`, au score réel. Elle vaut **2,62 % puis 2,48 %** sur deux passages — et la
+> fiche avait raison sans le savoir : ce chemin présente **déjà** 139 tâches pour 8 workers.
+>
+> **Le plafond est calculé, pas espéré.** Coûts réels rejoués : la borne basse (somme ÷ 8) est
+> à 2,63 % de l'ordre actuel. **Aucun ordonnancement, même omniscient, ne peut gagner plus de
+> 2,6 %** ; le tri par nombre d'évaluations en récupère **1,18 %**, celui par coups légaux
+> 1,45 %. Corrélation temps ↔ évaluations : **0,511** seulement (le coût d'une évaluation
+> varie d'un facteur trois selon la position). Seuil à 5 % : **non livré, et pas livrable.**
+>
+> **Sur l'autre chemin, le remède est une régression — mesurée.** `analyze()` distribue des
+> lots de caractéristiques ; y multiplier les tâches fait tomber l'oisiveté de **17,6 % à
+> 7,2 %** et allonge le travail de **50 %** (70,3 → 106,3 ms, 8 workers, sept passes
+> entrelacées). Une tâche y coûte 250 Ko clonés par `postMessage`, et c'est le fil principal,
+> seul, qui paie. D'où **la règle dans sa forme utile** : *le nombre de tâches paie quand une
+> tâche coûte cher à CALCULER et rien à TRANSMETTRE.* Le défaut reste 1 ; `tasksPerWorker` est
+> exposé avec sa courbe.
+>
+> **Et là où la condition est remplie, la règle rend ce qu'elle promet** : le
+> `ProcessPoolExecutor` de `arena.py` gagne **+6,1 %** en passant de 8 à 128 tâches (+6,11,
+> +6,23, +6,10 sur trois exécutions). Son défaut passe à 16 tâches par processus, et
+> `tests/test_arena.py` vérifie que la mesure de force n'en bouge pas.
+>
+> **Le nombre utile de workers : `min(fils annoncés, 8)`.** Sur le chemin des décisions, ×4,20
+> à 8 workers ; passer à 16 achète **4 à 6 %** de mural pour **deux fois** la mémoire et
+> **deux fois** les secondes-worker (211,6 s-worker à 1 worker, 390 à 8, **731 à 16 pour le
+> même travail** — chaque worker ajouté ralentit tous les autres). Sur le chemin des lots,
+> 16 workers sont **plus lents** que 8 (×3,28 contre ×3,55) et font passer la pire tâche du
+> fil principal de 4,3 à **21,7 ms**. `EvaluatorPool.suggestedSize()` et `memoryCostMB()`
+> remplacent la lecture de `navigator.hardwareConcurrency`.
+>
+> **Ce que je n'ai pas pu faire, et qui manque au critère.** Une seule machine m'était
+> accessible pour le chemin des décisions (poste 8c/16f). Le bridage à quatre fils
+> (`taskset`) change le nombre de fils, pas la classe de machine ; les deux autres machines
+> citées (T23, 16 fils ; T21b, 28 fils) sont réelles et de classes différentes mais mesurées
+> sur le chemin des **lots**, avant T86. **Aucun appareil mobile** — le manque le plus gênant,
+> et le même que T23 signalait déjà.
+
 **Deux faits mesurés, et le premier est contre-intuitif.**
 
 **« Les doubles sont les lancers coûteux » est faux.** Les doubles génèrent 1 800 coups contre

@@ -1,0 +1,345 @@
+{
+  "browser": "chromium",
+  "headless": true,
+  "test": "ordonnancement",
+  "mode": "sweep-analyze",
+  "build": "gammonnet-simd",
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/152.0.0.0 Safari/537.36",
+  "hardwareConcurrency": 16,
+  "deviceMemory": 16,
+  "match": {
+    "source": "test.sgf — HSBT Paris 2023, match en 7 points, joué par des humains",
+    "decisions": 139
+  },
+  "referencePositions": 2000,
+  "pruneK": 12,
+  "level": {
+    "ply": 2,
+    "filterTop": 3,
+    "filterInner": 1
+  },
+  "chunk": 256,
+  "tasksPerWorker": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32
+  ],
+  "reps": 7,
+  "runs": [
+    {
+      "path": "analyze",
+      "workers": 8,
+      "tasksPerWorker": 1,
+      "tasks": 8,
+      "wallMs": 70.3,
+      "busyMs": [
+        52.6,
+        62.1,
+        62.3,
+        55.5,
+        55,
+        63.2,
+        62,
+        50.7
+      ],
+      "computeMs": [
+        49.5,
+        59.2,
+        58.6,
+        52,
+        51.9,
+        59.2,
+        59.4,
+        47.7
+      ],
+      "taskCounts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "idlePool": 0.176,
+      "idleWorker": 0.2221,
+      "taskMsMedian": 62,
+      "taskMsMax": 63.2,
+      "taskMsMin": 50.7,
+      "worstDelta": 6.407499313354492e-7,
+      "wallMsAll": [
+        67.4,
+        68.3,
+        70.2,
+        70.3,
+        72.5,
+        73.7,
+        73.7
+      ]
+    },
+    {
+      "path": "analyze",
+      "workers": 8,
+      "tasksPerWorker": 2,
+      "tasks": 16,
+      "wallMs": 75.4,
+      "busyMs": [
+        53.9,
+        60.7,
+        59.4,
+        67,
+        60.8,
+        65.7,
+        68.4,
+        63.6
+      ],
+      "computeMs": [
+        47.2,
+        52.7,
+        50.7,
+        57.4,
+        52,
+        57.9,
+        57.6,
+        56.3
+      ],
+      "taskCounts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "idlePool": 0.1719,
+      "idleWorker": 0.2842,
+      "taskMsMedian": 31.1,
+      "taskMsMax": 37.2,
+      "taskMsMin": 25,
+      "worstDelta": 6.407499313354492e-7,
+      "wallMsAll": [
+        71.1,
+        72.4,
+        73.5,
+        75.4,
+        76.3,
+        81.9,
+        92.4
+      ]
+    },
+    {
+      "path": "analyze",
+      "workers": 8,
+      "tasksPerWorker": 4,
+      "tasks": 32,
+      "wallMs": 82,
+      "busyMs": [
+        71.6,
+        73.7,
+        76.2,
+        72,
+        73.6,
+        73.3,
+        68.5,
+        73.5
+      ],
+      "computeMs": [
+        52.4,
+        58.1,
+        56,
+        53.4,
+        56.2,
+        53,
+        51.6,
+        56.8
+      ],
+      "taskCounts": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "idlePool": 0.1122,
+      "idleWorker": 0.3331,
+      "taskMsMedian": 18.4,
+      "taskMsMax": 20.9,
+      "taskMsMin": 13.8,
+      "worstDelta": 6.407499313354492e-7,
+      "wallMsAll": [
+        79.6,
+        79.9,
+        80.1,
+        82,
+        88.5,
+        97.7,
+        111.6
+      ]
+    },
+    {
+      "path": "analyze",
+      "workers": 8,
+      "tasksPerWorker": 8,
+      "tasks": 63,
+      "wallMs": 106.3,
+      "busyMs": [
+        102.4,
+        99,
+        96.3,
+        95.1,
+        100.1,
+        101.1,
+        97.6,
+        97.9
+      ],
+      "computeMs": [
+        49.5,
+        48,
+        47.3,
+        45.8,
+        48.6,
+        49.6,
+        50.1,
+        46.9
+      ],
+      "taskCounts": [
+        8,
+        8,
+        8,
+        7,
+        8,
+        8,
+        8,
+        8
+      ],
+      "idlePool": 0.0716,
+      "idleWorker": 0.5463,
+      "taskMsMedian": 12.5,
+      "taskMsMax": 19.2,
+      "taskMsMin": 5.2,
+      "worstDelta": 6.407499313354492e-7,
+      "wallMsAll": [
+        98.2,
+        101.8,
+        102.2,
+        106.3,
+        131.8,
+        137.3,
+        138.4
+      ]
+    },
+    {
+      "path": "analyze",
+      "workers": 8,
+      "tasksPerWorker": 16,
+      "tasks": 63,
+      "wallMs": 104.5,
+      "busyMs": [
+        95.1,
+        96.8,
+        96.9,
+        97.3,
+        88.2,
+        97,
+        98.1,
+        98.5
+      ],
+      "computeMs": [
+        46.3,
+        47.5,
+        48.4,
+        47.3,
+        42.1,
+        51.4,
+        50.5,
+        49.2
+      ],
+      "taskCounts": [
+        8,
+        8,
+        8,
+        8,
+        7,
+        8,
+        8,
+        8
+      ],
+      "idlePool": 0.0815,
+      "idleWorker": 0.5422,
+      "taskMsMedian": 12,
+      "taskMsMax": 14.7,
+      "taskMsMin": 6.8,
+      "worstDelta": 6.407499313354492e-7,
+      "wallMsAll": [
+        99.5,
+        100.9,
+        103,
+        104.5,
+        131.8,
+        138.6,
+        140.5
+      ]
+    },
+    {
+      "path": "analyze",
+      "workers": 8,
+      "tasksPerWorker": 32,
+      "tasks": 63,
+      "wallMs": 109.9,
+      "busyMs": [
+        102.3,
+        102.1,
+        92.3,
+        99.3,
+        102.4,
+        101.1,
+        101.1,
+        102.5
+      ],
+      "computeMs": [
+        52.4,
+        56.7,
+        44.5,
+        48.6,
+        51.4,
+        50.7,
+        54.5,
+        53.2
+      ],
+      "taskCounts": [
+        8,
+        8,
+        7,
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "idlePool": 0.0866,
+      "idleWorker": 0.5314,
+      "taskMsMedian": 12.8,
+      "taskMsMax": 14.7,
+      "taskMsMin": 7.9,
+      "worstDelta": 6.407499313354492e-7,
+      "wallMsAll": [
+        105.3,
+        106.1,
+        108.4,
+        109.9,
+        131.9,
+        138.2,
+        140.3
+      ]
+    }
+  ]
+}

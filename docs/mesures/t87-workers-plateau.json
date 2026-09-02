@@ -1,0 +1,8732 @@
+{
+  "browser": "chromium",
+  "headless": true,
+  "test": "ordonnancement",
+  "mode": "sweep-decide",
+  "build": "gammonnet-simd",
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/152.0.0.0 Safari/537.36",
+  "hardwareConcurrency": 16,
+  "deviceMemory": 16,
+  "match": {
+    "source": "test.sgf — HSBT Paris 2023, match en 7 points, joué par des humains",
+    "decisions": 139
+  },
+  "referencePositions": 2000,
+  "pruneK": 12,
+  "level": {
+    "ply": 2,
+    "filterTop": 3,
+    "filterInner": 1
+  },
+  "chunk": 256,
+  "tasksPerWorker": null,
+  "reps": 5,
+  "runs": [
+    {
+      "path": "decide",
+      "workers": 6,
+      "entries": [
+        {
+          "slot": 1,
+          "label": 5,
+          "startMs": 0.2,
+          "endMs": 2004.8,
+          "busyMs": 2004.6,
+          "computeMs": 2004.1
+        },
+        {
+          "slot": 0,
+          "label": 2,
+          "startMs": 0.1,
+          "endMs": 2019.6,
+          "busyMs": 2019.5,
+          "computeMs": 2019.1
+        },
+        {
+          "slot": 2,
+          "label": 0,
+          "startMs": 0,
+          "endMs": 2033.1,
+          "busyMs": 2033.1,
+          "computeMs": 2032.7
+        },
+        {
+          "slot": 4,
+          "label": 4,
+          "startMs": 0.2,
+          "endMs": 2066.9,
+          "busyMs": 2066.7,
+          "computeMs": 2066.2
+        },
+        {
+          "slot": 5,
+          "label": 3,
+          "startMs": 0.2,
+          "endMs": 2135.9,
+          "busyMs": 2135.7,
+          "computeMs": 2135.4
+        },
+        {
+          "slot": 3,
+          "label": 1,
+          "startMs": 0.1,
+          "endMs": 2342.6,
+          "busyMs": 2342.5,
+          "computeMs": 2342.1
+        },
+        {
+          "slot": 0,
+          "label": 7,
+          "startMs": 2019.7,
+          "endMs": 3928.5,
+          "busyMs": 1908.8,
+          "computeMs": 1908.3
+        },
+        {
+          "slot": 1,
+          "label": 6,
+          "startMs": 2004.9,
+          "endMs": 4166.3,
+          "busyMs": 2161.4,
+          "computeMs": 2161.1
+        },
+        {
+          "slot": 2,
+          "label": 8,
+          "startMs": 2033.3,
+          "endMs": 4443.4,
+          "busyMs": 2410.1,
+          "computeMs": 2409.8
+        },
+        {
+          "slot": 4,
+          "label": 9,
+          "startMs": 2067,
+          "endMs": 4544.9,
+          "busyMs": 2477.9,
+          "computeMs": 2477.6
+        },
+        {
+          "slot": 5,
+          "label": 10,
+          "startMs": 2135.9,
+          "endMs": 4613.4,
+          "busyMs": 2477.5,
+          "computeMs": 2476.9
+        },
+        {
+          "slot": 3,
+          "label": 11,
+          "startMs": 2342.6,
+          "endMs": 4729.6,
+          "busyMs": 2387,
+          "computeMs": 2386.5
+        },
+        {
+          "slot": 0,
+          "label": 12,
+          "startMs": 3928.5,
+          "endMs": 6148.5,
+          "busyMs": 2220,
+          "computeMs": 2219.4
+        },
+        {
+          "slot": 1,
+          "label": 13,
+          "startMs": 4166.3,
+          "endMs": 6616.3,
+          "busyMs": 2450,
+          "computeMs": 2449.4
+        },
+        {
+          "slot": 2,
+          "label": 14,
+          "startMs": 4443.6,
+          "endMs": 6736.4,
+          "busyMs": 2292.8,
+          "computeMs": 2292.4
+        },
+        {
+          "slot": 5,
+          "label": 16,
+          "startMs": 4613.5,
+          "endMs": 6790.2,
+          "busyMs": 2176.7,
+          "computeMs": 2176.2
+        },
+        {
+          "slot": 4,
+          "label": 15,
+          "startMs": 4545,
+          "endMs": 6980.6,
+          "busyMs": 2435.6,
+          "computeMs": 2435.1
+        },
+        {
+          "slot": 3,
+          "label": 17,
+          "startMs": 4729.7,
+          "endMs": 7157.4,
+          "busyMs": 2427.7,
+          "computeMs": 2427.2
+        },
+        {
+          "slot": 0,
+          "label": 18,
+          "startMs": 6148.6,
+          "endMs": 7971.8,
+          "busyMs": 1823.2,
+          "computeMs": 1822.8
+        },
+        {
+          "slot": 2,
+          "label": 20,
+          "startMs": 6736.5,
+          "endMs": 8124.8,
+          "busyMs": 1388.3,
+          "computeMs": 1387.8
+        },
+        {
+          "slot": 5,
+          "label": 21,
+          "startMs": 6790.2,
+          "endMs": 8420.6,
+          "busyMs": 1630.4,
+          "computeMs": 1629.8
+        },
+        {
+          "slot": 4,
+          "label": 22,
+          "startMs": 6980.6,
+          "endMs": 8702.7,
+          "busyMs": 1722.1,
+          "computeMs": 1721.7
+        },
+        {
+          "slot": 3,
+          "label": 23,
+          "startMs": 7157.4,
+          "endMs": 8723.3,
+          "busyMs": 1565.9,
+          "computeMs": 1565.4
+        },
+        {
+          "slot": 1,
+          "label": 19,
+          "startMs": 6616.4,
+          "endMs": 9057.9,
+          "busyMs": 2441.5,
+          "computeMs": 2441
+        },
+        {
+          "slot": 0,
+          "label": 24,
+          "startMs": 7971.8,
+          "endMs": 9600.7,
+          "busyMs": 1628.9,
+          "computeMs": 1628.3
+        },
+        {
+          "slot": 2,
+          "label": 25,
+          "startMs": 8124.8,
+          "endMs": 9781.3,
+          "busyMs": 1656.5,
+          "computeMs": 1656.1
+        },
+        {
+          "slot": 5,
+          "label": 26,
+          "startMs": 8420.6,
+          "endMs": 9801.7,
+          "busyMs": 1381.1,
+          "computeMs": 1380.5
+        },
+        {
+          "slot": 4,
+          "label": 27,
+          "startMs": 8702.7,
+          "endMs": 10556,
+          "busyMs": 1853.3,
+          "computeMs": 1852.8
+        },
+        {
+          "slot": 3,
+          "label": 28,
+          "startMs": 8723.3,
+          "endMs": 10908.6,
+          "busyMs": 2185.3,
+          "computeMs": 2184.6
+        },
+        {
+          "slot": 1,
+          "label": 29,
+          "startMs": 9058,
+          "endMs": 11237.8,
+          "busyMs": 2179.8,
+          "computeMs": 2179.4
+        },
+        {
+          "slot": 0,
+          "label": 30,
+          "startMs": 9600.7,
+          "endMs": 11762.1,
+          "busyMs": 2161.4,
+          "computeMs": 2161
+        },
+        {
+          "slot": 5,
+          "label": 32,
+          "startMs": 9801.7,
+          "endMs": 11954.5,
+          "busyMs": 2152.8,
+          "computeMs": 2152.3
+        },
+        {
+          "slot": 2,
+          "label": 31,
+          "startMs": 9781.3,
+          "endMs": 11977.9,
+          "busyMs": 2196.6,
+          "computeMs": 2196
+        },
+        {
+          "slot": 4,
+          "label": 33,
+          "startMs": 10556,
+          "endMs": 12307.7,
+          "busyMs": 1751.7,
+          "computeMs": 1751.2
+        },
+        {
+          "slot": 1,
+          "label": 35,
+          "startMs": 11237.9,
+          "endMs": 12368.3,
+          "busyMs": 1130.4,
+          "computeMs": 1130
+        },
+        {
+          "slot": 3,
+          "label": 34,
+          "startMs": 10908.6,
+          "endMs": 13111.3,
+          "busyMs": 2202.7,
+          "computeMs": 2202
+        },
+        {
+          "slot": 0,
+          "label": 36,
+          "startMs": 11762.2,
+          "endMs": 13792,
+          "busyMs": 2029.8,
+          "computeMs": 2029.5
+        },
+        {
+          "slot": 5,
+          "label": 37,
+          "startMs": 11954.5,
+          "endMs": 14222.7,
+          "busyMs": 2268.2,
+          "computeMs": 2267.6
+        },
+        {
+          "slot": 2,
+          "label": 38,
+          "startMs": 11977.9,
+          "endMs": 14284.9,
+          "busyMs": 2307,
+          "computeMs": 2306.6
+        },
+        {
+          "slot": 4,
+          "label": 39,
+          "startMs": 12307.8,
+          "endMs": 14333.1,
+          "busyMs": 2025.3,
+          "computeMs": 2024.8
+        },
+        {
+          "slot": 1,
+          "label": 40,
+          "startMs": 12368.3,
+          "endMs": 14340.2,
+          "busyMs": 1971.9,
+          "computeMs": 1971.5
+        },
+        {
+          "slot": 3,
+          "label": 41,
+          "startMs": 13111.3,
+          "endMs": 15417.7,
+          "busyMs": 2306.4,
+          "computeMs": 2305.8
+        },
+        {
+          "slot": 0,
+          "label": 42,
+          "startMs": 13792,
+          "endMs": 16036.5,
+          "busyMs": 2244.5,
+          "computeMs": 2244
+        },
+        {
+          "slot": 1,
+          "label": 46,
+          "startMs": 14340.2,
+          "endMs": 16537.9,
+          "busyMs": 2197.7,
+          "computeMs": 2197.3
+        },
+        {
+          "slot": 2,
+          "label": 44,
+          "startMs": 14284.9,
+          "endMs": 16597,
+          "busyMs": 2312.1,
+          "computeMs": 2311.5
+        },
+        {
+          "slot": 4,
+          "label": 45,
+          "startMs": 14333.1,
+          "endMs": 16608.5,
+          "busyMs": 2275.4,
+          "computeMs": 2275
+        },
+        {
+          "slot": 5,
+          "label": 43,
+          "startMs": 14222.7,
+          "endMs": 16708.2,
+          "busyMs": 2485.5,
+          "computeMs": 2485.1
+        },
+        {
+          "slot": 3,
+          "label": 47,
+          "startMs": 15417.7,
+          "endMs": 17505.6,
+          "busyMs": 2087.9,
+          "computeMs": 2087.4
+        },
+        {
+          "slot": 0,
+          "label": 48,
+          "startMs": 16036.6,
+          "endMs": 17784.7,
+          "busyMs": 1748.1,
+          "computeMs": 1747.8
+        },
+        {
+          "slot": 2,
+          "label": 50,
+          "startMs": 16597,
+          "endMs": 18654.8,
+          "busyMs": 2057.8,
+          "computeMs": 2057.4
+        },
+        {
+          "slot": 1,
+          "label": 49,
+          "startMs": 16538,
+          "endMs": 18725.4,
+          "busyMs": 2187.4,
+          "computeMs": 2187
+        },
+        {
+          "slot": 5,
+          "label": 52,
+          "startMs": 16708.3,
+          "endMs": 18851.3,
+          "busyMs": 2143,
+          "computeMs": 2142.5
+        },
+        {
+          "slot": 4,
+          "label": 51,
+          "startMs": 16608.6,
+          "endMs": 19064,
+          "busyMs": 2455.4,
+          "computeMs": 2455
+        },
+        {
+          "slot": 3,
+          "label": 53,
+          "startMs": 17505.6,
+          "endMs": 19697.5,
+          "busyMs": 2191.9,
+          "computeMs": 2191.4
+        },
+        {
+          "slot": 0,
+          "label": 54,
+          "startMs": 17784.8,
+          "endMs": 19737.5,
+          "busyMs": 1952.7,
+          "computeMs": 1952.3
+        },
+        {
+          "slot": 1,
+          "label": 56,
+          "startMs": 18725.4,
+          "endMs": 20452,
+          "busyMs": 1726.6,
+          "computeMs": 1726.2
+        },
+        {
+          "slot": 2,
+          "label": 55,
+          "startMs": 18654.9,
+          "endMs": 20964.7,
+          "busyMs": 2309.8,
+          "computeMs": 2309.2
+        },
+        {
+          "slot": 4,
+          "label": 58,
+          "startMs": 19064.1,
+          "endMs": 21280.7,
+          "busyMs": 2216.6,
+          "computeMs": 2216.1
+        },
+        {
+          "slot": 5,
+          "label": 57,
+          "startMs": 18851.3,
+          "endMs": 21328.2,
+          "busyMs": 2476.9,
+          "computeMs": 2476.4
+        },
+        {
+          "slot": 3,
+          "label": 59,
+          "startMs": 19697.5,
+          "endMs": 22163.8,
+          "busyMs": 2466.3,
+          "computeMs": 2465.8
+        },
+        {
+          "slot": 0,
+          "label": 60,
+          "startMs": 19737.6,
+          "endMs": 22269.5,
+          "busyMs": 2531.9,
+          "computeMs": 2531.5
+        },
+        {
+          "slot": 1,
+          "label": 61,
+          "startMs": 20452,
+          "endMs": 22874.5,
+          "busyMs": 2422.5,
+          "computeMs": 2422.2
+        },
+        {
+          "slot": 5,
+          "label": 64,
+          "startMs": 21328.2,
+          "endMs": 23112.1,
+          "busyMs": 1783.9,
+          "computeMs": 1783.3
+        },
+        {
+          "slot": 2,
+          "label": 62,
+          "startMs": 20964.7,
+          "endMs": 23300.6,
+          "busyMs": 2335.9,
+          "computeMs": 2335.4
+        },
+        {
+          "slot": 4,
+          "label": 63,
+          "startMs": 21280.7,
+          "endMs": 23815.2,
+          "busyMs": 2534.5,
+          "computeMs": 2534
+        },
+        {
+          "slot": 0,
+          "label": 66,
+          "startMs": 22269.6,
+          "endMs": 24422.7,
+          "busyMs": 2153.1,
+          "computeMs": 2152.5
+        },
+        {
+          "slot": 3,
+          "label": 65,
+          "startMs": 22163.8,
+          "endMs": 24655.7,
+          "busyMs": 2491.9,
+          "computeMs": 2491.4
+        },
+        {
+          "slot": 1,
+          "label": 67,
+          "startMs": 22874.5,
+          "endMs": 24762.4,
+          "busyMs": 1887.9,
+          "computeMs": 1887.4
+        },
+        {
+          "slot": 2,
+          "label": 69,
+          "startMs": 23300.6,
+          "endMs": 25144.6,
+          "busyMs": 1844,
+          "computeMs": 1843.7
+        },
+        {
+          "slot": 5,
+          "label": 68,
+          "startMs": 23112.1,
+          "endMs": 25404.4,
+          "busyMs": 2292.3,
+          "computeMs": 2291.9
+        },
+        {
+          "slot": 4,
+          "label": 70,
+          "startMs": 23815.2,
+          "endMs": 26278.7,
+          "busyMs": 2463.5,
+          "computeMs": 2462.8
+        },
+        {
+          "slot": 1,
+          "label": 73,
+          "startMs": 24762.4,
+          "endMs": 26554.2,
+          "busyMs": 1791.8,
+          "computeMs": 1791.4
+        },
+        {
+          "slot": 0,
+          "label": 71,
+          "startMs": 24422.7,
+          "endMs": 26751.4,
+          "busyMs": 2328.7,
+          "computeMs": 2328.1
+        },
+        {
+          "slot": 3,
+          "label": 72,
+          "startMs": 24655.8,
+          "endMs": 26933.8,
+          "busyMs": 2278,
+          "computeMs": 2277.5
+        },
+        {
+          "slot": 2,
+          "label": 74,
+          "startMs": 25144.6,
+          "endMs": 27109.4,
+          "busyMs": 1964.8,
+          "computeMs": 1964.3
+        },
+        {
+          "slot": 5,
+          "label": 75,
+          "startMs": 25404.4,
+          "endMs": 27460.6,
+          "busyMs": 2056.2,
+          "computeMs": 2055.8
+        },
+        {
+          "slot": 4,
+          "label": 76,
+          "startMs": 26278.7,
+          "endMs": 28346.1,
+          "busyMs": 2067.4,
+          "computeMs": 2067
+        },
+        {
+          "slot": 1,
+          "label": 77,
+          "startMs": 26554.2,
+          "endMs": 28463.3,
+          "busyMs": 1909.1,
+          "computeMs": 1908.9
+        },
+        {
+          "slot": 3,
+          "label": 79,
+          "startMs": 26933.8,
+          "endMs": 28736.6,
+          "busyMs": 1802.8,
+          "computeMs": 1802.4
+        },
+        {
+          "slot": 0,
+          "label": 78,
+          "startMs": 26751.4,
+          "endMs": 28902,
+          "busyMs": 2150.6,
+          "computeMs": 2150.1
+        },
+        {
+          "slot": 2,
+          "label": 80,
+          "startMs": 27109.4,
+          "endMs": 29124.3,
+          "busyMs": 2014.9,
+          "computeMs": 2014.3
+        },
+        {
+          "slot": 5,
+          "label": 81,
+          "startMs": 27460.6,
+          "endMs": 29324.5,
+          "busyMs": 1863.9,
+          "computeMs": 1863.5
+        },
+        {
+          "slot": 4,
+          "label": 82,
+          "startMs": 28346.1,
+          "endMs": 30402.3,
+          "busyMs": 2056.2,
+          "computeMs": 2055.6
+        },
+        {
+          "slot": 1,
+          "label": 83,
+          "startMs": 28463.4,
+          "endMs": 30720,
+          "busyMs": 2256.6,
+          "computeMs": 2256.1
+        },
+        {
+          "slot": 3,
+          "label": 84,
+          "startMs": 28736.6,
+          "endMs": 30793.3,
+          "busyMs": 2056.7,
+          "computeMs": 2056.1
+        },
+        {
+          "slot": 2,
+          "label": 86,
+          "startMs": 29124.3,
+          "endMs": 31234.6,
+          "busyMs": 2110.3,
+          "computeMs": 2109.9
+        },
+        {
+          "slot": 0,
+          "label": 85,
+          "startMs": 28902,
+          "endMs": 31289.5,
+          "busyMs": 2387.5,
+          "computeMs": 2387
+        },
+        {
+          "slot": 5,
+          "label": 87,
+          "startMs": 29324.6,
+          "endMs": 31726.2,
+          "busyMs": 2401.6,
+          "computeMs": 2401.1
+        },
+        {
+          "slot": 2,
+          "label": 91,
+          "startMs": 31234.7,
+          "endMs": 32691.6,
+          "busyMs": 1456.9,
+          "computeMs": 1456
+        },
+        {
+          "slot": 4,
+          "label": 88,
+          "startMs": 30402.4,
+          "endMs": 32719.8,
+          "busyMs": 2317.4,
+          "computeMs": 2316.6
+        },
+        {
+          "slot": 3,
+          "label": 90,
+          "startMs": 30793.3,
+          "endMs": 32727.9,
+          "busyMs": 1934.6,
+          "computeMs": 1933.8
+        },
+        {
+          "slot": 1,
+          "label": 89,
+          "startMs": 30720,
+          "endMs": 33043.4,
+          "busyMs": 2323.4,
+          "computeMs": 2322.4
+        },
+        {
+          "slot": 0,
+          "label": 92,
+          "startMs": 31289.6,
+          "endMs": 33834.5,
+          "busyMs": 2544.9,
+          "computeMs": 2544
+        },
+        {
+          "slot": 5,
+          "label": 93,
+          "startMs": 31726.2,
+          "endMs": 33968.8,
+          "busyMs": 2242.6,
+          "computeMs": 2241.7
+        },
+        {
+          "slot": 4,
+          "label": 95,
+          "startMs": 32719.8,
+          "endMs": 34592.5,
+          "busyMs": 1872.7,
+          "computeMs": 1868.6
+        },
+        {
+          "slot": 2,
+          "label": 94,
+          "startMs": 32691.6,
+          "endMs": 34970.7,
+          "busyMs": 2279.1,
+          "computeMs": 2275.4
+        },
+        {
+          "slot": 3,
+          "label": 96,
+          "startMs": 32728,
+          "endMs": 35042.1,
+          "busyMs": 2314.1,
+          "computeMs": 2310.9
+        },
+        {
+          "slot": 1,
+          "label": 97,
+          "startMs": 33043.4,
+          "endMs": 35065.3,
+          "busyMs": 2021.9,
+          "computeMs": 2017.6
+        },
+        {
+          "slot": 0,
+          "label": 98,
+          "startMs": 33834.5,
+          "endMs": 35783.4,
+          "busyMs": 1948.9,
+          "computeMs": 1945
+        },
+        {
+          "slot": 5,
+          "label": 99,
+          "startMs": 33968.9,
+          "endMs": 36011.3,
+          "busyMs": 2042.4,
+          "computeMs": 2038.6
+        },
+        {
+          "slot": 4,
+          "label": 100,
+          "startMs": 34592.5,
+          "endMs": 36934.1,
+          "busyMs": 2341.6,
+          "computeMs": 2339.5
+        },
+        {
+          "slot": 2,
+          "label": 101,
+          "startMs": 34970.7,
+          "endMs": 37297.6,
+          "busyMs": 2326.9,
+          "computeMs": 2325.9
+        },
+        {
+          "slot": 1,
+          "label": 103,
+          "startMs": 35065.4,
+          "endMs": 37390.5,
+          "busyMs": 2325.1,
+          "computeMs": 2324.2
+        },
+        {
+          "slot": 3,
+          "label": 102,
+          "startMs": 35042.1,
+          "endMs": 37400.8,
+          "busyMs": 2358.7,
+          "computeMs": 2357.6
+        },
+        {
+          "slot": 0,
+          "label": 104,
+          "startMs": 35783.4,
+          "endMs": 38158.3,
+          "busyMs": 2374.9,
+          "computeMs": 2373.9
+        },
+        {
+          "slot": 5,
+          "label": 105,
+          "startMs": 36011.3,
+          "endMs": 38346.1,
+          "busyMs": 2334.8,
+          "computeMs": 2333.7
+        },
+        {
+          "slot": 3,
+          "label": 109,
+          "startMs": 37400.8,
+          "endMs": 39187.4,
+          "busyMs": 1786.6,
+          "computeMs": 1784.6
+        },
+        {
+          "slot": 2,
+          "label": 107,
+          "startMs": 37297.6,
+          "endMs": 39233.8,
+          "busyMs": 1936.2,
+          "computeMs": 1934.5
+        },
+        {
+          "slot": 4,
+          "label": 106,
+          "startMs": 36934.1,
+          "endMs": 39364.5,
+          "busyMs": 2430.4,
+          "computeMs": 2428.5
+        },
+        {
+          "slot": 1,
+          "label": 108,
+          "startMs": 37390.5,
+          "endMs": 39710.3,
+          "busyMs": 2319.8,
+          "computeMs": 2317.2
+        },
+        {
+          "slot": 5,
+          "label": 111,
+          "startMs": 38346.2,
+          "endMs": 39887.3,
+          "busyMs": 1541.1,
+          "computeMs": 1539.3
+        },
+        {
+          "slot": 0,
+          "label": 110,
+          "startMs": 38158.3,
+          "endMs": 40192.3,
+          "busyMs": 2034,
+          "computeMs": 2031.9
+        },
+        {
+          "slot": 2,
+          "label": 113,
+          "startMs": 39233.8,
+          "endMs": 40656.8,
+          "busyMs": 1423,
+          "computeMs": 1422.5
+        },
+        {
+          "slot": 3,
+          "label": 112,
+          "startMs": 39187.4,
+          "endMs": 40887.5,
+          "busyMs": 1700.1,
+          "computeMs": 1699.5
+        },
+        {
+          "slot": 4,
+          "label": 114,
+          "startMs": 39364.6,
+          "endMs": 41359,
+          "busyMs": 1994.4,
+          "computeMs": 1994.1
+        },
+        {
+          "slot": 5,
+          "label": 116,
+          "startMs": 39887.3,
+          "endMs": 41488.6,
+          "busyMs": 1601.3,
+          "computeMs": 1600.8
+        },
+        {
+          "slot": 1,
+          "label": 115,
+          "startMs": 39710.3,
+          "endMs": 41869.4,
+          "busyMs": 2159.1,
+          "computeMs": 2158.6
+        },
+        {
+          "slot": 2,
+          "label": 118,
+          "startMs": 40656.8,
+          "endMs": 42015.5,
+          "busyMs": 1358.7,
+          "computeMs": 1358.2
+        },
+        {
+          "slot": 4,
+          "label": 120,
+          "startMs": 41359,
+          "endMs": 42604.4,
+          "busyMs": 1245.4,
+          "computeMs": 1244.7
+        },
+        {
+          "slot": 0,
+          "label": 117,
+          "startMs": 40192.3,
+          "endMs": 42684.8,
+          "busyMs": 2492.5,
+          "computeMs": 2492.1
+        },
+        {
+          "slot": 3,
+          "label": 119,
+          "startMs": 40887.5,
+          "endMs": 42877.9,
+          "busyMs": 1990.4,
+          "computeMs": 1989.9
+        },
+        {
+          "slot": 1,
+          "label": 122,
+          "startMs": 41869.4,
+          "endMs": 43227.4,
+          "busyMs": 1358,
+          "computeMs": 1357.4
+        },
+        {
+          "slot": 5,
+          "label": 121,
+          "startMs": 41488.6,
+          "endMs": 43509.9,
+          "busyMs": 2021.3,
+          "computeMs": 2020.9
+        },
+        {
+          "slot": 2,
+          "label": 123,
+          "startMs": 42015.6,
+          "endMs": 44034,
+          "busyMs": 2018.4,
+          "computeMs": 2018
+        },
+        {
+          "slot": 4,
+          "label": 124,
+          "startMs": 42604.4,
+          "endMs": 44950.3,
+          "busyMs": 2345.9,
+          "computeMs": 2345.5
+        },
+        {
+          "slot": 0,
+          "label": 125,
+          "startMs": 42684.9,
+          "endMs": 45000.4,
+          "busyMs": 2315.5,
+          "computeMs": 2315
+        },
+        {
+          "slot": 3,
+          "label": 126,
+          "startMs": 42877.9,
+          "endMs": 45133.4,
+          "busyMs": 2255.5,
+          "computeMs": 2255
+        },
+        {
+          "slot": 1,
+          "label": 127,
+          "startMs": 43227.4,
+          "endMs": 45459.8,
+          "busyMs": 2232.4,
+          "computeMs": 2232.1
+        },
+        {
+          "slot": 5,
+          "label": 128,
+          "startMs": 43510,
+          "endMs": 45769.2,
+          "busyMs": 2259.2,
+          "computeMs": 2259
+        },
+        {
+          "slot": 2,
+          "label": 129,
+          "startMs": 44034.1,
+          "endMs": 46149.1,
+          "busyMs": 2115,
+          "computeMs": 2114.6
+        },
+        {
+          "slot": 0,
+          "label": 131,
+          "startMs": 45000.4,
+          "endMs": 46738.6,
+          "busyMs": 1738.2,
+          "computeMs": 1737.7
+        },
+        {
+          "slot": 3,
+          "label": 132,
+          "startMs": 45133.4,
+          "endMs": 46840.4,
+          "busyMs": 1707,
+          "computeMs": 1706.6
+        },
+        {
+          "slot": 2,
+          "label": 135,
+          "startMs": 46149.2,
+          "endMs": 46918.9,
+          "busyMs": 769.7,
+          "computeMs": 769.4
+        },
+        {
+          "slot": 4,
+          "label": 130,
+          "startMs": 44950.3,
+          "endMs": 47108.2,
+          "busyMs": 2157.9,
+          "computeMs": 2157.3
+        },
+        {
+          "slot": 1,
+          "label": 133,
+          "startMs": 45459.8,
+          "endMs": 47188.3,
+          "busyMs": 1728.5,
+          "computeMs": 1728
+        },
+        {
+          "slot": 5,
+          "label": 134,
+          "startMs": 45769.3,
+          "endMs": 47459.4,
+          "busyMs": 1690.1,
+          "computeMs": 1689.8
+        },
+        {
+          "slot": 3,
+          "label": 137,
+          "startMs": 46840.4,
+          "endMs": 47692.6,
+          "busyMs": 852.2,
+          "computeMs": 851.9
+        },
+        {
+          "slot": 0,
+          "label": 136,
+          "startMs": 46738.6,
+          "endMs": 47726.3,
+          "busyMs": 987.7,
+          "computeMs": 987.4
+        },
+        {
+          "slot": 2,
+          "label": 138,
+          "startMs": 46919,
+          "endMs": 48696.7,
+          "busyMs": 1777.7,
+          "computeMs": 1777.3
+        }
+      ],
+      "tasks": 139,
+      "wallMs": 48696.7,
+      "busyMs": [
+        47725.3,
+        47187.4,
+        48695.6,
+        47692.2,
+        47107.3,
+        47458.5
+      ],
+      "computeMs": [
+        47708.7,
+        47170.5,
+        48678.9,
+        47675.4,
+        47089.7,
+        47442.1
+      ],
+      "taskCounts": [
+        23,
+        23,
+        25,
+        23,
+        22,
+        23
+      ],
+      "idlePool": 0.0216,
+      "idleWorker": 0.022,
+      "taskMsMedian": 2150.6,
+      "taskMsMax": 2544.9,
+      "taskMsMin": 769.7,
+      "fingerprint": {
+        "hash": "5b43a926",
+        "length": 3644
+      },
+      "evaluations": [
+        13378,
+        15309,
+        12953,
+        14007,
+        13574,
+        12647,
+        14314,
+        12046,
+        15578,
+        16355,
+        15902,
+        15649,
+        14300,
+        16006,
+        15051,
+        16190,
+        13800,
+        15678,
+        11669,
+        15803,
+        8341,
+        10499,
+        10909,
+        9874,
+        10659,
+        10665,
+        9007,
+        11557,
+        14391,
+        14221,
+        13791,
+        14215,
+        14055,
+        11205,
+        13985,
+        7000,
+        12902,
+        14557,
+        15142,
+        13324,
+        12741,
+        15003,
+        14081,
+        16066,
+        15177,
+        14832,
+        13948,
+        13863,
+        11721,
+        14502,
+        14008,
+        16300,
+        14411,
+        14604,
+        12607,
+        15258,
+        10773,
+        16127,
+        14293,
+        16357,
+        16593,
+        15819,
+        14705,
+        16263,
+        11457,
+        16172,
+        13863,
+        12291,
+        14891,
+        11866,
+        15956,
+        14840,
+        14728,
+        11368,
+        12602,
+        13046,
+        13008,
+        11900,
+        13674,
+        11436,
+        13218,
+        12115,
+        13394,
+        14917,
+        13717,
+        15504,
+        13723,
+        15591,
+        15169,
+        14272,
+        12156,
+        8961,
+        15936,
+        13868,
+        14657,
+        12150,
+        14751,
+        12789,
+        12406,
+        13081,
+        15802,
+        15283,
+        15638,
+        15202,
+        15689,
+        15744,
+        15749,
+        12490,
+        15275,
+        11471,
+        13027,
+        9548,
+        10728,
+        8837,
+        12832,
+        13964,
+        10586,
+        16122,
+        8688,
+        12579,
+        8076,
+        12616,
+        8688,
+        12807,
+        14947,
+        14600,
+        14488,
+        14346,
+        13932,
+        13348,
+        14047,
+        11089,
+        10897,
+        10870,
+        11121,
+        5379,
+        7423,
+        5835,
+        16088
+      ],
+      "legal": [
+        8,
+        12,
+        21,
+        17,
+        12,
+        20,
+        18,
+        20,
+        17,
+        20,
+        37,
+        14,
+        9,
+        104,
+        14,
+        119,
+        17,
+        30,
+        7,
+        30,
+        7,
+        6,
+        14,
+        6,
+        19,
+        26,
+        15,
+        35,
+        8,
+        17,
+        13,
+        35,
+        29,
+        4,
+        5,
+        24,
+        42,
+        34,
+        16,
+        10,
+        25,
+        24,
+        47,
+        104,
+        20,
+        21,
+        28,
+        17,
+        10,
+        28,
+        25,
+        80,
+        29,
+        18,
+        48,
+        18,
+        41,
+        24,
+        39,
+        24,
+        23,
+        16,
+        19,
+        23,
+        9,
+        34,
+        17,
+        8,
+        20,
+        5,
+        27,
+        114,
+        32,
+        39,
+        5,
+        85,
+        55,
+        12,
+        11,
+        29,
+        14,
+        18,
+        24,
+        24,
+        12,
+        12,
+        9,
+        26,
+        7,
+        12,
+        16,
+        2,
+        25,
+        16,
+        18,
+        14,
+        24,
+        25,
+        41,
+        29,
+        16,
+        10,
+        19,
+        37,
+        55,
+        14,
+        19,
+        15,
+        19,
+        3,
+        22,
+        6,
+        19,
+        31,
+        35,
+        153,
+        4,
+        6,
+        3,
+        7,
+        3,
+        21,
+        4,
+        19,
+        17,
+        19,
+        16,
+        15,
+        18,
+        20,
+        37,
+        16,
+        18,
+        12,
+        105,
+        2,
+        3,
+        4,
+        5
+      ],
+      "totalEvaluations": 1851884
+    },
+    {
+      "path": "decide",
+      "workers": 8,
+      "entries": [
+        {
+          "slot": 0,
+          "label": 5,
+          "startMs": 0,
+          "endMs": 2137.8,
+          "busyMs": 2137.8,
+          "computeMs": 2137.3
+        },
+        {
+          "slot": 1,
+          "label": 0,
+          "startMs": 0,
+          "endMs": 2200.1,
+          "busyMs": 2200.1,
+          "computeMs": 2199.6
+        },
+        {
+          "slot": 4,
+          "label": 4,
+          "startMs": 0,
+          "endMs": 2214.8,
+          "busyMs": 2214.8,
+          "computeMs": 2214.5
+        },
+        {
+          "slot": 2,
+          "label": 3,
+          "startMs": 0,
+          "endMs": 2270.5,
+          "busyMs": 2270.5,
+          "computeMs": 2270.2
+        },
+        {
+          "slot": 6,
+          "label": 6,
+          "startMs": 0,
+          "endMs": 2282.8,
+          "busyMs": 2282.8,
+          "computeMs": 2282.4
+        },
+        {
+          "slot": 3,
+          "label": 1,
+          "startMs": 0,
+          "endMs": 2499.7,
+          "busyMs": 2499.7,
+          "computeMs": 2499.5
+        },
+        {
+          "slot": 7,
+          "label": 7,
+          "startMs": 0.1,
+          "endMs": 3593.8,
+          "busyMs": 3593.7,
+          "computeMs": 3593.5
+        },
+        {
+          "slot": 5,
+          "label": 2,
+          "startMs": 0,
+          "endMs": 3752.8,
+          "busyMs": 3752.8,
+          "computeMs": 3752.4
+        },
+        {
+          "slot": 6,
+          "label": 12,
+          "startMs": 2282.8,
+          "endMs": 4716.3,
+          "busyMs": 2433.5,
+          "computeMs": 2433.1
+        },
+        {
+          "slot": 0,
+          "label": 8,
+          "startMs": 2137.8,
+          "endMs": 4757.9,
+          "busyMs": 2620.1,
+          "computeMs": 2619.7
+        },
+        {
+          "slot": 2,
+          "label": 11,
+          "startMs": 2270.6,
+          "endMs": 4834.2,
+          "busyMs": 2563.6,
+          "computeMs": 2563.1
+        },
+        {
+          "slot": 4,
+          "label": 10,
+          "startMs": 2214.9,
+          "endMs": 4852.3,
+          "busyMs": 2637.4,
+          "computeMs": 2637
+        },
+        {
+          "slot": 1,
+          "label": 9,
+          "startMs": 2200.1,
+          "endMs": 4862.4,
+          "busyMs": 2662.3,
+          "computeMs": 2662
+        },
+        {
+          "slot": 3,
+          "label": 13,
+          "startMs": 2499.7,
+          "endMs": 5215.6,
+          "busyMs": 2715.9,
+          "computeMs": 2715.3
+        },
+        {
+          "slot": 1,
+          "label": 20,
+          "startMs": 4862.4,
+          "endMs": 6425.6,
+          "busyMs": 1563.2,
+          "computeMs": 1562.6
+        },
+        {
+          "slot": 2,
+          "label": 18,
+          "startMs": 4834.3,
+          "endMs": 6844.4,
+          "busyMs": 2010.1,
+          "computeMs": 2009.6
+        },
+        {
+          "slot": 3,
+          "label": 21,
+          "startMs": 5215.6,
+          "endMs": 7017.9,
+          "busyMs": 1802.3,
+          "computeMs": 1801.9
+        },
+        {
+          "slot": 6,
+          "label": 16,
+          "startMs": 4716.4,
+          "endMs": 7129.7,
+          "busyMs": 2413.3,
+          "computeMs": 2412.8
+        },
+        {
+          "slot": 0,
+          "label": 17,
+          "startMs": 4758,
+          "endMs": 7522,
+          "busyMs": 2764,
+          "computeMs": 2763.3
+        },
+        {
+          "slot": 4,
+          "label": 19,
+          "startMs": 4852.4,
+          "endMs": 7567.1,
+          "busyMs": 2714.7,
+          "computeMs": 2714.3
+        },
+        {
+          "slot": 7,
+          "label": 14,
+          "startMs": 3593.8,
+          "endMs": 7952.2,
+          "busyMs": 4358.4,
+          "computeMs": 4357.9
+        },
+        {
+          "slot": 1,
+          "label": 22,
+          "startMs": 6425.6,
+          "endMs": 8298.2,
+          "busyMs": 1872.6,
+          "computeMs": 1872.3
+        },
+        {
+          "slot": 5,
+          "label": 15,
+          "startMs": 3752.8,
+          "endMs": 8345.2,
+          "busyMs": 4592.4,
+          "computeMs": 4592
+        },
+        {
+          "slot": 2,
+          "label": 23,
+          "startMs": 6844.4,
+          "endMs": 8554.7,
+          "busyMs": 1710.3,
+          "computeMs": 1709.8
+        },
+        {
+          "slot": 3,
+          "label": 24,
+          "startMs": 7018,
+          "endMs": 8777.1,
+          "busyMs": 1759.1,
+          "computeMs": 1758.5
+        },
+        {
+          "slot": 0,
+          "label": 26,
+          "startMs": 7522,
+          "endMs": 9017.8,
+          "busyMs": 1495.8,
+          "computeMs": 1495.5
+        },
+        {
+          "slot": 6,
+          "label": 25,
+          "startMs": 7129.8,
+          "endMs": 9360,
+          "busyMs": 2230.2,
+          "computeMs": 2229.7
+        },
+        {
+          "slot": 4,
+          "label": 27,
+          "startMs": 7567.1,
+          "endMs": 9576.5,
+          "busyMs": 2009.4,
+          "computeMs": 2009
+        },
+        {
+          "slot": 7,
+          "label": 28,
+          "startMs": 7952.2,
+          "endMs": 10445.3,
+          "busyMs": 2493.1,
+          "computeMs": 2492.6
+        },
+        {
+          "slot": 5,
+          "label": 30,
+          "startMs": 8345.3,
+          "endMs": 10653.4,
+          "busyMs": 2308.1,
+          "computeMs": 2307.6
+        },
+        {
+          "slot": 4,
+          "label": 35,
+          "startMs": 9576.5,
+          "endMs": 10800.7,
+          "busyMs": 1224.2,
+          "computeMs": 1223.8
+        },
+        {
+          "slot": 2,
+          "label": 31,
+          "startMs": 8554.7,
+          "endMs": 10942,
+          "busyMs": 2387.3,
+          "computeMs": 2386.7
+        },
+        {
+          "slot": 0,
+          "label": 33,
+          "startMs": 9017.8,
+          "endMs": 10946.2,
+          "busyMs": 1928.4,
+          "computeMs": 1927.9
+        },
+        {
+          "slot": 3,
+          "label": 32,
+          "startMs": 8777.1,
+          "endMs": 11141.5,
+          "busyMs": 2364.4,
+          "computeMs": 2363.7
+        },
+        {
+          "slot": 1,
+          "label": 29,
+          "startMs": 8298.3,
+          "endMs": 12486.1,
+          "busyMs": 4187.8,
+          "computeMs": 4186.2
+        },
+        {
+          "slot": 7,
+          "label": 36,
+          "startMs": 10445.4,
+          "endMs": 12679.2,
+          "busyMs": 2233.8,
+          "computeMs": 2233.1
+        },
+        {
+          "slot": 0,
+          "label": 40,
+          "startMs": 10946.2,
+          "endMs": 13121.3,
+          "busyMs": 2175.1,
+          "computeMs": 2174.4
+        },
+        {
+          "slot": 6,
+          "label": 34,
+          "startMs": 9360,
+          "endMs": 13223.2,
+          "busyMs": 3863.2,
+          "computeMs": 3862.4
+        },
+        {
+          "slot": 5,
+          "label": 37,
+          "startMs": 10653.4,
+          "endMs": 13238.1,
+          "busyMs": 2584.7,
+          "computeMs": 2583.9
+        },
+        {
+          "slot": 2,
+          "label": 39,
+          "startMs": 10942,
+          "endMs": 13246.8,
+          "busyMs": 2304.8,
+          "computeMs": 2304.4
+        },
+        {
+          "slot": 4,
+          "label": 38,
+          "startMs": 10800.7,
+          "endMs": 13329.9,
+          "busyMs": 2529.2,
+          "computeMs": 2528.4
+        },
+        {
+          "slot": 3,
+          "label": 41,
+          "startMs": 11141.6,
+          "endMs": 13720.7,
+          "busyMs": 2579.1,
+          "computeMs": 2578.5
+        },
+        {
+          "slot": 1,
+          "label": 42,
+          "startMs": 12486.1,
+          "endMs": 15080.6,
+          "busyMs": 2594.5,
+          "computeMs": 2594.1
+        },
+        {
+          "slot": 4,
+          "label": 48,
+          "startMs": 13330,
+          "endMs": 15258.9,
+          "busyMs": 1928.9,
+          "computeMs": 1928.4
+        },
+        {
+          "slot": 7,
+          "label": 43,
+          "startMs": 12679.3,
+          "endMs": 15392,
+          "busyMs": 2712.7,
+          "computeMs": 2712.1
+        },
+        {
+          "slot": 2,
+          "label": 47,
+          "startMs": 13246.8,
+          "endMs": 15536,
+          "busyMs": 2289.2,
+          "computeMs": 2288.7
+        },
+        {
+          "slot": 5,
+          "label": 46,
+          "startMs": 13238.1,
+          "endMs": 15621.3,
+          "busyMs": 2383.2,
+          "computeMs": 2382.6
+        },
+        {
+          "slot": 0,
+          "label": 44,
+          "startMs": 13121.4,
+          "endMs": 15634.8,
+          "busyMs": 2513.4,
+          "computeMs": 2512.9
+        },
+        {
+          "slot": 6,
+          "label": 45,
+          "startMs": 13223.2,
+          "endMs": 15755.8,
+          "busyMs": 2532.6,
+          "computeMs": 2532.1
+        },
+        {
+          "slot": 3,
+          "label": 49,
+          "startMs": 13720.7,
+          "endMs": 16146.6,
+          "busyMs": 2425.9,
+          "computeMs": 2425.2
+        },
+        {
+          "slot": 1,
+          "label": 50,
+          "startMs": 15080.6,
+          "endMs": 17317.1,
+          "busyMs": 2236.5,
+          "computeMs": 2236
+        },
+        {
+          "slot": 6,
+          "label": 56,
+          "startMs": 15755.8,
+          "endMs": 17609,
+          "busyMs": 1853.2,
+          "computeMs": 1852.5
+        },
+        {
+          "slot": 7,
+          "label": 52,
+          "startMs": 15392.1,
+          "endMs": 17724.4,
+          "busyMs": 2332.3,
+          "computeMs": 2331.6
+        },
+        {
+          "slot": 5,
+          "label": 54,
+          "startMs": 15621.3,
+          "endMs": 17736.6,
+          "busyMs": 2115.3,
+          "computeMs": 2114.8
+        },
+        {
+          "slot": 2,
+          "label": 53,
+          "startMs": 15536,
+          "endMs": 17896.4,
+          "busyMs": 2360.4,
+          "computeMs": 2360
+        },
+        {
+          "slot": 4,
+          "label": 51,
+          "startMs": 15259,
+          "endMs": 17923.3,
+          "busyMs": 2664.3,
+          "computeMs": 2663.8
+        },
+        {
+          "slot": 0,
+          "label": 55,
+          "startMs": 15634.8,
+          "endMs": 18115.5,
+          "busyMs": 2480.7,
+          "computeMs": 2480.2
+        },
+        {
+          "slot": 3,
+          "label": 57,
+          "startMs": 16146.6,
+          "endMs": 18791.4,
+          "busyMs": 2644.8,
+          "computeMs": 2644.2
+        },
+        {
+          "slot": 1,
+          "label": 58,
+          "startMs": 17317.2,
+          "endMs": 19688.7,
+          "busyMs": 2371.5,
+          "computeMs": 2371.1
+        },
+        {
+          "slot": 0,
+          "label": 64,
+          "startMs": 18115.6,
+          "endMs": 20032.2,
+          "busyMs": 1916.6,
+          "computeMs": 1916.2
+        },
+        {
+          "slot": 6,
+          "label": 59,
+          "startMs": 17609.1,
+          "endMs": 20249.8,
+          "busyMs": 2640.7,
+          "computeMs": 2640.2
+        },
+        {
+          "slot": 5,
+          "label": 61,
+          "startMs": 17736.6,
+          "endMs": 20316,
+          "busyMs": 2579.4,
+          "computeMs": 2578.9
+        },
+        {
+          "slot": 2,
+          "label": 62,
+          "startMs": 17896.5,
+          "endMs": 20330.4,
+          "busyMs": 2433.9,
+          "computeMs": 2433.5
+        },
+        {
+          "slot": 7,
+          "label": 60,
+          "startMs": 17724.4,
+          "endMs": 20443.5,
+          "busyMs": 2719.1,
+          "computeMs": 2718.4
+        },
+        {
+          "slot": 4,
+          "label": 63,
+          "startMs": 17923.4,
+          "endMs": 20576.9,
+          "busyMs": 2653.5,
+          "computeMs": 2653.1
+        },
+        {
+          "slot": 3,
+          "label": 65,
+          "startMs": 18791.4,
+          "endMs": 21439.6,
+          "busyMs": 2648.2,
+          "computeMs": 2647.7
+        },
+        {
+          "slot": 1,
+          "label": 66,
+          "startMs": 19688.7,
+          "endMs": 21949.2,
+          "busyMs": 2260.5,
+          "computeMs": 2260.1
+        },
+        {
+          "slot": 0,
+          "label": 67,
+          "startMs": 20032.2,
+          "endMs": 22027.5,
+          "busyMs": 1995.3,
+          "computeMs": 1994.8
+        },
+        {
+          "slot": 5,
+          "label": 69,
+          "startMs": 20316,
+          "endMs": 22255.1,
+          "busyMs": 1939.1,
+          "computeMs": 1938.7
+        },
+        {
+          "slot": 6,
+          "label": 68,
+          "startMs": 20249.8,
+          "endMs": 22666,
+          "busyMs": 2416.2,
+          "computeMs": 2415.7
+        },
+        {
+          "slot": 7,
+          "label": 71,
+          "startMs": 20443.6,
+          "endMs": 22894.5,
+          "busyMs": 2450.9,
+          "computeMs": 2450.6
+        },
+        {
+          "slot": 2,
+          "label": 70,
+          "startMs": 20330.5,
+          "endMs": 22944.8,
+          "busyMs": 2614.3,
+          "computeMs": 2614
+        },
+        {
+          "slot": 4,
+          "label": 72,
+          "startMs": 20576.9,
+          "endMs": 23002,
+          "busyMs": 2425.1,
+          "computeMs": 2424.6
+        },
+        {
+          "slot": 3,
+          "label": 73,
+          "startMs": 21439.6,
+          "endMs": 23365.4,
+          "busyMs": 1925.8,
+          "computeMs": 1925.1
+        },
+        {
+          "slot": 1,
+          "label": 74,
+          "startMs": 21949.2,
+          "endMs": 24025.6,
+          "busyMs": 2076.4,
+          "computeMs": 2075.9
+        },
+        {
+          "slot": 0,
+          "label": 75,
+          "startMs": 22027.5,
+          "endMs": 24240.2,
+          "busyMs": 2212.7,
+          "computeMs": 2212
+        },
+        {
+          "slot": 5,
+          "label": 76,
+          "startMs": 22255.2,
+          "endMs": 24445,
+          "busyMs": 2189.8,
+          "computeMs": 2189.2
+        },
+        {
+          "slot": 6,
+          "label": 77,
+          "startMs": 22666.1,
+          "endMs": 24691.5,
+          "busyMs": 2025.4,
+          "computeMs": 2024.7
+        },
+        {
+          "slot": 2,
+          "label": 79,
+          "startMs": 22944.8,
+          "endMs": 24864.9,
+          "busyMs": 1920.1,
+          "computeMs": 1919.5
+        },
+        {
+          "slot": 4,
+          "label": 80,
+          "startMs": 23002.1,
+          "endMs": 25147.5,
+          "busyMs": 2145.4,
+          "computeMs": 2145.1
+        },
+        {
+          "slot": 7,
+          "label": 78,
+          "startMs": 22894.5,
+          "endMs": 25176.3,
+          "busyMs": 2281.8,
+          "computeMs": 2281.2
+        },
+        {
+          "slot": 3,
+          "label": 81,
+          "startMs": 23365.4,
+          "endMs": 25370.4,
+          "busyMs": 2005,
+          "computeMs": 2004.5
+        },
+        {
+          "slot": 1,
+          "label": 82,
+          "startMs": 24025.7,
+          "endMs": 26255.2,
+          "busyMs": 2229.5,
+          "computeMs": 2229.1
+        },
+        {
+          "slot": 5,
+          "label": 84,
+          "startMs": 24445,
+          "endMs": 26673.2,
+          "busyMs": 2228.2,
+          "computeMs": 2227.8
+        },
+        {
+          "slot": 0,
+          "label": 83,
+          "startMs": 24240.2,
+          "endMs": 26715.6,
+          "busyMs": 2475.4,
+          "computeMs": 2474.7
+        },
+        {
+          "slot": 2,
+          "label": 86,
+          "startMs": 24864.9,
+          "endMs": 27109.4,
+          "busyMs": 2244.5,
+          "computeMs": 2243.8
+        },
+        {
+          "slot": 6,
+          "label": 85,
+          "startMs": 24691.5,
+          "endMs": 27283.2,
+          "busyMs": 2591.7,
+          "computeMs": 2591.1
+        },
+        {
+          "slot": 7,
+          "label": 88,
+          "startMs": 25176.3,
+          "endMs": 27666.7,
+          "busyMs": 2490.4,
+          "computeMs": 2489.9
+        },
+        {
+          "slot": 4,
+          "label": 87,
+          "startMs": 25147.5,
+          "endMs": 27734.3,
+          "busyMs": 2586.8,
+          "computeMs": 2586.3
+        },
+        {
+          "slot": 3,
+          "label": 89,
+          "startMs": 25370.5,
+          "endMs": 27884,
+          "busyMs": 2513.5,
+          "computeMs": 2513.1
+        },
+        {
+          "slot": 5,
+          "label": 91,
+          "startMs": 26673.3,
+          "endMs": 28190.1,
+          "busyMs": 1516.8,
+          "computeMs": 1516.4
+        },
+        {
+          "slot": 1,
+          "label": 90,
+          "startMs": 26255.2,
+          "endMs": 28314.8,
+          "busyMs": 2059.6,
+          "computeMs": 2059.2
+        },
+        {
+          "slot": 0,
+          "label": 92,
+          "startMs": 26715.6,
+          "endMs": 29387.1,
+          "busyMs": 2671.5,
+          "computeMs": 2670.9
+        },
+        {
+          "slot": 2,
+          "label": 93,
+          "startMs": 27109.4,
+          "endMs": 29462.4,
+          "busyMs": 2353,
+          "computeMs": 2352.4
+        },
+        {
+          "slot": 7,
+          "label": 95,
+          "startMs": 27666.7,
+          "endMs": 29627.4,
+          "busyMs": 1960.7,
+          "computeMs": 1960.2
+        },
+        {
+          "slot": 6,
+          "label": 94,
+          "startMs": 27283.3,
+          "endMs": 29644.8,
+          "busyMs": 2361.5,
+          "computeMs": 2361
+        },
+        {
+          "slot": 3,
+          "label": 97,
+          "startMs": 27884,
+          "endMs": 30015.7,
+          "busyMs": 2131.7,
+          "computeMs": 2131.1
+        },
+        {
+          "slot": 4,
+          "label": 96,
+          "startMs": 27734.3,
+          "endMs": 30139.7,
+          "busyMs": 2405.4,
+          "computeMs": 2404.7
+        },
+        {
+          "slot": 5,
+          "label": 98,
+          "startMs": 28190.2,
+          "endMs": 30228.4,
+          "busyMs": 2038.2,
+          "computeMs": 2037.6
+        },
+        {
+          "slot": 1,
+          "label": 99,
+          "startMs": 28314.8,
+          "endMs": 30461,
+          "busyMs": 2146.2,
+          "computeMs": 2145.6
+        },
+        {
+          "slot": 0,
+          "label": 100,
+          "startMs": 29387.2,
+          "endMs": 31969.3,
+          "busyMs": 2582.1,
+          "computeMs": 2581.7
+        },
+        {
+          "slot": 2,
+          "label": 101,
+          "startMs": 29462.5,
+          "endMs": 32026,
+          "busyMs": 2563.5,
+          "computeMs": 2563
+        },
+        {
+          "slot": 6,
+          "label": 103,
+          "startMs": 29644.8,
+          "endMs": 32207.9,
+          "busyMs": 2563.1,
+          "computeMs": 2562.5
+        },
+        {
+          "slot": 7,
+          "label": 102,
+          "startMs": 29627.4,
+          "endMs": 32227.8,
+          "busyMs": 2600.4,
+          "computeMs": 2600
+        },
+        {
+          "slot": 1,
+          "label": 107,
+          "startMs": 30461,
+          "endMs": 32610.5,
+          "busyMs": 2149.5,
+          "computeMs": 2148.4
+        },
+        {
+          "slot": 3,
+          "label": 104,
+          "startMs": 30015.7,
+          "endMs": 32684.4,
+          "busyMs": 2668.7,
+          "computeMs": 2668.1
+        },
+        {
+          "slot": 5,
+          "label": 106,
+          "startMs": 30228.5,
+          "endMs": 32938.9,
+          "busyMs": 2710.4,
+          "computeMs": 2709.3
+        },
+        {
+          "slot": 4,
+          "label": 105,
+          "startMs": 30139.7,
+          "endMs": 33507.2,
+          "busyMs": 3367.5,
+          "computeMs": 3362.3
+        },
+        {
+          "slot": 7,
+          "label": 111,
+          "startMs": 32227.9,
+          "endMs": 33938.3,
+          "busyMs": 1710.4,
+          "computeMs": 1709.1
+        },
+        {
+          "slot": 2,
+          "label": 109,
+          "startMs": 32026.1,
+          "endMs": 34008,
+          "busyMs": 1981.9,
+          "computeMs": 1981
+        },
+        {
+          "slot": 3,
+          "label": 113,
+          "startMs": 32684.4,
+          "endMs": 34287.3,
+          "busyMs": 1602.9,
+          "computeMs": 1601.8
+        },
+        {
+          "slot": 6,
+          "label": 110,
+          "startMs": 32207.9,
+          "endMs": 34457.8,
+          "busyMs": 2249.9,
+          "computeMs": 2249.1
+        },
+        {
+          "slot": 1,
+          "label": 112,
+          "startMs": 32610.5,
+          "endMs": 34530.3,
+          "busyMs": 1919.8,
+          "computeMs": 1914
+        },
+        {
+          "slot": 0,
+          "label": 108,
+          "startMs": 31969.3,
+          "endMs": 34537.1,
+          "busyMs": 2567.8,
+          "computeMs": 2567
+        },
+        {
+          "slot": 5,
+          "label": 114,
+          "startMs": 32938.9,
+          "endMs": 35216,
+          "busyMs": 2277.1,
+          "computeMs": 2271.4
+        },
+        {
+          "slot": 7,
+          "label": 116,
+          "startMs": 33938.3,
+          "endMs": 35736.8,
+          "busyMs": 1798.5,
+          "computeMs": 1793.8
+        },
+        {
+          "slot": 3,
+          "label": 118,
+          "startMs": 34287.3,
+          "endMs": 35811.1,
+          "busyMs": 1523.8,
+          "computeMs": 1519.8
+        },
+        {
+          "slot": 1,
+          "label": 120,
+          "startMs": 34530.3,
+          "endMs": 35918.2,
+          "busyMs": 1387.9,
+          "computeMs": 1386.7
+        },
+        {
+          "slot": 6,
+          "label": 119,
+          "startMs": 34457.8,
+          "endMs": 36685.4,
+          "busyMs": 2227.6,
+          "computeMs": 2221.2
+        },
+        {
+          "slot": 5,
+          "label": 122,
+          "startMs": 35216.1,
+          "endMs": 36737.6,
+          "busyMs": 1521.5,
+          "computeMs": 1520
+        },
+        {
+          "slot": 0,
+          "label": 121,
+          "startMs": 34537.1,
+          "endMs": 36795.6,
+          "busyMs": 2258.5,
+          "computeMs": 2254.1
+        },
+        {
+          "slot": 2,
+          "label": 117,
+          "startMs": 34008.1,
+          "endMs": 36826.8,
+          "busyMs": 2818.7,
+          "computeMs": 2814.4
+        },
+        {
+          "slot": 4,
+          "label": 115,
+          "startMs": 33507.2,
+          "endMs": 36867.6,
+          "busyMs": 3360.4,
+          "computeMs": 3359.3
+        },
+        {
+          "slot": 7,
+          "label": 123,
+          "startMs": 35736.8,
+          "endMs": 37968.9,
+          "busyMs": 2232.1,
+          "computeMs": 2231.6
+        },
+        {
+          "slot": 3,
+          "label": 124,
+          "startMs": 35811.1,
+          "endMs": 38345.6,
+          "busyMs": 2534.5,
+          "computeMs": 2533.3
+        },
+        {
+          "slot": 1,
+          "label": 125,
+          "startMs": 35918.2,
+          "endMs": 38444.7,
+          "busyMs": 2526.5,
+          "computeMs": 2524.4
+        },
+        {
+          "slot": 2,
+          "label": 129,
+          "startMs": 36826.8,
+          "endMs": 39111.5,
+          "busyMs": 2284.7,
+          "computeMs": 2283.5
+        },
+        {
+          "slot": 6,
+          "label": 126,
+          "startMs": 36685.5,
+          "endMs": 39137.4,
+          "busyMs": 2451.9,
+          "computeMs": 2451.4
+        },
+        {
+          "slot": 5,
+          "label": 127,
+          "startMs": 36737.6,
+          "endMs": 39146.9,
+          "busyMs": 2409.3,
+          "computeMs": 2406.8
+        },
+        {
+          "slot": 0,
+          "label": 128,
+          "startMs": 36795.6,
+          "endMs": 39210,
+          "busyMs": 2414.4,
+          "computeMs": 2413.3
+        },
+        {
+          "slot": 7,
+          "label": 131,
+          "startMs": 37968.9,
+          "endMs": 39909.9,
+          "busyMs": 1941,
+          "computeMs": 1940.4
+        },
+        {
+          "slot": 4,
+          "label": 130,
+          "startMs": 36867.7,
+          "endMs": 39921.4,
+          "busyMs": 3053.7,
+          "computeMs": 3053.5
+        },
+        {
+          "slot": 6,
+          "label": 135,
+          "startMs": 39137.5,
+          "endMs": 40027,
+          "busyMs": 889.5,
+          "computeMs": 889.1
+        },
+        {
+          "slot": 3,
+          "label": 132,
+          "startMs": 38345.6,
+          "endMs": 40264.3,
+          "busyMs": 1918.7,
+          "computeMs": 1916.4
+        },
+        {
+          "slot": 0,
+          "label": 137,
+          "startMs": 39210,
+          "endMs": 40270.4,
+          "busyMs": 1060.4,
+          "computeMs": 1058.7
+        },
+        {
+          "slot": 5,
+          "label": 136,
+          "startMs": 39146.9,
+          "endMs": 40357,
+          "busyMs": 1210.1,
+          "computeMs": 1209.8
+        },
+        {
+          "slot": 1,
+          "label": 133,
+          "startMs": 38444.7,
+          "endMs": 40361.6,
+          "busyMs": 1916.9,
+          "computeMs": 1916.7
+        },
+        {
+          "slot": 2,
+          "label": 134,
+          "startMs": 39111.5,
+          "endMs": 40828.3,
+          "busyMs": 1716.8,
+          "computeMs": 1714.6
+        },
+        {
+          "slot": 7,
+          "label": 138,
+          "startMs": 39909.9,
+          "endMs": 41724.9,
+          "busyMs": 1815,
+          "computeMs": 1814.7
+        }
+      ],
+      "tasks": 139,
+      "wallMs": 41724.9,
+      "busyMs": [
+        40270,
+        40361.3,
+        40827.6,
+        40264,
+        39920.7,
+        40356.4,
+        40026.3,
+        41724.3
+      ],
+      "computeMs": [
+        40254.6,
+        40344,
+        40812.2,
+        40247.7,
+        39908.1,
+        40339.2,
+        40011,
+        41710.7
+      ],
+      "taskCounts": [
+        18,
+        18,
+        18,
+        18,
+        16,
+        17,
+        17,
+        17
+      ],
+      "idlePool": 0.0301,
+      "idleWorker": 0.0305,
+      "taskMsMedian": 2308.1,
+      "taskMsMax": 4592.4,
+      "taskMsMin": 889.5,
+      "fingerprint": {
+        "hash": "5b43a926",
+        "length": 3644
+      },
+      "evaluations": [
+        13378,
+        15309,
+        12953,
+        14007,
+        13574,
+        12647,
+        14314,
+        12046,
+        15578,
+        16355,
+        15902,
+        15649,
+        14300,
+        16006,
+        15051,
+        16190,
+        13800,
+        15678,
+        11669,
+        15803,
+        8341,
+        10499,
+        10909,
+        9874,
+        10659,
+        10665,
+        9007,
+        11557,
+        14391,
+        14221,
+        13791,
+        14215,
+        14055,
+        11205,
+        13985,
+        7000,
+        12902,
+        14557,
+        15142,
+        13324,
+        12741,
+        15003,
+        14081,
+        16066,
+        15177,
+        14832,
+        13948,
+        13863,
+        11721,
+        14502,
+        14008,
+        16300,
+        14411,
+        14604,
+        12607,
+        15258,
+        10773,
+        16127,
+        14293,
+        16357,
+        16593,
+        15819,
+        14705,
+        16263,
+        11457,
+        16172,
+        13863,
+        12291,
+        14891,
+        11866,
+        15956,
+        14840,
+        14728,
+        11368,
+        12602,
+        13046,
+        13008,
+        11900,
+        13674,
+        11436,
+        13218,
+        12115,
+        13394,
+        14917,
+        13717,
+        15504,
+        13723,
+        15591,
+        15169,
+        14272,
+        12156,
+        8961,
+        15936,
+        13868,
+        14657,
+        12150,
+        14751,
+        12789,
+        12406,
+        13081,
+        15802,
+        15283,
+        15638,
+        15202,
+        15689,
+        15744,
+        15749,
+        12490,
+        15275,
+        11471,
+        13027,
+        9548,
+        10728,
+        8837,
+        12832,
+        13964,
+        10586,
+        16122,
+        8688,
+        12579,
+        8076,
+        12616,
+        8688,
+        12807,
+        14947,
+        14600,
+        14488,
+        14346,
+        13932,
+        13348,
+        14047,
+        11089,
+        10897,
+        10870,
+        11121,
+        5379,
+        7423,
+        5835,
+        16088
+      ],
+      "legal": [
+        8,
+        12,
+        21,
+        17,
+        12,
+        20,
+        18,
+        20,
+        17,
+        20,
+        37,
+        14,
+        9,
+        104,
+        14,
+        119,
+        17,
+        30,
+        7,
+        30,
+        7,
+        6,
+        14,
+        6,
+        19,
+        26,
+        15,
+        35,
+        8,
+        17,
+        13,
+        35,
+        29,
+        4,
+        5,
+        24,
+        42,
+        34,
+        16,
+        10,
+        25,
+        24,
+        47,
+        104,
+        20,
+        21,
+        28,
+        17,
+        10,
+        28,
+        25,
+        80,
+        29,
+        18,
+        48,
+        18,
+        41,
+        24,
+        39,
+        24,
+        23,
+        16,
+        19,
+        23,
+        9,
+        34,
+        17,
+        8,
+        20,
+        5,
+        27,
+        114,
+        32,
+        39,
+        5,
+        85,
+        55,
+        12,
+        11,
+        29,
+        14,
+        18,
+        24,
+        24,
+        12,
+        12,
+        9,
+        26,
+        7,
+        12,
+        16,
+        2,
+        25,
+        16,
+        18,
+        14,
+        24,
+        25,
+        41,
+        29,
+        16,
+        10,
+        19,
+        37,
+        55,
+        14,
+        19,
+        15,
+        19,
+        3,
+        22,
+        6,
+        19,
+        31,
+        35,
+        153,
+        4,
+        6,
+        3,
+        7,
+        3,
+        21,
+        4,
+        19,
+        17,
+        19,
+        16,
+        15,
+        18,
+        20,
+        37,
+        16,
+        18,
+        12,
+        105,
+        2,
+        3,
+        4,
+        5
+      ],
+      "totalEvaluations": 1851884
+    },
+    {
+      "path": "decide",
+      "workers": 12,
+      "entries": [
+        {
+          "slot": 1,
+          "label": 0,
+          "startMs": 0,
+          "endMs": 2403.8,
+          "busyMs": 2403.8,
+          "computeMs": 2403.3
+        },
+        {
+          "slot": 9,
+          "label": 9,
+          "startMs": 0.1,
+          "endMs": 3061.8,
+          "busyMs": 3061.7,
+          "computeMs": 3061.2
+        },
+        {
+          "slot": 5,
+          "label": 7,
+          "startMs": 0.1,
+          "endMs": 3482,
+          "busyMs": 3481.9,
+          "computeMs": 3481.4
+        },
+        {
+          "slot": 11,
+          "label": 5,
+          "startMs": 0.1,
+          "endMs": 4027.3,
+          "busyMs": 4027.2,
+          "computeMs": 4026.9
+        },
+        {
+          "slot": 10,
+          "label": 3,
+          "startMs": 0.1,
+          "endMs": 4042.2,
+          "busyMs": 4042.1,
+          "computeMs": 4041.9
+        },
+        {
+          "slot": 7,
+          "label": 2,
+          "startMs": 0.1,
+          "endMs": 4085.1,
+          "busyMs": 4085,
+          "computeMs": 4084.7
+        },
+        {
+          "slot": 0,
+          "label": 4,
+          "startMs": 0.1,
+          "endMs": 4165.4,
+          "busyMs": 4165.3,
+          "computeMs": 4164.7
+        },
+        {
+          "slot": 3,
+          "label": 6,
+          "startMs": 0.1,
+          "endMs": 4299.5,
+          "busyMs": 4299.4,
+          "computeMs": 4298.6
+        },
+        {
+          "slot": 2,
+          "label": 1,
+          "startMs": 0,
+          "endMs": 4678.7,
+          "busyMs": 4678.7,
+          "computeMs": 4678.2
+        },
+        {
+          "slot": 6,
+          "label": 11,
+          "startMs": 0.1,
+          "endMs": 4738.7,
+          "busyMs": 4738.6,
+          "computeMs": 4738
+        },
+        {
+          "slot": 8,
+          "label": 10,
+          "startMs": 0.1,
+          "endMs": 4941.9,
+          "busyMs": 4941.8,
+          "computeMs": 4941.3
+        },
+        {
+          "slot": 4,
+          "label": 8,
+          "startMs": 0.1,
+          "endMs": 5013,
+          "busyMs": 5012.9,
+          "computeMs": 5012
+        },
+        {
+          "slot": 1,
+          "label": 12,
+          "startMs": 2403.9,
+          "endMs": 5294.5,
+          "busyMs": 2890.6,
+          "computeMs": 2890.1
+        },
+        {
+          "slot": 9,
+          "label": 13,
+          "startMs": 3061.8,
+          "endMs": 6346.7,
+          "busyMs": 3284.9,
+          "computeMs": 3284.5
+        },
+        {
+          "slot": 0,
+          "label": 18,
+          "startMs": 4165.4,
+          "endMs": 6528.8,
+          "busyMs": 2363.4,
+          "computeMs": 2363
+        },
+        {
+          "slot": 1,
+          "label": 24,
+          "startMs": 5294.5,
+          "endMs": 7328.7,
+          "busyMs": 2034.2,
+          "computeMs": 2033.7
+        },
+        {
+          "slot": 2,
+          "label": 20,
+          "startMs": 4678.7,
+          "endMs": 7502.5,
+          "busyMs": 2823.8,
+          "computeMs": 2823.2
+        },
+        {
+          "slot": 6,
+          "label": 21,
+          "startMs": 4738.7,
+          "endMs": 7974.8,
+          "busyMs": 3236.1,
+          "computeMs": 3235.4
+        },
+        {
+          "slot": 5,
+          "label": 14,
+          "startMs": 3482,
+          "endMs": 8155.9,
+          "busyMs": 4673.9,
+          "computeMs": 4673.5
+        },
+        {
+          "slot": 0,
+          "label": 26,
+          "startMs": 6528.8,
+          "endMs": 8183.7,
+          "busyMs": 1654.9,
+          "computeMs": 1654.4
+        },
+        {
+          "slot": 4,
+          "label": 23,
+          "startMs": 5013,
+          "endMs": 8221.9,
+          "busyMs": 3208.9,
+          "computeMs": 3208.5
+        },
+        {
+          "slot": 8,
+          "label": 22,
+          "startMs": 4942,
+          "endMs": 8434.3,
+          "busyMs": 3492.3,
+          "computeMs": 3491.7
+        },
+        {
+          "slot": 10,
+          "label": 16,
+          "startMs": 4042.2,
+          "endMs": 8502.9,
+          "busyMs": 4460.7,
+          "computeMs": 4460.3
+        },
+        {
+          "slot": 11,
+          "label": 15,
+          "startMs": 4027.4,
+          "endMs": 8965.8,
+          "busyMs": 4938.4,
+          "computeMs": 4937.8
+        },
+        {
+          "slot": 7,
+          "label": 17,
+          "startMs": 4085.2,
+          "endMs": 9032.3,
+          "busyMs": 4947.1,
+          "computeMs": 4946.8
+        },
+        {
+          "slot": 9,
+          "label": 25,
+          "startMs": 6346.7,
+          "endMs": 9072.8,
+          "busyMs": 2726.1,
+          "computeMs": 2725.5
+        },
+        {
+          "slot": 3,
+          "label": 19,
+          "startMs": 4299.6,
+          "endMs": 9247.6,
+          "busyMs": 4948,
+          "computeMs": 4947.2
+        },
+        {
+          "slot": 1,
+          "label": 27,
+          "startMs": 7328.8,
+          "endMs": 10269.5,
+          "busyMs": 2940.7,
+          "computeMs": 2940
+        },
+        {
+          "slot": 2,
+          "label": 28,
+          "startMs": 7502.5,
+          "endMs": 10340,
+          "busyMs": 2837.5,
+          "computeMs": 2836.9
+        },
+        {
+          "slot": 0,
+          "label": 31,
+          "startMs": 8183.7,
+          "endMs": 11081,
+          "busyMs": 2897.3,
+          "computeMs": 2897
+        },
+        {
+          "slot": 11,
+          "label": 35,
+          "startMs": 8965.8,
+          "endMs": 11240.5,
+          "busyMs": 2274.7,
+          "computeMs": 2274.3
+        },
+        {
+          "slot": 8,
+          "label": 33,
+          "startMs": 8434.3,
+          "endMs": 11957.1,
+          "busyMs": 3522.8,
+          "computeMs": 3522.4
+        },
+        {
+          "slot": 6,
+          "label": 29,
+          "startMs": 7974.9,
+          "endMs": 12277.3,
+          "busyMs": 4302.4,
+          "computeMs": 4302
+        },
+        {
+          "slot": 5,
+          "label": 30,
+          "startMs": 8155.9,
+          "endMs": 12427.9,
+          "busyMs": 4272,
+          "computeMs": 4271.4
+        },
+        {
+          "slot": 2,
+          "label": 40,
+          "startMs": 10340,
+          "endMs": 12694.3,
+          "busyMs": 2354.3,
+          "computeMs": 2354
+        },
+        {
+          "slot": 4,
+          "label": 32,
+          "startMs": 8222,
+          "endMs": 12697.6,
+          "busyMs": 4475.6,
+          "computeMs": 4475.4
+        },
+        {
+          "slot": 10,
+          "label": 34,
+          "startMs": 8503.1,
+          "endMs": 12936.2,
+          "busyMs": 4433.1,
+          "computeMs": 4432.8
+        },
+        {
+          "slot": 7,
+          "label": 36,
+          "startMs": 9032.3,
+          "endMs": 13072.7,
+          "busyMs": 4040.4,
+          "computeMs": 4039.9
+        },
+        {
+          "slot": 9,
+          "label": 37,
+          "startMs": 9072.8,
+          "endMs": 13224.1,
+          "busyMs": 4151.3,
+          "computeMs": 4150.9
+        },
+        {
+          "slot": 0,
+          "label": 41,
+          "startMs": 11081,
+          "endMs": 13833.5,
+          "busyMs": 2752.5,
+          "computeMs": 2751.9
+        },
+        {
+          "slot": 3,
+          "label": 38,
+          "startMs": 9247.6,
+          "endMs": 13866.6,
+          "busyMs": 4619,
+          "computeMs": 4618.6
+        },
+        {
+          "slot": 1,
+          "label": 39,
+          "startMs": 10269.5,
+          "endMs": 14342.9,
+          "busyMs": 4073.4,
+          "computeMs": 4072.8
+        },
+        {
+          "slot": 2,
+          "label": 46,
+          "startMs": 12694.4,
+          "endMs": 15344.7,
+          "busyMs": 2650.3,
+          "computeMs": 2649.9
+        },
+        {
+          "slot": 10,
+          "label": 48,
+          "startMs": 12936.2,
+          "endMs": 15679.7,
+          "busyMs": 2743.5,
+          "computeMs": 2743
+        },
+        {
+          "slot": 11,
+          "label": 42,
+          "startMs": 11240.6,
+          "endMs": 15727.7,
+          "busyMs": 4487.1,
+          "computeMs": 4486.7
+        },
+        {
+          "slot": 4,
+          "label": 47,
+          "startMs": 12697.6,
+          "endMs": 16483.4,
+          "busyMs": 3785.8,
+          "computeMs": 3785.5
+        },
+        {
+          "slot": 6,
+          "label": 44,
+          "startMs": 12277.4,
+          "endMs": 16718.4,
+          "busyMs": 4441,
+          "computeMs": 4440.5
+        },
+        {
+          "slot": 8,
+          "label": 43,
+          "startMs": 11957.1,
+          "endMs": 16991,
+          "busyMs": 5033.9,
+          "computeMs": 5033.2
+        },
+        {
+          "slot": 5,
+          "label": 45,
+          "startMs": 12427.9,
+          "endMs": 17000.8,
+          "busyMs": 4572.9,
+          "computeMs": 4572.4
+        },
+        {
+          "slot": 9,
+          "label": 50,
+          "startMs": 13224.2,
+          "endMs": 17450.7,
+          "busyMs": 4226.5,
+          "computeMs": 4226
+        },
+        {
+          "slot": 7,
+          "label": 49,
+          "startMs": 13072.7,
+          "endMs": 17487,
+          "busyMs": 4414.3,
+          "computeMs": 4413.9
+        },
+        {
+          "slot": 2,
+          "label": 54,
+          "startMs": 15344.8,
+          "endMs": 17792.2,
+          "busyMs": 2447.4,
+          "computeMs": 2447
+        },
+        {
+          "slot": 3,
+          "label": 52,
+          "startMs": 13866.6,
+          "endMs": 18209.7,
+          "busyMs": 4343.1,
+          "computeMs": 4342.6
+        },
+        {
+          "slot": 0,
+          "label": 51,
+          "startMs": 13833.5,
+          "endMs": 18361,
+          "busyMs": 4527.5,
+          "computeMs": 4527
+        },
+        {
+          "slot": 1,
+          "label": 53,
+          "startMs": 14342.9,
+          "endMs": 18804.1,
+          "busyMs": 4461.2,
+          "computeMs": 4460.9
+        },
+        {
+          "slot": 11,
+          "label": 56,
+          "startMs": 15727.7,
+          "endMs": 19165.7,
+          "busyMs": 3438,
+          "computeMs": 3437.5
+        },
+        {
+          "slot": 4,
+          "label": 57,
+          "startMs": 16483.4,
+          "endMs": 19385.2,
+          "busyMs": 2901.8,
+          "computeMs": 2901.3
+        },
+        {
+          "slot": 10,
+          "label": 55,
+          "startMs": 15679.7,
+          "endMs": 20321.6,
+          "busyMs": 4641.9,
+          "computeMs": 4641.5
+        },
+        {
+          "slot": 2,
+          "label": 63,
+          "startMs": 17792.3,
+          "endMs": 20703.8,
+          "busyMs": 2911.5,
+          "computeMs": 2911.1
+        },
+        {
+          "slot": 6,
+          "label": 58,
+          "startMs": 16718.4,
+          "endMs": 21113.2,
+          "busyMs": 4394.8,
+          "computeMs": 4394.4
+        },
+        {
+          "slot": 3,
+          "label": 64,
+          "startMs": 18209.7,
+          "endMs": 21752.4,
+          "busyMs": 3542.7,
+          "computeMs": 3542.4
+        },
+        {
+          "slot": 8,
+          "label": 59,
+          "startMs": 16991.1,
+          "endMs": 21944.9,
+          "busyMs": 4953.8,
+          "computeMs": 4953.4
+        },
+        {
+          "slot": 5,
+          "label": 60,
+          "startMs": 17000.8,
+          "endMs": 22001.8,
+          "busyMs": 5001,
+          "computeMs": 5000.7
+        },
+        {
+          "slot": 4,
+          "label": 68,
+          "startMs": 19385.2,
+          "endMs": 22060.2,
+          "busyMs": 2675,
+          "computeMs": 2674.6
+        },
+        {
+          "slot": 7,
+          "label": 62,
+          "startMs": 17487,
+          "endMs": 22084.8,
+          "busyMs": 4597.8,
+          "computeMs": 4597.3
+        },
+        {
+          "slot": 9,
+          "label": 61,
+          "startMs": 17450.8,
+          "endMs": 22309.1,
+          "busyMs": 4858.3,
+          "computeMs": 4857.6
+        },
+        {
+          "slot": 11,
+          "label": 67,
+          "startMs": 19165.7,
+          "endMs": 22924.1,
+          "busyMs": 3758.4,
+          "computeMs": 3758
+        },
+        {
+          "slot": 1,
+          "label": 66,
+          "startMs": 18804.2,
+          "endMs": 23057,
+          "busyMs": 4252.8,
+          "computeMs": 4252.5
+        },
+        {
+          "slot": 10,
+          "label": 69,
+          "startMs": 20321.6,
+          "endMs": 23158.2,
+          "busyMs": 2836.6,
+          "computeMs": 2836.1
+        },
+        {
+          "slot": 0,
+          "label": 65,
+          "startMs": 18361.1,
+          "endMs": 23269.6,
+          "busyMs": 4908.5,
+          "computeMs": 4906.8
+        },
+        {
+          "slot": 2,
+          "label": 70,
+          "startMs": 20703.8,
+          "endMs": 23973.6,
+          "busyMs": 3269.8,
+          "computeMs": 3269.4
+        },
+        {
+          "slot": 6,
+          "label": 71,
+          "startMs": 21113.2,
+          "endMs": 24957.3,
+          "busyMs": 3844.1,
+          "computeMs": 3843.8
+        },
+        {
+          "slot": 8,
+          "label": 73,
+          "startMs": 21944.9,
+          "endMs": 25490.6,
+          "busyMs": 3545.7,
+          "computeMs": 3545.1
+        },
+        {
+          "slot": 10,
+          "label": 80,
+          "startMs": 23158.2,
+          "endMs": 25521.5,
+          "busyMs": 2363.3,
+          "computeMs": 2362.9
+        },
+        {
+          "slot": 5,
+          "label": 74,
+          "startMs": 22001.8,
+          "endMs": 25637.5,
+          "busyMs": 3635.7,
+          "computeMs": 3635.1
+        },
+        {
+          "slot": 9,
+          "label": 77,
+          "startMs": 22309.2,
+          "endMs": 26107,
+          "busyMs": 3797.8,
+          "computeMs": 3797.4
+        },
+        {
+          "slot": 7,
+          "label": 76,
+          "startMs": 22084.8,
+          "endMs": 26171,
+          "busyMs": 4086.2,
+          "computeMs": 4085.8
+        },
+        {
+          "slot": 4,
+          "label": 75,
+          "startMs": 22060.3,
+          "endMs": 26197.7,
+          "busyMs": 4137.4,
+          "computeMs": 4136.9
+        },
+        {
+          "slot": 3,
+          "label": 72,
+          "startMs": 21752.4,
+          "endMs": 26243.2,
+          "busyMs": 4490.8,
+          "computeMs": 4490.3
+        },
+        {
+          "slot": 1,
+          "label": 79,
+          "startMs": 23057.1,
+          "endMs": 26637.9,
+          "busyMs": 3580.8,
+          "computeMs": 3580.3
+        },
+        {
+          "slot": 0,
+          "label": 81,
+          "startMs": 23269.8,
+          "endMs": 26954.4,
+          "busyMs": 3684.6,
+          "computeMs": 3684.1
+        },
+        {
+          "slot": 11,
+          "label": 78,
+          "startMs": 22924.1,
+          "endMs": 27156.8,
+          "busyMs": 4232.7,
+          "computeMs": 4232.2
+        },
+        {
+          "slot": 2,
+          "label": 82,
+          "startMs": 23973.7,
+          "endMs": 27456.7,
+          "busyMs": 3483,
+          "computeMs": 3482.5
+        },
+        {
+          "slot": 6,
+          "label": 83,
+          "startMs": 24957.3,
+          "endMs": 27584.6,
+          "busyMs": 2627.3,
+          "computeMs": 2626.8
+        },
+        {
+          "slot": 10,
+          "label": 85,
+          "startMs": 25521.5,
+          "endMs": 28308.3,
+          "busyMs": 2786.8,
+          "computeMs": 2786.2
+        },
+        {
+          "slot": 8,
+          "label": 84,
+          "startMs": 25490.6,
+          "endMs": 29367,
+          "busyMs": 3876.4,
+          "computeMs": 3876
+        },
+        {
+          "slot": 1,
+          "label": 91,
+          "startMs": 26637.9,
+          "endMs": 29475.6,
+          "busyMs": 2837.7,
+          "computeMs": 2837.2
+        },
+        {
+          "slot": 5,
+          "label": 86,
+          "startMs": 25637.5,
+          "endMs": 29505.4,
+          "busyMs": 3867.9,
+          "computeMs": 3867.4
+        },
+        {
+          "slot": 3,
+          "label": 90,
+          "startMs": 26243.2,
+          "endMs": 30021.9,
+          "busyMs": 3778.7,
+          "computeMs": 3778.1
+        },
+        {
+          "slot": 4,
+          "label": 89,
+          "startMs": 26197.7,
+          "endMs": 30074.3,
+          "busyMs": 3876.6,
+          "computeMs": 3876.3
+        },
+        {
+          "slot": 6,
+          "label": 95,
+          "startMs": 27584.6,
+          "endMs": 30406.7,
+          "busyMs": 2822.1,
+          "computeMs": 2821.7
+        },
+        {
+          "slot": 7,
+          "label": 88,
+          "startMs": 26171,
+          "endMs": 30779.3,
+          "busyMs": 4608.3,
+          "computeMs": 4608
+        },
+        {
+          "slot": 9,
+          "label": 87,
+          "startMs": 26107.1,
+          "endMs": 30888.7,
+          "busyMs": 4781.6,
+          "computeMs": 4781.1
+        },
+        {
+          "slot": 0,
+          "label": 92,
+          "startMs": 26954.4,
+          "endMs": 31437.2,
+          "busyMs": 4482.8,
+          "computeMs": 4482.1
+        },
+        {
+          "slot": 11,
+          "label": 93,
+          "startMs": 27156.8,
+          "endMs": 31632.5,
+          "busyMs": 4475.7,
+          "computeMs": 4475.1
+        },
+        {
+          "slot": 8,
+          "label": 97,
+          "startMs": 29367.1,
+          "endMs": 31691.4,
+          "busyMs": 2324.3,
+          "computeMs": 2323.9
+        },
+        {
+          "slot": 2,
+          "label": 94,
+          "startMs": 27456.7,
+          "endMs": 31865.7,
+          "busyMs": 4409,
+          "computeMs": 4408.7
+        },
+        {
+          "slot": 5,
+          "label": 99,
+          "startMs": 29505.5,
+          "endMs": 31912.3,
+          "busyMs": 2406.8,
+          "computeMs": 2406.4
+        },
+        {
+          "slot": 10,
+          "label": 96,
+          "startMs": 28308.3,
+          "endMs": 32448.2,
+          "busyMs": 4139.9,
+          "computeMs": 4139.3
+        },
+        {
+          "slot": 1,
+          "label": 98,
+          "startMs": 29475.7,
+          "endMs": 33199.1,
+          "busyMs": 3723.4,
+          "computeMs": 3722.9
+        },
+        {
+          "slot": 4,
+          "label": 101,
+          "startMs": 30074.4,
+          "endMs": 33313.2,
+          "busyMs": 3238.8,
+          "computeMs": 3237.7
+        },
+        {
+          "slot": 9,
+          "label": 104,
+          "startMs": 30888.7,
+          "endMs": 33832.2,
+          "busyMs": 2943.5,
+          "computeMs": 2937.7
+        },
+        {
+          "slot": 5,
+          "label": 109,
+          "startMs": 31912.3,
+          "endMs": 34216.9,
+          "busyMs": 2304.6,
+          "computeMs": 2303.5
+        },
+        {
+          "slot": 7,
+          "label": 103,
+          "startMs": 30779.5,
+          "endMs": 34718.9,
+          "busyMs": 3939.4,
+          "computeMs": 3938.3
+        },
+        {
+          "slot": 3,
+          "label": 100,
+          "startMs": 30022,
+          "endMs": 34789.3,
+          "busyMs": 4767.3,
+          "computeMs": 4765.7
+        },
+        {
+          "slot": 0,
+          "label": 105,
+          "startMs": 31437.3,
+          "endMs": 34911.4,
+          "busyMs": 3474.1,
+          "computeMs": 3472.7
+        },
+        {
+          "slot": 8,
+          "label": 107,
+          "startMs": 31691.5,
+          "endMs": 35178.1,
+          "busyMs": 3486.6,
+          "computeMs": 3485.4
+        },
+        {
+          "slot": 6,
+          "label": 102,
+          "startMs": 30406.7,
+          "endMs": 35208.8,
+          "busyMs": 4802.1,
+          "computeMs": 4800.8
+        },
+        {
+          "slot": 9,
+          "label": 113,
+          "startMs": 33832.2,
+          "endMs": 35802.3,
+          "busyMs": 1970.1,
+          "computeMs": 1969.5
+        },
+        {
+          "slot": 10,
+          "label": 110,
+          "startMs": 32448.3,
+          "endMs": 36022.5,
+          "busyMs": 3574.2,
+          "computeMs": 3572.7
+        },
+        {
+          "slot": 1,
+          "label": 111,
+          "startMs": 33199.2,
+          "endMs": 36314.5,
+          "busyMs": 3115.3,
+          "computeMs": 3114.5
+        },
+        {
+          "slot": 11,
+          "label": 106,
+          "startMs": 31632.5,
+          "endMs": 36536.3,
+          "busyMs": 4903.8,
+          "computeMs": 4902.6
+        },
+        {
+          "slot": 2,
+          "label": 108,
+          "startMs": 31865.8,
+          "endMs": 36547.4,
+          "busyMs": 4681.6,
+          "computeMs": 4680.7
+        },
+        {
+          "slot": 5,
+          "label": 114,
+          "startMs": 34216.9,
+          "endMs": 36651.4,
+          "busyMs": 2434.5,
+          "computeMs": 2430.4
+        },
+        {
+          "slot": 4,
+          "label": 112,
+          "startMs": 33313.2,
+          "endMs": 36800.4,
+          "busyMs": 3487.2,
+          "computeMs": 3481.9
+        },
+        {
+          "slot": 7,
+          "label": 115,
+          "startMs": 34719,
+          "endMs": 37738.8,
+          "busyMs": 3019.8,
+          "computeMs": 3015.4
+        },
+        {
+          "slot": 8,
+          "label": 118,
+          "startMs": 35178.1,
+          "endMs": 37870.7,
+          "busyMs": 2692.6,
+          "computeMs": 2685.9
+        },
+        {
+          "slot": 9,
+          "label": 120,
+          "startMs": 35802.4,
+          "endMs": 38008.6,
+          "busyMs": 2206.2,
+          "computeMs": 2206
+        },
+        {
+          "slot": 3,
+          "label": 116,
+          "startMs": 34789.3,
+          "endMs": 38044.8,
+          "busyMs": 3255.5,
+          "computeMs": 3254.6
+        },
+        {
+          "slot": 10,
+          "label": 121,
+          "startMs": 36022.5,
+          "endMs": 38778.3,
+          "busyMs": 2755.8,
+          "computeMs": 2751.4
+        },
+        {
+          "slot": 0,
+          "label": 117,
+          "startMs": 34911.4,
+          "endMs": 39118.4,
+          "busyMs": 4207,
+          "computeMs": 4199.3
+        },
+        {
+          "slot": 1,
+          "label": 122,
+          "startMs": 36314.7,
+          "endMs": 39125.4,
+          "busyMs": 2810.7,
+          "computeMs": 2805.7
+        },
+        {
+          "slot": 6,
+          "label": 119,
+          "startMs": 35208.8,
+          "endMs": 39311.7,
+          "busyMs": 4102.9,
+          "computeMs": 4097.3
+        },
+        {
+          "slot": 11,
+          "label": 123,
+          "startMs": 36536.4,
+          "endMs": 39529.3,
+          "busyMs": 2992.9,
+          "computeMs": 2987
+        },
+        {
+          "slot": 5,
+          "label": 125,
+          "startMs": 36651.4,
+          "endMs": 40029.9,
+          "busyMs": 3378.5,
+          "computeMs": 3377.1
+        },
+        {
+          "slot": 4,
+          "label": 126,
+          "startMs": 36800.4,
+          "endMs": 40666.1,
+          "busyMs": 3865.7,
+          "computeMs": 3863.5
+        },
+        {
+          "slot": 11,
+          "label": 135,
+          "startMs": 39529.4,
+          "endMs": 40778.8,
+          "busyMs": 1249.4,
+          "computeMs": 1248.1
+        },
+        {
+          "slot": 5,
+          "label": 136,
+          "startMs": 40030,
+          "endMs": 41361.5,
+          "busyMs": 1331.5,
+          "computeMs": 1329.7
+        },
+        {
+          "slot": 2,
+          "label": 124,
+          "startMs": 36547.4,
+          "endMs": 41408.9,
+          "busyMs": 4861.5,
+          "computeMs": 4855.5
+        },
+        {
+          "slot": 0,
+          "label": 132,
+          "startMs": 39118.4,
+          "endMs": 41410.5,
+          "busyMs": 2292.1,
+          "computeMs": 2290.1
+        },
+        {
+          "slot": 10,
+          "label": 131,
+          "startMs": 38778.3,
+          "endMs": 41476.2,
+          "busyMs": 2697.9,
+          "computeMs": 2697.1
+        },
+        {
+          "slot": 8,
+          "label": 128,
+          "startMs": 37870.8,
+          "endMs": 41565.8,
+          "busyMs": 3695,
+          "computeMs": 3693.6
+        },
+        {
+          "slot": 9,
+          "label": 129,
+          "startMs": 38008.7,
+          "endMs": 41713.2,
+          "busyMs": 3704.5,
+          "computeMs": 3703.9
+        },
+        {
+          "slot": 4,
+          "label": 137,
+          "startMs": 40666.1,
+          "endMs": 41794.4,
+          "busyMs": 1128.3,
+          "computeMs": 1125.6
+        },
+        {
+          "slot": 7,
+          "label": 127,
+          "startMs": 37738.8,
+          "endMs": 41931.3,
+          "busyMs": 4192.5,
+          "computeMs": 4191.3
+        },
+        {
+          "slot": 3,
+          "label": 130,
+          "startMs": 38044.9,
+          "endMs": 42019.3,
+          "busyMs": 3974.4,
+          "computeMs": 3969.1
+        },
+        {
+          "slot": 1,
+          "label": 133,
+          "startMs": 39125.4,
+          "endMs": 42040.2,
+          "busyMs": 2914.8,
+          "computeMs": 2914.2
+        },
+        {
+          "slot": 6,
+          "label": 134,
+          "startMs": 39311.7,
+          "endMs": 42146.2,
+          "busyMs": 2834.5,
+          "computeMs": 2833.7
+        },
+        {
+          "slot": 11,
+          "label": 138,
+          "startMs": 40778.8,
+          "endMs": 42964,
+          "busyMs": 2185.2,
+          "computeMs": 2183.2
+        }
+      ],
+      "tasks": 139,
+      "wallMs": 42964,
+      "busyMs": [
+        41410,
+        42039.4,
+        41408.4,
+        42018.9,
+        41794,
+        41361.2,
+        42145.9,
+        41930.8,
+        41565.2,
+        41712.5,
+        41475.8,
+        42963.5
+      ],
+      "computeMs": [
+        41393.1,
+        42028.1,
+        41397.1,
+        42007.2,
+        41779.2,
+        41349,
+        42134.4,
+        41921.4,
+        41551.9,
+        41701.3,
+        41465.2,
+        42949.4
+      ],
+      "taskCounts": [
+        12,
+        13,
+        12,
+        10,
+        12,
+        12,
+        11,
+        10,
+        11,
+        12,
+        12,
+        12
+      ],
+      "idlePool": 0.0267,
+      "idleWorker": 0.0269,
+      "taskMsMedian": 3704.5,
+      "taskMsMax": 5033.9,
+      "taskMsMin": 1128.3,
+      "fingerprint": {
+        "hash": "5b43a926",
+        "length": 3644
+      },
+      "evaluations": [
+        13378,
+        15309,
+        12953,
+        14007,
+        13574,
+        12647,
+        14314,
+        12046,
+        15578,
+        16355,
+        15902,
+        15649,
+        14300,
+        16006,
+        15051,
+        16190,
+        13800,
+        15678,
+        11669,
+        15803,
+        8341,
+        10499,
+        10909,
+        9874,
+        10659,
+        10665,
+        9007,
+        11557,
+        14391,
+        14221,
+        13791,
+        14215,
+        14055,
+        11205,
+        13985,
+        7000,
+        12902,
+        14557,
+        15142,
+        13324,
+        12741,
+        15003,
+        14081,
+        16066,
+        15177,
+        14832,
+        13948,
+        13863,
+        11721,
+        14502,
+        14008,
+        16300,
+        14411,
+        14604,
+        12607,
+        15258,
+        10773,
+        16127,
+        14293,
+        16357,
+        16593,
+        15819,
+        14705,
+        16263,
+        11457,
+        16172,
+        13863,
+        12291,
+        14891,
+        11866,
+        15956,
+        14840,
+        14728,
+        11368,
+        12602,
+        13046,
+        13008,
+        11900,
+        13674,
+        11436,
+        13218,
+        12115,
+        13394,
+        14917,
+        13717,
+        15504,
+        13723,
+        15591,
+        15169,
+        14272,
+        12156,
+        8961,
+        15936,
+        13868,
+        14657,
+        12150,
+        14751,
+        12789,
+        12406,
+        13081,
+        15802,
+        15283,
+        15638,
+        15202,
+        15689,
+        15744,
+        15749,
+        12490,
+        15275,
+        11471,
+        13027,
+        9548,
+        10728,
+        8837,
+        12832,
+        13964,
+        10586,
+        16122,
+        8688,
+        12579,
+        8076,
+        12616,
+        8688,
+        12807,
+        14947,
+        14600,
+        14488,
+        14346,
+        13932,
+        13348,
+        14047,
+        11089,
+        10897,
+        10870,
+        11121,
+        5379,
+        7423,
+        5835,
+        16088
+      ],
+      "legal": [
+        8,
+        12,
+        21,
+        17,
+        12,
+        20,
+        18,
+        20,
+        17,
+        20,
+        37,
+        14,
+        9,
+        104,
+        14,
+        119,
+        17,
+        30,
+        7,
+        30,
+        7,
+        6,
+        14,
+        6,
+        19,
+        26,
+        15,
+        35,
+        8,
+        17,
+        13,
+        35,
+        29,
+        4,
+        5,
+        24,
+        42,
+        34,
+        16,
+        10,
+        25,
+        24,
+        47,
+        104,
+        20,
+        21,
+        28,
+        17,
+        10,
+        28,
+        25,
+        80,
+        29,
+        18,
+        48,
+        18,
+        41,
+        24,
+        39,
+        24,
+        23,
+        16,
+        19,
+        23,
+        9,
+        34,
+        17,
+        8,
+        20,
+        5,
+        27,
+        114,
+        32,
+        39,
+        5,
+        85,
+        55,
+        12,
+        11,
+        29,
+        14,
+        18,
+        24,
+        24,
+        12,
+        12,
+        9,
+        26,
+        7,
+        12,
+        16,
+        2,
+        25,
+        16,
+        18,
+        14,
+        24,
+        25,
+        41,
+        29,
+        16,
+        10,
+        19,
+        37,
+        55,
+        14,
+        19,
+        15,
+        19,
+        3,
+        22,
+        6,
+        19,
+        31,
+        35,
+        153,
+        4,
+        6,
+        3,
+        7,
+        3,
+        21,
+        4,
+        19,
+        17,
+        19,
+        16,
+        15,
+        18,
+        20,
+        37,
+        16,
+        18,
+        12,
+        105,
+        2,
+        3,
+        4,
+        5
+      ],
+      "totalEvaluations": 1851884
+    },
+    {
+      "path": "decide",
+      "workers": 16,
+      "entries": [
+        {
+          "slot": 7,
+          "label": 6,
+          "startMs": 0.1,
+          "endMs": 3762.5,
+          "busyMs": 3762.4,
+          "computeMs": 3761.8
+        },
+        {
+          "slot": 15,
+          "label": 7,
+          "startMs": 0.1,
+          "endMs": 4261.9,
+          "busyMs": 4261.8,
+          "computeMs": 4261.2
+        },
+        {
+          "slot": 0,
+          "label": 2,
+          "startMs": 0,
+          "endMs": 4530.3,
+          "busyMs": 4530.3,
+          "computeMs": 4529.8
+        },
+        {
+          "slot": 2,
+          "label": 4,
+          "startMs": 0,
+          "endMs": 4612.3,
+          "busyMs": 4612.3,
+          "computeMs": 4611.8
+        },
+        {
+          "slot": 12,
+          "label": 0,
+          "startMs": 0,
+          "endMs": 4708.7,
+          "busyMs": 4708.7,
+          "computeMs": 4708.3
+        },
+        {
+          "slot": 5,
+          "label": 5,
+          "startMs": 0.1,
+          "endMs": 4736.5,
+          "busyMs": 4736.4,
+          "computeMs": 4733.8
+        },
+        {
+          "slot": 14,
+          "label": 1,
+          "startMs": 0,
+          "endMs": 4906.1,
+          "busyMs": 4906.1,
+          "computeMs": 4905.5
+        },
+        {
+          "slot": 9,
+          "label": 3,
+          "startMs": 0,
+          "endMs": 4988.2,
+          "busyMs": 4988.2,
+          "computeMs": 4986.9
+        },
+        {
+          "slot": 1,
+          "label": 14,
+          "startMs": 0.3,
+          "endMs": 4992.7,
+          "busyMs": 4992.4,
+          "computeMs": 4991.9
+        },
+        {
+          "slot": 3,
+          "label": 8,
+          "startMs": 0.1,
+          "endMs": 5263.2,
+          "busyMs": 5263.1,
+          "computeMs": 5262.3
+        },
+        {
+          "slot": 11,
+          "label": 10,
+          "startMs": 0.1,
+          "endMs": 5384.7,
+          "busyMs": 5384.6,
+          "computeMs": 5383.3
+        },
+        {
+          "slot": 6,
+          "label": 12,
+          "startMs": 0.2,
+          "endMs": 5407.3,
+          "busyMs": 5407.1,
+          "computeMs": 5406.3
+        },
+        {
+          "slot": 10,
+          "label": 15,
+          "startMs": 0.3,
+          "endMs": 5585,
+          "busyMs": 5584.7,
+          "computeMs": 5581.3
+        },
+        {
+          "slot": 4,
+          "label": 13,
+          "startMs": 0.2,
+          "endMs": 5671,
+          "busyMs": 5670.8,
+          "computeMs": 5669.7
+        },
+        {
+          "slot": 8,
+          "label": 9,
+          "startMs": 0.1,
+          "endMs": 6138.4,
+          "busyMs": 6138.3,
+          "computeMs": 6137.5
+        },
+        {
+          "slot": 13,
+          "label": 11,
+          "startMs": 0.2,
+          "endMs": 6176.3,
+          "busyMs": 6176.1,
+          "computeMs": 6175.2
+        },
+        {
+          "slot": 7,
+          "label": 16,
+          "startMs": 3762.5,
+          "endMs": 7676,
+          "busyMs": 3913.5,
+          "computeMs": 3913
+        },
+        {
+          "slot": 12,
+          "label": 20,
+          "startMs": 4708.7,
+          "endMs": 8146.6,
+          "busyMs": 3437.9,
+          "computeMs": 3437.3
+        },
+        {
+          "slot": 5,
+          "label": 21,
+          "startMs": 4736.5,
+          "endMs": 8349.8,
+          "busyMs": 3613.3,
+          "computeMs": 3609.7
+        },
+        {
+          "slot": 11,
+          "label": 26,
+          "startMs": 5384.7,
+          "endMs": 8680.8,
+          "busyMs": 3296.1,
+          "computeMs": 3295.5
+        },
+        {
+          "slot": 9,
+          "label": 23,
+          "startMs": 4988.2,
+          "endMs": 8703.2,
+          "busyMs": 3715,
+          "computeMs": 3714.5
+        },
+        {
+          "slot": 1,
+          "label": 24,
+          "startMs": 4992.7,
+          "endMs": 8736.1,
+          "busyMs": 3743.4,
+          "computeMs": 3743
+        },
+        {
+          "slot": 3,
+          "label": 25,
+          "startMs": 5263.2,
+          "endMs": 8835.1,
+          "busyMs": 3571.9,
+          "computeMs": 3571.3
+        },
+        {
+          "slot": 14,
+          "label": 22,
+          "startMs": 4906.1,
+          "endMs": 8912.3,
+          "busyMs": 4006.2,
+          "computeMs": 4005.7
+        },
+        {
+          "slot": 0,
+          "label": 18,
+          "startMs": 4530.3,
+          "endMs": 8961,
+          "busyMs": 4430.7,
+          "computeMs": 4430.1
+        },
+        {
+          "slot": 6,
+          "label": 27,
+          "startMs": 5407.3,
+          "endMs": 9439.1,
+          "busyMs": 4031.8,
+          "computeMs": 4031.2
+        },
+        {
+          "slot": 15,
+          "label": 17,
+          "startMs": 4261.9,
+          "endMs": 10094.5,
+          "busyMs": 5832.6,
+          "computeMs": 5832.1
+        },
+        {
+          "slot": 4,
+          "label": 29,
+          "startMs": 5671,
+          "endMs": 10389.2,
+          "busyMs": 4718.2,
+          "computeMs": 4717.2
+        },
+        {
+          "slot": 2,
+          "label": 19,
+          "startMs": 4612.3,
+          "endMs": 10595.8,
+          "busyMs": 5983.5,
+          "computeMs": 5982.5
+        },
+        {
+          "slot": 10,
+          "label": 28,
+          "startMs": 5585.1,
+          "endMs": 10754.3,
+          "busyMs": 5169.2,
+          "computeMs": 5168.5
+        },
+        {
+          "slot": 11,
+          "label": 35,
+          "startMs": 8680.9,
+          "endMs": 11176.5,
+          "busyMs": 2495.6,
+          "computeMs": 2495.1
+        },
+        {
+          "slot": 8,
+          "label": 30,
+          "startMs": 6138.4,
+          "endMs": 11316,
+          "busyMs": 5177.6,
+          "computeMs": 5177
+        },
+        {
+          "slot": 7,
+          "label": 32,
+          "startMs": 7676,
+          "endMs": 11549.9,
+          "busyMs": 3873.9,
+          "computeMs": 3872.8
+        },
+        {
+          "slot": 13,
+          "label": 31,
+          "startMs": 6176.3,
+          "endMs": 11809.2,
+          "busyMs": 5632.9,
+          "computeMs": 5632
+        },
+        {
+          "slot": 12,
+          "label": 33,
+          "startMs": 8146.7,
+          "endMs": 12299.4,
+          "busyMs": 4152.7,
+          "computeMs": 4152.2
+        },
+        {
+          "slot": 9,
+          "label": 36,
+          "startMs": 8703.2,
+          "endMs": 13197.7,
+          "busyMs": 4494.5,
+          "computeMs": 4491.3
+        },
+        {
+          "slot": 14,
+          "label": 39,
+          "startMs": 8912.3,
+          "endMs": 13248.2,
+          "busyMs": 4335.9,
+          "computeMs": 4335.1
+        },
+        {
+          "slot": 0,
+          "label": 40,
+          "startMs": 8961,
+          "endMs": 13448.1,
+          "busyMs": 4487.1,
+          "computeMs": 4486.4
+        },
+        {
+          "slot": 5,
+          "label": 34,
+          "startMs": 8349.9,
+          "endMs": 13491.2,
+          "busyMs": 5141.3,
+          "computeMs": 5141
+        },
+        {
+          "slot": 1,
+          "label": 37,
+          "startMs": 8736.1,
+          "endMs": 13549,
+          "busyMs": 4812.9,
+          "computeMs": 4812.3
+        },
+        {
+          "slot": 3,
+          "label": 38,
+          "startMs": 8835.1,
+          "endMs": 13861,
+          "busyMs": 5025.9,
+          "computeMs": 5024.9
+        },
+        {
+          "slot": 6,
+          "label": 41,
+          "startMs": 9439.1,
+          "endMs": 14647.4,
+          "busyMs": 5208.3,
+          "computeMs": 5207.6
+        },
+        {
+          "slot": 15,
+          "label": 42,
+          "startMs": 10094.5,
+          "endMs": 15121.8,
+          "busyMs": 5027.3,
+          "computeMs": 5026.2
+        },
+        {
+          "slot": 7,
+          "label": 48,
+          "startMs": 11549.9,
+          "endMs": 15406.5,
+          "busyMs": 3856.6,
+          "computeMs": 3853.5
+        },
+        {
+          "slot": 2,
+          "label": 44,
+          "startMs": 10595.8,
+          "endMs": 15762.3,
+          "busyMs": 5166.5,
+          "computeMs": 5165.3
+        },
+        {
+          "slot": 10,
+          "label": 45,
+          "startMs": 10754.4,
+          "endMs": 15840.9,
+          "busyMs": 5086.5,
+          "computeMs": 5085.8
+        },
+        {
+          "slot": 8,
+          "label": 47,
+          "startMs": 11316,
+          "endMs": 16076.9,
+          "busyMs": 4760.9,
+          "computeMs": 4759.9
+        },
+        {
+          "slot": 11,
+          "label": 46,
+          "startMs": 11176.6,
+          "endMs": 16295.2,
+          "busyMs": 5118.6,
+          "computeMs": 5117.9
+        },
+        {
+          "slot": 4,
+          "label": 43,
+          "startMs": 10389.3,
+          "endMs": 16464.9,
+          "busyMs": 6075.6,
+          "computeMs": 6072.5
+        },
+        {
+          "slot": 12,
+          "label": 50,
+          "startMs": 12299.4,
+          "endMs": 17058.4,
+          "busyMs": 4759,
+          "computeMs": 4758.4
+        },
+        {
+          "slot": 13,
+          "label": 49,
+          "startMs": 11809.2,
+          "endMs": 17264,
+          "busyMs": 5454.8,
+          "computeMs": 5454.3
+        },
+        {
+          "slot": 14,
+          "label": 52,
+          "startMs": 13248.3,
+          "endMs": 17883.8,
+          "busyMs": 4635.5,
+          "computeMs": 4635
+        },
+        {
+          "slot": 3,
+          "label": 56,
+          "startMs": 13861.1,
+          "endMs": 17907.8,
+          "busyMs": 4046.7,
+          "computeMs": 4046.2
+        },
+        {
+          "slot": 9,
+          "label": 51,
+          "startMs": 13197.7,
+          "endMs": 18458.4,
+          "busyMs": 5260.7,
+          "computeMs": 5259.7
+        },
+        {
+          "slot": 5,
+          "label": 54,
+          "startMs": 13491.2,
+          "endMs": 18479.2,
+          "busyMs": 4988,
+          "computeMs": 4987.1
+        },
+        {
+          "slot": 0,
+          "label": 53,
+          "startMs": 13448.1,
+          "endMs": 18508.1,
+          "busyMs": 5060,
+          "computeMs": 5059.3
+        },
+        {
+          "slot": 1,
+          "label": 55,
+          "startMs": 13549,
+          "endMs": 18641.1,
+          "busyMs": 5092.1,
+          "computeMs": 5091.4
+        },
+        {
+          "slot": 6,
+          "label": 57,
+          "startMs": 14647.5,
+          "endMs": 20168.8,
+          "busyMs": 5521.3,
+          "computeMs": 5520.7
+        },
+        {
+          "slot": 15,
+          "label": 58,
+          "startMs": 15121.8,
+          "endMs": 20333.9,
+          "busyMs": 5212.1,
+          "computeMs": 5211.5
+        },
+        {
+          "slot": 4,
+          "label": 64,
+          "startMs": 16465,
+          "endMs": 20339,
+          "busyMs": 3874,
+          "computeMs": 3873.8
+        },
+        {
+          "slot": 8,
+          "label": 62,
+          "startMs": 16076.9,
+          "endMs": 21132.7,
+          "busyMs": 5055.8,
+          "computeMs": 5055.2
+        },
+        {
+          "slot": 7,
+          "label": 59,
+          "startMs": 15406.5,
+          "endMs": 21201.4,
+          "busyMs": 5794.9,
+          "computeMs": 5793.8
+        },
+        {
+          "slot": 10,
+          "label": 61,
+          "startMs": 15840.9,
+          "endMs": 21533.5,
+          "busyMs": 5692.6,
+          "computeMs": 5690.1
+        },
+        {
+          "slot": 2,
+          "label": 60,
+          "startMs": 15762.3,
+          "endMs": 21614.5,
+          "busyMs": 5852.2,
+          "computeMs": 5851.8
+        },
+        {
+          "slot": 11,
+          "label": 63,
+          "startMs": 16295.2,
+          "endMs": 21802.8,
+          "busyMs": 5507.6,
+          "computeMs": 5507
+        },
+        {
+          "slot": 13,
+          "label": 66,
+          "startMs": 17264.1,
+          "endMs": 22064.8,
+          "busyMs": 4800.7,
+          "computeMs": 4800.3
+        },
+        {
+          "slot": 14,
+          "label": 67,
+          "startMs": 17883.8,
+          "endMs": 22096.4,
+          "busyMs": 4212.6,
+          "computeMs": 4211.6
+        },
+        {
+          "slot": 12,
+          "label": 65,
+          "startMs": 17058.4,
+          "endMs": 22325.7,
+          "busyMs": 5267.3,
+          "computeMs": 5266.4
+        },
+        {
+          "slot": 9,
+          "label": 69,
+          "startMs": 18458.4,
+          "endMs": 22464.2,
+          "busyMs": 4005.8,
+          "computeMs": 4001.9
+        },
+        {
+          "slot": 5,
+          "label": 70,
+          "startMs": 18479.2,
+          "endMs": 23179.4,
+          "busyMs": 4700.2,
+          "computeMs": 4698.9
+        },
+        {
+          "slot": 3,
+          "label": 68,
+          "startMs": 17907.8,
+          "endMs": 23330.4,
+          "busyMs": 5422.6,
+          "computeMs": 5420.8
+        },
+        {
+          "slot": 0,
+          "label": 71,
+          "startMs": 18508.1,
+          "endMs": 23646.9,
+          "busyMs": 5138.8,
+          "computeMs": 5137.9
+        },
+        {
+          "slot": 1,
+          "label": 72,
+          "startMs": 18641.1,
+          "endMs": 23984.7,
+          "busyMs": 5343.6,
+          "computeMs": 5343
+        },
+        {
+          "slot": 6,
+          "label": 73,
+          "startMs": 20168.9,
+          "endMs": 24490,
+          "busyMs": 4321.1,
+          "computeMs": 4320.5
+        },
+        {
+          "slot": 15,
+          "label": 74,
+          "startMs": 20333.9,
+          "endMs": 24964.4,
+          "busyMs": 4630.5,
+          "computeMs": 4627.9
+        },
+        {
+          "slot": 4,
+          "label": 75,
+          "startMs": 20339.2,
+          "endMs": 25045.7,
+          "busyMs": 4706.5,
+          "computeMs": 4705.4
+        },
+        {
+          "slot": 7,
+          "label": 77,
+          "startMs": 21201.4,
+          "endMs": 25643.9,
+          "busyMs": 4442.5,
+          "computeMs": 4441.9
+        },
+        {
+          "slot": 8,
+          "label": 76,
+          "startMs": 21132.7,
+          "endMs": 25921.9,
+          "busyMs": 4789.2,
+          "computeMs": 4787.5
+        },
+        {
+          "slot": 13,
+          "label": 81,
+          "startMs": 22064.8,
+          "endMs": 26052.3,
+          "busyMs": 3987.5,
+          "computeMs": 3985.8
+        },
+        {
+          "slot": 11,
+          "label": 80,
+          "startMs": 21802.8,
+          "endMs": 26185.9,
+          "busyMs": 4383.1,
+          "computeMs": 4382.6
+        },
+        {
+          "slot": 2,
+          "label": 79,
+          "startMs": 21614.6,
+          "endMs": 26186.9,
+          "busyMs": 4572.3,
+          "computeMs": 4571.6
+        },
+        {
+          "slot": 10,
+          "label": 78,
+          "startMs": 21533.5,
+          "endMs": 26223.2,
+          "busyMs": 4689.7,
+          "computeMs": 4689.2
+        },
+        {
+          "slot": 14,
+          "label": 82,
+          "startMs": 22096.4,
+          "endMs": 26607.9,
+          "busyMs": 4511.5,
+          "computeMs": 4510.8
+        },
+        {
+          "slot": 9,
+          "label": 84,
+          "startMs": 22464.2,
+          "endMs": 27074.1,
+          "busyMs": 4609.9,
+          "computeMs": 4609.4
+        },
+        {
+          "slot": 12,
+          "label": 83,
+          "startMs": 22325.7,
+          "endMs": 27753.1,
+          "busyMs": 5427.4,
+          "computeMs": 5426.7
+        },
+        {
+          "slot": 3,
+          "label": 86,
+          "startMs": 23330.4,
+          "endMs": 27802.2,
+          "busyMs": 4471.8,
+          "computeMs": 4471.3
+        },
+        {
+          "slot": 4,
+          "label": 91,
+          "startMs": 25045.7,
+          "endMs": 28246.3,
+          "busyMs": 3200.6,
+          "computeMs": 3200.1
+        },
+        {
+          "slot": 5,
+          "label": 85,
+          "startMs": 23179.4,
+          "endMs": 28367.8,
+          "busyMs": 5188.4,
+          "computeMs": 5186.2
+        },
+        {
+          "slot": 1,
+          "label": 88,
+          "startMs": 23984.8,
+          "endMs": 28815.9,
+          "busyMs": 4831.1,
+          "computeMs": 4830.3
+        },
+        {
+          "slot": 0,
+          "label": 87,
+          "startMs": 23646.9,
+          "endMs": 29096.1,
+          "busyMs": 5449.2,
+          "computeMs": 5448.7
+        },
+        {
+          "slot": 6,
+          "label": 89,
+          "startMs": 24490,
+          "endMs": 29733.1,
+          "busyMs": 5243.1,
+          "computeMs": 5242.4
+        },
+        {
+          "slot": 15,
+          "label": 90,
+          "startMs": 24964.5,
+          "endMs": 29894.2,
+          "busyMs": 4929.7,
+          "computeMs": 4929.1
+        },
+        {
+          "slot": 11,
+          "label": 95,
+          "startMs": 26185.9,
+          "endMs": 30369,
+          "busyMs": 4183.1,
+          "computeMs": 4181.7
+        },
+        {
+          "slot": 10,
+          "label": 97,
+          "startMs": 26223.2,
+          "endMs": 30707.8,
+          "busyMs": 4484.6,
+          "computeMs": 4484.1
+        },
+        {
+          "slot": 14,
+          "label": 98,
+          "startMs": 26607.9,
+          "endMs": 30730.2,
+          "busyMs": 4122.3,
+          "computeMs": 4121.4
+        },
+        {
+          "slot": 13,
+          "label": 94,
+          "startMs": 26052.3,
+          "endMs": 30842.2,
+          "busyMs": 4789.9,
+          "computeMs": 4789.4
+        },
+        {
+          "slot": 2,
+          "label": 96,
+          "startMs": 26186.9,
+          "endMs": 31096.3,
+          "busyMs": 4909.4,
+          "computeMs": 4908.6
+        },
+        {
+          "slot": 8,
+          "label": 93,
+          "startMs": 25921.9,
+          "endMs": 31183.2,
+          "busyMs": 5261.3,
+          "computeMs": 5260.6
+        },
+        {
+          "slot": 7,
+          "label": 92,
+          "startMs": 25643.9,
+          "endMs": 31467.2,
+          "busyMs": 5823.3,
+          "computeMs": 5822.4
+        },
+        {
+          "slot": 9,
+          "label": 99,
+          "startMs": 27074.2,
+          "endMs": 32092.6,
+          "busyMs": 5018.4,
+          "computeMs": 5017.9
+        },
+        {
+          "slot": 12,
+          "label": 100,
+          "startMs": 27753.1,
+          "endMs": 32968.5,
+          "busyMs": 5215.4,
+          "computeMs": 5214.8
+        },
+        {
+          "slot": 3,
+          "label": 101,
+          "startMs": 27802.2,
+          "endMs": 33241.6,
+          "busyMs": 5439.4,
+          "computeMs": 5438.7
+        },
+        {
+          "slot": 4,
+          "label": 102,
+          "startMs": 28246.3,
+          "endMs": 33754.2,
+          "busyMs": 5507.9,
+          "computeMs": 5507.1
+        },
+        {
+          "slot": 1,
+          "label": 104,
+          "startMs": 28815.9,
+          "endMs": 33834.2,
+          "busyMs": 5018.3,
+          "computeMs": 5017.2
+        },
+        {
+          "slot": 5,
+          "label": 103,
+          "startMs": 28367.8,
+          "endMs": 33884.5,
+          "busyMs": 5516.7,
+          "computeMs": 5515.9
+        },
+        {
+          "slot": 13,
+          "label": 111,
+          "startMs": 30842.2,
+          "endMs": 34279.7,
+          "busyMs": 3437.5,
+          "computeMs": 3436.5
+        },
+        {
+          "slot": 0,
+          "label": 105,
+          "startMs": 29096.2,
+          "endMs": 34337,
+          "busyMs": 5240.8,
+          "computeMs": 5240.3
+        },
+        {
+          "slot": 15,
+          "label": 107,
+          "startMs": 29894.2,
+          "endMs": 34359.6,
+          "busyMs": 4465.4,
+          "computeMs": 4461.8
+        },
+        {
+          "slot": 8,
+          "label": 113,
+          "startMs": 31183.2,
+          "endMs": 34670.2,
+          "busyMs": 3487,
+          "computeMs": 3485.6
+        },
+        {
+          "slot": 10,
+          "label": 109,
+          "startMs": 30707.8,
+          "endMs": 34832.8,
+          "busyMs": 4125,
+          "computeMs": 4124.2
+        },
+        {
+          "slot": 11,
+          "label": 108,
+          "startMs": 30369,
+          "endMs": 35052.1,
+          "busyMs": 4683.1,
+          "computeMs": 4679.9
+        },
+        {
+          "slot": 6,
+          "label": 106,
+          "startMs": 29733.2,
+          "endMs": 35371,
+          "busyMs": 5637.8,
+          "computeMs": 5637.3
+        },
+        {
+          "slot": 14,
+          "label": 110,
+          "startMs": 30730.2,
+          "endMs": 35386,
+          "busyMs": 4655.8,
+          "computeMs": 4644.2
+        },
+        {
+          "slot": 2,
+          "label": 112,
+          "startMs": 31096.4,
+          "endMs": 35582.1,
+          "busyMs": 4485.7,
+          "computeMs": 4484.1
+        },
+        {
+          "slot": 7,
+          "label": 114,
+          "startMs": 31467.2,
+          "endMs": 35872.4,
+          "busyMs": 4405.2,
+          "computeMs": 4404.3
+        },
+        {
+          "slot": 12,
+          "label": 116,
+          "startMs": 32968.5,
+          "endMs": 36486.4,
+          "busyMs": 3517.9,
+          "computeMs": 3517.3
+        },
+        {
+          "slot": 4,
+          "label": 118,
+          "startMs": 33754.2,
+          "endMs": 36515.9,
+          "busyMs": 2761.7,
+          "computeMs": 2751.6
+        },
+        {
+          "slot": 9,
+          "label": 115,
+          "startMs": 32092.6,
+          "endMs": 36622.1,
+          "busyMs": 4529.5,
+          "computeMs": 4528.8
+        },
+        {
+          "slot": 5,
+          "label": 120,
+          "startMs": 33884.5,
+          "endMs": 36753.7,
+          "busyMs": 2869.2,
+          "computeMs": 2868
+        },
+        {
+          "slot": 0,
+          "label": 122,
+          "startMs": 34337,
+          "endMs": 37477.3,
+          "busyMs": 3140.3,
+          "computeMs": 3139.6
+        },
+        {
+          "slot": 1,
+          "label": 119,
+          "startMs": 33834.3,
+          "endMs": 38297.5,
+          "busyMs": 4463.2,
+          "computeMs": 4452.1
+        },
+        {
+          "slot": 13,
+          "label": 121,
+          "startMs": 34279.7,
+          "endMs": 38898.4,
+          "busyMs": 4618.7,
+          "computeMs": 4611.5
+        },
+        {
+          "slot": 3,
+          "label": 117,
+          "startMs": 33241.6,
+          "endMs": 39070,
+          "busyMs": 5828.4,
+          "computeMs": 5827.9
+        },
+        {
+          "slot": 15,
+          "label": 123,
+          "startMs": 34359.6,
+          "endMs": 39214.8,
+          "busyMs": 4855.2,
+          "computeMs": 4854.3
+        },
+        {
+          "slot": 0,
+          "label": 135,
+          "startMs": 37477.3,
+          "endMs": 39326.9,
+          "busyMs": 1849.6,
+          "computeMs": 1848.1
+        },
+        {
+          "slot": 8,
+          "label": 124,
+          "startMs": 34670.2,
+          "endMs": 39575.5,
+          "busyMs": 4905.3,
+          "computeMs": 4897.2
+        },
+        {
+          "slot": 10,
+          "label": 125,
+          "startMs": 34832.8,
+          "endMs": 39751.8,
+          "busyMs": 4919,
+          "computeMs": 4916.4
+        },
+        {
+          "slot": 12,
+          "label": 131,
+          "startMs": 36486.4,
+          "endMs": 39967,
+          "busyMs": 3480.6,
+          "computeMs": 3474.3
+        },
+        {
+          "slot": 11,
+          "label": 126,
+          "startMs": 35052.1,
+          "endMs": 40017.8,
+          "busyMs": 4965.7,
+          "computeMs": 4959.4
+        },
+        {
+          "slot": 4,
+          "label": 132,
+          "startMs": 36515.9,
+          "endMs": 40184.9,
+          "busyMs": 3669,
+          "computeMs": 3667.6
+        },
+        {
+          "slot": 2,
+          "label": 129,
+          "startMs": 35582.1,
+          "endMs": 40195.7,
+          "busyMs": 4613.6,
+          "computeMs": 4605.8
+        },
+        {
+          "slot": 14,
+          "label": 128,
+          "startMs": 35386,
+          "endMs": 40223,
+          "busyMs": 4837,
+          "computeMs": 4835.6
+        },
+        {
+          "slot": 6,
+          "label": 127,
+          "startMs": 35371,
+          "endMs": 40227.1,
+          "busyMs": 4856.1,
+          "computeMs": 4845.3
+        },
+        {
+          "slot": 5,
+          "label": 134,
+          "startMs": 36753.7,
+          "endMs": 40291.5,
+          "busyMs": 3537.8,
+          "computeMs": 3525.4
+        },
+        {
+          "slot": 9,
+          "label": 133,
+          "startMs": 36622.1,
+          "endMs": 40392.5,
+          "busyMs": 3770.4,
+          "computeMs": 3768.7
+        },
+        {
+          "slot": 1,
+          "label": 136,
+          "startMs": 38297.5,
+          "endMs": 40393.7,
+          "busyMs": 2096.2,
+          "computeMs": 2093.5
+        },
+        {
+          "slot": 13,
+          "label": 137,
+          "startMs": 38898.4,
+          "endMs": 40412.9,
+          "busyMs": 1514.5,
+          "computeMs": 1509.1
+        },
+        {
+          "slot": 7,
+          "label": 130,
+          "startMs": 35872.4,
+          "endMs": 40492.2,
+          "busyMs": 4619.8,
+          "computeMs": 4609.4
+        },
+        {
+          "slot": 3,
+          "label": 138,
+          "startMs": 39070,
+          "endMs": 41518.1,
+          "busyMs": 2448.1,
+          "computeMs": 2445.2
+        }
+      ],
+      "tasks": 139,
+      "wallMs": 41518.1,
+      "busyMs": [
+        39326.8,
+        40393.2,
+        40195.5,
+        41517.9,
+        40184.3,
+        40291.3,
+        40226.6,
+        40492.1,
+        39575.4,
+        40392.4,
+        39751.3,
+        40017.5,
+        39966.9,
+        40412.6,
+        40222.9,
+        39214.6
+      ],
+      "computeMs": [
+        39320.2,
+        40374.7,
+        40181.5,
+        41508.6,
+        40165,
+        40266,
+        40211.3,
+        40472.9,
+        39560.5,
+        40379.1,
+        39739.6,
+        40002.4,
+        39955.7,
+        40394.1,
+        40204.9,
+        39204.1
+      ],
+      "taskCounts": [
+        9,
+        9,
+        8,
+        9,
+        9,
+        9,
+        8,
+        9,
+        8,
+        9,
+        8,
+        9,
+        9,
+        9,
+        9,
+        8
+      ],
+      "idlePool": 0.0333,
+      "idleWorker": 0.0336,
+      "taskMsMedian": 4736.4,
+      "taskMsMax": 6176.1,
+      "taskMsMin": 1514.5,
+      "fingerprint": {
+        "hash": "5b43a926",
+        "length": 3644
+      },
+      "evaluations": [
+        13378,
+        15309,
+        12953,
+        14007,
+        13574,
+        12647,
+        14314,
+        12046,
+        15578,
+        16355,
+        15902,
+        15649,
+        14300,
+        16006,
+        15051,
+        16190,
+        13800,
+        15678,
+        11669,
+        15803,
+        8341,
+        10499,
+        10909,
+        9874,
+        10659,
+        10665,
+        9007,
+        11557,
+        14391,
+        14221,
+        13791,
+        14215,
+        14055,
+        11205,
+        13985,
+        7000,
+        12902,
+        14557,
+        15142,
+        13324,
+        12741,
+        15003,
+        14081,
+        16066,
+        15177,
+        14832,
+        13948,
+        13863,
+        11721,
+        14502,
+        14008,
+        16300,
+        14411,
+        14604,
+        12607,
+        15258,
+        10773,
+        16127,
+        14293,
+        16357,
+        16593,
+        15819,
+        14705,
+        16263,
+        11457,
+        16172,
+        13863,
+        12291,
+        14891,
+        11866,
+        15956,
+        14840,
+        14728,
+        11368,
+        12602,
+        13046,
+        13008,
+        11900,
+        13674,
+        11436,
+        13218,
+        12115,
+        13394,
+        14917,
+        13717,
+        15504,
+        13723,
+        15591,
+        15169,
+        14272,
+        12156,
+        8961,
+        15936,
+        13868,
+        14657,
+        12150,
+        14751,
+        12789,
+        12406,
+        13081,
+        15802,
+        15283,
+        15638,
+        15202,
+        15689,
+        15744,
+        15749,
+        12490,
+        15275,
+        11471,
+        13027,
+        9548,
+        10728,
+        8837,
+        12832,
+        13964,
+        10586,
+        16122,
+        8688,
+        12579,
+        8076,
+        12616,
+        8688,
+        12807,
+        14947,
+        14600,
+        14488,
+        14346,
+        13932,
+        13348,
+        14047,
+        11089,
+        10897,
+        10870,
+        11121,
+        5379,
+        7423,
+        5835,
+        16088
+      ],
+      "legal": [
+        8,
+        12,
+        21,
+        17,
+        12,
+        20,
+        18,
+        20,
+        17,
+        20,
+        37,
+        14,
+        9,
+        104,
+        14,
+        119,
+        17,
+        30,
+        7,
+        30,
+        7,
+        6,
+        14,
+        6,
+        19,
+        26,
+        15,
+        35,
+        8,
+        17,
+        13,
+        35,
+        29,
+        4,
+        5,
+        24,
+        42,
+        34,
+        16,
+        10,
+        25,
+        24,
+        47,
+        104,
+        20,
+        21,
+        28,
+        17,
+        10,
+        28,
+        25,
+        80,
+        29,
+        18,
+        48,
+        18,
+        41,
+        24,
+        39,
+        24,
+        23,
+        16,
+        19,
+        23,
+        9,
+        34,
+        17,
+        8,
+        20,
+        5,
+        27,
+        114,
+        32,
+        39,
+        5,
+        85,
+        55,
+        12,
+        11,
+        29,
+        14,
+        18,
+        24,
+        24,
+        12,
+        12,
+        9,
+        26,
+        7,
+        12,
+        16,
+        2,
+        25,
+        16,
+        18,
+        14,
+        24,
+        25,
+        41,
+        29,
+        16,
+        10,
+        19,
+        37,
+        55,
+        14,
+        19,
+        15,
+        19,
+        3,
+        22,
+        6,
+        19,
+        31,
+        35,
+        153,
+        4,
+        6,
+        3,
+        7,
+        3,
+        21,
+        4,
+        19,
+        17,
+        19,
+        16,
+        15,
+        18,
+        20,
+        37,
+        16,
+        18,
+        12,
+        105,
+        2,
+        3,
+        4,
+        5
+      ],
+      "totalEvaluations": 1851884
+    },
+    {
+      "path": "decide",
+      "workers": 8,
+      "entries": [
+        {
+          "slot": 6,
+          "label": 7,
+          "startMs": 0.1,
+          "endMs": 2063.3,
+          "busyMs": 2063.2,
+          "computeMs": 2062.7
+        },
+        {
+          "slot": 3,
+          "label": 5,
+          "startMs": 0.1,
+          "endMs": 2152.1,
+          "busyMs": 2152,
+          "computeMs": 2151.5
+        },
+        {
+          "slot": 0,
+          "label": 2,
+          "startMs": 0.1,
+          "endMs": 2180.1,
+          "busyMs": 2180,
+          "computeMs": 2179.6
+        },
+        {
+          "slot": 2,
+          "label": 3,
+          "startMs": 0.1,
+          "endMs": 2282.4,
+          "busyMs": 2282.3,
+          "computeMs": 2281.9
+        },
+        {
+          "slot": 7,
+          "label": 6,
+          "startMs": 0.1,
+          "endMs": 2322.7,
+          "busyMs": 2322.6,
+          "computeMs": 2322.2
+        },
+        {
+          "slot": 1,
+          "label": 1,
+          "startMs": 0.1,
+          "endMs": 2478.8,
+          "busyMs": 2478.7,
+          "computeMs": 2478.4
+        },
+        {
+          "slot": 4,
+          "label": 0,
+          "startMs": 0,
+          "endMs": 3845.9,
+          "busyMs": 3845.9,
+          "computeMs": 3845.3
+        },
+        {
+          "slot": 5,
+          "label": 4,
+          "startMs": 0.1,
+          "endMs": 3884.5,
+          "busyMs": 3884.4,
+          "computeMs": 3883.8
+        },
+        {
+          "slot": 6,
+          "label": 8,
+          "startMs": 2063.4,
+          "endMs": 4693.5,
+          "busyMs": 2630.1,
+          "computeMs": 2629.4
+        },
+        {
+          "slot": 7,
+          "label": 12,
+          "startMs": 2322.7,
+          "endMs": 4746.5,
+          "busyMs": 2423.8,
+          "computeMs": 2423.1
+        },
+        {
+          "slot": 0,
+          "label": 10,
+          "startMs": 2180.1,
+          "endMs": 4841.6,
+          "busyMs": 2661.5,
+          "computeMs": 2660.9
+        },
+        {
+          "slot": 2,
+          "label": 11,
+          "startMs": 2282.4,
+          "endMs": 4866.2,
+          "busyMs": 2583.8,
+          "computeMs": 2583.1
+        },
+        {
+          "slot": 3,
+          "label": 9,
+          "startMs": 2152.1,
+          "endMs": 4886.9,
+          "busyMs": 2734.8,
+          "computeMs": 2734.1
+        },
+        {
+          "slot": 1,
+          "label": 13,
+          "startMs": 2478.8,
+          "endMs": 5195.8,
+          "busyMs": 2717,
+          "computeMs": 2716.4
+        },
+        {
+          "slot": 3,
+          "label": 20,
+          "startMs": 4887,
+          "endMs": 6442.6,
+          "busyMs": 1555.6,
+          "computeMs": 1555.1
+        },
+        {
+          "slot": 0,
+          "label": 18,
+          "startMs": 4841.6,
+          "endMs": 6819,
+          "busyMs": 1977.4,
+          "computeMs": 1976.7
+        },
+        {
+          "slot": 1,
+          "label": 21,
+          "startMs": 5195.8,
+          "endMs": 6971.7,
+          "busyMs": 1775.9,
+          "computeMs": 1775.4
+        },
+        {
+          "slot": 6,
+          "label": 16,
+          "startMs": 4693.5,
+          "endMs": 7049.3,
+          "busyMs": 2355.8,
+          "computeMs": 2355.2
+        },
+        {
+          "slot": 7,
+          "label": 17,
+          "startMs": 4746.5,
+          "endMs": 7415.5,
+          "busyMs": 2669,
+          "computeMs": 2668.6
+        },
+        {
+          "slot": 2,
+          "label": 19,
+          "startMs": 4866.2,
+          "endMs": 7551.2,
+          "busyMs": 2685,
+          "computeMs": 2684.4
+        },
+        {
+          "slot": 4,
+          "label": 14,
+          "startMs": 3846,
+          "endMs": 8215.9,
+          "busyMs": 4369.9,
+          "computeMs": 4369.3
+        },
+        {
+          "slot": 3,
+          "label": 22,
+          "startMs": 6442.7,
+          "endMs": 8346.3,
+          "busyMs": 1903.6,
+          "computeMs": 1903.1
+        },
+        {
+          "slot": 5,
+          "label": 15,
+          "startMs": 3884.5,
+          "endMs": 8524.6,
+          "busyMs": 4640.1,
+          "computeMs": 4639.4
+        },
+        {
+          "slot": 0,
+          "label": 23,
+          "startMs": 6819,
+          "endMs": 8542.5,
+          "busyMs": 1723.5,
+          "computeMs": 1723.1
+        },
+        {
+          "slot": 1,
+          "label": 24,
+          "startMs": 6971.8,
+          "endMs": 8739.8,
+          "busyMs": 1768,
+          "computeMs": 1767.6
+        },
+        {
+          "slot": 6,
+          "label": 25,
+          "startMs": 7049.3,
+          "endMs": 8879.5,
+          "busyMs": 1830.2,
+          "computeMs": 1829.7
+        },
+        {
+          "slot": 7,
+          "label": 26,
+          "startMs": 7415.6,
+          "endMs": 8935.9,
+          "busyMs": 1520.3,
+          "computeMs": 1520
+        },
+        {
+          "slot": 2,
+          "label": 27,
+          "startMs": 7551.2,
+          "endMs": 9543,
+          "busyMs": 1991.8,
+          "computeMs": 1991.3
+        },
+        {
+          "slot": 3,
+          "label": 29,
+          "startMs": 8346.4,
+          "endMs": 10766.7,
+          "busyMs": 2420.3,
+          "computeMs": 2419.9
+        },
+        {
+          "slot": 2,
+          "label": 35,
+          "startMs": 9543,
+          "endMs": 10784.1,
+          "busyMs": 1241.1,
+          "computeMs": 1240.5
+        },
+        {
+          "slot": 6,
+          "label": 33,
+          "startMs": 8879.6,
+          "endMs": 10790.1,
+          "busyMs": 1910.5,
+          "computeMs": 1910
+        },
+        {
+          "slot": 0,
+          "label": 31,
+          "startMs": 8542.5,
+          "endMs": 10956.5,
+          "busyMs": 2414,
+          "computeMs": 2413.6
+        },
+        {
+          "slot": 1,
+          "label": 32,
+          "startMs": 8739.8,
+          "endMs": 11088.3,
+          "busyMs": 2348.5,
+          "computeMs": 2348.1
+        },
+        {
+          "slot": 7,
+          "label": 34,
+          "startMs": 8936,
+          "endMs": 11347.7,
+          "busyMs": 2411.7,
+          "computeMs": 2411.2
+        },
+        {
+          "slot": 4,
+          "label": 28,
+          "startMs": 8215.9,
+          "endMs": 12336.8,
+          "busyMs": 4120.9,
+          "computeMs": 4120.3
+        },
+        {
+          "slot": 5,
+          "label": 30,
+          "startMs": 8524.6,
+          "endMs": 12535.1,
+          "busyMs": 4010.5,
+          "computeMs": 4009.9
+        },
+        {
+          "slot": 3,
+          "label": 36,
+          "startMs": 10766.8,
+          "endMs": 12991.1,
+          "busyMs": 2224.3,
+          "computeMs": 2223.7
+        },
+        {
+          "slot": 0,
+          "label": 39,
+          "startMs": 10956.5,
+          "endMs": 13143.6,
+          "busyMs": 2187.1,
+          "computeMs": 2186.4
+        },
+        {
+          "slot": 1,
+          "label": 40,
+          "startMs": 11088.3,
+          "endMs": 13186.4,
+          "busyMs": 2098.1,
+          "computeMs": 2097.6
+        },
+        {
+          "slot": 2,
+          "label": 37,
+          "startMs": 10784.1,
+          "endMs": 13253.4,
+          "busyMs": 2469.3,
+          "computeMs": 2468.8
+        },
+        {
+          "slot": 6,
+          "label": 38,
+          "startMs": 10790.2,
+          "endMs": 13293.3,
+          "busyMs": 2503.1,
+          "computeMs": 2502.7
+        },
+        {
+          "slot": 7,
+          "label": 41,
+          "startMs": 11347.7,
+          "endMs": 13819.6,
+          "busyMs": 2471.9,
+          "computeMs": 2471.4
+        },
+        {
+          "slot": 6,
+          "label": 48,
+          "startMs": 13293.5,
+          "endMs": 15202.3,
+          "busyMs": 1908.8,
+          "computeMs": 1908.3
+        },
+        {
+          "slot": 3,
+          "label": 44,
+          "startMs": 12991.1,
+          "endMs": 15518.1,
+          "busyMs": 2527,
+          "computeMs": 2526.6
+        },
+        {
+          "slot": 1,
+          "label": 46,
+          "startMs": 13186.5,
+          "endMs": 15535.8,
+          "busyMs": 2349.3,
+          "computeMs": 2349
+        },
+        {
+          "slot": 2,
+          "label": 47,
+          "startMs": 13253.4,
+          "endMs": 15546.5,
+          "busyMs": 2293.1,
+          "computeMs": 2292.8
+        },
+        {
+          "slot": 0,
+          "label": 45,
+          "startMs": 13143.7,
+          "endMs": 15617.4,
+          "busyMs": 2473.7,
+          "computeMs": 2473.3
+        },
+        {
+          "slot": 7,
+          "label": 49,
+          "startMs": 13819.7,
+          "endMs": 16170.4,
+          "busyMs": 2350.7,
+          "computeMs": 2350.1
+        },
+        {
+          "slot": 4,
+          "label": 42,
+          "startMs": 12336.8,
+          "endMs": 16474.6,
+          "busyMs": 4137.8,
+          "computeMs": 4137.2
+        },
+        {
+          "slot": 5,
+          "label": 43,
+          "startMs": 12535.1,
+          "endMs": 17178.2,
+          "busyMs": 4643.1,
+          "computeMs": 4642.7
+        },
+        {
+          "slot": 6,
+          "label": 50,
+          "startMs": 15202.3,
+          "endMs": 17444,
+          "busyMs": 2241.7,
+          "computeMs": 2241.3
+        },
+        {
+          "slot": 0,
+          "label": 54,
+          "startMs": 15617.4,
+          "endMs": 17725.5,
+          "busyMs": 2108.1,
+          "computeMs": 2107.6
+        },
+        {
+          "slot": 1,
+          "label": 52,
+          "startMs": 15535.8,
+          "endMs": 17866.1,
+          "busyMs": 2330.3,
+          "computeMs": 2329.9
+        },
+        {
+          "slot": 2,
+          "label": 53,
+          "startMs": 15546.5,
+          "endMs": 17934,
+          "busyMs": 2387.5,
+          "computeMs": 2387
+        },
+        {
+          "slot": 3,
+          "label": 51,
+          "startMs": 15518.1,
+          "endMs": 18211.5,
+          "busyMs": 2693.4,
+          "computeMs": 2692.8
+        },
+        {
+          "slot": 4,
+          "label": 56,
+          "startMs": 16474.6,
+          "endMs": 18949.9,
+          "busyMs": 2475.3,
+          "computeMs": 2474.9
+        },
+        {
+          "slot": 7,
+          "label": 55,
+          "startMs": 16170.5,
+          "endMs": 19204.5,
+          "busyMs": 3034,
+          "computeMs": 3033.5
+        },
+        {
+          "slot": 6,
+          "label": 58,
+          "startMs": 17444,
+          "endMs": 19820.4,
+          "busyMs": 2376.4,
+          "computeMs": 2375.9
+        },
+        {
+          "slot": 5,
+          "label": 57,
+          "startMs": 17178.2,
+          "endMs": 20132.5,
+          "busyMs": 2954.3,
+          "computeMs": 2953.7
+        },
+        {
+          "slot": 0,
+          "label": 59,
+          "startMs": 17725.5,
+          "endMs": 20387.3,
+          "busyMs": 2661.8,
+          "computeMs": 2661.3
+        },
+        {
+          "slot": 1,
+          "label": 60,
+          "startMs": 17866.1,
+          "endMs": 20604.7,
+          "busyMs": 2738.6,
+          "computeMs": 2738.1
+        },
+        {
+          "slot": 3,
+          "label": 62,
+          "startMs": 18211.5,
+          "endMs": 20691.4,
+          "busyMs": 2479.9,
+          "computeMs": 2479.6
+        },
+        {
+          "slot": 4,
+          "label": 63,
+          "startMs": 18949.9,
+          "endMs": 21648.4,
+          "busyMs": 2698.5,
+          "computeMs": 2698
+        },
+        {
+          "slot": 0,
+          "label": 67,
+          "startMs": 20387.3,
+          "endMs": 22428.8,
+          "busyMs": 2041.5,
+          "computeMs": 2041.1
+        },
+        {
+          "slot": 5,
+          "label": 66,
+          "startMs": 20132.5,
+          "endMs": 22452.4,
+          "busyMs": 2319.9,
+          "computeMs": 2319.4
+        },
+        {
+          "slot": 2,
+          "label": 61,
+          "startMs": 17934,
+          "endMs": 22464.4,
+          "busyMs": 4530.4,
+          "computeMs": 4530
+        },
+        {
+          "slot": 6,
+          "label": 65,
+          "startMs": 19820.4,
+          "endMs": 22473.3,
+          "busyMs": 2652.9,
+          "computeMs": 2652.7
+        },
+        {
+          "slot": 7,
+          "label": 64,
+          "startMs": 19204.6,
+          "endMs": 22517.7,
+          "busyMs": 3313.1,
+          "computeMs": 3312.7
+        },
+        {
+          "slot": 3,
+          "label": 69,
+          "startMs": 20691.4,
+          "endMs": 22642.6,
+          "busyMs": 1951.2,
+          "computeMs": 1950.8
+        },
+        {
+          "slot": 1,
+          "label": 68,
+          "startMs": 20604.7,
+          "endMs": 23089.5,
+          "busyMs": 2484.8,
+          "computeMs": 2482.6
+        },
+        {
+          "slot": 4,
+          "label": 70,
+          "startMs": 21648.4,
+          "endMs": 24282.8,
+          "busyMs": 2634.4,
+          "computeMs": 2633.9
+        },
+        {
+          "slot": 6,
+          "label": 74,
+          "startMs": 22473.3,
+          "endMs": 24560,
+          "busyMs": 2086.7,
+          "computeMs": 2086.2
+        },
+        {
+          "slot": 3,
+          "label": 76,
+          "startMs": 22642.7,
+          "endMs": 24831.5,
+          "busyMs": 2188.8,
+          "computeMs": 2188.3
+        },
+        {
+          "slot": 5,
+          "label": 72,
+          "startMs": 22452.4,
+          "endMs": 24890.5,
+          "busyMs": 2438.1,
+          "computeMs": 2437.6
+        },
+        {
+          "slot": 0,
+          "label": 71,
+          "startMs": 22428.8,
+          "endMs": 24932.8,
+          "busyMs": 2504,
+          "computeMs": 2503.7
+        },
+        {
+          "slot": 1,
+          "label": 77,
+          "startMs": 23089.6,
+          "endMs": 25126.7,
+          "busyMs": 2037.1,
+          "computeMs": 2036.6
+        },
+        {
+          "slot": 2,
+          "label": 73,
+          "startMs": 22464.4,
+          "endMs": 25737.5,
+          "busyMs": 3273.1,
+          "computeMs": 3272.8
+        },
+        {
+          "slot": 7,
+          "label": 75,
+          "startMs": 22517.7,
+          "endMs": 26314.2,
+          "busyMs": 3796.5,
+          "computeMs": 3796.2
+        },
+        {
+          "slot": 6,
+          "label": 79,
+          "startMs": 24560,
+          "endMs": 26593.3,
+          "busyMs": 2033.3,
+          "computeMs": 2032.9
+        },
+        {
+          "slot": 4,
+          "label": 78,
+          "startMs": 24282.8,
+          "endMs": 26594.5,
+          "busyMs": 2311.7,
+          "computeMs": 2311.4
+        },
+        {
+          "slot": 5,
+          "label": 81,
+          "startMs": 24890.5,
+          "endMs": 26915.7,
+          "busyMs": 2025.2,
+          "computeMs": 2024.7
+        },
+        {
+          "slot": 3,
+          "label": 80,
+          "startMs": 24831.5,
+          "endMs": 27026.4,
+          "busyMs": 2194.9,
+          "computeMs": 2194.5
+        },
+        {
+          "slot": 0,
+          "label": 82,
+          "startMs": 24932.8,
+          "endMs": 27227,
+          "busyMs": 2294.2,
+          "computeMs": 2293.6
+        },
+        {
+          "slot": 1,
+          "label": 83,
+          "startMs": 25126.7,
+          "endMs": 27593.3,
+          "busyMs": 2466.6,
+          "computeMs": 2466.2
+        },
+        {
+          "slot": 6,
+          "label": 86,
+          "startMs": 26593.3,
+          "endMs": 29005.3,
+          "busyMs": 2412,
+          "computeMs": 2411.4
+        },
+        {
+          "slot": 1,
+          "label": 91,
+          "startMs": 27593.4,
+          "endMs": 29297.5,
+          "busyMs": 1704.1,
+          "computeMs": 1703.7
+        },
+        {
+          "slot": 3,
+          "label": 89,
+          "startMs": 27026.4,
+          "endMs": 29655.2,
+          "busyMs": 2628.8,
+          "computeMs": 2628.3
+        },
+        {
+          "slot": 4,
+          "label": 87,
+          "startMs": 26594.5,
+          "endMs": 29689.6,
+          "busyMs": 3095.1,
+          "computeMs": 3094.7
+        },
+        {
+          "slot": 2,
+          "label": 84,
+          "startMs": 25737.5,
+          "endMs": 29696.8,
+          "busyMs": 3959.3,
+          "computeMs": 3958.8
+        },
+        {
+          "slot": 0,
+          "label": 90,
+          "startMs": 27227,
+          "endMs": 29815.4,
+          "busyMs": 2588.4,
+          "computeMs": 2588
+        },
+        {
+          "slot": 5,
+          "label": 88,
+          "startMs": 26915.7,
+          "endMs": 29851.8,
+          "busyMs": 2936.1,
+          "computeMs": 2935.5
+        },
+        {
+          "slot": 7,
+          "label": 85,
+          "startMs": 26314.2,
+          "endMs": 30872.8,
+          "busyMs": 4558.6,
+          "computeMs": 4558.2
+        },
+        {
+          "slot": 4,
+          "label": 95,
+          "startMs": 29689.6,
+          "endMs": 31708.5,
+          "busyMs": 2018.9,
+          "computeMs": 2018.5
+        },
+        {
+          "slot": 1,
+          "label": 93,
+          "startMs": 29297.5,
+          "endMs": 31768.8,
+          "busyMs": 2471.3,
+          "computeMs": 2470.7
+        },
+        {
+          "slot": 6,
+          "label": 92,
+          "startMs": 29005.3,
+          "endMs": 31838.4,
+          "busyMs": 2833.1,
+          "computeMs": 2832.6
+        },
+        {
+          "slot": 5,
+          "label": 98,
+          "startMs": 29851.8,
+          "endMs": 31929,
+          "busyMs": 2077.2,
+          "computeMs": 2076.8
+        },
+        {
+          "slot": 0,
+          "label": 97,
+          "startMs": 29815.4,
+          "endMs": 31974.9,
+          "busyMs": 2159.5,
+          "computeMs": 2159
+        },
+        {
+          "slot": 3,
+          "label": 94,
+          "startMs": 29655.2,
+          "endMs": 32121.8,
+          "busyMs": 2466.6,
+          "computeMs": 2466.1
+        },
+        {
+          "slot": 2,
+          "label": 96,
+          "startMs": 29696.8,
+          "endMs": 33916.5,
+          "busyMs": 4219.7,
+          "computeMs": 4219.2
+        },
+        {
+          "slot": 4,
+          "label": 100,
+          "startMs": 31708.6,
+          "endMs": 34249.5,
+          "busyMs": 2540.9,
+          "computeMs": 2539.9
+        },
+        {
+          "slot": 1,
+          "label": 101,
+          "startMs": 31768.8,
+          "endMs": 34288.1,
+          "busyMs": 2519.3,
+          "computeMs": 2518.4
+        },
+        {
+          "slot": 6,
+          "label": 102,
+          "startMs": 31838.4,
+          "endMs": 34440.9,
+          "busyMs": 2602.5,
+          "computeMs": 2601.4
+        },
+        {
+          "slot": 5,
+          "label": 103,
+          "startMs": 31929,
+          "endMs": 34465.2,
+          "busyMs": 2536.2,
+          "computeMs": 2535.4
+        },
+        {
+          "slot": 0,
+          "label": 104,
+          "startMs": 31974.9,
+          "endMs": 34543.7,
+          "busyMs": 2568.8,
+          "computeMs": 2567.9
+        },
+        {
+          "slot": 7,
+          "label": 99,
+          "startMs": 30872.8,
+          "endMs": 34584.3,
+          "busyMs": 3711.5,
+          "computeMs": 3710.6
+        },
+        {
+          "slot": 3,
+          "label": 105,
+          "startMs": 32121.8,
+          "endMs": 34655.9,
+          "busyMs": 2534.1,
+          "computeMs": 2533.3
+        },
+        {
+          "slot": 0,
+          "label": 111,
+          "startMs": 34543.7,
+          "endMs": 36259.6,
+          "busyMs": 1715.9,
+          "computeMs": 1710
+        },
+        {
+          "slot": 4,
+          "label": 107,
+          "startMs": 34249.5,
+          "endMs": 36367.9,
+          "busyMs": 2118.4,
+          "computeMs": 2114.8
+        },
+        {
+          "slot": 7,
+          "label": 112,
+          "startMs": 34584.3,
+          "endMs": 36476.2,
+          "busyMs": 1891.9,
+          "computeMs": 1886.4
+        },
+        {
+          "slot": 5,
+          "label": 110,
+          "startMs": 34465.2,
+          "endMs": 36692.2,
+          "busyMs": 2227,
+          "computeMs": 2223
+        },
+        {
+          "slot": 2,
+          "label": 106,
+          "startMs": 33916.5,
+          "endMs": 36810,
+          "busyMs": 2893.5,
+          "computeMs": 2892.3
+        },
+        {
+          "slot": 1,
+          "label": 108,
+          "startMs": 34288.1,
+          "endMs": 36839.9,
+          "busyMs": 2551.8,
+          "computeMs": 2547.1
+        },
+        {
+          "slot": 3,
+          "label": 113,
+          "startMs": 34655.9,
+          "endMs": 37375.8,
+          "busyMs": 2719.9,
+          "computeMs": 2713.5
+        },
+        {
+          "slot": 6,
+          "label": 109,
+          "startMs": 34440.9,
+          "endMs": 37716,
+          "busyMs": 3275.1,
+          "computeMs": 3271.1
+        },
+        {
+          "slot": 7,
+          "label": 116,
+          "startMs": 36476.2,
+          "endMs": 38222,
+          "busyMs": 1745.8,
+          "computeMs": 1744.5
+        },
+        {
+          "slot": 2,
+          "label": 118,
+          "startMs": 36810,
+          "endMs": 38311.7,
+          "busyMs": 1501.7,
+          "computeMs": 1496.7
+        },
+        {
+          "slot": 0,
+          "label": 114,
+          "startMs": 36259.7,
+          "endMs": 38465.4,
+          "busyMs": 2205.7,
+          "computeMs": 2204.8
+        },
+        {
+          "slot": 4,
+          "label": 115,
+          "startMs": 36367.9,
+          "endMs": 38698.5,
+          "busyMs": 2330.6,
+          "computeMs": 2329.6
+        },
+        {
+          "slot": 3,
+          "label": 120,
+          "startMs": 37375.8,
+          "endMs": 38786.5,
+          "busyMs": 1410.7,
+          "computeMs": 1409.5
+        },
+        {
+          "slot": 1,
+          "label": 119,
+          "startMs": 36839.9,
+          "endMs": 38978.8,
+          "busyMs": 2138.9,
+          "computeMs": 2137.5
+        },
+        {
+          "slot": 5,
+          "label": 117,
+          "startMs": 36692.2,
+          "endMs": 39650.6,
+          "busyMs": 2958.4,
+          "computeMs": 2956.8
+        },
+        {
+          "slot": 7,
+          "label": 122,
+          "startMs": 38222,
+          "endMs": 39707.6,
+          "busyMs": 1485.6,
+          "computeMs": 1482.6
+        },
+        {
+          "slot": 6,
+          "label": 121,
+          "startMs": 37716,
+          "endMs": 40287.8,
+          "busyMs": 2571.8,
+          "computeMs": 2570.3
+        },
+        {
+          "slot": 2,
+          "label": 123,
+          "startMs": 38311.7,
+          "endMs": 40666.5,
+          "busyMs": 2354.8,
+          "computeMs": 2354
+        },
+        {
+          "slot": 4,
+          "label": 125,
+          "startMs": 38698.5,
+          "endMs": 41155.9,
+          "busyMs": 2457.4,
+          "computeMs": 2454.6
+        },
+        {
+          "slot": 1,
+          "label": 127,
+          "startMs": 38978.8,
+          "endMs": 41408.5,
+          "busyMs": 2429.7,
+          "computeMs": 2427
+        },
+        {
+          "slot": 0,
+          "label": 124,
+          "startMs": 38465.5,
+          "endMs": 42000.2,
+          "busyMs": 3534.7,
+          "computeMs": 3531.6
+        },
+        {
+          "slot": 7,
+          "label": 129,
+          "startMs": 39707.6,
+          "endMs": 42004.6,
+          "busyMs": 2297,
+          "computeMs": 2296.5
+        },
+        {
+          "slot": 5,
+          "label": 128,
+          "startMs": 39650.6,
+          "endMs": 42068.5,
+          "busyMs": 2417.9,
+          "computeMs": 2416
+        },
+        {
+          "slot": 3,
+          "label": 126,
+          "startMs": 38786.5,
+          "endMs": 42230.9,
+          "busyMs": 3444.4,
+          "computeMs": 3441.6
+        },
+        {
+          "slot": 2,
+          "label": 131,
+          "startMs": 40666.5,
+          "endMs": 42610.4,
+          "busyMs": 1943.9,
+          "computeMs": 1943.4
+        },
+        {
+          "slot": 6,
+          "label": 130,
+          "startMs": 40287.8,
+          "endMs": 42656.2,
+          "busyMs": 2368.4,
+          "computeMs": 2366.1
+        },
+        {
+          "slot": 7,
+          "label": 135,
+          "startMs": 42004.6,
+          "endMs": 42859.1,
+          "busyMs": 854.5,
+          "computeMs": 854
+        },
+        {
+          "slot": 4,
+          "label": 132,
+          "startMs": 41155.9,
+          "endMs": 43036.8,
+          "busyMs": 1880.9,
+          "computeMs": 1880.5
+        },
+        {
+          "slot": 5,
+          "label": 136,
+          "startMs": 42068.5,
+          "endMs": 43221.5,
+          "busyMs": 1153,
+          "computeMs": 1152.5
+        },
+        {
+          "slot": 3,
+          "label": 137,
+          "startMs": 42230.9,
+          "endMs": 43222.6,
+          "busyMs": 991.7,
+          "computeMs": 991.5
+        },
+        {
+          "slot": 1,
+          "label": 133,
+          "startMs": 41408.5,
+          "endMs": 43527.8,
+          "busyMs": 2119.3,
+          "computeMs": 2119
+        },
+        {
+          "slot": 0,
+          "label": 134,
+          "startMs": 42000.2,
+          "endMs": 43679,
+          "busyMs": 1678.8,
+          "computeMs": 1678.6
+        },
+        {
+          "slot": 2,
+          "label": 138,
+          "startMs": 42610.4,
+          "endMs": 44580,
+          "busyMs": 1969.6,
+          "computeMs": 1969.2
+        }
+      ],
+      "tasks": 139,
+      "wallMs": 44580,
+      "busyMs": [
+        43678.6,
+        43527.3,
+        44579.9,
+        43222,
+        43036.6,
+        43221.4,
+        42655.6,
+        42858.5
+      ],
+      "computeMs": [
+        43660.8,
+        43509.3,
+        44566.2,
+        43203.8,
+        43022.9,
+        43207.2,
+        42639.9,
+        42841.8
+      ],
+      "taskCounts": [
+        19,
+        19,
+        17,
+        19,
+        15,
+        15,
+        18,
+        17
+      ],
+      "idlePool": 0.0276,
+      "idleWorker": 0.028,
+      "taskMsMedian": 2414,
+      "taskMsMax": 4643.1,
+      "taskMsMin": 854.5,
+      "fingerprint": {
+        "hash": "5b43a926",
+        "length": 3644
+      },
+      "evaluations": [
+        13378,
+        15309,
+        12953,
+        14007,
+        13574,
+        12647,
+        14314,
+        12046,
+        15578,
+        16355,
+        15902,
+        15649,
+        14300,
+        16006,
+        15051,
+        16190,
+        13800,
+        15678,
+        11669,
+        15803,
+        8341,
+        10499,
+        10909,
+        9874,
+        10659,
+        10665,
+        9007,
+        11557,
+        14391,
+        14221,
+        13791,
+        14215,
+        14055,
+        11205,
+        13985,
+        7000,
+        12902,
+        14557,
+        15142,
+        13324,
+        12741,
+        15003,
+        14081,
+        16066,
+        15177,
+        14832,
+        13948,
+        13863,
+        11721,
+        14502,
+        14008,
+        16300,
+        14411,
+        14604,
+        12607,
+        15258,
+        10773,
+        16127,
+        14293,
+        16357,
+        16593,
+        15819,
+        14705,
+        16263,
+        11457,
+        16172,
+        13863,
+        12291,
+        14891,
+        11866,
+        15956,
+        14840,
+        14728,
+        11368,
+        12602,
+        13046,
+        13008,
+        11900,
+        13674,
+        11436,
+        13218,
+        12115,
+        13394,
+        14917,
+        13717,
+        15504,
+        13723,
+        15591,
+        15169,
+        14272,
+        12156,
+        8961,
+        15936,
+        13868,
+        14657,
+        12150,
+        14751,
+        12789,
+        12406,
+        13081,
+        15802,
+        15283,
+        15638,
+        15202,
+        15689,
+        15744,
+        15749,
+        12490,
+        15275,
+        11471,
+        13027,
+        9548,
+        10728,
+        8837,
+        12832,
+        13964,
+        10586,
+        16122,
+        8688,
+        12579,
+        8076,
+        12616,
+        8688,
+        12807,
+        14947,
+        14600,
+        14488,
+        14346,
+        13932,
+        13348,
+        14047,
+        11089,
+        10897,
+        10870,
+        11121,
+        5379,
+        7423,
+        5835,
+        16088
+      ],
+      "legal": [
+        8,
+        12,
+        21,
+        17,
+        12,
+        20,
+        18,
+        20,
+        17,
+        20,
+        37,
+        14,
+        9,
+        104,
+        14,
+        119,
+        17,
+        30,
+        7,
+        30,
+        7,
+        6,
+        14,
+        6,
+        19,
+        26,
+        15,
+        35,
+        8,
+        17,
+        13,
+        35,
+        29,
+        4,
+        5,
+        24,
+        42,
+        34,
+        16,
+        10,
+        25,
+        24,
+        47,
+        104,
+        20,
+        21,
+        28,
+        17,
+        10,
+        28,
+        25,
+        80,
+        29,
+        18,
+        48,
+        18,
+        41,
+        24,
+        39,
+        24,
+        23,
+        16,
+        19,
+        23,
+        9,
+        34,
+        17,
+        8,
+        20,
+        5,
+        27,
+        114,
+        32,
+        39,
+        5,
+        85,
+        55,
+        12,
+        11,
+        29,
+        14,
+        18,
+        24,
+        24,
+        12,
+        12,
+        9,
+        26,
+        7,
+        12,
+        16,
+        2,
+        25,
+        16,
+        18,
+        14,
+        24,
+        25,
+        41,
+        29,
+        16,
+        10,
+        19,
+        37,
+        55,
+        14,
+        19,
+        15,
+        19,
+        3,
+        22,
+        6,
+        19,
+        31,
+        35,
+        153,
+        4,
+        6,
+        3,
+        7,
+        3,
+        21,
+        4,
+        19,
+        17,
+        19,
+        16,
+        15,
+        18,
+        20,
+        37,
+        16,
+        18,
+        12,
+        105,
+        2,
+        3,
+        4,
+        5
+      ],
+      "totalEvaluations": 1851884
+    },
+    {
+      "path": "decide",
+      "workers": 16,
+      "entries": [
+        {
+          "slot": 8,
+          "label": 7,
+          "startMs": 0.1,
+          "endMs": 4129.8,
+          "busyMs": 4129.7,
+          "computeMs": 4127.9
+        },
+        {
+          "slot": 13,
+          "label": 4,
+          "startMs": 0.1,
+          "endMs": 4534.7,
+          "busyMs": 4534.6,
+          "computeMs": 4534.1
+        },
+        {
+          "slot": 5,
+          "label": 11,
+          "startMs": 0.2,
+          "endMs": 4675.6,
+          "busyMs": 4675.4,
+          "computeMs": 4674.9
+        },
+        {
+          "slot": 6,
+          "label": 5,
+          "startMs": 0.1,
+          "endMs": 4767.1,
+          "busyMs": 4767,
+          "computeMs": 4766.4
+        },
+        {
+          "slot": 0,
+          "label": 2,
+          "startMs": 0.1,
+          "endMs": 4792.5,
+          "busyMs": 4792.4,
+          "computeMs": 4791.9
+        },
+        {
+          "slot": 15,
+          "label": 0,
+          "startMs": 0,
+          "endMs": 4919.3,
+          "busyMs": 4919.3,
+          "computeMs": 4918.5
+        },
+        {
+          "slot": 10,
+          "label": 6,
+          "startMs": 0.1,
+          "endMs": 4942.7,
+          "busyMs": 4942.6,
+          "computeMs": 4941.6
+        },
+        {
+          "slot": 4,
+          "label": 14,
+          "startMs": 0.2,
+          "endMs": 5002.5,
+          "busyMs": 5002.3,
+          "computeMs": 4998.9
+        },
+        {
+          "slot": 14,
+          "label": 3,
+          "startMs": 0.1,
+          "endMs": 5028.8,
+          "busyMs": 5028.7,
+          "computeMs": 5028.3
+        },
+        {
+          "slot": 11,
+          "label": 12,
+          "startMs": 0.2,
+          "endMs": 5064.3,
+          "busyMs": 5064.1,
+          "computeMs": 5063.2
+        },
+        {
+          "slot": 12,
+          "label": 8,
+          "startMs": 0.1,
+          "endMs": 5324.3,
+          "busyMs": 5324.2,
+          "computeMs": 5323.4
+        },
+        {
+          "slot": 9,
+          "label": 13,
+          "startMs": 0.2,
+          "endMs": 5635,
+          "busyMs": 5634.8,
+          "computeMs": 5634
+        },
+        {
+          "slot": 1,
+          "label": 9,
+          "startMs": 0.1,
+          "endMs": 5649.1,
+          "busyMs": 5649,
+          "computeMs": 5648.3
+        },
+        {
+          "slot": 3,
+          "label": 1,
+          "startMs": 0.1,
+          "endMs": 5667.2,
+          "busyMs": 5667.1,
+          "computeMs": 5666.7
+        },
+        {
+          "slot": 7,
+          "label": 10,
+          "startMs": 0.2,
+          "endMs": 6070.9,
+          "busyMs": 6070.7,
+          "computeMs": 6070.1
+        },
+        {
+          "slot": 2,
+          "label": 15,
+          "startMs": 0.2,
+          "endMs": 6077.8,
+          "busyMs": 6077.6,
+          "computeMs": 6076.9
+        },
+        {
+          "slot": 0,
+          "label": 20,
+          "startMs": 4792.5,
+          "endMs": 8166.2,
+          "busyMs": 3373.7,
+          "computeMs": 3373.1
+        },
+        {
+          "slot": 4,
+          "label": 23,
+          "startMs": 5002.5,
+          "endMs": 8406.8,
+          "busyMs": 3404.3,
+          "computeMs": 3403.7
+        },
+        {
+          "slot": 12,
+          "label": 26,
+          "startMs": 5324.3,
+          "endMs": 8424,
+          "busyMs": 3099.7,
+          "computeMs": 3099.2
+        },
+        {
+          "slot": 15,
+          "label": 21,
+          "startMs": 4919.3,
+          "endMs": 8525,
+          "busyMs": 3605.7,
+          "computeMs": 3605.1
+        },
+        {
+          "slot": 11,
+          "label": 25,
+          "startMs": 5064.3,
+          "endMs": 8620,
+          "busyMs": 3555.7,
+          "computeMs": 3555.1
+        },
+        {
+          "slot": 10,
+          "label": 22,
+          "startMs": 4942.7,
+          "endMs": 8657.1,
+          "busyMs": 3714.4,
+          "computeMs": 3713.4
+        },
+        {
+          "slot": 5,
+          "label": 18,
+          "startMs": 4675.7,
+          "endMs": 8804.8,
+          "busyMs": 4129.1,
+          "computeMs": 4128.6
+        },
+        {
+          "slot": 8,
+          "label": 16,
+          "startMs": 4129.8,
+          "endMs": 8943.5,
+          "busyMs": 4813.7,
+          "computeMs": 4812.7
+        },
+        {
+          "slot": 14,
+          "label": 24,
+          "startMs": 5028.8,
+          "endMs": 9383.8,
+          "busyMs": 4355,
+          "computeMs": 4354.2
+        },
+        {
+          "slot": 1,
+          "label": 28,
+          "startMs": 5649.1,
+          "endMs": 9548.6,
+          "busyMs": 3899.5,
+          "computeMs": 3898.9
+        },
+        {
+          "slot": 9,
+          "label": 27,
+          "startMs": 5635,
+          "endMs": 9670.3,
+          "busyMs": 4035.3,
+          "computeMs": 4034.8
+        },
+        {
+          "slot": 13,
+          "label": 17,
+          "startMs": 4534.7,
+          "endMs": 10194.7,
+          "busyMs": 5660,
+          "computeMs": 5659.4
+        },
+        {
+          "slot": 7,
+          "label": 30,
+          "startMs": 6070.9,
+          "endMs": 10752.1,
+          "busyMs": 4681.2,
+          "computeMs": 4680.6
+        },
+        {
+          "slot": 6,
+          "label": 19,
+          "startMs": 4767.1,
+          "endMs": 11065.8,
+          "busyMs": 6298.7,
+          "computeMs": 6298.1
+        },
+        {
+          "slot": 15,
+          "label": 35,
+          "startMs": 8525,
+          "endMs": 11215.1,
+          "busyMs": 2690.1,
+          "computeMs": 2689.6
+        },
+        {
+          "slot": 3,
+          "label": 29,
+          "startMs": 5667.2,
+          "endMs": 11357.9,
+          "busyMs": 5690.7,
+          "computeMs": 5690.2
+        },
+        {
+          "slot": 2,
+          "label": 31,
+          "startMs": 6077.9,
+          "endMs": 11584.5,
+          "busyMs": 5506.6,
+          "computeMs": 5505.9
+        },
+        {
+          "slot": 4,
+          "label": 33,
+          "startMs": 8406.9,
+          "endMs": 12274.7,
+          "busyMs": 3867.8,
+          "computeMs": 3867
+        },
+        {
+          "slot": 11,
+          "label": 36,
+          "startMs": 8620,
+          "endMs": 13323,
+          "busyMs": 4703,
+          "computeMs": 4702.4
+        },
+        {
+          "slot": 12,
+          "label": 34,
+          "startMs": 8424,
+          "endMs": 13427.4,
+          "busyMs": 5003.4,
+          "computeMs": 5002.9
+        },
+        {
+          "slot": 0,
+          "label": 32,
+          "startMs": 8166.2,
+          "endMs": 13433.1,
+          "busyMs": 5266.9,
+          "computeMs": 5257.9
+        },
+        {
+          "slot": 10,
+          "label": 37,
+          "startMs": 8657.1,
+          "endMs": 13599.5,
+          "busyMs": 4942.4,
+          "computeMs": 4941.7
+        },
+        {
+          "slot": 8,
+          "label": 39,
+          "startMs": 8943.5,
+          "endMs": 13693.6,
+          "busyMs": 4750.1,
+          "computeMs": 4749.6
+        },
+        {
+          "slot": 5,
+          "label": 38,
+          "startMs": 8804.8,
+          "endMs": 13756.8,
+          "busyMs": 4952,
+          "computeMs": 4950.6
+        },
+        {
+          "slot": 14,
+          "label": 40,
+          "startMs": 9383.8,
+          "endMs": 13829.7,
+          "busyMs": 4445.9,
+          "computeMs": 4445.6
+        },
+        {
+          "slot": 1,
+          "label": 41,
+          "startMs": 9548.7,
+          "endMs": 13902.9,
+          "busyMs": 4354.2,
+          "computeMs": 4352.8
+        },
+        {
+          "slot": 9,
+          "label": 42,
+          "startMs": 9670.3,
+          "endMs": 15364.9,
+          "busyMs": 5694.6,
+          "computeMs": 5693.8
+        },
+        {
+          "slot": 2,
+          "label": 48,
+          "startMs": 11584.5,
+          "endMs": 15740.3,
+          "busyMs": 4155.8,
+          "computeMs": 4155.2
+        },
+        {
+          "slot": 7,
+          "label": 44,
+          "startMs": 10752.1,
+          "endMs": 15790.5,
+          "busyMs": 5038.4,
+          "computeMs": 5037.7
+        },
+        {
+          "slot": 13,
+          "label": 43,
+          "startMs": 10194.7,
+          "endMs": 15809.2,
+          "busyMs": 5614.5,
+          "computeMs": 5614
+        },
+        {
+          "slot": 3,
+          "label": 47,
+          "startMs": 11358,
+          "endMs": 15962.6,
+          "busyMs": 4604.6,
+          "computeMs": 4603.7
+        },
+        {
+          "slot": 6,
+          "label": 45,
+          "startMs": 11065.8,
+          "endMs": 15972.2,
+          "busyMs": 4906.4,
+          "computeMs": 4902.9
+        },
+        {
+          "slot": 15,
+          "label": 46,
+          "startMs": 11215.1,
+          "endMs": 16165.5,
+          "busyMs": 4950.4,
+          "computeMs": 4949.7
+        },
+        {
+          "slot": 4,
+          "label": 49,
+          "startMs": 12274.7,
+          "endMs": 17076.2,
+          "busyMs": 4801.5,
+          "computeMs": 4801
+        },
+        {
+          "slot": 14,
+          "label": 56,
+          "startMs": 13829.7,
+          "endMs": 17750.5,
+          "busyMs": 3920.8,
+          "computeMs": 3920.3
+        },
+        {
+          "slot": 0,
+          "label": 52,
+          "startMs": 13433.1,
+          "endMs": 18095.2,
+          "busyMs": 4662.1,
+          "computeMs": 4661.7
+        },
+        {
+          "slot": 11,
+          "label": 50,
+          "startMs": 13323,
+          "endMs": 18206.6,
+          "busyMs": 4883.6,
+          "computeMs": 4883
+        },
+        {
+          "slot": 10,
+          "label": 53,
+          "startMs": 13599.5,
+          "endMs": 18300,
+          "busyMs": 4700.5,
+          "computeMs": 4700
+        },
+        {
+          "slot": 8,
+          "label": 54,
+          "startMs": 13693.6,
+          "endMs": 18353.9,
+          "busyMs": 4660.3,
+          "computeMs": 4659.7
+        },
+        {
+          "slot": 5,
+          "label": 55,
+          "startMs": 13756.8,
+          "endMs": 18852.9,
+          "busyMs": 5096.1,
+          "computeMs": 5095.6
+        },
+        {
+          "slot": 1,
+          "label": 57,
+          "startMs": 13902.9,
+          "endMs": 19503.5,
+          "busyMs": 5600.6,
+          "computeMs": 5599
+        },
+        {
+          "slot": 12,
+          "label": 51,
+          "startMs": 13427.5,
+          "endMs": 19721.1,
+          "busyMs": 6293.6,
+          "computeMs": 6293.1
+        },
+        {
+          "slot": 15,
+          "label": 64,
+          "startMs": 16165.5,
+          "endMs": 20830.1,
+          "busyMs": 4664.6,
+          "computeMs": 4664.1
+        },
+        {
+          "slot": 9,
+          "label": 58,
+          "startMs": 15364.9,
+          "endMs": 20867.3,
+          "busyMs": 5502.4,
+          "computeMs": 5502
+        },
+        {
+          "slot": 6,
+          "label": 63,
+          "startMs": 15972.2,
+          "endMs": 21181.8,
+          "busyMs": 5209.6,
+          "computeMs": 5206.9
+        },
+        {
+          "slot": 3,
+          "label": 62,
+          "startMs": 15962.7,
+          "endMs": 21207.9,
+          "busyMs": 5245.2,
+          "computeMs": 5244.6
+        },
+        {
+          "slot": 2,
+          "label": 59,
+          "startMs": 15740.3,
+          "endMs": 21331.9,
+          "busyMs": 5591.6,
+          "computeMs": 5591.1
+        },
+        {
+          "slot": 13,
+          "label": 61,
+          "startMs": 15809.2,
+          "endMs": 21348.1,
+          "busyMs": 5538.9,
+          "computeMs": 5538.3
+        },
+        {
+          "slot": 7,
+          "label": 60,
+          "startMs": 15790.5,
+          "endMs": 21613.8,
+          "busyMs": 5823.3,
+          "computeMs": 5822.8
+        },
+        {
+          "slot": 0,
+          "label": 67,
+          "startMs": 18095.3,
+          "endMs": 22179.3,
+          "busyMs": 4084,
+          "computeMs": 4083.6
+        },
+        {
+          "slot": 10,
+          "label": 69,
+          "startMs": 18300,
+          "endMs": 22403.6,
+          "busyMs": 4103.6,
+          "computeMs": 4102.9
+        },
+        {
+          "slot": 4,
+          "label": 65,
+          "startMs": 17076.2,
+          "endMs": 22537.6,
+          "busyMs": 5461.4,
+          "computeMs": 5460.6
+        },
+        {
+          "slot": 14,
+          "label": 66,
+          "startMs": 17750.5,
+          "endMs": 22753.9,
+          "busyMs": 5003.4,
+          "computeMs": 5002.8
+        },
+        {
+          "slot": 11,
+          "label": 68,
+          "startMs": 18206.6,
+          "endMs": 23083.6,
+          "busyMs": 4877,
+          "computeMs": 4876.1
+        },
+        {
+          "slot": 12,
+          "label": 73,
+          "startMs": 19721.1,
+          "endMs": 23539.1,
+          "busyMs": 3818,
+          "computeMs": 3817.1
+        },
+        {
+          "slot": 8,
+          "label": 70,
+          "startMs": 18353.9,
+          "endMs": 23850.7,
+          "busyMs": 5496.8,
+          "computeMs": 5496.3
+        },
+        {
+          "slot": 5,
+          "label": 71,
+          "startMs": 18852.9,
+          "endMs": 24046.4,
+          "busyMs": 5193.5,
+          "computeMs": 5193
+        },
+        {
+          "slot": 1,
+          "label": 72,
+          "startMs": 19503.5,
+          "endMs": 24555.7,
+          "busyMs": 5052.2,
+          "computeMs": 5050.9
+        },
+        {
+          "slot": 15,
+          "label": 74,
+          "startMs": 20830.2,
+          "endMs": 25424.2,
+          "busyMs": 4594,
+          "computeMs": 4593.4
+        },
+        {
+          "slot": 3,
+          "label": 77,
+          "startMs": 21207.9,
+          "endMs": 25580.1,
+          "busyMs": 4372.2,
+          "computeMs": 4371.3
+        },
+        {
+          "slot": 9,
+          "label": 75,
+          "startMs": 20867.3,
+          "endMs": 25712.5,
+          "busyMs": 4845.2,
+          "computeMs": 4844.7
+        },
+        {
+          "slot": 13,
+          "label": 79,
+          "startMs": 21348.1,
+          "endMs": 25784.2,
+          "busyMs": 4436.1,
+          "computeMs": 4435.6
+        },
+        {
+          "slot": 2,
+          "label": 78,
+          "startMs": 21331.9,
+          "endMs": 25984.1,
+          "busyMs": 4652.2,
+          "computeMs": 4651.5
+        },
+        {
+          "slot": 7,
+          "label": 80,
+          "startMs": 21613.8,
+          "endMs": 25986.1,
+          "busyMs": 4372.3,
+          "computeMs": 4370.9
+        },
+        {
+          "slot": 0,
+          "label": 81,
+          "startMs": 22179.3,
+          "endMs": 26240.6,
+          "busyMs": 4061.3,
+          "computeMs": 4060.7
+        },
+        {
+          "slot": 6,
+          "label": 76,
+          "startMs": 21181.8,
+          "endMs": 26262.2,
+          "busyMs": 5080.4,
+          "computeMs": 5079.4
+        },
+        {
+          "slot": 10,
+          "label": 82,
+          "startMs": 22403.6,
+          "endMs": 26932.6,
+          "busyMs": 4529,
+          "computeMs": 4528.5
+        },
+        {
+          "slot": 4,
+          "label": 83,
+          "startMs": 22537.6,
+          "endMs": 27390.2,
+          "busyMs": 4852.6,
+          "computeMs": 4852.1
+        },
+        {
+          "slot": 14,
+          "label": 84,
+          "startMs": 22753.9,
+          "endMs": 27486.9,
+          "busyMs": 4733,
+          "computeMs": 4732.4
+        },
+        {
+          "slot": 12,
+          "label": 86,
+          "startMs": 23539.1,
+          "endMs": 28049.8,
+          "busyMs": 4510.7,
+          "computeMs": 4510.2
+        },
+        {
+          "slot": 11,
+          "label": 85,
+          "startMs": 23083.6,
+          "endMs": 28339,
+          "busyMs": 5255.4,
+          "computeMs": 5254.7
+        },
+        {
+          "slot": 3,
+          "label": 91,
+          "startMs": 25580.1,
+          "endMs": 28817.5,
+          "busyMs": 3237.4,
+          "computeMs": 3236.9
+        },
+        {
+          "slot": 5,
+          "label": 88,
+          "startMs": 24046.4,
+          "endMs": 29446.1,
+          "busyMs": 5399.7,
+          "computeMs": 5399.2
+        },
+        {
+          "slot": 8,
+          "label": 87,
+          "startMs": 23850.7,
+          "endMs": 29739.7,
+          "busyMs": 5889,
+          "computeMs": 5888.4
+        },
+        {
+          "slot": 15,
+          "label": 90,
+          "startMs": 25424.2,
+          "endMs": 29980.8,
+          "busyMs": 4556.6,
+          "computeMs": 4556.1
+        },
+        {
+          "slot": 1,
+          "label": 89,
+          "startMs": 24555.7,
+          "endMs": 29989.6,
+          "busyMs": 5433.9,
+          "computeMs": 5433.3
+        },
+        {
+          "slot": 7,
+          "label": 95,
+          "startMs": 25986.1,
+          "endMs": 30075.8,
+          "busyMs": 4089.7,
+          "computeMs": 4089.1
+        },
+        {
+          "slot": 6,
+          "label": 97,
+          "startMs": 26262.2,
+          "endMs": 30441.7,
+          "busyMs": 4179.5,
+          "computeMs": 4179
+        },
+        {
+          "slot": 13,
+          "label": 93,
+          "startMs": 25784.2,
+          "endMs": 30886.4,
+          "busyMs": 5102.2,
+          "computeMs": 5101.9
+        },
+        {
+          "slot": 2,
+          "label": 94,
+          "startMs": 25984.1,
+          "endMs": 30925.9,
+          "busyMs": 4941.8,
+          "computeMs": 4941.2
+        },
+        {
+          "slot": 9,
+          "label": 92,
+          "startMs": 25712.5,
+          "endMs": 31394.2,
+          "busyMs": 5681.7,
+          "computeMs": 5678.5
+        },
+        {
+          "slot": 0,
+          "label": 96,
+          "startMs": 26240.6,
+          "endMs": 31460.4,
+          "busyMs": 5219.8,
+          "computeMs": 5219.4
+        },
+        {
+          "slot": 10,
+          "label": 98,
+          "startMs": 26932.6,
+          "endMs": 31490.9,
+          "busyMs": 4558.3,
+          "computeMs": 4557.8
+        },
+        {
+          "slot": 4,
+          "label": 99,
+          "startMs": 27390.2,
+          "endMs": 31540.2,
+          "busyMs": 4150,
+          "computeMs": 4149.6
+        },
+        {
+          "slot": 14,
+          "label": 100,
+          "startMs": 27486.9,
+          "endMs": 32751.9,
+          "busyMs": 5265,
+          "computeMs": 5264.2
+        },
+        {
+          "slot": 12,
+          "label": 101,
+          "startMs": 28049.8,
+          "endMs": 33475.9,
+          "busyMs": 5426.1,
+          "computeMs": 5425.2
+        },
+        {
+          "slot": 6,
+          "label": 109,
+          "startMs": 30441.7,
+          "endMs": 33860.3,
+          "busyMs": 3418.6,
+          "computeMs": 3404.3
+        },
+        {
+          "slot": 3,
+          "label": 103,
+          "startMs": 28817.5,
+          "endMs": 33860.6,
+          "busyMs": 5043.1,
+          "computeMs": 5042.8
+        },
+        {
+          "slot": 11,
+          "label": 102,
+          "startMs": 28339,
+          "endMs": 33868.3,
+          "busyMs": 5529.3,
+          "computeMs": 5528.5
+        },
+        {
+          "slot": 1,
+          "label": 107,
+          "startMs": 29989.6,
+          "endMs": 34348.6,
+          "busyMs": 4359,
+          "computeMs": 4357.7
+        },
+        {
+          "slot": 0,
+          "label": 113,
+          "startMs": 31460.5,
+          "endMs": 34584.3,
+          "busyMs": 3123.8,
+          "computeMs": 3122.7
+        },
+        {
+          "slot": 5,
+          "label": 104,
+          "startMs": 29446.1,
+          "endMs": 34813.3,
+          "busyMs": 5367.2,
+          "computeMs": 5366.5
+        },
+        {
+          "slot": 8,
+          "label": 105,
+          "startMs": 29739.7,
+          "endMs": 34979.2,
+          "busyMs": 5239.5,
+          "computeMs": 5239.1
+        },
+        {
+          "slot": 2,
+          "label": 111,
+          "startMs": 30925.9,
+          "endMs": 35044.6,
+          "busyMs": 4118.7,
+          "computeMs": 4107.9
+        },
+        {
+          "slot": 9,
+          "label": 112,
+          "startMs": 31394.2,
+          "endMs": 35258.6,
+          "busyMs": 3864.4,
+          "computeMs": 3863.9
+        },
+        {
+          "slot": 13,
+          "label": 110,
+          "startMs": 30886.4,
+          "endMs": 35393.7,
+          "busyMs": 4507.3,
+          "computeMs": 4506.8
+        },
+        {
+          "slot": 7,
+          "label": 108,
+          "startMs": 30075.8,
+          "endMs": 35451.9,
+          "busyMs": 5376.1,
+          "computeMs": 5375.1
+        },
+        {
+          "slot": 15,
+          "label": 106,
+          "startMs": 29980.8,
+          "endMs": 35604.3,
+          "busyMs": 5623.5,
+          "computeMs": 5622.1
+        },
+        {
+          "slot": 10,
+          "label": 114,
+          "startMs": 31490.9,
+          "endMs": 36395.6,
+          "busyMs": 4904.7,
+          "computeMs": 4899.4
+        },
+        {
+          "slot": 14,
+          "label": 116,
+          "startMs": 32751.9,
+          "endMs": 36517.7,
+          "busyMs": 3765.8,
+          "computeMs": 3764.6
+        },
+        {
+          "slot": 11,
+          "label": 120,
+          "startMs": 33868.3,
+          "endMs": 36615.4,
+          "busyMs": 2747.1,
+          "computeMs": 2746.4
+        },
+        {
+          "slot": 6,
+          "label": 118,
+          "startMs": 33860.3,
+          "endMs": 36653.8,
+          "busyMs": 2793.5,
+          "computeMs": 2792.1
+        },
+        {
+          "slot": 4,
+          "label": 115,
+          "startMs": 31540.2,
+          "endMs": 36775.4,
+          "busyMs": 5235.2,
+          "computeMs": 5234.7
+        },
+        {
+          "slot": 0,
+          "label": 122,
+          "startMs": 34584.3,
+          "endMs": 37720.1,
+          "busyMs": 3135.8,
+          "computeMs": 3124.1
+        },
+        {
+          "slot": 3,
+          "label": 119,
+          "startMs": 33860.6,
+          "endMs": 38286.2,
+          "busyMs": 4425.6,
+          "computeMs": 4423.9
+        },
+        {
+          "slot": 1,
+          "label": 121,
+          "startMs": 34348.6,
+          "endMs": 38728.3,
+          "busyMs": 4379.7,
+          "computeMs": 4367.8
+        },
+        {
+          "slot": 5,
+          "label": 123,
+          "startMs": 34813.3,
+          "endMs": 39128.5,
+          "busyMs": 4315.2,
+          "computeMs": 4313.9
+        },
+        {
+          "slot": 0,
+          "label": 135,
+          "startMs": 37720.1,
+          "endMs": 39475.3,
+          "busyMs": 1755.2,
+          "computeMs": 1752.8
+        },
+        {
+          "slot": 2,
+          "label": 125,
+          "startMs": 35044.6,
+          "endMs": 39547.7,
+          "busyMs": 4503.1,
+          "computeMs": 4501.5
+        },
+        {
+          "slot": 12,
+          "label": 117,
+          "startMs": 33475.9,
+          "endMs": 39573.2,
+          "busyMs": 6097.3,
+          "computeMs": 6090.7
+        },
+        {
+          "slot": 15,
+          "label": 129,
+          "startMs": 35604.3,
+          "endMs": 40127.6,
+          "busyMs": 4523.3,
+          "computeMs": 4521.5
+        },
+        {
+          "slot": 8,
+          "label": 124,
+          "startMs": 34979.2,
+          "endMs": 40219.8,
+          "busyMs": 5240.6,
+          "computeMs": 5234
+        },
+        {
+          "slot": 11,
+          "label": 132,
+          "startMs": 36615.4,
+          "endMs": 40222.5,
+          "busyMs": 3607.1,
+          "computeMs": 3600
+        },
+        {
+          "slot": 3,
+          "label": 136,
+          "startMs": 38286.2,
+          "endMs": 40308.3,
+          "busyMs": 2022.1,
+          "computeMs": 2015
+        },
+        {
+          "slot": 9,
+          "label": 126,
+          "startMs": 35258.7,
+          "endMs": 40317.7,
+          "busyMs": 5059,
+          "computeMs": 5057.4
+        },
+        {
+          "slot": 1,
+          "label": 137,
+          "startMs": 38728.3,
+          "endMs": 40321.6,
+          "busyMs": 1593.3,
+          "computeMs": 1592.6
+        },
+        {
+          "slot": 6,
+          "label": 133,
+          "startMs": 36653.8,
+          "endMs": 40363.3,
+          "busyMs": 3709.5,
+          "computeMs": 3707.9
+        },
+        {
+          "slot": 13,
+          "label": 127,
+          "startMs": 35393.8,
+          "endMs": 40372.7,
+          "busyMs": 4978.9,
+          "computeMs": 4976.9
+        },
+        {
+          "slot": 7,
+          "label": 128,
+          "startMs": 35451.9,
+          "endMs": 40389,
+          "busyMs": 4937.1,
+          "computeMs": 4936.5
+        },
+        {
+          "slot": 14,
+          "label": 131,
+          "startMs": 36517.8,
+          "endMs": 40448,
+          "busyMs": 3930.2,
+          "computeMs": 3919.5
+        },
+        {
+          "slot": 4,
+          "label": 134,
+          "startMs": 36775.4,
+          "endMs": 40519.8,
+          "busyMs": 3744.4,
+          "computeMs": 3742.5
+        },
+        {
+          "slot": 10,
+          "label": 130,
+          "startMs": 36395.6,
+          "endMs": 40664.8,
+          "busyMs": 4269.2,
+          "computeMs": 4259.3
+        },
+        {
+          "slot": 5,
+          "label": 138,
+          "startMs": 39128.5,
+          "endMs": 41589.9,
+          "busyMs": 2461.4,
+          "computeMs": 2454.1
+        }
+      ],
+      "tasks": 139,
+      "wallMs": 41589.9,
+      "busyMs": [
+        39475,
+        40321.4,
+        39547.4,
+        40308,
+        40519.5,
+        41589.6,
+        40363.2,
+        40388.8,
+        40219.7,
+        40317.4,
+        40664.7,
+        40222.3,
+        39573,
+        40372.5,
+        40447.8,
+        40127.5
+      ],
+      "computeMs": [
+        39447.9,
+        40301.3,
+        39531.2,
+        40295.1,
+        40510.1,
+        41576.4,
+        40337,
+        40382.8,
+        40207.7,
+        40309.1,
+        40644.6,
+        40209.4,
+        39561.8,
+        40367,
+        40431.9,
+        40120.1
+      ],
+      "taskCounts": [
+        10,
+        9,
+        8,
+        9,
+        9,
+        9,
+        9,
+        8,
+        8,
+        8,
+        9,
+        9,
+        8,
+        8,
+        9,
+        9
+      ],
+      "idlePool": 0.0315,
+      "idleWorker": 0.0319,
+      "taskMsMedian": 4767,
+      "taskMsMax": 6298.7,
+      "taskMsMin": 1593.3,
+      "fingerprint": {
+        "hash": "5b43a926",
+        "length": 3644
+      },
+      "evaluations": [
+        13378,
+        15309,
+        12953,
+        14007,
+        13574,
+        12647,
+        14314,
+        12046,
+        15578,
+        16355,
+        15902,
+        15649,
+        14300,
+        16006,
+        15051,
+        16190,
+        13800,
+        15678,
+        11669,
+        15803,
+        8341,
+        10499,
+        10909,
+        9874,
+        10659,
+        10665,
+        9007,
+        11557,
+        14391,
+        14221,
+        13791,
+        14215,
+        14055,
+        11205,
+        13985,
+        7000,
+        12902,
+        14557,
+        15142,
+        13324,
+        12741,
+        15003,
+        14081,
+        16066,
+        15177,
+        14832,
+        13948,
+        13863,
+        11721,
+        14502,
+        14008,
+        16300,
+        14411,
+        14604,
+        12607,
+        15258,
+        10773,
+        16127,
+        14293,
+        16357,
+        16593,
+        15819,
+        14705,
+        16263,
+        11457,
+        16172,
+        13863,
+        12291,
+        14891,
+        11866,
+        15956,
+        14840,
+        14728,
+        11368,
+        12602,
+        13046,
+        13008,
+        11900,
+        13674,
+        11436,
+        13218,
+        12115,
+        13394,
+        14917,
+        13717,
+        15504,
+        13723,
+        15591,
+        15169,
+        14272,
+        12156,
+        8961,
+        15936,
+        13868,
+        14657,
+        12150,
+        14751,
+        12789,
+        12406,
+        13081,
+        15802,
+        15283,
+        15638,
+        15202,
+        15689,
+        15744,
+        15749,
+        12490,
+        15275,
+        11471,
+        13027,
+        9548,
+        10728,
+        8837,
+        12832,
+        13964,
+        10586,
+        16122,
+        8688,
+        12579,
+        8076,
+        12616,
+        8688,
+        12807,
+        14947,
+        14600,
+        14488,
+        14346,
+        13932,
+        13348,
+        14047,
+        11089,
+        10897,
+        10870,
+        11121,
+        5379,
+        7423,
+        5835,
+        16088
+      ],
+      "legal": [
+        8,
+        12,
+        21,
+        17,
+        12,
+        20,
+        18,
+        20,
+        17,
+        20,
+        37,
+        14,
+        9,
+        104,
+        14,
+        119,
+        17,
+        30,
+        7,
+        30,
+        7,
+        6,
+        14,
+        6,
+        19,
+        26,
+        15,
+        35,
+        8,
+        17,
+        13,
+        35,
+        29,
+        4,
+        5,
+        24,
+        42,
+        34,
+        16,
+        10,
+        25,
+        24,
+        47,
+        104,
+        20,
+        21,
+        28,
+        17,
+        10,
+        28,
+        25,
+        80,
+        29,
+        18,
+        48,
+        18,
+        41,
+        24,
+        39,
+        24,
+        23,
+        16,
+        19,
+        23,
+        9,
+        34,
+        17,
+        8,
+        20,
+        5,
+        27,
+        114,
+        32,
+        39,
+        5,
+        85,
+        55,
+        12,
+        11,
+        29,
+        14,
+        18,
+        24,
+        24,
+        12,
+        12,
+        9,
+        26,
+        7,
+        12,
+        16,
+        2,
+        25,
+        16,
+        18,
+        14,
+        24,
+        25,
+        41,
+        29,
+        16,
+        10,
+        19,
+        37,
+        55,
+        14,
+        19,
+        15,
+        19,
+        3,
+        22,
+        6,
+        19,
+        31,
+        35,
+        153,
+        4,
+        6,
+        3,
+        7,
+        3,
+        21,
+        4,
+        19,
+        17,
+        19,
+        16,
+        15,
+        18,
+        20,
+        37,
+        16,
+        18,
+        12,
+        105,
+        2,
+        3,
+        4,
+        5
+      ],
+      "totalEvaluations": 1851884
+    }
+  ]
+}

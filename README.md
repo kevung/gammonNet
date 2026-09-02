@@ -79,7 +79,7 @@ means to verify it, and the raw evidence behind every published figure.
 | `strehl-prune-32_…​.bin` / `.bin16` | the pruning network |
 | `gammonnet-simd.mjs` / `.wasm` | the WebAssembly engine (prefer the SIMD build) |
 | `api/gammonnet.mjs` | the JavaScript API — `Evaluator` |
-| `api/pool.mjs`, `api/worker.mjs` | the Web Worker pool — a match in 74 s instead of 350 |
+| `api/pool.mjs`, `api/worker.mjs` | the Web Worker pool — a full 7-point match in **50 s** at 8 workers, 212 s at one |
 | `verify/` | check for yourself that this artifact returns the right numbers |
 | `evidence/` | the raw measurements behind each figure in the release notes |
 | `manifest.json` | the file names for this release — read it instead of hard-coding them |

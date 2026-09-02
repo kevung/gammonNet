@@ -51,6 +51,48 @@ console.log(best.equity, best.resultId, best.evaluations);
 position, which every backgammon program can produce. The `0` that follows names the player on
 roll.
 
+## A whole match, without freezing the page
+
+A 2-ply decision costs ~2 s in a browser: a hundred of them on the thread that draws, and the
+interface is frozen for minutes. The pool hands decisions to Web Workers, **one decision per
+task**, and returns to the event loop between them.
+
+```javascript
+import { EvaluatorPool } from "./api/pool.mjs";
+
+// HOW MANY WORKERS: emphatically not `navigator.hardwareConcurrency`. It counts
+// THREADS, while throughput is bounded by physical cores and memory bandwidth —
+// each worker reloads its own copy of the weights, there being no
+// `SharedArrayBuffer` on a static host.
+const size = EvaluatorPool.suggestedSize();
+
+const pool = await EvaluatorPool.create(
+  size, "./api/worker.mjs", "./gammonnet-simd.mjs", weights,
+  { pruneBytes: prune, pruneK: files.prune_k });
+
+const { done, cancel, schedule } = pool.decide(
+  decisions,                       // [{ positionId, turn, d1, d2, options }, …]
+  { kind: "rankPlays",
+    options: Evaluator.level("normal"),
+    onProgress: (n, total) => console.log(`${n}/${total}`) });
+
+const analyses = await done;       // parallel to `decisions`, or `null` if cancelled
+console.log(schedule.toJSON());    // this job's scheduling report
+pool.destroy();
+```
+
+`cancel()` stales what is queued and what is in flight **without destroying the workers**: their
+weights stay loaded, and the pool serves the next request immediately.
+
+```{admonition} Measure on your device; do not take our word for it
+:class: tip
+
+`suggestedSize()` is a **prudent rule drawn from three readings**, not a measurement of your
+device: the platform does not say how many physical cores it has, and `hardwareConcurrency` is
+capped at 4 on iOS whatever the phone. `schedule.toJSON()` reports each job's idleness — that is
+what settles the question, on the machine that matters.
+```
+
 ## Position identifiers, and a deliberate boundary
 
 gammonNet does **not** read match files — that is a deliberate boundary of the project. It consumes
