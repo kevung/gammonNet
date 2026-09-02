@@ -99,6 +99,13 @@ Un tri stable rend chaque cible déterministe et rend les trois d'accord **là o
 les mêmes nombres** ; il ne peut pas faire tenir une égalité exacte que l'arithmétique de l'une
 n'a pas produite.
 
+**L'invariant ajouté au harnais discrimine, et c'est vérifié** : sur cette même position
+(élagage éteint — à k=12 il ne reste que douze survivants, taille à laquelle musl ne permute
+plus rien et où l'invariant passerait sans rien prouver), l'empreinte de l'ordre rendu par le
+module vaut `00551a01…` avant le correctif et `71e97e36…` après, cette dernière étant celle du
+natif. Le cas à neuf coups gardé à côté, lui, ne discrimine pas — il documente la règle et le
+dit.
+
 ## 4. Ce que la stabilité coûte
 
 `make bench-decision` avec élagage k=12, 20 décisions, les deux binaires lancés **en
@@ -124,7 +131,11 @@ retombe sur l'insertion faute de tampon.
 - **Natif, 2-ply k=12, 12 positions** : 252 classements, `diff` = **0 ligne**.
 - **Parité WebAssembly ↔ natif** : ✅ scalaire max|Δ| = 0,000e+0, ✅ SIMD max|Δ| = 6,407e-7,
   tolérance 1e-6 inchangée.
-- **Suite Python** de la recherche et du videau : 1 327 passés, 3 ignorés.
+- **Suite Python** de la recherche et du videau : 1 327 passés, 3 ignorés. Suite complète :
+  **1 737 passés, 45 ignorés**, plus 16 erreurs dans `tests/test_serve.py` qui n'ont rien à voir
+  ici — le serveur refuse de démarrer faute de l'artefact float16 épinglé, absent de ce
+  worktree (`python tools/fetch_release.py`). Non lancé : `tests/test_oracle.py` (GNU
+  Backgammon), et les mesures de force, qui se comptent en heures.
 
 ## 6. Le second défaut, et pourquoi il est du même genre
 

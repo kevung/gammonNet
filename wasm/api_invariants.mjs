@@ -17,6 +17,7 @@
  * D'où l'invariant central ci-dessous : LES N MEILLEURS NE DÉPENDENT PAS DE N.
  */
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { Evaluator, MEASURED_EFFICIENCY } from "./gammonnet.mjs";
@@ -178,6 +179,41 @@ check("neuf coups d'équité BIT-À-BIT égale",
 check("ex æquo : le module rend l'ORDRE du natif, pas celui de sa libc",
       tied.every((c, i) => c.resultId === TIED_ORDER[i]),
       tied.map((c) => c.resultId).join(" "));
+
+/* 5d. LE GROS GROUPE, celui qui discrimine vraiment.
+ *
+ * Le cas ci-dessus documente la règle mais ne l'éprouve pas : le smoothsort de
+ * musl est stable en pratique sur neuf éléments — vérifié, avant comme après
+ * le correctif il rend le même ordre. Il faut un GROUPE, et le corpus T12 en
+ * donne un : 230 des 231 coups légaux de cette position sur le 1-1 valent
+ * exactement la même chose.
+ *
+ * MESURÉ sur ce cas précis : avant le tri stable, le module rendait 4 places
+ * sur 231 différentes du natif ; après, zéro.
+ *
+ * L'élagage est éteint le temps de la mesure, et il le faut : à k=12 il ne
+ * reste que douze survivants, taille à laquelle la libc ne permute plus rien —
+ * l'invariant passerait sans rien prouver. Il est rallumé juste après, les
+ * contrôles suivants en dépendant.
+ *
+ * L'ordre attendu est celui du natif, résumé par une empreinte — 231
+ * identifiants dans ce fichier le rendraient illisible pour rien. Il se
+ * régénère par `make tie-census PLY=0 TIE_DUMP=1`, ligne
+ * `DwAA4FGYYQsAAA 1 1 1`. */
+const TIED_BIG = "DwAA4FGYYQsAAA";
+const TIED_BIG_DIGEST =
+  "71e97e36c59c1ae30870be61b136a5489164042b56f60652e8b9b0a89858a49c";
+evaluator.loadPrune(null, 0);
+const big = evaluator.rankPlays(TIED_BIG, 1, 1, 1, { ply: 0, max: 2048 });
+evaluator.loadPrune(new Uint8Array(readFileSync(PRUNE)), 12);
+const bigTies = big.filter((c, i) => i > 0 && c.equity === big[i - 1].equity).length;
+check("un groupe de 230 ex æquo, assez gros pour que la libc les permute",
+      big.length === 231 && bigTies === 229,
+      `${big.length} coups, ${bigTies} paires égales`);
+const digest = createHash("sha256")
+  .update(big.map((c) => c.resultId).join(" ")).digest("hex");
+check("l'ordre du gros groupe est celui du natif, au caractère près",
+      digest === TIED_BIG_DIGEST, digest.slice(0, 16));
 
 /* 6. La décision de videau rend ses trois équités, et un verdict connu.
  *
