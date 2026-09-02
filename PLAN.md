@@ -1158,6 +1158,20 @@ bootstrap par position.
 - Le biais de la passe 1 (gnubg 3-ply) est encadré : un échantillon de ses verdicts est réévalué
   en passe 2, l'écart chiffré et publié avec chaque usage de l'instrument.
 
+**Résultat — rendu le 2026-09-02**, fiche
+[`docs/mesures/2026-09-02-T70-etalon-money.md`](docs/mesures/2026-09-02-T70-etalon-money.md).
+
+Les 10 000 décisions disputées du corpus money sont arbitrées, **aucune ne manque**. L'étalon de
+l'incumbent 2-ply est **0,00313 par décision disputée** [0,00298 ; 0,00327], pour **15,82 h·cœur**
+— la fiche demandait des heures et non des jours, l'instrument est donc engageable et T71 peut
+exister. Le biais de la passe 1 est encadré : **44,1 %** de ses verdicts réaudités changent de
+coup, soit ~0,00149 par décision au registre entier. Le corpus, son manifeste et le registre
+résolu sont versionnés (`docs/corpus/t70/money-10000/`).
+
+**Ce que l'étalon n'est pas** : 500 × 0,00313 (soit 1,563) n'est **pas** un PR — le corpus ne
+contient que les décisions disputées, et les décisions écartées ne portent pas une perte nulle.
+Le PR du projet reste celui de T3E.
+
 ## T71 — Distiller notre 2-ply : l'entraînement pour la recherche
 
 > **La ligne P2 — le cœur du programme.** La seule recette dont la survie sous recherche est
@@ -1199,6 +1213,31 @@ expertes en entrée (trois négatifs mesurés — H2 dormante).
   sur la validation-loss, qui baisse encore quand la force a cessé de suivre.
 - En cas de plafond à la parité : le résultat est publié, et la suite (SPSA sur la tête de
   sortie, banc à dés miroirs) s'ouvre par une fiche déclenchée — pas dans celle-ci.
+
+**Étape 0 — rendue le 2026-09-02**, fiche
+[`docs/mesures/2026-09-02-T71-etape0-professeur.md`](docs/mesures/2026-09-02-T71-etape0-professeur.md).
+
+Le professeur 2-ply bat l'élève 0-ply de **+0,00213 par décision** [+0,00194 ; +0,00233],
+**z = 21,55** pour un seuil de 3, sur les 10 000 décisions appariées du registre money, zéro non
+appariable. Le plafond du professeur n'est donc pas atteint : **l'étape 1 a sa prémisse.** Deux
+classes font exception, `bearoff_contact` (+0,00067, la table exacte tranche déjà) et `crashed`
+(+0,00048, intervalle contenant zéro).
+
+**Ce z n'est pas une force absolue** : le corpus est conditionné sur le désaccord avec gnubg,
+l'avance y est plus grande que dans une partie ordinaire.
+
+**Étape 1 — engagée le 2026-09-02.** L'outillage est en place et mesuré :
+- `gn_search_probs_by_roll` rend les 21 distributions du backup, dont la moyenne pondérée est
+  `gn_search_probs` à 3e-08 — la **volatilité exacte devient gratuite** au lieu de coûter le
+  backup une seconde fois (`tests/test_probs_by_roll.py` tient l'identité) ;
+- `tools/build_labels_t71.py` étiquette le self-play par les cinq probabilités du 2-ply et cette
+  volatilité, avec reprise par part ;
+- `tools/train_t71.py` distille from scratch (DS-06 : le warm-start nuit ici), entropie croisée
+  binaire sur les cinq sorties emboîtées et tête auxiliaire de volatilité au poids 0,2.
+
+Campagne d'étiquetage lancée sur **deux machines à graines disjointes** (mochy 280 000 sur 30
+processus, melbaa 120 000 sur 24). Les deux builds produisent la même étiquette à **2,2e-16**
+près — non pas au bit près, et c'est dit plutôt que supposé.
 
 ## T72 — Réduire le réseau par distillation : 60–100 k MACs
 
@@ -1341,6 +1380,13 @@ réelles.
   moyenne et pèse** dans les décisions réelles ouvre une fiche « tête dédiée sur tronc partagé »
   (déclencheur) ; sinon, **aucun découpage** — l'aiguillage dur est mesuré neutre, on ne
   spécialise pas par principe.
+
+**Résultat — rendu le 2026-09-02, la fiche se referme.** Sur les 10 000 décisions du registre
+money, **aucune classe ne franchit les deux seuils de DS-12**. Le backgame concentre bien 1,93×
+l'erreur moyenne, mais il ne pèse que 2,43 % des décisions réelles ; les classes lourdes
+(`contact` 54,8 %, `blitz` 12,0 %, `holding` 11,2 %) sont toutes entre 0,78× et 1,02×. Verdict :
+**aucun découpage**, et l'on ne spécialise pas par principe. Fiche
+[`docs/mesures/2026-09-02-T70-etalon-money.md`](docs/mesures/2026-09-02-T70-etalon-money.md).
 
 ---
 
