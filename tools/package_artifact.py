@@ -345,51 +345,144 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.2.0 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.2.1 — À LIRE AVANT DE METTRE À JOUR
 
-**En partie de Crawford, la valeur du videau est la valeur morte.** `gn_cube_decide`
-savait déjà ne jamais doubler pendant la partie de Crawford (spec §5, fait plat),
-mais `gn_cube_value` — la valuation de feuille de `use_cube`, et le nombre que
-`gn_cube_decide` rend à côté de son verdict — déroulait quand même la chaîne de
-redoublement §9 et rendait une valeur à videau **vivant**. Sur le 6-4 d'ouverture
-à 4-away/1-away Crawford, la recherche `use_cube` valuait la position à +0,68
-(équité normalisée) contre +0,16 pour le videau mort ; GNU Backgammon rend le
-même nombre cubeful et cubeless dans cette partie, et des choix de coups
-bougeaient avec (73 % d'accord avec gnubg contre 93 % en cubeless).
+Cette version ne touche **ni les poids, ni la recherche, ni l'équité de match**.
+Elle change trois choses : ce que le module WebAssembly **répond** quand des coups
+sont ex æquo, ce qu'il **coûte** en temps, et ce qu'il **expose**. Une rupture
+d'API, petite mais réelle, est nommée en troisième point.
 
-Corrigé : `state->crawford` ⇒ `2·M_dead(p) − 1`, quels que soient le possesseur
-et l'efficacité ; dans `gn_cube_decide`, `equity_no_double` porte cette valeur et
-la branche « double » vaut exactement ne pas doubler — pas de « double manqué » à
-lire dans une partie où doubler est interdit. Post-Crawford ne change pas : la
-table le porte déjà.
+### 1. Le classement des coups est déterministe entre plateformes
 
-**Ce que vous devez faire** : rien dans le code appelant. Si vous avez STOCKÉ des
-décisions de videau ou des recherches `use_cube` de positions jouées **pendant une
-partie de Crawford**, leur équité « ne pas doubler » était fausse et doit être
-recalculée. Le verdict, lui, était juste.
+`compare_candidates` ne comparait **que l'équité**, et `qsort` n'est pas stable :
+l'ordre de deux candidats de même équité dépendait donc de la bibliothèque C sous
+le moteur. Celle de la glibc ne permutait aucun ex æquo ; celle d'Emscripten en
+permutait des centaines. **Le module WebAssembly et le moteur natif ne jouaient
+donc pas toujours le même coup.**
 
-**Comment le vérifier vous-même** : à un score de Crawford, `gn_cube_value` doit
-égaler `gn_match_equity` pour toute distribution, tout possesseur et tout `x`, et
-une recherche `use_cube` doit rendre le coup et l'équité de la recherche cubeless
-— `tests/test_cube.py::test_crawford_values_a_dead_cube` et
-`tests/test_search_cube.py::test_crawford_search_with_use_cube_is_the_cubeless_search`.
+Recensé sur le corpus T12 : **433 décisions sur 41 779 portent un meilleur coup
+ex æquo**, et l'artefact livré en annonçait **89 différemment du natif**. Le
+harnais de parité ne pouvait pas le voir : il comparait des équités à 1e-6, et
+deux ex æquo ont la même équité — c'est l'**ordre** qui différait.
 
-**Ce que la mesure a établi au passage** (`docs/mesures/2026-09-02-jets-d-ouverture-au-score.md`,
-15 jets d'ouverture × 15 contextes de score, gnubg 1.08.003 en 2-ply) : la recherche
-`use_match` coïncide avec le cubeless de gnubg (95 % des choix, aucun écart > 0,02) ;
-l'écart avec ce que gnubg **joue** (77 %, 27 écarts) est celui de gnubg cubeless
-contre son propre cubeful (80 %, 23) — gammon-go et gammon-save à l'ouverture sont
-des effets du videau, que `use_cube` restitue (89 %, 2 écarts, tous post-Crawford
-2-away/1-away). Un appelant qui veut le coup que jouent XG et gnubg au score doit
-donc activer `use_cube`, pas seulement `use_match`.
+Corrigé par un tri stable, départagé par un critère explicite aligné sur le
+portage Go. **Ce que vous devez faire** : rien dans le code appelant, mais tout
+repère figé (« or », golden, snapshot) qui compare un *coup nommé* et non une
+équité doit être régénéré — les vôtres bougeront là où le nôtre a bougé.
+Détail : `docs/mesures/2026-09-02-T88-census-ex-aequo.md`.
 
-**Ce qui NE change pas** : les poids, bit pour bit — mêmes SHA-256 que ceux de
-v1.0.1, v1.1.0 et v1.2.0, seuls les noms de fichiers portent la nouvelle version
-(`BRIEF.md` §8). Aucune probabilité, aucune équité de coup hors `use_cube` à
-Crawford, aucune mesure de force ci-dessous n'est affectée.
+### 2. Une décision 2-ply coûte quatre fois moins cher dans Chromium
 
-Les notes de la v1.2.0 (le verdict « trop bon » rendu atteignable) restent
-valables et ne sont pas répétées ici.
+Mesuré dans un vrai navigateur, profil neuf, sur une décision 2-ply `(0,1,3)`
+`k=12` — pas déduit du natif :
+
+| | avant (v1.2.1) | après (v1.3.0) | |
+|---|---|---|---|
+| Chromium 152 | 1,4980 s | **0,3343 s** | **×4,48** |
+| Firefox 154 | 1,1547 s | **0,6860 s** | **×1,68** |
+
+Et le chemin d'`analyze()` — `gnw_evaluate_batch`, celui qui reçoit des centaines
+de vecteurs de caractéristiques — rend **×4,74** : il bouclait sur le chemin
+scalaire, une position à la fois, et entre désormais par la même porte que la
+recherche.
+
+Trois causes, toutes mesurées : un **noyau d'inférence écrit à la main** en
+SIMD128 (2 lignes × 4 vecteurs), une **largeur de lot ramenée de 32 à 16** pour
+cette cible seule, et le **retrait de `-fassociative-math`**. Ce dernier point
+est contre-intuitif et vaut d'être dit : le drapeau achetait ×3,9 sur l'ancien
+chemin scalaire de T21, et **coûtait un facteur 2,8** sur le chemin par lot que la
+recherche emprunte depuis. Il reste défini et mesurable, il n'a plus de
+consommateur. **Le natif n'est pas touché** : les intrinsèques y exigeraient
+`-march=native`, donc un binaire qui ne démarre plus sans AVX2.
+
+**Et l'artefact rétrécit** : `gammonnet-simd.wasm` passe de 109 240 à
+**100 992 o** (−7,6 %), `gammonnet.wasm` de 97 734 à **97 157 o**.
+L'auto-vectorisation sous réassociation déroulait la boucle chaude ; le noyau
+écrit à la main ne la déroule pas. **Les deux sommes de contrôle changent** : qui
+les épingle reprend les deux.
+Détail : `docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md`.
+
+### 3. RUPTURE — `efficiency` n'a plus de valeur par défaut
+
+`wasm/gammonnet.mjs` exposait `efficiency = 0.566` en défaut de `rankPlays` **et**
+de `cubeDecision`, dont le défaut d'`owner` est `0` = videau **centré**. Or 0,566
+est l'efficacité **possédée** ; celle du centré est **0,688** (T34 :
+0,688 / 0,566 / 0,687). Le seul défaut du dépôt était donc celui d'un **autre état
+de possession**, et il était dans l'artefact distribué.
+
+Le remède n'est pas de remplacer 0,566 par 0,688, c'est de faire ce que le C fait :
+**pas de défaut du tout**. Le paramètre est exigé, et son absence lève désormais une
+erreur qui **nomme la valeur à passer** ; la constante `MEASURED_EFFICIENCY`
+`[centré, possédé, adverse]` est exportée pour que personne n'ait à la deviner.
+
+**Ceci casse un appelant qui s'appuyait sur le défaut** — c'est la seule rupture de
+cette version, et elle est délibérée : ce défaut ne rendait pas une réponse
+approximative, il rendait la réponse d'une **autre position**. Ce qu'inventer la
+valeur coûtait, mesuré : point de prise **0,726436** à x = 0,688 contre **0,720610**
+à x = 0,566, même position — de quoi retourner un verdict à la marge sans jamais
+avoir l'air faux. Un appel qui échoue bruyamment vaut mieux.
+
+**Ce que vous devez faire** : passer `efficiency: MEASURED_EFFICIENCY[owner]`, ou
+votre propre valeur si vous en avez une. Aucun autre point d'entrée n'est touché.
+
+### 4. La recherche est enfin appelable depuis un worker
+
+Le worker relaie `bestPlay`, `rankPlays`, `cubeDecision`, `analyze` et `configure`,
+avec file et générations : un geste dépassé n'oblige plus à `terminate()` le worker
+ni à recharger ses 1,06 Mo de poids. Le **codec de position** (Position ID, XGID,
+compte de pips) est exporté et vérifié contre le C sur les 2 050 positions du corpus
+T12, égalité **exacte**. La **notation de coup** est écrite en C — une seule écriture
+pour les trois cibles — et nomme la liste ordonnée que la recherche a réellement
+retenue, plutôt qu'une reconstruction par différence de plateaux, qui est ambiguë.
+Les formes canoniques sont des **valeurs** : `GnEngine.level("instant" | "normal" |
+"thorough")`.
+
+**Une limite, constatée et non supposée** : un appel WASM déjà en vol n'est pas
+interruptible depuis JavaScript — le worker est mono-thread, donc son `onmessage`
+ne tourne pas pendant le calcul, et un drapeau coopératif dans le C ne servirait à
+personne. `SharedArrayBuffer` exigerait COOP/COEP qu'un hébergeur statique ne donne
+pas ; Asyncify ferait grossir tout le module. Ce qui est livré, c'est la **file**
+abandonnée et le worker qui **survit**.
+
+### 5. Le videau valué par lot : ×2,43 sur le poste, ×1,13 sur la décision
+
+Les ~360 divisions séquentielles que chaque candidat impose à `gn_cube_value` sont
+menées en pas cadencé sur tous les candidats à la fois. Au score : le videau passe
+de 103,6 à **42,7 ms** par décision, sa part d'une décision de 19,35 % à 9,05 %,
+soit **11,4 % de moins sur la décision entière**. **En money : rien**, et rien
+n'était possible — ce chemin coûte 15 ns par valuation et reste scalaire.
+Exactitude tenue **au bit près** (141 distributions × 3 possessions × 7 états, `==`
+et non `approx`), invariance au découpage, et 12 600 classements du corpus rejoués
+**ordre compris**.
+
+### 6. La parité WebAssembly ↔ natif tombe à ZÉRO
+
+| `make wasm-parity` | scalaire | SIMD |
+|---|---|---|
+| v1.2.1 | 0,000e+00 | 6,407e-07 |
+| **v1.3.0** | **0,000e+00** | **0,000e+00** |
+
+**L'artefact WebAssembly est de nouveau bit à bit avec le moteur natif**, ce qu'il
+n'était plus depuis T21. Ce qui cassait le bit à bit n'était pas le noyau : c'était
+`-fassociative-math`, qui vectorisait la somme de la **référence** — les deux chemins
+du même artefact ne répondaient pas la même chose à 2e-07 près. La tolérance de 1e-6
+n'est plus consommée du tout.
+
+**Conséquence pour vous** : les réponses de ce module peuvent bouger d'au plus
+**6,4e-07** par rapport à v1.2.1, **dans le sens de l'accord avec le natif**. Tout
+repère figé produit par l'ancien module est à régénérer.
+
+### Ce qui NE change pas
+
+Les **poids**, bit pour bit — mêmes SHA-256 que ceux de v1.0.1, v1.1.0, v1.2.0 et
+v1.2.1, seuls les noms de fichiers portent la nouvelle version (`BRIEF.md` §8).
+La force mesurée ci-dessous est donc celle de la v1.2.1, inchangée et non
+remesurée : aucune des six sections ci-dessus ne déplace une équité au-delà de
+6,4e-07, et le corpus de non-régression T12 rejoue **au bit près**.
+
+Les notes de v1.2.0 (le verdict « trop bon » rendu atteignable) et de v1.2.1 (la
+partie de Crawford valuée à videau mort) restent valables et ne sont pas répétées
+ici.
 
 """
 
@@ -478,19 +571,21 @@ recherche, équité de match, fins de partie — pas celui des poids. `BRIEF.md`
 
 ## Ce que cette version ne promet pas
 
-- **Aucun budget de temps dans un navigateur.** Les gains de vitesse récents
-  viennent du remplissage des lots, et le lot rend ×2,21 dans un navigateur
-  contre ×8,5 en natif : les chiffres natifs ne s'y transportent pas, et ils
-  n'ont pas encore été remesurés là-bas
-  (`docs/mesures/2026-08-27-T21-navigateur-a-refaire.md`).
+- **Un seul budget de temps dans un navigateur, et sur une seule machine.** Une
+  décision 2-ply `(0,1,3)` `k=12` coûte **0,3343 s** dans Chromium 152 et
+  **0,6860 s** dans Firefox 154 sur un Ryzen 7 PRO 6850U — mesuré, pas déduit du
+  natif (`docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md`). Le même fichier
+  vaut un facteur **2,7** d'écart entre les deux moteurs : ne transportez ce
+  chiffre ni vers un autre navigateur, ni vers une autre machine.
 - **La table exacte de fin de partie n'est PAS incluse.** Celle que la recherche
   consulte pèse 1,2 Gio et ne se transporte pas dans un artefact web. Sans elle,
   la fin de partie retombe sur le réseau, ce qui coûte **0,00028 d'équité par
   décision de bearoff** — mesuré (T38), là où GNU Backgammon consulte sa propre
   table et n'y perd rien. L'API `loadBearoff()` existe pour qui se la procure.
 - **Aucun budget de temps sur mobile.** La pénalité mesurée en août était de
-  ×2,12 à ×2,83 sur deux appareils, mais elle n'a pas été rejouée depuis les
-  optimisations.
+  ×2,12 à ×2,83 sur deux appareils, et elle n'a été rejouée depuis **aucune** des
+  optimisations de cette version — le noyau SIMD128 étant précisément ce qu'un
+  processeur mobile exécute le moins bien, l'extrapoler serait une invention.
 """
 
 
