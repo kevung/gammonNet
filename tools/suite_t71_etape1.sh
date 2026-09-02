@@ -28,7 +28,14 @@ ETALON=0.00313
 say() { echo "[$(date '+%m-%d %H:%M:%S')] $*"; }
 
 busy_local()  { [ "$(pgrep -cf 'build_labels_t7[1]\.py')" -gt 0 ]; }
-busy_melbaa() { [ "$(ssh melbaa "pgrep -cf 'build_labels_t7[1][.]py'" 2>/dev/null || echo 0)" -gt 0 ]; }
+# `pgrep -c` imprime « 0 » PUIS sort en 1 quand rien ne tourne : un
+# `|| echo 0` ajouterait une seconde ligne et le test dirait « integer
+# expression expected ». On prend donc la dernière ligne, et rien d'autre.
+busy_melbaa() {
+    local n
+    n=$(ssh melbaa "pgrep -cf 'build_labels_t7[1][.]py'" 2>/dev/null | tail -1)
+    [ "${n:-0}" -gt 0 ] 2>/dev/null
+}
 
 say "═══ suite T71 étape 1 — attente de la fin des deux étiquetages ═══"
 
@@ -59,13 +66,28 @@ say "les deux étiquetages sont terminés"
 # ── 2. rapatrier la part de melbaa ──────────────────────────────────────
 say "── rapatriement des étiquettes de melbaa"
 mkdir -p "$LABELS"
-scp -q "melbaa:$MELBAA_DIR/labels.part-*.jsonl" "$LABELS/" 2>/dev/null
-# Les parts de melbaa portent les mêmes numéros que celles de mochy : le scp
-# ci-dessus les écraserait. On les reprend donc sous un préfixe distinct.
+# PAS de `scp melbaa:.../labels.part-*.jsonl` ici. Les deux machines numérotent
+# leurs parts de la même façon : un scp direct ÉCRASE les parts de mochy par
+# celles de melbaa, silencieusement. C'est arrivé le 2026-09-02 — 24 des 30
+# parts de mochy détruites, 224 000 étiquettes perdues et 133 134 doublons
+# créés, sans un seul message d'erreur. Le tar avec renommage est la SEULE
+# reprise ; le commentaire qui l'annonçait ne suffisait pas à l'imposer.
 ssh melbaa "cd $MELBAA_DIR && tar cf - labels.part-*.jsonl manifeste.json" \
     | tar xf - -C "$LABELS" --transform 's/labels.part-/labels.part-melbaa-/' \
                             --transform 's/^manifeste.json$/manifeste.melbaa.json/' \
     && say "  parts de melbaa reprises sous labels.part-melbaa-*"
+
+# Une part de mochy réduite à la taille d'une part de melbaa est le symptôme
+# de l'écrasement ci-dessus. On le cherche plutôt que d'espérer.
+for part in "$LABELS"/labels.part-melbaa-*.jsonl; do
+    twin="${part/labels.part-melbaa-/labels.part-}"
+    if [ -f "$twin" ] && cmp -s "$part" "$twin"; then
+        say "REFUS — $(basename "$twin") est identique à $(basename "$part")."
+        say "  Une part de mochy a été écrasée par une part de melbaa. Le corpus"
+        say "  serait à moitié dupliqué et à moitié absent. Arrêt."
+        exit 1
+    fi
+done
 
 total=$(cat "$LABELS"/labels.part-*.jsonl 2>/dev/null | wc -l)
 say "  corpus réuni : $total étiquettes (avant déduplication)"
