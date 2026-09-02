@@ -39,7 +39,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube bench-sparsity tie-census test-tile artifact env clean help
+.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube bench-sparsity bench-width bench-width-wasm tie-census test-tile artifact env clean help
 
 all: help
 
@@ -122,6 +122,29 @@ $(BUILD)/%.o: src/%.c $(HEADERS)
 BATCH_CFLAGS := $(filter-out -O2,$(CFLAGS)) -O3
 ifeq ($(NATIVE_FP),1)
 BATCH_CFLAGS += -fassociative-math -fno-signed-zeros -fno-trapping-math -fno-math-errno
+endif
+
+# Le noyau de lot écrit à la main (T84) — OPT-IN, `make build KERNEL_INTRINSICS=1`.
+#
+# Mesuré le 2026-09-02 : ×2,17 sur le débit du noyau et ×1,81 sur une décision
+# 2-ply k=12, à largeur 32, contre l'auto-vectorisation — et BIT À BIT
+# (max|Δ| = 0 aux trois largeurs, `bench/bench_kernel.c` le vérifie avant de
+# chronométrer quoi que ce soit). Le gain n'est pas discutable et le résultat
+# ne bouge pas d'un bit.
+#
+# Ce n'est PAS le défaut, et c'est délibéré, pour la même raison que NATIVE_FP :
+# le binaire livré cible le x86-64 DE BASE, sans AVX2. Les intrinsèques
+# demandent `-march=native` (ou au moins `-mavx`), donc un binaire qui ne
+# tournerait plus sur une machine sans AVX2 — ou une répartition à l'exécution,
+# qui est un autre chantier. La décision appartient à T50, pas à un jeu de
+# drapeaux.
+#
+# `-ffp-contract=off` accompagne obligatoirement : sans lui gcc contracte les
+# multiplications et additions ÉCRITES SÉPARÉMENT en FMA (un arrondi au lieu de
+# deux) et le bit à bit tombe.
+KERNEL_ARCH ?= -march=native
+ifeq ($(KERNEL_INTRINSICS),1)
+BATCH_CFLAGS += -DGN_KERNEL_INTRINSICS -ffp-contract=off $(KERNEL_ARCH)
 endif
 # La recherche, et elle seule, sans contraction FMA.
 #
@@ -428,6 +451,125 @@ $(BENCH_CUBE): bench/bench_cube.c $(OBJECTS) $(VENDOR_OBJECTS)
 bench-cube: build $(BENCH_CUBE) $(MODEL)
 	$(PYTHON) tools/dump_reference.py
 	$(BENCH_CUBE) $(MODEL) $(BUILD)/reference.bin
+
+# ── T84 : la largeur de lot, tranchée par des intrinsèques ───────────
+#
+# La question n'est pas « 8 ou 32 » : c'est *le regroupement des 21 lancers
+# gagne-t-il encore sa complexité si le noyau est écrit à la main ?*
+#
+# Tout balayage précédent a mesuré autre chose. T3A l'avait nommé : gcc ne
+# vectorise la boucle chaude qu'à partir de 24, donc tester une largeur de 8
+# sans intrinsèques revient à tomber de la falaise. Et `bench_batch.c` prend sa
+# largeur en VARIABLE d'exécution, donc sa courbe est la sienne, pas celle du
+# noyau livré.
+#
+# `make bench-width` construit NEUF binaires — trois largeurs × trois noyaux —
+# et les fait tourner l'un après l'autre. Les trois noyaux :
+#
+#   auto        ce qui est livré : auto-vectorisé, cible x86-64 de base (SSE)
+#   auto-avx2   auto-vectorisé, -march=native (AVX2) — la MÊME source
+#   intrin      les intrinsèques de src/gn_kernel_f32.h, -march=native
+#
+# Les deux dernières colonnes séparent « écrit à la main » de « jeu
+# d'instructions plus large », que le premier chiffre venu confondrait.
+#
+# -ffp-contract=off partout où -march=native entre : sans lui gcc contracte en
+# FMA (un arrondi au lieu de deux) et le bit à bit tombe — y compris sur des
+# intrinsèques écrites explicitement. Les sources VENDORÉES restent à -O2 de
+# base dans les neuf cas : elles sont la RÉFÉRENCE scalaire, elle ne doit pas
+# bouger d'un binaire à l'autre.
+KERNEL_WIDTHS ?= 8 16 32
+KERNEL_REPS ?= 5
+KERNEL_PASSES ?= 3
+KERNEL_DECISIONS ?= 10
+
+KERNEL_BASE_FLAGS := -std=c11 -Wall -Wextra -O3 -ffp-contract=off
+
+# $(1) nom, $(2) drapeaux supplémentaires, $(3) largeur
+define KERNEL_BUILD
+	@mkdir -p $(BUILD)/kernel
+	$(CC) $(KERNEL_BASE_FLAGS) $(2) -DGN_EVAL_BATCH=$(3) -fopt-info-vec \
+	      $(INCLUDES) -c src/gn_infer_reference.c \
+	      -o $(BUILD)/kernel/infer_$(1)_$(3).o 2> $(BUILD)/kernel/vec_$(1)_$(3).log
+	$(CC) $(KERNEL_BASE_FLAGS) $(2) -DGN_EVAL_BATCH=$(3) -ffp-contract=off \
+	      $(INCLUDES) -c src/gn_search.c -o $(BUILD)/kernel/search_$(1)_$(3).o
+	$(CC) $(CFLAGS) -DGN_EVAL_BATCH=$(3) $(2) $(INCLUDES) -o $(BUILD)/kernel/bench_$(1)_$(3) \
+	      bench/bench_kernel.c \
+	      $(filter-out src/gn_infer_reference.c src/gn_search.c,$(SOURCES)) \
+	      $(BUILD)/kernel/infer_$(1)_$(3).o $(BUILD)/kernel/search_$(1)_$(3).o \
+	      $(BUILD)/bg_engine.o $(BUILD)/nn_eval.o -lm
+endef
+
+.PHONY: bench-width
+bench-width: build $(MODEL) $(PRUNE_MODEL)
+	@for w in $(KERNEL_WIDTHS); do \
+	    $(MAKE) --no-print-directory kernel-variants WIDTH=$$w; \
+	done
+	$(PYTHON) bench/width_sweep.py --passes $(KERNEL_PASSES) \
+	    --reps $(KERNEL_REPS) --decisions $(KERNEL_DECISIONS) \
+	    --json docs/mesures/t84-largeur-noyau.json
+
+.PHONY: kernel-variants
+kernel-variants:
+	$(call KERNEL_BUILD,auto,,$(WIDTH))
+	$(call KERNEL_BUILD,auto-avx2,-march=native,$(WIDTH))
+	$(call KERNEL_BUILD,intrin,-march=native -DGN_KERNEL_INTRINSICS,$(WIDTH))
+
+# Le remplissage des voies par largeur — la preuve directe sur le REGROUPEMENT,
+# et non sur la vitesse. Un binaire à part : les compteurs n'ont rien à faire
+# dans celui qu'on chronomètre.
+.PHONY: bench-width-fill
+bench-width-fill: build $(MODEL) $(PRUNE_MODEL)
+	@for w in $(KERNEL_WIDTHS); do \
+	    $(MAKE) --no-print-directory kernel-fill WIDTH=$$w; \
+	    $(BUILD)/kernel/bench_fill_$$w $(MODEL) $(PRUNE_MODEL) 1 8 \
+	        | grep -E "largeur|remplissage|  (grand|petit) "; \
+	done
+
+.PHONY: kernel-fill
+kernel-fill:
+	$(call KERNEL_BUILD,fill,-march=native -DGN_KERNEL_INTRINSICS -DGN_BATCH_FILL_STATS,$(WIDTH))
+
+# ── T84, volet navigateur : le même banc, compilé en WebAssembly ─────
+#
+# L'enjeu y est plus grand qu'en natif : SIMD128 n'a que QUATRE voies
+# flottantes, donc une largeur de 8 y tient en deux vecteurs et le noyau
+# écrit à la main a moins de marge. Le même `bench/bench_kernel.c`, les mêmes
+# largeurs, les deux noyaux.
+#
+# PAS de `-fassociative-math` ici, contrairement à l'artefact livré : la
+# réassociation change l'ordre des sommes, donc le `max|Δ| = 0` que ce banc
+# vérifie n'aurait plus de sens. Ce que ce volet mesure est le noyau, à
+# arithmétique fixée.
+WASM_KERNEL_FLAGS := -O3 -std=c11 -msimd128 -ffp-contract=off $(INCLUDES) \
+  -sENVIRONMENT=node,web -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=4194304 \
+  --preload-file models@models
+
+WASM_KERNEL_SOURCES := bench/bench_kernel.c \
+  src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
+  src/gn_infer_reference.c src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
+  src/gn_search.c src/gn_met.c src/gn_choose.c src/gn_gemm_int8.c \
+  src/gn_int8_model.c src/gn_rollout.c \
+  $(REFERENCE)/c_engine/bg_engine.c $(REFERENCE)/c_inference/nn_eval.c
+
+.PHONY: bench-width-wasm wasm-kernel-variants
+wasm-kernel-variants:
+	@mkdir -p $(BUILD)/wasm
+	$(EMCC) $(WASM_KERNEL_FLAGS) -DGN_EVAL_BATCH=$(WIDTH) $(WASM_KERNEL_SOURCES) \
+	    -o $(BUILD)/wasm/bench_kernel_auto_$(WIDTH).js
+	$(EMCC) $(WASM_KERNEL_FLAGS) -DGN_EVAL_BATCH=$(WIDTH) -DGN_KERNEL_INTRINSICS \
+	    $(WASM_KERNEL_SOURCES) -o $(BUILD)/wasm/bench_kernel_intrin_$(WIDTH).js
+
+bench-width-wasm: $(MODEL) $(PRUNE_MODEL)
+	@for w in $(KERNEL_WIDTHS); do \
+	    $(MAKE) --no-print-directory wasm-kernel-variants WIDTH=$$w; \
+	done
+	$(PYTHON) bench/width_sweep.py --target wasm --passes $(KERNEL_PASSES) \
+	    --reps $(WASM_KERNEL_REPS) --decisions $(WASM_KERNEL_DECISIONS) \
+	    --json docs/mesures/t84-largeur-noyau-wasm.json
+
+WASM_KERNEL_REPS ?= 3
+WASM_KERNEL_DECISIONS ?= 3
 
 # ── T89 : la sparsité, par réseau et par type de lot ─────────────────
 #

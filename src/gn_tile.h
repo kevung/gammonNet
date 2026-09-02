@@ -61,6 +61,10 @@
  * two here: a tile of zero is a division by zero downstream, and a width of
  * zero is a kernel that computes nothing. Both should fail the assertion.
  */
+/* A compile-time constant, spelled out in a message or a report. */
+#define GN_STRINGIFY_(x) #x
+#define GN_STRINGIFY(x) GN_STRINGIFY_(x)
+
 #define GN_IS_POWER_OF_TWO(n) ((n) > 0 && ((n) & ((n) - 1)) == 0)
 
 /* State the assumption to the compiler. Use it wherever a mask, a shift or an

@@ -22,6 +22,11 @@
 #include "nn_eval.h"
 
 #include "gn_int8_model.h"
+#include "gn_tile.h"
+
+#ifdef GN_KERNEL_INTRINSICS
+#include "gn_kernel_f32.h"
+#endif
 
 /*
  * Two backends behind one opaque type -- the design `gn_infer.h` already
@@ -376,6 +381,26 @@ static int batch_kernel_applies(const NNModel *model)
     return 1;
 }
 
+/* Which kernel this build actually compiled, so that no measurement is ever
+ * reported without saying which code produced it. */
+const char *gn_batch_kernel(void)
+{
+#ifdef GN_KERNEL_INTRINSICS
+    /* Built once, not recomputed: the tile is a compile-time constant and the
+     * caller prints it beside every figure. */
+    static char name[64];
+    if (name[0] == '\0') {
+        snprintf(name, sizeof(name), "%s intrinsèques, %d lignes x %d vecteurs de %d",
+                 GN_KERNEL_NAME, GN_KERNEL_ROWS, GN_KERNEL_VECS, GN_VEC_LANES);
+    }
+    return name;
+#else
+    return "auto-vectorisé";
+#endif
+}
+
+int gn_batch_width(void) { return GN_EVAL_BATCH; }
+
 static float batch_relu(float x) { return x > 0.0f ? x : 0.0f; }
 static float batch_sigmoid(float x) { return 1.0f / (1.0f + expf(-x)); }
 
@@ -418,6 +443,68 @@ static void forward_batch(const NNModel *model, const float *in, int live,
         const float *bias = model->bias[L];
         const int is_output = (L == model->num_hidden);
 
+        /* The live source for this layer: compacted at layer 0 when the
+         * sparsity applies, dense otherwise. Choosing it ONCE per layer rather
+         * than per row keeps the two kernels below reading the same thing. */
+        const int packed = (L == 0 && nonzero != NULL);
+        const float *source = packed ? packed_in : current;
+        const int count = packed ? n_nonzero : cols;
+
+#ifdef GN_KERNEL_INTRINSICS
+        /* T84: the hand-written kernel, tiled over GN_KERNEL_ROWS output rows
+         * so that a narrow batch is not one dependent chain of adds. The
+         * summation order per (i, n) is the scalar one, unchanged -- see
+         * gn_kernel_f32.h. */
+        int i = 0;
+        for (; i + GN_KERNEL_ROWS <= rows; i += GN_KERNEL_ROWS) {
+            float acc[GN_KERNEL_ROWS * GN_EVAL_BATCH];
+            for (int r = 0; r < GN_KERNEL_ROWS; r++) {
+                for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                    acc[r * GN_EVAL_BATCH + n] = bias[i + r];
+                }
+            }
+            if (packed) {
+                float packed_w[GN_KERNEL_ROWS * GN_NUM_FEATURES];
+                for (int r = 0; r < GN_KERNEL_ROWS; r++) {
+                    const float *w_row = W + (size_t)(i + r) * cols;
+                    for (int idx = 0; idx < n_nonzero; idx++) {
+                        packed_w[r * n_nonzero + idx] = w_row[nonzero[idx]];
+                    }
+                }
+                gn_kernel_block(acc, packed_w, source, count);
+            } else {
+                gn_kernel_block(acc, W + (size_t)i * cols, source, count);
+            }
+            for (int r = 0; r < GN_KERNEL_ROWS; r++) {
+                float *row_out = next + (size_t)(i + r) * GN_EVAL_BATCH;
+                const float *a = acc + r * GN_EVAL_BATCH;
+                for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                    row_out[n] = is_output ? batch_sigmoid(a[n])
+                                           : batch_relu(a[n]);
+                }
+            }
+        }
+        for (; i < rows; i++) {
+            float acc[GN_EVAL_BATCH];
+            for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                acc[n] = bias[i];
+            }
+            const float *w_row = W + (size_t)i * cols;
+            if (packed) {
+                float packed_w[GN_NUM_FEATURES];
+                for (int idx = 0; idx < n_nonzero; idx++) {
+                    packed_w[idx] = w_row[nonzero[idx]];
+                }
+                gn_kernel_row(acc, packed_w, source, count);
+            } else {
+                gn_kernel_row(acc, w_row, source, count);
+            }
+            float *row_out = next + (size_t)i * GN_EVAL_BATCH;
+            for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                row_out[n] = is_output ? batch_sigmoid(acc[n]) : batch_relu(acc[n]);
+            }
+        }
+#else
         for (int i = 0; i < rows; i++) {
             float acc[GN_EVAL_BATCH];
             for (int n = 0; n < GN_EVAL_BATCH; n++) {
@@ -428,7 +515,7 @@ static void forward_batch(const NNModel *model, const float *in, int live,
              * single reordering is the whole speed-up. The order of the sum
              * over j, per (i, n), is unchanged. */
             const float *w_row = W + (size_t)i * cols;
-            if (L == 0 && nonzero != NULL) {
+            if (packed) {
                 /* Compacted: the weights of the live features gathered once
                  * into a contiguous row, so the inner loop streams instead of
                  * jumping. The first attempt indexed `w_row[nonzero[idx]]`
@@ -439,18 +526,17 @@ static void forward_batch(const NNModel *model, const float *in, int live,
                 for (int idx = 0; idx < n_nonzero; idx++) {
                     packed_w[idx] = w_row[nonzero[idx]];
                 }
-                for (int idx = 0; idx < n_nonzero; idx++) {
+                for (int idx = 0; idx < count; idx++) {
                     const float w = packed_w[idx];
-                    const float *column = packed_in
-                        + (size_t)idx * GN_EVAL_BATCH;
+                    const float *column = source + (size_t)idx * GN_EVAL_BATCH;
                     for (int n = 0; n < GN_EVAL_BATCH; n++) {
                         acc[n] += w * column[n];
                     }
                 }
             } else {
-                for (int j = 0; j < cols; j++) {
+                for (int j = 0; j < count; j++) {
                     const float w = w_row[j];
-                    const float *column = current + (size_t)j * GN_EVAL_BATCH;
+                    const float *column = source + (size_t)j * GN_EVAL_BATCH;
                     for (int n = 0; n < GN_EVAL_BATCH; n++) {
                         acc[n] += w * column[n];
                     }
@@ -462,6 +548,7 @@ static void forward_batch(const NNModel *model, const float *in, int live,
                 row_out[n] = is_output ? batch_sigmoid(acc[n]) : batch_relu(acc[n]);
             }
         }
+#endif
 
         current = next;
         next = (next == g_batch_a) ? g_batch_b : g_batch_a;

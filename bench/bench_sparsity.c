@@ -74,11 +74,11 @@ static int compare_doubles(const void *a, const void *b)
     return (x > y) - (x < y);
 }
 
-static unsigned long g_state = 20260902UL;
+static unsigned long long g_state = 20260902ULL;
 
 static int roll(void)
 {
-    g_state = g_state * 6364136223846793005UL + 1442695040888963407UL;
+    g_state = g_state * 6364136223846793005ULL + 1442695040888963407ULL;
     return (int)((g_state >> 33) % 6) + 1;
 }
 
@@ -278,7 +278,7 @@ static double paired_ratio(GnNetwork *net, GnNetwork *prune, int decisions,
         return -1.0;
     }
 
-    g_state = 20260826UL;
+    g_state = 20260826ULL;
     GnPosition pos;
     gn_position_initial(&pos);
     int done = 0;

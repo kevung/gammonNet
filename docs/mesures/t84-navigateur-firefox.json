@@ -1,0 +1,50 @@
+[
+  {
+    "browser": "firefox",
+    "width": 8,
+    "kernel": "auto",
+    "rate": 9035.3,
+    "decision": 1.132,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 8,
+    "kernel": "intrin",
+    "rate": 15673.5,
+    "decision": 0.681,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "auto",
+    "rate": 9309.1,
+    "decision": 1.237,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "rate": 17860.5,
+    "decision": 0.658,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 32,
+    "kernel": "auto",
+    "rate": 9783.4,
+    "decision": 1.3813,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 32,
+    "kernel": "intrin",
+    "rate": 18731.7,
+    "decision": 0.6897,
+    "maxDelta": 0
+  }
+]

@@ -144,6 +144,7 @@ d'évaluation qui verrouille les journaux T35. C'est un choix de format d'artefa
 | idée | verdict, mesuré |
 |---|---|
 | régler `GN_EVAL_BATCH` | 1,3 % au mieux ; et gcc ne vectorise la boucle chaude qu'à 32 |
+| **la largeur de lot, et le regroupement des 21 lancers** | **close pour de bon le 2026-09-02 (T84)** : à noyau écrit à la main, les largeurs 8, 16 et 32 tiennent en **11 %** ; passer de 32 à 8 coûte 3,3 % en natif et ne rend rien au navigateur. Le regroupement et la largeur 32 sont **conservés**. Ce qui décide n'est pas la largeur mais **le noyau** — ×1,81 natif, ×3,70 dans Chromium, à bit égal |
 | fusionner les lots du **petit** réseau | 0,7–0,9 %, dans le bruit — branche abandonnée |
 | regrouper les passes pour garder le petit réseau en cache | **2,2 % plus lent** |
 | l'encodage | 0,00037 ms, 0,6 % d'une évaluation |
