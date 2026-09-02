@@ -117,8 +117,23 @@ def build(payload):
 
     rng = random.Random(seed)
     table = TwoSidedBearoff(database)
-    matrix = np.memmap(matrix_path, dtype="<u2", mode="r",
-                       shape=(positions, positions))
+    # La matrice de T78 a une colonne, celle de T80 en a quatre. Un memmap à
+    # la mauvaise forme ne lève rien : il lirait les premiers positions² u16,
+    # c'est-à-dire les colonnes entrelacées d'une paire sur quatre — des
+    # nombres parfaitement plausibles et tous faux. La forme se DÉDUIT donc de
+    # la taille, et une taille inattendue est refusée.
+    expected = positions * positions * 2
+    size = Path(matrix_path).stat().st_size
+    if size == expected:
+        matrix = np.memmap(matrix_path, dtype="<u2", mode="r",
+                           shape=(positions, positions))
+    elif size == expected * 4:
+        matrix = np.memmap(matrix_path, dtype="<u2", mode="r",
+                           shape=(positions, positions, 4))[:, :, 0]
+    else:
+        raise ValueError(
+            f"{matrix_path} : {size} octets, ni une colonne ({expected}) "
+            f"ni quatre ({expected * 4}) pour {positions} positions")
 
     rows_pairs: list[list[tuple[int, int]]] = []
     rows_values: list[list[float]] = []
