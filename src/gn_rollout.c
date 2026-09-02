@@ -660,3 +660,94 @@ int gn_rollout_difference(const GnNetwork *net,
     }
     return 0;
 }
+
+int gn_rollout_candidates_paired(const GnNetwork *net, const GnPosition *results,
+                                 int count, const GnRolloutConfig *config,
+                                 int pivot, double *equities,
+                                 double *differences, double *difference_errors,
+                                 unsigned long *trials_done)
+{
+    if (net == NULL || results == NULL || config == NULL || equities == NULL
+        || differences == NULL || count <= 0 || count > GN_ROLLOUT_MAX_CANDIDATES
+        || pivot < 0 || pivot >= count) {
+        return -1;
+    }
+    if (config->use_match && !gn_match_state_is_valid(&config->match)) {
+        return -1;
+    }
+
+    double sum[GN_ROLLOUT_MAX_CANDIDATES];
+    double sum_difference[GN_ROLLOUT_MAX_CANDIDATES];
+    double sum_difference_squares[GN_ROLLOUT_MAX_CANDIDATES];
+    double value[GN_ROLLOUT_MAX_CANDIDATES];
+    for (int i = 0; i < count; i++) {
+        sum[i] = sum_difference[i] = sum_difference_squares[i] = 0.0;
+    }
+    unsigned long counted = 0;
+
+    for (unsigned long trial = 0; trial < config->trials; trial++) {
+        /* THE SAME TRIAL INDEX FOR EVERY CANDIDATE -- the mechanism of
+         * gn_rollout_difference, widened to `count` variants at once. A trial
+         * the engine declines to play for ONE candidate is dropped for ALL of
+         * them: keeping it for the others would break the pairing, which is the
+         * only reason any of this is cheap. */
+        int usable = 1;
+        for (int i = 0; i < count; i++) {
+            double equity, luck;
+            int outcome, finished, cashed;
+            long final_cube;
+            int status = play_trial(net, &results[i], config, trial, &equity,
+                                    &outcome, &finished, &cashed, &final_cube,
+                                    &luck);
+            if (status < 0) return -1;
+            if (status == 1) { usable = 0; break; }
+            /* Each result has already handed the turn over, so the rollout
+             * answered for the OPPONENT: the mover's equity is the negation.
+             * Done once, here, as everywhere else in this file. */
+            value[i] = -(equity - luck);
+        }
+        if (!usable) continue;
+
+        for (int i = 0; i < count; i++) {
+            const double difference = value[i] - value[pivot];
+            sum[i] += value[i];
+            sum_difference[i] += difference;
+            sum_difference_squares[i] += difference * difference;
+        }
+        counted++;
+
+        /* Stop when EVERY difference is determined -- the pivot's own is
+         * identically zero and is skipped, since its running_se would be zero
+         * from the first trial and would end the rollout immediately. */
+        if (config->target_se > 0.0 && counted % 36 == 0
+            && counted >= config->min_trials) {
+            int all_reached = 1;
+            for (int i = 0; i < count && all_reached; i++) {
+                if (i == pivot) continue;
+                if (running_se(sum_difference[i], sum_difference_squares[i],
+                               counted) > config->target_se) {
+                    all_reached = 0;
+                }
+            }
+            if (all_reached) break;
+        }
+    }
+
+    if (counted == 0) {
+        return -1;
+    }
+
+    for (int i = 0; i < count; i++) {
+        equities[i] = sum[i] / (double)counted;
+        differences[i] = sum_difference[i] / (double)counted;
+        if (difference_errors != NULL) {
+            difference_errors[i] = (i == pivot || counted <= 1)
+                ? 0.0
+                : running_se(sum_difference[i], sum_difference_squares[i], counted);
+        }
+    }
+    if (trials_done != NULL) {
+        *trials_done = counted;
+    }
+    return 0;
+}

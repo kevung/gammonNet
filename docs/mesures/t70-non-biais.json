@@ -1,0 +1,15 @@
+{
+  "calibrated": true,
+  "decisions": 60,
+  "inside_1_96": 0.8787878787878788,
+  "mean_z": 0.05184374012850274,
+  "mean_z_error": 0.17340555658994233,
+  "min_trials": 72,
+  "pairs": 132,
+  "sd_z": 1.992278166177438,
+  "seconds": 275.08848405000754,
+  "target_se": 0.006,
+  "truncate": 9,
+  "unbiased": true,
+  "variance_reduction": true
+}

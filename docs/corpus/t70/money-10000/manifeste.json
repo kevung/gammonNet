@@ -1,0 +1,115 @@
+{
+  "contexts": {
+    "money": {
+      "by_class": {
+        "backgame": 1229,
+        "bearoff_contact": 1651,
+        "blitz": 3549,
+        "contact": 14198,
+        "crashed": 1214,
+        "holding": 3341,
+        "prime_vs_prime": 1294,
+        "race_contact": 1898
+      },
+      "compared": 294653,
+      "decisions": 28374,
+      "disagreement_rate": 0.0962963214357227,
+      "examined": 660036,
+      "seconds": 72141.03933424316,
+      "sha256": "be7e73bf2980e89adc50175f35590ad9ac1bbae873e6d9bc16950e240a4b34ca"
+    }
+  },
+  "duplicates_dropped": 1989,
+  "filters": {
+    "0": [],
+    "1": [
+      0,
+      5
+    ],
+    "2": [
+      0,
+      1,
+      5
+    ],
+    "3": [
+      0,
+      1,
+      1,
+      5
+    ]
+  },
+  "merged_from": [
+    {
+      "decisions": 5055,
+      "seed": 25260827,
+      "sha256": "dd477cda76054a028811e07cca21c9baee4b3180da583d39bb19363e44ca68a8",
+      "slice": "money-05"
+    },
+    {
+      "decisions": 5062,
+      "seed": 26260827,
+      "sha256": "87ed134a3360a2a2786f274c29591c26cd807c20abd88bcd9fd75fd395f170cb",
+      "slice": "money-06"
+    },
+    {
+      "decisions": 5046,
+      "seed": 21260827,
+      "sha256": "05783e751d0c4d2ae1848eb95e5ae19db0ac3f35ee27858576eb0a21c6a42787",
+      "slice": "tranche-01"
+    },
+    {
+      "decisions": 5045,
+      "seed": 22260827,
+      "sha256": "433e9e568962d5f20bf305e1d3819ea0fa2cac882034936da6fdfd94738920b0",
+      "slice": "tranche-02"
+    },
+    {
+      "decisions": 5085,
+      "seed": 23260827,
+      "sha256": "716d1134fe8973e0b08436ee3e83cacb95165338f5161410141cbe25a4853ae2",
+      "slice": "tranche-03"
+    },
+    {
+      "decisions": 5070,
+      "seed": 24260827,
+      "sha256": "e882772e10cc77695ac1ff6bdce390ec38b025193f1ec38ec18bae296185be38",
+      "slice": "tranche-04"
+    }
+  ],
+  "model": "cubeless_prob5_512_512_256_128.bin",
+  "natural": {
+    "backgame": 0.024300000000000002,
+    "bearoff_contact": 0.05648333333333333,
+    "bearoff_noncontact": 0.0,
+    "blitz": 0.119875,
+    "contact": 0.5480999999999999,
+    "crashed": 0.035583333333333335,
+    "holding": 0.11159999999999999,
+    "over": 0.0,
+    "prime_vs_prime": 0.041049999999999996,
+    "race": 0.0,
+    "race_contact": 0.06300833333333333
+  },
+  "natural_sample": 120000,
+  "ply": 2,
+  "subsample": {
+    "by_class": {
+      "backgame": 433,
+      "bearoff_contact": 582,
+      "blitz": 1251,
+      "contact": 5004,
+      "crashed": 428,
+      "holding": 1177,
+      "prime_vs_prime": 456,
+      "race_contact": 669
+    },
+    "decisions": 10000,
+    "from": "docs/corpus/t70/money/corpus-money.jsonl",
+    "from_decisions": 28374,
+    "note": "Index et poids d'origine conserv\u00e9s : ce fichier est un vrai sous-ensemble du corpus, et arbitrer le reste plus tard prolonge le m\u00eame registre au lieu de le refaire.",
+    "seed": 20260828,
+    "sha256": "d46e30de058ae888500179933d638d7c8d095576c7408b738746371e0d9c9dc4"
+  },
+  "version": 1,
+  "width": 6
+}
