@@ -1,18 +1,18 @@
 {
   "_comment": "L'artefact float16 épinglé que `tools/serve.py` charge — le MÊME que la cible WebAssembly publiée (#18). Les poids ne sont PAS des assets de release individuels : ils vivent DANS l'archive `archive.filename`. `tools/fetch_release.py` télécharge cette archive (vérifiée contre `archive.sha256`), en extrait exactement les deux membres nommés ci-dessous, et vérifie CHACUN contre son propre SHA-256. `tools/serve.py` revérifie ces deux SHA-256 au démarrage et refuse de démarrer en cas de désaccord, jamais n'approxime.",
-  "version": "v1.2.0",
+  "version": "v1.2.1",
   "archive": {
-    "url": "https://github.com/kevung/gammonNet/releases/download/v1.2.0/gammonnet-v1.2.0.tar.gz",
-    "sha256": "7fbbcd32d132d4dbc38cb3d13045a7202e64eff970962a0f66fad24c2898b211"
+    "url": "https://github.com/kevung/gammonNet/releases/download/v1.2.1/gammonnet-v1.2.1.tar.gz",
+    "sha256": "c82e830d65ae76cbe65fb0169bc3252fd994449e593ab9318744110dd19ddef1"
   },
   "network_fp16": {
-    "member": "gammonnet-v1.2.0/strehl-prob5-512-512-256-128_v1.2.0_2026-09-02.bin16",
-    "filename": "strehl-prob5-512-512-256-128_v1.2.0_2026-09-02.bin16",
+    "member": "gammonnet-v1.2.1/strehl-prob5-512-512-256-128_v1.2.1_2026-09-02.bin16",
+    "filename": "strehl-prob5-512-512-256-128_v1.2.1_2026-09-02.bin16",
     "sha256": "74766d205fa86c863f4c231b4935b87ba0995adbe1d13b112d4f835b1832c340"
   },
   "prune_fp16": {
-    "member": "gammonnet-v1.2.0/strehl-prune-32_v1.2.0_2026-09-02.bin16",
-    "filename": "strehl-prune-32_v1.2.0_2026-09-02.bin16",
+    "member": "gammonnet-v1.2.1/strehl-prune-32_v1.2.1_2026-09-02.bin16",
+    "filename": "strehl-prune-32_v1.2.1_2026-09-02.bin16",
     "sha256": "87c1986d30aae649a369d8f8fa9db8bab17197c69d66b24c926b93f29e847a70"
   },
   "prune_k": 12

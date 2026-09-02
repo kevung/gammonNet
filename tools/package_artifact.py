@@ -345,71 +345,51 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.1.0 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.2.0 — À LIRE AVANT DE METTRE À JOUR
 
-**`cubeDecision` peut enfin rendre « trop bon pour doubler ».** La courbe vivante
-du modèle de videau avait ses deux extrémités aplaties : au-dessus du point de
-cash elle plafonnait à `max(1, e(p))`, sous le point de prise elle butait à
-`min(−1, e(p))`. Le segment manquant — `(CP_live, +1)` vers `(1, +W)` — est la
-valeur du videau qu'on CONSERVE en jouant la partie pour le gammon plutôt que
-d'encaisser. En le supprimant, on prisait ce videau à zéro.
+**En partie de Crawford, la valeur du videau est la valeur morte.** `gn_cube_decide`
+savait déjà ne jamais doubler pendant la partie de Crawford (spec §5, fait plat),
+mais `gn_cube_value` — la valuation de feuille de `use_cube`, et le nombre que
+`gn_cube_decide` rend à côté de son verdict — déroulait quand même la chaîne de
+redoublement §9 et rendait une valeur à videau **vivant**. Sur le 6-4 d'ouverture
+à 4-away/1-away Crawford, la recherche `use_cube` valuait la position à +0,68
+(équité normalisée) contre +0,16 pour le videau mort ; GNU Backgammon rend le
+même nombre cubeful et cubeless dans cette partie, et des choix de coups
+bougeaient avec (73 % d'accord avec gnubg contre 93 % en cubeless).
 
-Conséquence, et c'est toute la portée du défaut : `E_nd > +1` devenait
-impossible tant que l'équité **cubeless** ne dépassait pas déjà un point. Le
-verdict `GN_TOO_GOOD` — la valeur d'énumération, la ligne `TOO_GOOD` de la
-spécification §4 — décrivait donc un état que le moteur ne pouvait pas
-produire sur une position réelle. Balayé à 73 % de gains, il basculait à 55 %
-de gammon, c'est-à-dire là où `e(p)` franchit 1,000, et non là où jouer la
-suite se met à battre l'encaissement.
+Corrigé : `state->crawford` ⇒ `2·M_dead(p) − 1`, quels que soient le possesseur
+et l'efficacité ; dans `gn_cube_decide`, `equity_no_double` porte cette valeur et
+la branche « double » vaut exactement ne pas doubler — pas de « double manqué » à
+lire dans une partie où doubler est interdit. Post-Crawford ne change pas : la
+table le porte déjà.
 
-Sur `XGID=bB-B--C-A---eE---c-caa--B-:0:0:1:00:0:0:0:0:0`, money, videau centré :
+**Ce que vous devez faire** : rien dans le code appelant. Si vous avez STOCKÉ des
+décisions de videau ou des recherches `use_cube` de positions jouées **pendant une
+partie de Crawford**, leur équité « ne pas doubler » était fausse et doit être
+recalculée. Le verdict, lui, était juste.
 
-| | cubeless | ne pas doubler | doubler/prendre | verdict |
-|---|---|---|---|---|
-| v1.1.0 | +0,983 | **+0,995** | +1,780 | double, passe |
-| **v1.2.0** | +0,983 | **+1,142** | +1,780 | **trop bon, passe** |
-| GNU Backgammon 2-ply | +0,949 | +1,099 | +1,707 | trop bon, passe |
-| XG Roller++ | +0,935 | +1,082 | +1,678 | trop bon, passe |
+**Comment le vérifier vous-même** : à un score de Crawford, `gn_cube_value` doit
+égaler `gn_match_equity` pour toute distribution, tout possesseur et tout `x`, et
+une recherche `use_cube` doit rendre le coup et l'équité de la recherche cubeless
+— `tests/test_cube.py::test_crawford_values_a_dead_cube` et
+`tests/test_search_cube.py::test_crawford_search_with_use_cube_is_the_cubeless_search`.
 
-**Ce que vous devez faire** : rien dans le code appelant — ni signature, ni
-champ, ni unité. Mais si vous avez STOCKÉ des décisions de videau produites par
-v1.1.0 ou antérieur, celles des positions au-delà du point de cash sont fausses
-et doivent être recalculées. Un appelant qui affiche le verdict verra
-apparaître un quatrième cas qu'il n'avait jamais reçu jusqu'ici.
-
-**Comment le vérifier vous-même** : la courbe vivante doit valoir `+W` en
-`p = 1` et `−L` en `p = 0`, dans les trois états du videau. C'est l'ancrage que
-la version précédente violait, et le premier des trois tests neufs de
-`tests/test_cube.py`.
-
-**Le plafond était la règle de Jacoby**, appliquée en permanence au lieu de
-l'être quand elle vaut. Les gammons ne comptent pas avant que le videau soit
-tourné : la branche « ne pas doubler » est alors réellement bornée par
-l'encaissement. `gn_cube_decide` l'applique déjà là où elle appartient, en
-ramenant `W` et `L` à 1 sur cette branche — ce qui aplatit le segment corrigé
-tout seul, sans cas particulier. Les deux mécanismes n'en étaient pas un.
+**Ce que la mesure a établi au passage** (`docs/mesures/2026-09-02-jets-d-ouverture-au-score.md`,
+15 jets d'ouverture × 15 contextes de score, gnubg 1.08.003 en 2-ply) : la recherche
+`use_match` coïncide avec le cubeless de gnubg (95 % des choix, aucun écart > 0,02) ;
+l'écart avec ce que gnubg **joue** (77 %, 27 écarts) est celui de gnubg cubeless
+contre son propre cubeful (80 %, 23) — gammon-go et gammon-save à l'ouverture sont
+des effets du videau, que `use_cube` restitue (89 %, 2 écarts, tous post-Crawford
+2-away/1-away). Un appelant qui veut le coup que jouent XG et gnubg au score doit
+donc activer `use_cube`, pas seulement `use_match`.
 
 **Ce qui NE change pas** : les poids, bit pour bit — mêmes SHA-256 que ceux de
-v1.0.1 et v1.1.0, seuls les noms de fichiers portent la nouvelle version
-(`BRIEF.md` §8 : un réseau ne devient un autre réseau que si ses poids
-changent). Aucune probabilité, aucune équité de COUP, aucune mesure de force
-ci-dessous n'est affectée : la recherche évalue des coups, pas des états de
-videau. La parité WebAssembly ↔ natif reste à 0 en scalaire et 6,407e-7 en SIMD.
+v1.0.1, v1.1.0 et v1.2.0, seuls les noms de fichiers portent la nouvelle version
+(`BRIEF.md` §8). Aucune probabilité, aucune équité de coup hors `use_cube` à
+Crawford, aucune mesure de force ci-dessous n'est affectée.
 
-**Le calibrage de l'efficacité `x` n'est pas touché non plus**, et c'est
-démontrable plutôt que supposé : à `W = L = 1` — le domaine sans gammon de la
-table bilatérale contre laquelle `x` a été ajusté (T34) — la queue corrigée
-vaut `1 + (W−1)·(…) = 1`, exactement l'ancien plafond. La correction est
-l'identité sur tout le domaine d'ajustement, et ne mord que sur les positions
-à gammons, précisément celles que la spécification §3 disait n'être validées
-que par comparaison externe. Un test fige cette invariance.
-
-**Provenance** : la note de tête de `docs/specs/t34-videau-spec.md` affirmait
-qu'aucune source de GNU Backgammon n'avait été lue. Ce n'est plus vrai et le
-document le dit désormais : le diagnostic vient de la confrontation avec
-`MoneyLive()` (`gnubg/eval.c`, GPL), qui interpole là où nous plafonnions.
-Aucune ligne n'a été copiée — la forme rétablie est celle de Rick Janowski
-(*Take-Points in Money Games*, 1993), et gammonNet reste sous licence MIT.
+Les notes de la v1.2.0 (le verdict « trop bon » rendu atteignable) restent
+valables et ne sont pas répétées ici.
 
 """
 
