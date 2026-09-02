@@ -664,22 +664,89 @@ static int shallow_fill(const GnNetwork *net, GnCandidate *out, int n,
 static int value_sweep(GnCandidate *out, int n, const GnSearchConfig *config,
                        GnMatchState theirs, int owner)
 {
-    for (int i = 0; i < n; i++) {
-        const GnPosition *result = &out[i].play.result;
+    const int mirrored = mirror_owner(owner);
 
-        if (gn_position_is_over(result)) {
-            out[i].equity = -terminal_value(result, config, theirs);
-            continue;
+    /*
+     * THE BATCHED CUBE VALUATION (T85), AND WHERE IT DOES *NOT* APPLY
+     *
+     * Cubeless leaves cost nothing to value, and a money cube costs 14 ns --
+     * measured at zero per decision, four readings straddling it
+     * (docs/mesures/2026-09-02-T85-videau-par-lot.md §1.2). Both stay on the
+     * scalar path: a gather that bought nothing would still cost something,
+     * and the money path has the two-sided table's shortcut interleaved,
+     * which a gather would have to reproduce for no gain.
+     *
+     * At a SCORE the same call is 2 711 ns, and there is one per node --
+     * 20,5 % of a decision. That is the path below.
+     */
+    if (!config->use_cube || !config->use_match) {
+        for (int i = 0; i < n; i++) {
+            const GnPosition *result = &out[i].play.result;
+
+            if (gn_position_is_over(result)) {
+                out[i].equity = -terminal_value(result, config, theirs);
+                continue;
+            }
+
+            int failed = 0;
+            const double value = node_value(result, out[i].probs, config,
+                                            theirs, mirrored, &failed);
+            if (failed) {
+                return -1;
+            }
+            /* The negation: the answer was the opponent's. */
+            out[i].equity = -value;
+        }
+        return 0;
+    }
+
+    /*
+     * Gather, value together, scatter -- the same three sweeps as
+     * `shallow_fill` just above, and for the same reason: the expensive thing
+     * is far cheaper per item when several items are in flight at once. Here
+     * it is not the weights that are read once but the division latency of
+     * one candidate's bisection that is filled by another's.
+     *
+     * Terminal plays never reach the model (they are computed), so they are
+     * settled in the gather sweep exactly as the scalar path settles them.
+     * Every other candidate is valued, which is why the count below is the
+     * same count the scalar path produces -- `gn_search_cube_valuations` must
+     * not depend on which path ran.
+     */
+    const float *pending_probs[GN_CUBE_BATCH];
+    int pending_index[GN_CUBE_BATCH];
+    double values[GN_CUBE_BATCH];
+    int n_pending = 0;
+
+    for (int i = 0; i <= n; i++) {
+        if (i < n) {
+            const GnPosition *result = &out[i].play.result;
+
+            if (gn_position_is_over(result)) {
+                out[i].equity = -terminal_value(result, config, theirs);
+                continue;
+            }
+            pending_probs[n_pending] = out[i].probs;
+            pending_index[n_pending] = i;
+            n_pending++;
+            if (n_pending < GN_CUBE_BATCH) {
+                continue;
+            }
+        } else if (n_pending == 0) {
+            break;
         }
 
-        int failed = 0;
-        const double value = node_value(result, out[i].probs, config, theirs,
-                                        mirror_owner(owner), &failed);
-        if (failed) {
+        if (gn_cube_value_batch(pending_probs, n_pending,
+                                (GnCubeOwner)mirrored, &theirs, config->cube_x,
+                                values) != 0) {
             return -1;
         }
-        /* The negation: the answer was the opponent's. */
-        out[i].equity = -value;
+        g_cube_valuations += (unsigned long)n_pending;
+        for (int b = 0; b < n_pending; b++) {
+            /* The negation: the answer was the opponent's. */
+            out[pending_index[b]].equity = -values[b];
+        }
+        n_pending = 0;
     }
     return 0;
 }
