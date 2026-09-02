@@ -61,10 +61,17 @@ static unsigned long g_prune_evaluations = 0;
 
 unsigned long gn_search_prune_evaluations(void) { return g_prune_evaluations; }
 
+/* Nodes valued through the cube model -- see gn_search.h for why this is a
+ * counter and not an arithmetic assumption. */
+static unsigned long g_cube_valuations = 0;
+
+unsigned long gn_search_cube_valuations(void) { return g_cube_valuations; }
+
 void gn_search_reset_evaluations(void)
 {
     g_evaluations = 0;
     g_prune_evaluations = 0;
+    g_cube_valuations = 0;
 }
 
 /*
@@ -285,6 +292,7 @@ static double node_value(const GnPosition *pos,
         }
     }
 
+    g_cube_valuations++;
     int cube_failed = 0;
     const double value = gn_cube_value(probs, (GnCubeOwner)owner,
                                        config->use_match ? &state : NULL,

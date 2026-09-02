@@ -312,6 +312,24 @@ void gn_search_reset_evaluations(void);
  * incomparable. `gn_search_reset_evaluations` resets both. */
 unsigned long gn_search_prune_evaluations(void);
 
+/*
+ * Number of nodes the last search actually valued through the cube MODEL --
+ * `gn_cube_value`, the call `node_value` makes under `use_cube`.
+ *
+ * It exists because the cost of the cube in a decision was, until T85, a
+ * PRODUCT of two measurements (a per-call cost from `bench_cube` times a node
+ * count from `bench_decision`) and never a timing. That product silently
+ * assumed every evaluated node carries a valuation, which is false in three
+ * ways at once: terminal plays are computed and never valued, the two-sided
+ * bearoff table short-circuits the model in money, and the deep pass re-values
+ * nodes the shallow pass already valued. This counter is the measured
+ * denominator, so a per-node figure can be divided by what really happened.
+ *
+ * Counts model calls, not evaluations: a cache hit still gets valued, an exact
+ * bearoff money hit does not. `gn_search_reset_evaluations` resets it too.
+ */
+unsigned long gn_search_cube_valuations(void);
+
 #ifdef __cplusplus
 }
 #endif
