@@ -105,6 +105,13 @@ const MIN_TASK = 32;
 const WORKER_MEMORY_MB = 3;
 
 /*
+ * LE PLAFOND UTILE, mesuré et non supposé — voir `suggestedSize()` pour la
+ * table. Quatre relevés, trois machines : aucun ne montre de gain franc
+ * au-delà de huit workers, et deux montrent une PERTE.
+ */
+const MAX_USEFUL_WORKERS = 8;
+
+/*
  * LE RELEVÉ D'ORDONNANCEMENT d'un travail.
  *
  * Une fraction d'oisiveté n'a de sens qu'accompagnée de son dénominateur :
@@ -230,27 +237,36 @@ export class EvaluatorPool {
    *
    * `hardwareConcurrency` compte des FILS. Le débit, lui, est borné par les
    * cœurs PHYSIQUES et par la bande passante mémoire, parce que chaque worker
-   * relit sa propre copie des poids. Trois mesures le disent, sur trois
-   * machines :
+   * relit sa propre copie des poids. Ce que T87 a mesuré, sur un match complet
+   * de 139 décisions dans Chromium (poste 8 cœurs / 16 fils) :
    *
-   *   - en C, 8 processus sur 8 cœurs physiques rendent ×4,23, et doubler
-   *     jusqu'à 16 n'ajoute que 19 % (mesures d'entrée, 2026-09-02) ;
-   *   - dans Chromium, sur la même machine 8c/16f, le chemin `decide` d'un
-   *     match complet passe de ×1 à ×4,0 entre 1 et 8 workers, puis PLUS
-   *     RIEN — 12 et 16 workers ne rendent pas davantage (T87) ;
-   *   - sur une machine à 28 fils, `analyze` rendait ×6,2 à 8 workers (T21b),
-   *     et sur un poste 8c/16f il plafonnait à ×3,8 (T23).
+   *   workers    mural      accélération   secondes-worker dépensées
+   *         1    211,6 s          ×1,00                     211,6
+   *         4     87,3 s          ×2,43                     343,6
+   *         8     50,4 s          ×4,20                     390,4
+   *        16     47,3 s          ×4,47                     731,1
    *
-   * Le plafond utile est donc de l'ordre de la moitié des fils annoncés, et
-   * les workers au-delà coûtent 3 Mo chacun pour rien.
+   * Le travail est IDENTIQUE à toutes les lignes — 1 851 884 évaluations, même
+   * empreinte de coups. Passer de 8 à 16 workers achète donc **4 à 6 %** de
+   * temps mural en dépensant **deux fois plus** de secondes-worker et deux
+   * fois plus de mémoire. Sur le chemin des lots (`analyze`), 16 workers sont
+   * carrément PLUS LENTS que 8 (×3,28 contre ×3,55) et font passer la pire
+   * tâche du fil principal de 4,3 à 21,7 ms.
    *
-   * CE QUE CETTE FONCTION N'EST PAS : une mesure. La plateforme ne dit pas
-   * combien de cœurs physiques elle a, ne dit pas si les cœurs sont
-   * hétérogènes, et `hardwareConcurrency` est plafonné à 4 sur iOS quel que
-   * soit l'appareil. C'est une RÈGLE PRUDENTE tirée de trois relevés, et la
-   * seule réponse exacte reste de mesurer sur l'appareil. Elle est ici pour
-   * qu'un appelant cesse d'ouvrir seize workers en croyant que le chiffre du
-   * navigateur est une réponse.
+   * Le plafond de 8 est celui que TOUTES les mesures disponibles désignent :
+   * ×3,55 ici à 8 workers, ×3,82 sur un autre poste 8c/16f (T23), ×6,2 sur une
+   * machine à 28 fils (T21b) — et sur un navigateur bridé à 4 fils, le maximum
+   * est atteint entre 4 et 6 workers pour ×2,1. Aucun relevé ne montre de gain
+   * franc au-delà de huit.
+   *
+   * CE QUE CETTE FONCTION N'EST PAS : une mesure de VOTRE appareil. La
+   * plateforme ne dit pas combien de cœurs physiques elle a, ne dit pas si les
+   * cœurs sont hétérogènes, et `hardwareConcurrency` est plafonné à 4 sur iOS
+   * quel que soit le téléphone. C'est une RÈGLE PRUDENTE tirée de quatre
+   * relevés, et la seule réponse exacte reste de mesurer sur l'appareil —
+   * `ScheduleReport` est là pour ça. Elle existe pour qu'un appelant cesse
+   * d'ouvrir seize workers en croyant que le chiffre du navigateur est une
+   * réponse.
    *
    * @param {object} opts
    *   `hardwareConcurrency` le nombre de fils annoncé (défaut : celui du
@@ -267,12 +283,8 @@ export class EvaluatorPool {
     const threads = Number.isFinite(hardwareConcurrency) && hardwareConcurrency >= 1
       ? Math.floor(hardwareConcurrency)
       : 2;
-    /* La moitié des fils — l'ordre de grandeur des cœurs physiques sur un
-     * poste SMT, et un plafond raisonnable là où il n'y a pas de SMT. */
-    let workers = Math.max(1, Math.floor(threads / 2));
-    /* Et jamais plus de huit : au-delà, aucune des trois mesures ne montre
-     * de gain, et chaque worker coûte encore ses 3 Mo. */
-    workers = Math.min(workers, 8);
+    /* Jamais plus de huit, et jamais plus que ce qui est annoncé. */
+    let workers = Math.max(1, Math.min(threads, MAX_USEFUL_WORKERS));
     if (Number.isFinite(memoryBudgetMB)) {
       workers = Math.min(workers, Math.max(1, Math.floor(memoryBudgetMB / WORKER_MEMORY_MB)));
     }

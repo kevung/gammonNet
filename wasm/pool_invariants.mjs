@@ -238,8 +238,13 @@ function makeFeatures(count) {
         suggested < 16, `conseillé : ${suggested}`);
   check("un seul cœur annoncé donne un seul worker",
         EvaluatorPool.suggestedSize({ hardwareConcurrency: 1 }) === 1);
-  check("un `hardwareConcurrency` absent ne fait pas planter",
-        EvaluatorPool.suggestedSize({ hardwareConcurrency: undefined }) >= 1);
+  check("le plafond mesuré vaut 8, même sur une machine à 28 fils",
+        EvaluatorPool.suggestedSize({ hardwareConcurrency: 28 }) === 8);
+  check("quatre fils annoncés donnent quatre workers, pas deux",
+        EvaluatorPool.suggestedSize({ hardwareConcurrency: 4 }) === 4);
+  /* Un appareil qui ne dit rien n'est pas un appareil qu'on charge. */
+  check("un `hardwareConcurrency` illisible retombe sur deux workers",
+        EvaluatorPool.suggestedSize({ hardwareConcurrency: null }) === 2);
   check("le budget mémoire peut brider le conseil",
         EvaluatorPool.suggestedSize({ hardwareConcurrency: 16, memoryBudgetMB: 4 })
           < EvaluatorPool.suggestedSize({ hardwareConcurrency: 16 }));
