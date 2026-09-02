@@ -251,6 +251,66 @@ check("l'efficacité fournie est celle qui sert",
       cube.takePoint !== other.takePoint,
       `x=0,688 → point de prise ${cube.takePoint.toFixed(6)} ; ` +
       `x=0,566 → ${other.takePoint.toFixed(6)}`);
+/* 7. LE CODEC, ET LE PIÈGE QU'IL PORTE (T86).
+ *
+ * `wasm/codec_parity.mjs` établit l'égalité exacte avec le C sur le corpus
+ * entier ; ce qui est vérifié ICI est ce qu'un appelant peut se tromper à
+ * faire avec, et c'est une seule chose : LE POSITION ID NE PORTE PAS LE
+ * JOUEUR AU TRAIT. Le `resultId` que rend `bestPlay` décrit la position
+ * d'APRÈS le coup, donc l'autre camp est au trait ; le décoder avec le `turn`
+ * de l'aller rend le plateau du mauvais côté — sans erreur, sans signe, et
+ * avec des comptes de pions parfaitement plausibles. Le consommateur qui a
+ * écrit ce codec de son côté a documenté ce piège pour l'avoir rencontré. */
+const opening = evaluator.positionFromId(POSITION, 0);
+check("le codec fait l'aller-retour", evaluator.positionId(opening) === POSITION,
+      evaluator.positionId(opening));
+check("l'ouverture compte 167 pips des deux côtés",
+      evaluator.pipCount(opening, 0) === 167 && evaluator.pipCount(opening, 1) === 167,
+      `${evaluator.pipCount(opening, 0)} / ${evaluator.pipCount(opening, 1)}`);
+
+/* Le 3-1 déplace quatre pips. Décodé avec `1 - turn` — le trait a changé —
+ * Blanc, qui vient de jouer, en a 163 et Noir toujours 167. Décodé avec le
+ * `turn` de l'aller, les deux camps sont ÉCHANGÉS : on lit 167 pour Blanc,
+ * c'est-à-dire le nombre d'avant le coup, ce qui est exactement ce qui rend
+ * l'erreur invisible. */
+const after = evaluator.positionFromId(best.resultId, 1);
+check("resultId décodé du bon côté : Blanc a joué 4 pips, 167 → 163",
+      evaluator.pipCount(after, 0) === 163 && evaluator.pipCount(after, 1) === 167,
+      `${evaluator.pipCount(after, 0)} / ${evaluator.pipCount(after, 1)}`);
+const wrongSide = evaluator.positionFromId(best.resultId, 0);
+check("décodé du mauvais côté : 167 pour Blanc, aucun signe d'erreur",
+      evaluator.pipCount(wrongSide, 0) === 167
+      && JSON.stringify(wrongSide.points) !== JSON.stringify(after.points),
+      `${evaluator.pipCount(wrongSide, 0)}`);
+
+/* Et le XGID de l'ouverture, l'ancrage même du format (`gn_position_id.h`). */
+check("le XGID de l'ouverture est l'identifiant canonique",
+      evaluator.xgid(opening).startsWith("XGID=-b----E-C---eE---c-e----B-"),
+      evaluator.xgid(opening));
+
+/* 8. LE COUP EST NOMMÉ, ET C'EST LE COUP QUE LA RECHERCHE A CHOISI (T86).
+ *
+ * `resultId` est un PLATEAU : il ne dit pas quel pion est allé où, et deux
+ * appariements peuvent le produire. La notation vient de `GnPlay.moves`, la
+ * liste ordonnée que la recherche a réellement retenue — ce n'est pas une
+ * présentation ajoutée, c'est une partie de la réponse qu'on cessait de
+ * rendre. Elle est la MÊME que celle du champ `move` de `/v1/eval` : le C
+ * l'écrit une fois (`src/gn_notation.c`) et les deux surfaces l'appellent. */
+check("le meilleur coup d'ouverture 3-1 se nomme", best.notation === "6/5 8/5",
+      `« ${best.notation} »`);
+check("chaque candidat porte sa notation",
+      reference.every((c) => typeof c.notation === "string" && c.notation.length > 0),
+      `${reference.length} candidats`);
+check("rankPlays[0] et bestPlay nomment le même coup",
+      reference[0].notation === best.notation,
+      `« ${reference[0].notation} » / « ${best.notation} »`);
+
+/* Un double regroupe ses sous-coups identiques : `13/8(2)` et non
+ * `13/8 13/8`. C'est la forme que la notation ajoute à une simple paire. */
+const heavy = evaluator.rankPlays(POSITION, 0, 5, 5, { ply: 0, max: 5 });
+check("les sous-coups répétés sont regroupés",
+      heavy.some((c) => /\(\d\)/.test(c.notation)),
+      heavy.map((c) => c.notation).join(" | "));
 
 console.log(failures === 0
   ? "\n✅ invariants de l'API tenus"
