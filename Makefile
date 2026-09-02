@@ -268,8 +268,14 @@ wasm-parity: wasm $(MODEL)
 # Les invariants de l'API JavaScript. La parité vérifie que le module CALCULE
 # comme le natif ; ceci vérifie qu'il RÉPOND ce qu'il promet — le classement des
 # N meilleurs coups, notamment, où deux défauts silencieux ont été trouvés.
+#
+# Deux surfaces, deux fichiers. `api_invariants` interroge le module ;
+# `worker_invariants` interroge le PROTOCOLE DE WORKER, qui est la surface que
+# le navigateur voit réellement et qui, faute d'être testée, a laissé trois
+# points d'entrée exportés rester inatteignables (T86).
 wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/api_invariants.mjs
+	node $(WASM_DIR)/worker_invariants.mjs
 
 DUMP_INT8 := $(BUILD)/dump_reference_int8
 $(DUMP_INT8): tools/dump_reference_int8.c src/gn_gemm_int8.c $(HEADERS)
