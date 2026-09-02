@@ -105,7 +105,7 @@ class Model:
     """
 
     def __init__(self, hidden: list[int], device, features, activation: int = TANH,
-                 embedding: int = 0):
+                 embedding: int = 0, outputs: int = 1):
         import torch
         import torch.nn as nn
         self.features = features
@@ -115,7 +115,7 @@ class Model:
             nn.init.normal_(self.embedding.weight, std=0.1)
         self.side_width = SIDE_FEATURES + embedding
 
-        sizes = [2 * self.side_width] + hidden + [1]
+        sizes = [2 * self.side_width] + hidden + [outputs]
         layers = []
         for index in range(len(sizes) - 1):
             layers.append(nn.Linear(sizes[index], sizes[index + 1]))
@@ -126,6 +126,7 @@ class Model:
         self.net = nn.Sequential(*layers).to(device)
         self.sizes = sizes
         self.activation = activation
+        self.outputs = outputs
 
     def parameters(self):
         import itertools
@@ -141,9 +142,14 @@ class Model:
         return torch.cat([block, self.embedding(index)], dim=1)
 
     def value(self, i, j):
-        """The network's equity for the side `i` on roll against `j`."""
+        """The network's equities for the side `i` on roll against `j`.
+
+        `(N,)` for a cubeless network, `(N, 4)` for a cubeful one. The checker
+        play only ever reads column 0 -- the cube columns rank nothing.
+        """
         import torch
-        return self.net(torch.cat([self.encode(i), self.encode(j)], dim=1))[:, 0]
+        out = self.net(torch.cat([self.encode(i), self.encode(j)], dim=1))
+        return out[:, 0] if self.outputs == 1 else out
 
     def export(self) -> BearoffNet:
         import torch.nn as nn
@@ -159,15 +165,27 @@ class Model:
 
 
 def load_domain(matrix_path: Path, sides_path: Path):
-    """The table as a matrix, the layouts, and their features."""
+    """The table as a matrix, the layouts, their features, and the column count.
+
+    One column is T78's cubeless equity; four are T80's full row -- cubeless
+    then the three cubeful equities by cube ownership. The count is **deduced
+    from the file's size** rather than passed in: a mismatch between the file
+    and the flag would train a network on shifted labels and say nothing.
+    """
     sides = np.load(sides_path)
     positions = sides.shape[0]
-    raw = np.memmap(matrix_path, dtype="<u2", mode="r",
-                    shape=(positions, positions))
+    entries = matrix_path.stat().st_size // 2
+    columns = entries // (positions * positions)
+    if columns * positions * positions * 2 != matrix_path.stat().st_size:
+        raise AssertionError(f"{matrix_path} : taille incompatible avec "
+                             f"{positions} positions")
+    shape = ((positions, positions) if columns == 1
+             else (positions, positions, columns))
+    raw = np.memmap(matrix_path, dtype="<u2", mode="r", shape=shape)
     features = side_features(sides)
     if features.shape[1] != SIDE_FEATURES:
         raise AssertionError("feature width disagrees with the module")
-    return np.asarray(raw), sides, features
+    return np.asarray(raw), sides, features, columns
 
 
 def scan_domain(model, matrix, device, chunk: int = 16, keep: int = 0):
@@ -180,21 +198,22 @@ def scan_domain(model, matrix, device, chunk: int = 16, keep: int = 0):
     `keep` asks for the indices of the `keep` worst pairs, which is what the
     mining stage trains on. They are gathered chunk by chunk (the best of each
     block, then the best of those) rather than by sorting 153 million values.
+    With several columns, a pair is as hard as its **worst** column.
 
     **Why this is worth a minute of machine.** The domain is finite and fully
     known, so `worst_abs` is not an estimate of the worst error -- it *is* the
     worst error. And it bounds what no sampled measurement can bound: if the
     evaluator misranks two moves, the equity it gives up is at most twice the
-    largest error it can make anywhere. A max of 1.15e-3 therefore *guarantees*
-    a decision loss under 0.0023, the worst case GNU Backgammon was measured at
-    in T38 -- guaranteed, not observed.
+    largest error it can make anywhere.
     """
     import torch
     positions = matrix.shape[0]
+    columns = model.outputs
     worst = 0.0
     worst_at = (0, 0)
-    total = 0.0
-    total_sq = 0.0
+    total = np.zeros(columns)
+    total_sq = np.zeros(columns)
+    per_column_worst = np.zeros(columns)
     count = 0
     over = 0
     pool_error: list[np.ndarray] = []
@@ -202,36 +221,41 @@ def scan_domain(model, matrix, device, chunk: int = 16, keep: int = 0):
     per_chunk = max(1, keep // 64) if keep else 0
 
     with torch.no_grad():
-        columns = torch.arange(1, positions, device=device)
+        cols = torch.arange(1, positions, device=device)
         for start in range(1, positions, chunk):
             stop = min(start + chunk, positions)
             n_rows = stop - start
             rows = torch.arange(start, stop, device=device)
             i = rows.repeat_interleave(positions - 1)
-            j = columns.repeat(n_rows)
-            predicted = model.value(i, j).reshape(n_rows, -1)
+            j = cols.repeat(n_rows)
+            predicted = model.value(i, j).reshape(n_rows, positions - 1, columns)
             # numpy's uint16 has no torch counterpart -- the widening happens
             # here rather than through a dtype torch would refuse.
+            block = matrix[start:stop, 1:]
             target = torch.from_numpy(
-                matrix[start:stop, 1:].astype(np.float32)
+                np.ascontiguousarray(block).astype(np.float32).reshape(
+                    n_rows, positions - 1, columns)
             ).to(device) * SCALE - 1.0
             error = (predicted - target).abs()
 
-            block_worst, flat = error.reshape(-1).max(dim=0)
+            flat_worst = error.amax(dim=2)
+            block_worst, flat = flat_worst.reshape(-1).max(dim=0)
             block_worst = float(block_worst)
             if block_worst > worst:
                 index = int(flat)
                 worst = block_worst
                 worst_at = (start + index // (positions - 1), 1 + index % (positions - 1))
-            total += float(error.sum())
-            total_sq += float((error * error).sum())
-            over += int((error > 0.01).sum())
-            count += error.numel()
+            total += error.sum(dim=(0, 1)).cpu().numpy()
+            total_sq += (error * error).sum(dim=(0, 1)).cpu().numpy()
+            per_column_worst = np.maximum(per_column_worst,
+                                          error.amax(dim=(0, 1)).cpu().numpy())
+            over += int((error[:, :, 0] > 0.01).sum())
+            count += n_rows * (positions - 1)
 
             if per_chunk:
-                flat_error = error.reshape(-1)
-                take = min(per_chunk, flat_error.numel())
-                values, indices = torch.topk(flat_error, take, sorted=False)
+                flattened = flat_worst.reshape(-1)
+                take = min(per_chunk, flattened.numel())
+                values, indices = torch.topk(flattened, take, sorted=False)
                 pool_error.append(values.cpu().numpy())
                 pool_index.append(
                     np.stack([start + indices.cpu().numpy() // (positions - 1),
@@ -239,13 +263,20 @@ def scan_domain(model, matrix, device, chunk: int = 16, keep: int = 0):
 
     stats = {
         "pairs": count,
-        "mean_abs": total / count,
-        "rms": (total_sq / count) ** 0.5,
-        "worst_abs": worst,
+        "mean_abs": float(total[0] / count),
+        "rms": float((total_sq[0] / count) ** 0.5),
+        "worst_abs": float(per_column_worst[0]),
         "worst_at": worst_at,
         "above_0.01": over,
-        "guaranteed_decision_loss": 2.0 * worst,
+        "guaranteed_decision_loss": 2.0 * float(per_column_worst[0]),
     }
+    if columns > 1:
+        names = ["cubeless", "owned", "centered", "opponent_owns"]
+        stats["columns"] = {
+            names[k]: {"mean_abs": float(total[k] / count),
+                       "rms": float((total_sq[k] / count) ** 0.5),
+                       "worst_abs": float(per_column_worst[k])}
+            for k in range(columns)}
     if not keep:
         return stats, None
 
@@ -266,7 +297,7 @@ def sample_batch(model, matrix, positions, batch, rng, device):
     import torch
     i = rng.integers(1, positions, size=batch)
     j = rng.integers(1, positions, size=batch)
-    target = matrix[i, j].astype(np.float32) * SCALE - 1.0
+    target = np.ascontiguousarray(matrix[i, j]).astype(np.float32) * SCALE - 1.0
     i_t = torch.from_numpy(i.astype(np.int64)).to(device)
     j_t = torch.from_numpy(j.astype(np.int64)).to(device)
     return i_t, j_t, torch.from_numpy(target).to(device)
@@ -338,7 +369,7 @@ def mining_stage(model, matrix, args, device, log):
                                 rng.integers(1, positions, size=easy_size)])
             j = np.concatenate([hard[picked, 1],
                                 rng.integers(1, positions, size=easy_size)])
-            target = matrix[i, j].astype(np.float32) * SCALE - 1.0
+            target = np.ascontiguousarray(matrix[i, j]).astype(np.float32) * SCALE - 1.0
             i_t = torch.from_numpy(i.astype(np.int64)).to(device)
             j_t = torch.from_numpy(j.astype(np.int64)).to(device)
             y = torch.from_numpy(target).to(device)
@@ -432,8 +463,11 @@ def decision_stage(model, matrix, corpus, args, device, log):
         exact = torch.from_numpy(values[flat]).to(device)
         group_t = torch.from_numpy(group).to(device)
 
-        value = -model.value(torch.from_numpy(index[:, 0]).to(device),
-                             torch.from_numpy(index[:, 1]).to(device))
+        raw = model.value(torch.from_numpy(index[:, 0]).to(device),
+                          torch.from_numpy(index[:, 1]).to(device))
+        # Le classement des coups ne lit que l'équité cubeless : les colonnes
+        # de videau ne trient rien.
+        value = -(raw if model.outputs == 1 else raw[:, 0])
         value = torch.where(terminal, torch.ones_like(value), value)
 
         # The best candidate is known exactly, so no segment maximum is needed:
@@ -442,8 +476,9 @@ def decision_stage(model, matrix, corpus, args, device, log):
         best_block = pairs[best[picked]]
         best_terminal = torch.from_numpy(best_block[:, 0] < 0).to(device)
         best_index = np.clip(best_block, 0, None).astype(np.int64)
-        best_value = -model.value(torch.from_numpy(best_index[:, 0]).to(device),
-                                  torch.from_numpy(best_index[:, 1]).to(device))
+        best_raw = model.value(torch.from_numpy(best_index[:, 0]).to(device),
+                               torch.from_numpy(best_index[:, 1]).to(device))
+        best_value = -(best_raw if model.outputs == 1 else best_raw[:, 0])
         best_value = torch.where(best_terminal, torch.ones_like(best_value), best_value)
         top = torch.from_numpy(values[best[picked]]).to(device)
 
@@ -467,6 +502,68 @@ def decision_stage(model, matrix, corpus, args, device, log):
             log(f"  decisions  {step:>7}/{args.decision_steps}  hinge "
                 f"{running / args.report:.3e}  ancre {running_anchor / args.report:.3e}  "
                 f"{elapsed / 60:.1f} min")
+            running = 0.0
+            running_anchor = 0.0
+    return model
+
+
+def cube_stage(model, matrix, args, device, log):
+    """Le quatrième étage : viser la DÉCISION de videau, pas ses équités.
+
+    Une décision de videau se réduit à un signe. La marge exacte
+
+        m* = e_nd* - min(2 x e_opp*, 1)
+
+    est positive quand il ne faut pas doubler, négative quand il faut, et sa
+    valeur absolue **est** l'équité que coûterait le verdict inverse. La perte
+    est donc une charnière sur le signe, pondérée par ce coût — la même forme
+    que l'étage par décision de coup, et pour la même raison : une erreur
+    commune aux deux branches ne change pas le verdict, seule leur différence
+    le fait.
+
+    Les deux états de possession se jugent ensemble, chacun avec sa colonne :
+    « possédé » lit la colonne 1, « centré » la colonne 2, et les deux se
+    comparent au même double, qui donne le videau à l'adversaire (colonne 3).
+    """
+    import torch
+    positions = matrix.shape[0]
+    rng = np.random.default_rng(args.seed + 4)
+    optimiser = torch.optim.AdamW(model.parameters(), lr=args.cube_lr,
+                                  weight_decay=args.weight_decay)
+    schedule = torch.optim.lr_scheduler.OneCycleLR(
+        optimiser, max_lr=args.cube_lr, total_steps=args.cube_steps, pct_start=0.05)
+    start = time.perf_counter()
+    running = 0.0
+    running_anchor = 0.0
+
+    for step in range(1, args.cube_steps + 1):
+        i, j, exact = sample_batch(model, matrix, positions, args.cube_batch,
+                                   rng, device)
+        predicted = model.value(i, j)
+
+        exact_double = torch.clamp(2.0 * exact[:, 3], max=1.0)
+        predicted_double = torch.clamp(2.0 * predicted[:, 3], max=1.0)
+
+        hinge = 0.0
+        for column in (1, 2):
+            exact_margin = exact[:, column] - exact_double
+            margin = predicted[:, column] - predicted_double
+            cost = exact_margin.abs()
+            hinge = hinge + (cost * torch.relu(
+                args.cube_margin - torch.sign(exact_margin) * margin)).mean()
+
+        anchor = torch.nn.functional.mse_loss(predicted, exact)
+        loss = hinge + args.anchor * anchor
+        optimiser.zero_grad(set_to_none=True)
+        loss.backward()
+        optimiser.step()
+        schedule.step()
+        running += float(hinge.detach())
+        running_anchor += float(anchor.detach())
+        if step % args.report == 0 or step == args.cube_steps:
+            log(f"  videau     {step:>7}/{args.cube_steps}  charnière "
+                f"{running / args.report:.3e}  ancre {running_anchor / args.report:.3e}  "
+                f"{(time.perf_counter() - start) / 60:.1f} min")
             running = 0.0
             running_anchor = 0.0
     return model
@@ -504,6 +601,11 @@ def main() -> int:
     parser.add_argument("--decision-regression", type=int, default=4096)
     parser.add_argument("--margin", type=float, default=0.002)
     parser.add_argument("--anchor", type=float, default=1.0)
+    parser.add_argument("--cube-steps", type=int, default=0,
+                        help="étage de décision de videau (réseau à quatre sorties)")
+    parser.add_argument("--cube-batch", type=int, default=8192)
+    parser.add_argument("--cube-lr", type=float, default=2e-4)
+    parser.add_argument("--cube-margin", type=float, default=0.002)
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     parser.add_argument("--log", default="")
     args = parser.parse_args()
@@ -522,14 +624,16 @@ def main() -> int:
             log_handle.write(message + "\n")
 
     hidden = [int(h) for h in args.hidden.split(",") if h.strip()]
-    matrix, sides, features = load_domain(Path(args.matrix), Path(args.sides))
+    matrix, sides, features, columns = load_domain(Path(args.matrix), Path(args.sides))
     features_t = torch.from_numpy(features).to(device)
 
     model = Model(hidden, device, features_t,
                   activation=TANH if args.output == "tanh" else IDENTITY,
-                  embedding=args.embedding)
+                  embedding=args.embedding, outputs=columns)
     exported = model.export()
-    log(f"T78 — distillation de la table exacte, {matrix.shape[0]} x {matrix.shape[0]} paires")
+    log(f"Distillation de la table exacte, {matrix.shape[0]} x {matrix.shape[0]} paires, "
+        f"{columns} colonne(s) : "
+        f"{'équité cubeless' if columns == 1 else 'cubeless + les trois cubeful'}")
     log(f"  architecture {exported.sizes}, {exported.parameters} paramètres, "
         f"{exported.macs} MACs, {exported.parameters * 4 / 1024:.1f} Kio en float32")
     log(f"  torch {torch.__version__}, {args.device}, "
@@ -562,6 +666,20 @@ def main() -> int:
             f"en {after_decisions['worst_at']}  au-delà de 0,01 : "
             f"{after_decisions['above_0.01']}")
 
+    after_cube = None
+    if args.cube_steps:
+        if columns != 4:
+            raise SystemExit("l'étage de videau demande les quatre colonnes "
+                             "(--matrix build/ts6x11_cubeful.u16)")
+        cube_stage(model, matrix, args, device, log)
+        after_cube = exhaustive_error(model, matrix, device)
+        log(f"  exhaustif après videau : moyenne {after_cube['mean_abs']:.3e}  "
+            f"rms {after_cube['rms']:.3e}  pire {after_cube['worst_abs']:.5f}")
+        if "columns" in after_cube:
+            for name, block in after_cube["columns"].items():
+                log(f"    {name:<14} moyenne {block['mean_abs']:.3e}  "
+                    f"pire {block['worst_abs']:.5f}")
+
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     exported = model.export()
@@ -574,6 +692,7 @@ def main() -> int:
         "parameters": exported.parameters,
         "macs": exported.macs,
         "feature_version": FEATURE_VERSION,
+        "outputs": columns,
         "output": args.output,
         "embedding": args.embedding,
         "matrix": {"path": str(args.matrix), "sha256": sha256(Path(args.matrix))},
@@ -590,11 +709,14 @@ def main() -> int:
             "decision_corpus": args.decision_corpus,
             "decision_steps": args.decision_steps if args.decision_corpus else 0,
             "margin": args.margin, "anchor": args.anchor,
+            "cube_steps": args.cube_steps, "cube_batch": args.cube_batch,
+            "cube_lr": args.cube_lr, "cube_margin": args.cube_margin,
         },
         "exhaustive_error": {
             "after_regression": after_regression,
             "after_mining": after_mining,
             "after_decisions": after_decisions,
+            "after_cube": after_cube,
         },
         "weights_sha256": sha256(out),
         "minutes": (time.perf_counter() - started) / 60.0,

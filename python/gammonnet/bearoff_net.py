@@ -227,8 +227,12 @@ class BearoffNet:
             raise ValueError(f"first layer takes {layers[0][0].shape[0]} inputs, "
                              f"the encoding gives {2 * width}")
         self.side_width = width
-        if layers[-1][0].shape[1] != 1:
-            raise ValueError("the last layer must produce a single equity")
+        # Une sortie : l'équité cubeless seule (T78). Quatre : les colonnes de
+        # la table -- cubeless, puis les trois cubeful par possession du videau
+        # (T80). Le nombre vit dans le fichier, il n'est pas supposé ici.
+        self.outputs = layers[-1][0].shape[1]
+        if self.outputs not in (1, 4):
+            raise ValueError(f"{self.outputs} sorties : la table en a une ou quatre")
         self.layers = [(np.ascontiguousarray(w, dtype=np.float32),
                         np.ascontiguousarray(b, dtype=np.float32))
                        for w, b in layers]
@@ -260,8 +264,8 @@ class BearoffNet:
             x = x @ w + b
             if index + 1 < len(self.layers):
                 np.maximum(x, 0.0, out=x)
-        out = x[:, 0]
-        return np.tanh(out) if self.activation == TANH else out
+        out = np.tanh(x) if self.activation == TANH else x
+        return out[:, 0] if self.outputs == 1 else out
 
     def encode(self, counts: np.ndarray) -> np.ndarray:
         """One side's input block: its features, and its layout code if there is one."""
@@ -275,13 +279,23 @@ class BearoffNet:
         return self.forward(np.concatenate([self.encode(mine), self.encode(theirs)],
                                            axis=1))
 
-    def equity(self, position) -> float:
-        """Equity of `position`, seen by `position.turn`. Raises off-domain."""
+    def equity(self, position):
+        """Equity of `position`, seen by `position.turn`. Raises off-domain.
+
+        A single float for a cubeless network; an `ExactEquity` -- the same
+        four fields the table reader returns, in the same order -- for a
+        four-output one, so that a caller can swap the table for the network
+        without noticing.
+        """
         if not contains(position):
             raise KeyError(f"outside the {POINTS}x{CHEQUERS} bearoff domain: {position!r}")
         white, black = position_sides(position)
         mine, theirs = (white, black) if position.turn == WHITE else (black, white)
-        return float(self.equities_from_counts(np.array([mine]), np.array([theirs]))[0])
+        answer = self.equities_from_counts(np.array([mine]), np.array([theirs]))[0]
+        if self.outputs == 1:
+            return float(answer)
+        from .bearoff import ExactEquity
+        return ExactEquity(*(float(v) for v in answer))
 
     # ── storage ─────────────────────────────────────────────────────
 

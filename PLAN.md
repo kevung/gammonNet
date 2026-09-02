@@ -1479,6 +1479,75 @@ le jeu au-delà du 0-ply. Le moteur qui joue est à 0-ply, pour le volume ; c'es
 fiche de mesure plutôt que laissé à deviner.
 
 ---
+## T80 — Le videau exact en fin de course, distillé
+
+> **La deuxième moitié de la table, laissée de côté par T78.** `gnubg-TS-06-11` a quatre
+> colonnes : l'équité cubeless, et les trois équités **cubeful** selon qui possède le videau. T78
+> n'a distillé que la première. Or la fin de course est *le seul endroit du jeu où une décision de
+> videau admet une réponse sans variance* (DS-13 §2) — et notre modèle y perd bien plus qu'au
+> coup : mesuré par `bench/cube_at_depth.py`, **0,00072 d'équité par décision de videau possédé
+> et 0,00135 au videau centré, avec un pire cas de 0,2778**, contre 0,00028 et 0,0919 pour le
+> coup.
+
+**Objectif** — un réseau à quatre sorties qui rende la décision de videau de fin de course sans
+la table, et qui batte le modèle de Janowski sur sa propre mesure exacte.
+
+**Périmètre**
+- Extraction des quatre colonnes (`tools/build_bearoff_matrix.py --cubeful`), vérifiées contre le
+  lecteur de T38 comme la première.
+- Un réseau à quatre sorties, même gabarit que le gagnant de T78, entraîné en **quatre étages** :
+  régression, fouille exhaustive, affinage par décision de coup (colonne 0), puis **affinage par
+  décision de videau** — une charnière sur le signe de la marge `e_nd − min(2·e_opp, 1)`,
+  pondérée par ce que le verdict inverse coûterait. Une erreur commune aux deux branches ne change
+  pas le verdict ; seule leur différence le fait.
+- `bench/cube_at_depth.py` étendu : l'**équité perdue** en plus de l'accord, et une colonne pour
+  le réseau distillé — jugé par la même règle §4 que la table, sans Janowski ni `x` ajusté.
+
+**Critères d'acceptation**
+- L'instrument de T34 est **préservé** : à graine et à nombre de positions égaux, les taux
+  d'accord publiés (98,3 % possédé, 97,5 % centré) sont reproduits par la version étendue avant
+  qu'on lui demande quoi que ce soit de neuf.
+- **Seuil de succès, écrit avant la mesure** : sur 20 000 positions, l'équité perdue par décision
+  de videau du distillé est **inférieure d'un facteur 10** à celle du modèle actuel dans les deux
+  états de possession, et son pire cas passe **sous 0,05** (contre 0,2778).
+- La qualité de la colonne cubeless est **re-mesurée par le banc de T78** : un réseau à quatre
+  sorties qui dégraderait le jeu de coups n'est pas un progrès, et le vérifier coûte huit minutes.
+- L'erreur exhaustive est rapportée **par colonne** sur les 153 165 376 paires.
+- La taille est mesurée en float32 et float16, et comparée à celle du réseau cubeless seul : si
+  quatre sorties coûtent moins qu'un second réseau, c'est un argument, pas une intuition.
+
+**La règle de diagnostic, écrite avant le résultat** — le dépôt écrit ses seuils de succès avant
+la mesure ; un échec mérite la même discipline, sinon l'explication qui arrange sera choisie après
+coup, et « c'était l'architecture » est la plus confortable de toutes. Si le seuil ci-dessus n'est
+pas atteint, la cause se lit dans cet ordre, et **une seule chose change à la fois**, à budget de
+données et à graine identiques (l'avertissement de DS-12 : le « gain de routage » de Whittington
+était en fait un gain de calendrier d'apprentissage).
+
+| Symptôme, chiffré | Cause | Ce qu'on change ensuite |
+|---|---|---|
+| En doublant le gabarit, la perte moyenne par décision de videau tombe encore d'un facteur ≥ 2 | **capacité** (poids) | agrandir — repère T78 : dans la famille à code appris, doubler la taille divise la perte par 3 |
+| La perte moyenne atteint sa cible (≤ 0,000072 possédé, ≤ 0,000135 centré) mais le **pire cas reste > 0,05** | **architecture** — la queue, pas la moyenne | sortie **marge** supervisée directement (`e_nd − min(2·e_opp, 1)`), aucune unité saturante près de la sortie, couche monotone en l'équité cubeless. Repère T78 : à moyenne égale, la tanh double le pire cas exhaustif (0,162 contre 0,095) |
+| L'équité perdue se concentre sur les décisions de marge faible : les décisions à \|marge\| < 0,01 portent > 50 % de la perte totale | **la perte**, pas le réseau | repondérer la charnière du quatrième étage |
+| La colonne 0 sort du seuil de T78 (≤ 0,00005 moyenne, ≤ 0,0023 pire cas) au banc de `bench/bearoff_distill.py` | **interférence entre têtes** | têtes séparées, ou pondération des étages |
+
+**Ce qu'un échec n'autorise pas à conclure** — que le videau appris ne marche pas. Ce réseau a le
+**code appris par disposition** en entrée, pas les 196 caractéristiques du tronc ; son gabarit est
+**hérité d'une sélection faite sur la colonne cubeless**, c'est-à-dire sur une régression et non
+sur une décision de seuil ; et son domaine est le plus discrétisé du jeu. T80 est une **preuve
+d'existence** — « un réseau *peut* battre Janowski sur une décision de videau » — pas un pronostic
+pour le contact ni pour le match.
+
+**Ce que cette fiche offre à l'axe « videau appris » (T81/T82)** — une **vérité de terrain sans
+variance**. T81 demande si le videau se réduit aux cinq probabilités, et le juge sur des
+étiquettes de rollout, avec leur bruit. Dans le domaine de la table, la réponse exacte existe :
+une tête B0 qui s'y tromperait de façon systématique serait réfutée en minutes, sans arbitre
+discutable. Les deux fiches se croisent là, et le banc de T80 est le lieu du croisement.
+
+**Ce que cette fiche ne fait pas** — le branchement, ni le videau **en match** (la table est
+money ; l'équité de match a sa propre récursion, T32/T34 §9). Elle ne touche pas non plus au
+modèle de Janowski, qui reste ce qui répond hors du domaine.
+
+---
 ## T81 — La tête de videau, à tronc gelé : B0 contre B
 
 > **La marche 1 de l'axe « videau appris ».** L'axe a été instruit trois fois (DS-08
