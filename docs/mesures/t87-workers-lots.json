@@ -1,53 +1,53 @@
 {
-  "browser": "chromium",
-  "headless": true,
-  "test": "workers",
-  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/152.0.0.0 Safari/537.36",
-  "hardwareConcurrency": 16,
-  "suggestedWorkers": 8,
-  "positions": 2000,
-  "scaling": [
-    {
-      "workers": 1,
-      "ms": 241.4,
-      "evalsPerSecond": 8285,
-      "speedup": 1,
-      "worstDelta": 6.407499313354492e-7,
-      "mainThreadWorstGapMs": 0.2
-    },
-    {
-      "workers": 2,
-      "ms": 131.2,
-      "evalsPerSecond": 15244,
-      "speedup": 1.84,
-      "worstDelta": 6.407499313354492e-7,
-      "mainThreadWorstGapMs": 0.2
-    },
-    {
-      "workers": 4,
-      "ms": 82.6,
-      "evalsPerSecond": 24213,
-      "speedup": 2.92,
-      "worstDelta": 6.407499313354492e-7,
-      "mainThreadWorstGapMs": 0.1
-    },
-    {
-      "workers": 8,
-      "ms": 68,
-      "evalsPerSecond": 29412,
-      "speedup": 3.55,
-      "worstDelta": 6.407499313354492e-7,
-      "mainThreadWorstGapMs": 4.3
-    },
-    {
-      "workers": 16,
-      "ms": 73.7,
-      "evalsPerSecond": 27137,
-      "speedup": 3.28,
-      "worstDelta": 6.407499313354492e-7,
-      "mainThreadWorstGapMs": 21.7
-    }
-  ],
-  "cancellationHonoured": true,
-  "usableAfterCancel": true
+ "browser": "chromium",
+ "headless": true,
+ "test": "workers",
+ "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/152.0.0.0 Safari/537.36",
+ "hardwareConcurrency": 16,
+ "suggestedWorkers": 8,
+ "positions": 2000,
+ "scaling": [
+  {
+   "workers": 1,
+   "ms": 241.4,
+   "evalsPerSecond": 8285,
+   "speedup": 1,
+   "worstDelta": 6.407499313354492e-07,
+   "mainThreadWorstGapMs": 0.2
+  },
+  {
+   "workers": 2,
+   "ms": 131.2,
+   "evalsPerSecond": 15244,
+   "speedup": 1.84,
+   "worstDelta": 6.407499313354492e-07,
+   "mainThreadWorstGapMs": 0.2
+  },
+  {
+   "workers": 4,
+   "ms": 82.6,
+   "evalsPerSecond": 24213,
+   "speedup": 2.92,
+   "worstDelta": 6.407499313354492e-07,
+   "mainThreadWorstGapMs": 0.1
+  },
+  {
+   "workers": 8,
+   "ms": 68,
+   "evalsPerSecond": 29412,
+   "speedup": 3.55,
+   "worstDelta": 6.407499313354492e-07,
+   "mainThreadWorstGapMs": 4.3
+  },
+  {
+   "workers": 16,
+   "ms": 73.7,
+   "evalsPerSecond": 27137,
+   "speedup": 3.28,
+   "worstDelta": 6.407499313354492e-07,
+   "mainThreadWorstGapMs": 21.7
+  }
+ ],
+ "cancellationHonoured": true,
+ "usableAfterCancel": true
 }
