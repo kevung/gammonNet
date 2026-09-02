@@ -204,6 +204,20 @@ son branchement dans `forward_batch` derrière `GN_KERNEL_INTRINSICS`, l'interru
   modification par T86. **À reprendre en coordination, et c'est le chantier le plus rentable
   que cette fiche laisse derrière elle.**
 
+## Ce que la suite dit après ces trois fiches
+
+- `pytest tests/` : **1 767 passés, 45 ignorés**, aucun échec. (Une première exécution
+  comptait 17 erreurs dans `test_serve*.py` — un worktree neuf n'a pas l'artefact épinglé
+  `v1.2.1` ; `python tools/fetch_release.py` les fait disparaître, et elles n'ont rien à voir
+  avec le noyau.)
+- Corpus de non-régression **T12** : 9 passés, sorties figées au bit près.
+- `make wasm-parity` sur l'artefact **livré** (défauts inchangés) :
+  **scalaire max|Δ| = 0,000e+00, SIMD max|Δ| = 6,407e-07**, tolérance 1e-6 — exactement la
+  valeur que le dépôt publiait avant cette branche. Le refactor de `forward_batch` (le choix
+  de la source compactée fait une fois par couche au lieu d'une fois par ligne) n'a rien
+  déplacé.
+- `make test-tile` : le garde-fou de T90, sous ASan, aux deux volets.
+
 ## Reproduire
 
 ```bash
