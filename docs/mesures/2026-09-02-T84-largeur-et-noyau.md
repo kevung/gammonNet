@@ -204,6 +204,27 @@ son branchement dans `forward_batch` derrière `GN_KERNEL_INTRINSICS`, l'interru
   modification par T86. **À reprendre en coordination, et c'est le chantier le plus rentable
   que cette fiche laisse derrière elle.**
 
+> **FAIT le 2026-09-03** — mesure :
+> `docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md`.
+>
+> Le noyau écrit à la main est le défaut de `make wasm` et `make wasm-simd`, à
+> **largeur 16** (tranchée séparément du natif : le sixième écart ci-dessus était le bon
+> signal, et il vaut **−12,6 %** remesuré sur le noyau intrinsèque). Une décision passe de
+> **1,4980 s à 0,3343 s** dans Chromium (**×4,48**) et de **1,1547 s à 0,6860 s** dans
+> Firefox (**×1,68**).
+>
+> Et `-fassociative-math` **sort de l'artefact**, ce que cette fiche n'osait pas trancher
+> parce qu'elle voyait deux chiffres contradictoires. Ils portaient sur deux unités de
+> compilation : le drapeau n'existait que pour `nn_forward_prob5`, dont l'accumulateur
+> unique interdit toute vectorisation. Son dernier consommateur, `gnw_evaluate_batch`,
+> passe désormais par le noyau par lot — **×4,74** — et le drapeau n'a plus d'emploi.
+>
+> Ce que cet épisode ajoute à la lecture ci-dessus : **ce qui faisait tomber le bit à bit
+> n'était pas le noyau, c'était la référence**. Dans la variante « drapeaux de l'artefact »,
+> `gn_evaluate` réassocie et le noyau non ; les 3,576e-07 mesurent l'écart entre les deux
+> portes du même artefact, pas une erreur du noyau. La parité au natif tombe de
+> **6,407e-07 à 0,000e+00**.
+
 ## Ce que la suite dit après ces trois fiches
 
 - `pytest tests/` : **1 767 passés, 45 ignorés**, aucun échec. (Une première exécution
