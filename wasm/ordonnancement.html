@@ -38,8 +38,10 @@
   const mode = params.get("mode") || "idle";
   const counts = (params.get("workers") || "8").split(",").map(Number);
   const limit = Number(params.get("limit") || 0);
-  const tasksPerWorker = params.get("tasksPerWorker");
+  const grains = (params.get("tasksPerWorker") || "").split(",")
+    .filter((x) => x !== "").map(Number);
   const chunk = Number(params.get("chunk") || 256);
+  const reps = Number(params.get("reps") || 1);
 
   const out = document.getElementById("out");
   const log = (line) => { out.textContent += line + "\n"; };
@@ -128,7 +130,8 @@
       referencePositions: refCount,
       pruneK, level,
       chunk,
-      tasksPerWorker: tasksPerWorker === null ? null : Number(tasksPerWorker),
+      tasksPerWorker: grains.length ? grains : null,
+      reps,
       runs: [],
     };
 
@@ -136,9 +139,6 @@
     log(`match : ${decisions.length} décisions · repère : ${refCount} positions`);
     log(`niveau normal : ply ${level.ply}, filtre (${level.filterTop},${level.filterInner}), k=${pruneK}\n`);
 
-    const analyzeOptions = () => (tasksPerWorker === null
-      ? { chunk }
-      : { chunk, tasksPerWorker: Number(tasksPerWorker) });
 
     async function runDecide(workers) {
       const pool = await EvaluatorPool.create(
@@ -174,20 +174,39 @@
       };
     }
 
-    async function runAnalyze(workers) {
+    /*
+     * LE MÊME POOL POUR TOUTES LES GRANULARITÉS, ET DES PASSES ENTRELACÉES.
+     *
+     * Les temps absolus de cette machine dérivent de ±45 % d'une minute à
+     * l'autre — deux autres chantiers y tournent. Comparer un relevé de
+     * 21 h 44 à un relevé de 21 h 48 ne mesurerait donc que la charge. Les
+     * granularités sont mises en concurrence DANS LA MÊME PASSE, et l'on
+     * garde la médiane de `reps` passes : c'est la seule forme de comparaison
+     * que le plancher de bruit autorise.
+     */
+    async function runAnalyze(workers, grain) {
       const pool = await EvaluatorPool.create(
         workers, workerUrl, factoryUrl, modelBytes, config);
-      await pool.analyze(features, refCount, numFeatures, analyzeOptions()).done;
+      const options = { chunk, tasksPerWorker: grain };
+      await pool.analyze(features, refCount, numFeatures, options).done;
 
-      const job = pool.analyze(features, refCount, numFeatures, analyzeOptions());
-      const outputs = await job.done;
-      const schedule = job.schedule.toJSON({ entries: true });
-      let worst = 0;
-      for (let i = 0; i < outputs.length; i++) {
-        worst = Math.max(worst, Math.abs(outputs[i] - expected[i]));
+      const passes = [];
+      for (let r = 0; r < reps; r++) {
+        const job = pool.analyze(features, refCount, numFeatures, options);
+        const outputs = await job.done;
+        let worst = 0;
+        for (let i = 0; i < outputs.length; i++) {
+          worst = Math.max(worst, Math.abs(outputs[i] - expected[i]));
+        }
+        passes.push({ ...job.schedule.toJSON(), worstDelta: worst });
       }
       pool.destroy();
-      return { path: "analyze", workers, ...schedule, worstDelta: worst };
+      passes.sort((a, b) => a.wallMs - b.wallMs);
+      const median = passes[Math.floor(passes.length / 2)];
+      return {
+        path: "analyze", workers, tasksPerWorker: grain, ...median,
+        wallMsAll: passes.map((p) => p.wallMs),
+      };
     }
 
     function show(row) {
@@ -197,6 +216,7 @@
           `mural ${row.wallMs.toFixed(0).padStart(7)} ms · ` +
           `oisiveté pool ${pct(row.idlePool).padStart(7)} / worker ${pct(row.idleWorker).padStart(7)} · ` +
           `tâche min/méd/max ${row.taskMsMin.toFixed(0)}/${row.taskMsMedian.toFixed(0)}/${row.taskMsMax.toFixed(0)} ms` +
+          (row.tasksPerWorker ? ` · ${row.tasksPerWorker}/worker` : "") +
           (row.fingerprint ? ` · empreinte ${row.fingerprint.hash}` : "") +
           (row.worstDelta !== undefined ? ` · Δ ${row.worstDelta.toExponential(1)}` : ""));
     }
@@ -209,10 +229,13 @@
       }
     }
     if (mode === "idle" || mode === "sweep-analyze") {
+      const list = grains.length ? grains : [1];
       for (const workers of counts) {
-        const row = await runAnalyze(workers);
-        payload.runs.push(row);
-        show(row);
+        for (const grain of list) {
+          const row = await runAnalyze(workers, grain);
+          payload.runs.push(row);
+          show(row);
+        }
       }
     }
 

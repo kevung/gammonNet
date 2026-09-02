@@ -49,6 +49,62 @@
 const DEFAULT_CHUNK = 256;
 
 /*
+ * ── COMBIEN DE TÂCHES : LA RÈGLE, ET SA LIMITE — MESURÉES (T87) ────────
+ *
+ * `analyze()` découpe en exactement `size` tâches, une par worker. Le
+ * découpage est PARFAIT — 2 000 positions sur 8 workers font huit tâches de
+ * 250, et chaque position coûte la même passe avant. L'oisiveté relevée dans
+ * Chromium y vaut pourtant 17,6 % : les huit workers mettent de 51 à 63 ms
+ * pour un travail identique. Ce n'est donc pas le découpage qui déséquilibre,
+ * c'est l'ORDONNANCEUR DU SYSTÈME — un navigateur ne possède pas la machine.
+ * Et avec une tâche par worker, cet aléa est SANS RATTRAPAGE : celui qui a
+ * fini n'a rien à prendre.
+ *
+ * Le remède attendu était le nombre de tâches. Il fait bien ce qu'on lui
+ * demande, ET IL COÛTE PLUS QU'IL NE RAPPORTE sur ce chemin :
+ *
+ *   tâches/worker    tâches   mural médian   oisiveté (pool)
+ *              1          8        70,3 ms          17,6 %
+ *              2         16        75,4 ms          17,2 %
+ *              4         32        82,0 ms          11,2 %
+ *              8         63       106,3 ms           7,2 %
+ *             16         63       104,5 ms           8,2 %
+ *
+ * (Chromium, build SIMD, 8 workers, médiane de 7 passes entrelacées dans la
+ * même minute — les temps absolus de cette machine dérivent de ±45 % d'une
+ * mesure à l'autre, les rapports non.)
+ *
+ * L'oisiveté tombe de 17,6 % à 7,2 %, et le travail met 50 % de temps en
+ * plus. La raison est que sur CE chemin une tâche coûte cher à TRANSMETTRE :
+ * 250 positions de caractéristiques font 250 Ko clonés par `postMessage`, et
+ * c'est le FIL PRINCIPAL, seul et non parallèle, qui paie chaque clonage.
+ * Multiplier les tâches déplace le goulot du pool vers lui.
+ *
+ * D'OÙ LA RÈGLE, DANS SA FORME UTILE : le nombre de tâches paie quand une
+ * tâche coûte cher à CALCULER et rien à TRANSMETTRE. `decide()` est ce cas —
+ * 1,8 s de recherche pour un message de soixante octets — et son oisiveté sur
+ * un match complet vaut 2,5 à 2,6 % sans qu'on ait rien à faire. `analyze()`
+ * est le cas inverse.
+ *
+ * Le défaut reste donc UNE TÂCHE PAR WORKER, et le réglage est exposé pour
+ * qui mesurerait autre chose sur son appareil. Un défaut à 4 aurait été une
+ * conviction contredite par le relevé de sa propre fiche.
+ */
+const DEFAULT_TASKS_PER_WORKER = 1;
+const MIN_TASK = 32;
+
+/*
+ * LE COÛT MÉMOIRE D'UN WORKER, en mégaoctets.
+ *
+ * Sans `SharedArrayBuffer` — que COOP/COEP conditionnent, et qu'un hébergeur
+ * statique n'accorde pas — chaque worker recharge sa propre copie des poids :
+ * 1,07 Mo en float16, 2,02 Mo en float32, plus le module et sa pile. Trois
+ * mégaoctets est le chiffre à retenir par worker, et il est LINÉAIRE là où le
+ * débit, lui, sature.
+ */
+const WORKER_MEMORY_MB = 3;
+
+/*
  * LE RELEVÉ D'ORDONNANCEMENT d'un travail.
  *
  * Une fraction d'oisiveté n'a de sens qu'accompagnée de son dénominateur :
@@ -169,6 +225,66 @@ export class EvaluatorPool {
   }
 
   /**
+   * COMBIEN DE WORKERS OUVRIR — et pourquoi ce n'est pas
+   * `navigator.hardwareConcurrency`.
+   *
+   * `hardwareConcurrency` compte des FILS. Le débit, lui, est borné par les
+   * cœurs PHYSIQUES et par la bande passante mémoire, parce que chaque worker
+   * relit sa propre copie des poids. Trois mesures le disent, sur trois
+   * machines :
+   *
+   *   - en C, 8 processus sur 8 cœurs physiques rendent ×4,23, et doubler
+   *     jusqu'à 16 n'ajoute que 19 % (mesures d'entrée, 2026-09-02) ;
+   *   - dans Chromium, sur la même machine 8c/16f, le chemin `decide` d'un
+   *     match complet passe de ×1 à ×4,0 entre 1 et 8 workers, puis PLUS
+   *     RIEN — 12 et 16 workers ne rendent pas davantage (T87) ;
+   *   - sur une machine à 28 fils, `analyze` rendait ×6,2 à 8 workers (T21b),
+   *     et sur un poste 8c/16f il plafonnait à ×3,8 (T23).
+   *
+   * Le plafond utile est donc de l'ordre de la moitié des fils annoncés, et
+   * les workers au-delà coûtent 3 Mo chacun pour rien.
+   *
+   * CE QUE CETTE FONCTION N'EST PAS : une mesure. La plateforme ne dit pas
+   * combien de cœurs physiques elle a, ne dit pas si les cœurs sont
+   * hétérogènes, et `hardwareConcurrency` est plafonné à 4 sur iOS quel que
+   * soit l'appareil. C'est une RÈGLE PRUDENTE tirée de trois relevés, et la
+   * seule réponse exacte reste de mesurer sur l'appareil. Elle est ici pour
+   * qu'un appelant cesse d'ouvrir seize workers en croyant que le chiffre du
+   * navigateur est une réponse.
+   *
+   * @param {object} opts
+   *   `hardwareConcurrency` le nombre de fils annoncé (défaut : celui du
+   *                         navigateur ; absent, on suppose 2)
+   *   `memoryBudgetMB`      un plafond mémoire, si l'appelant en a un
+   * @returns {number} un nombre de workers, au moins 1
+   */
+  static suggestedSize({
+    hardwareConcurrency = globalThis.navigator?.hardwareConcurrency,
+    memoryBudgetMB = null,
+  } = {}) {
+    /* Absent : deux workers. Un appareil qui ne dit rien n'est pas un
+     * appareil qu'on charge. */
+    const threads = Number.isFinite(hardwareConcurrency) && hardwareConcurrency >= 1
+      ? Math.floor(hardwareConcurrency)
+      : 2;
+    /* La moitié des fils — l'ordre de grandeur des cœurs physiques sur un
+     * poste SMT, et un plafond raisonnable là où il n'y a pas de SMT. */
+    let workers = Math.max(1, Math.floor(threads / 2));
+    /* Et jamais plus de huit : au-delà, aucune des trois mesures ne montre
+     * de gain, et chaque worker coûte encore ses 3 Mo. */
+    workers = Math.min(workers, 8);
+    if (Number.isFinite(memoryBudgetMB)) {
+      workers = Math.min(workers, Math.max(1, Math.floor(memoryBudgetMB / WORKER_MEMORY_MB)));
+    }
+    return workers;
+  }
+
+  /** Ce qu'un pool de `count` workers coûte en mémoire de poids, en Mo. */
+  static memoryCostMB(count) {
+    return count * WORKER_MEMORY_MB;
+  }
+
+  /**
    * Spin up `count` workers, each with its own module and its own weights.
    *
    * @param {number} count
@@ -250,9 +366,13 @@ export class EvaluatorPool {
    * `null` if the work was abandoned. `schedule` est le relevé
    * d'ordonnancement, lisible une fois `done` résolu.
    */
-  analyze(features, count, numFeatures, { chunk = DEFAULT_CHUNK, onProgress } = {}) {
+  analyze(features, count, numFeatures, {
+    chunk = DEFAULT_CHUNK, onProgress,
+    tasksPerWorker = DEFAULT_TASKS_PER_WORKER, minTask = MIN_TASK,
+  } = {}) {
     const slots = this.size;
-    const per = Math.ceil(count / slots);
+    /* Le nombre de tâches, et non le tri. Voir `DEFAULT_TASKS_PER_WORKER`. */
+    const per = Math.max(minTask, Math.ceil(count / (slots * Math.max(1, tasksPerWorker))));
     const jobs = [];
     const report = new ScheduleReport(slots);
 
