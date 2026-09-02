@@ -133,6 +133,52 @@ double gn_cube_equity(const GnCubeInputs *inputs, GnCubeOwner owner,
 double gn_cube_value(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
                      const GnMatchState *state, double efficiency, int *failed);
 
+/*
+ * The same valuation, for `n` distributions that share one cube state -- the
+ * batched form of T85, and the reason it exists is not tidiness.
+ *
+ * WHAT IS SLOW, AND WHY A BATCH FIXES IT
+ *
+ * At a score the value of one node is the §9 recursion, and the recursion
+ * spends nearly all of itself in `level_solve`: sixty bisection steps per
+ * breakpoint, two breakpoints per level, three levels on a typical chain --
+ * about 360 steps. Each step is a division whose result decides the next
+ * step's input, so the whole thing is ONE serial dependency chain of
+ * divisions. Measured: 2 711 ns per valuation inside the search
+ * (docs/mesures/2026-09-02-T85-videau-par-lot.md §1), which is latency, not
+ * work -- the arithmetic itself would fit in a fraction of that.
+ *
+ * The bisections of two different candidates are INDEPENDENT. Run `n` of them
+ * in lockstep and the divisions of one lane fill the latency of another's:
+ * same figure as `gn_evaluate_batch` on the network, same two devices of
+ * exactness -- a FIXED lane width and a FIXED iteration count, so a lane's
+ * sequence never depends on how many neighbours it travelled with.
+ *
+ * BIT FOR BIT, PER CANDIDATE. `out[j]` is exactly what `gn_cube_value` would
+ * have returned for `probs[j]` alone: the arithmetic is not rearranged, only
+ * its order of execution is. `tests/test_cube_batch.py` holds that equality
+ * the way `tests/test_batch.py` holds the network's.
+ *
+ * `probs` is an array of `n` pointers to distributions -- the search's
+ * candidates are not contiguous, and copying them to make them so would cost
+ * more than the gather it saves. `state == NULL` (money) is valued by calling
+ * the scalar path per item: the same measurement says the cube costs nothing
+ * in money, and a gather for zero would be a cost with no other side.
+ *
+ * Returns 0 with `out[0..n)` written, or -1 if ANY candidate is unevaluable --
+ * the same refusal the scalar makes, applied to the whole batch, which is
+ * what its only caller (`value_sweep`) does with a single failure anyway.
+ */
+int gn_cube_value_batch(const float *const *probs, int n, GnCubeOwner owner,
+                        const GnMatchState *state, double efficiency,
+                        double *out);
+
+/* The lane width. Public so a caller can size its gather with the same
+ * number the kernel chunks by, exactly as `GN_EVAL_BATCH` is public for the
+ * network's. It is a cost, never a result: `gn_cube_value_batch` accepts any
+ * `n` and a lane's answer does not depend on how many lanes ran beside it. */
+#define GN_CUBE_BATCH 32
+
 /* What the on-roll player should do, and what the opponent should answer. */
 typedef enum {
     GN_NO_DOUBLE = 0,

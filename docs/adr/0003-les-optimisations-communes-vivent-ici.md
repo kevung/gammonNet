@@ -158,3 +158,29 @@ tests regardent**.
 
 Cette décision ne dit rien de *qui* écrit. Elle dit où la chose est décidée, mesurée et
 consignée, et dans quel ordre les trois consommateurs la reçoivent.
+
+## Le premier poste conceptuel a été livré, et il tient
+
+> **T85, le 2026-09-02** — `docs/mesures/2026-09-02-T85-videau-par-lot.md`, forme consignée en
+> `docs/specs/t34-videau-spec.md` §7.1.
+>
+> Le tableau ci-dessus rangeait « valuer le videau par lot sur les candidats » comme le seul
+> poste **conceptuel** que le portage Go n'avait pas tenté, à 20-25 % au score. La mesure le
+> confirme et le livre : au score, le videau passe de **103,6 ms à 42,7 ms** par décision
+> (×2,43 par valuation), sa part de **19,35 % à 9,05 %**, soit **11,4 % sur la décision
+> entière** ; **en money, rien**, comme prévu. Le résultat est bit à bit — 12 600 classements
+> du corpus T12 rejoués sans une ligne de `diff`.
+>
+> Deux choses que cet épisode ajoute à la décision.
+>
+> **Le critère a bien tenu.** Le gain est de la latence de division recouverte par des voies
+> indépendantes : il ne doit rien à C, et il se transportera tel quel en Go et dans le
+> navigateur. C'est la définition même de « conceptuelle », et c'est la première fois qu'elle
+> est vérifiée après coup plutôt que prédite.
+>
+> **Mais la mesure d'entrée qui avait rangé ce poste était un produit, pas un chronométrage**,
+> et elle le disait. Le compléter a demandé de construire un instrument entrelacé — sans quoi
+> le même poste se lit 10,6 %, 26 % ou 20,5 % selon la façon de soustraire, sur une machine
+> partagée, le même après-midi. **Une fiche dont le seuil d'abandon est de 5 % doit donc dire
+> non seulement ce qu'elle mesure, mais avec quel instrument** : un rapport dos à dos entre
+> deux processus ne suffit pas quand le voisin fait tourner autre chose.

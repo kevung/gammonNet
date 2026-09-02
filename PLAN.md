@@ -1937,6 +1937,49 @@ puisque c'est le même C. `blunderDB/CLAUDE.md` impose déjà que tout changemen
 atterrisse d'abord ici et dans `docs/specs/t34-videau-spec.md` §2 : cette fiche est le cas d'usage
 de cette règle.
 
+> ### FAITE — le 2026-09-02
+>
+> Mesure complète : `docs/mesures/2026-09-02-T85-videau-par-lot.md`.
+> Forme consignée pour les consommateurs : `docs/specs/t34-videau-spec.md` **§7.1**.
+>
+> **La mesure d'entrée d'abord, et elle a fallu être construite.** `bench_decision` sait
+> maintenant `--cube`, `--match=a/b`, `--owner=`, `--crawford`, `--repeat=` et surtout `--ab`
+> — les deux configurations chronométrées **décision par décision dans le même processus** ;
+> et `gn_search_cube_valuations()` compte le dénominateur au lieu de le supposer. Les
+> décisions sont enregistrées par une marche cubeless puis rejouées, sans quoi allumer le
+> videau comparerait deux parties. **Les 20-25 % de cette fiche sont confirmés comme
+> chronométrage : 20,5 % au score, zéro en money** — mais pas pour les raisons du produit,
+> dont les deux facteurs étaient faux en sens contraire (2 029 ns supposées contre 2 711
+> réelles ; 43 218 nœuds supposés contre 43 163 comptés). Le §1.3 vaut d'être lu : le MÊME
+> poste se lit **10,6 %, 26 % ou 20,5 %** selon qu'on soustrait deux exécutions consécutives,
+> deux passes alternées, ou qu'on entrelace — un facteur 2,5, le même après-midi, sur un
+> seuil d'abandon fixé à 5 %.
+>
+> **Le poste est de la latence, pas du travail.** Trois niveaux × deux points de rupture ×
+> soixante pas ≈ 360 divisions **à la file** par candidat, chacune décidant l'entrée de la
+> suivante. `gn_cube_value_batch` mène les voies en pas cadencé et la latence de l'une est
+> payée par le travail de l'autre. `build_levels` est coupé en `build_level_anchors` +
+> `resolve_levels`, la coupe étant exactement là où le lot en a besoin.
+>
+> **Gain, huit paires alternées, référence construite sur le commit d'instrument :**
+> au score, le videau passe de **103,6 ms à 42,7 ms** par décision (2 401 → 988 ns par
+> valuation, **×2,43**), sa part d'une décision de **19,35 % à 9,05 %**, soit **×1,13 sur la
+> décision entière — 11,4 % de moins**, deux fois le seuil d'abandon. **En money : rien**, et
+> rien n'était possible — le money reste scalaire, les huit relevés encadrent zéro.
+>
+> **Exactitude, sans tolérance** : `tests/test_cube_batch.py` tient l'accord avec le scalaire
+> **au bit près** (141 distributions × 3 possessions × 7 états, `==` et non `approx`) et
+> l'invariance au découpage ; le corpus T12 rejoue **12 600 classements 0-ply** et **252
+> classements 2-ply** avec `diff` = 0 ligne, équités comparées en hexadécimal IEEE-754 et
+> ORDRE compris (leçon de T88). Le même `diff` à `GN_CUBE_BATCH` = 16 rend les mêmes lignes.
+>
+> **Ce qui est resté fermé** : les consultations de la table d'équité ne sont ni hoistées ni
+> dédupliquées, bien qu'elles soient identiques dans toutes les voies. C'était le piège.
+>
+> **Non conclu, et dit comme tel** : la largeur de voie. 8 est nettement moins bon ; entre 16,
+> 32 et 64 l'écart entre deux relevés d'une même largeur dépasse l'écart entre largeurs. 32
+> est conservé faute de contestation, pas pour avoir gagné.
+
 ## T88 — Le déterminisme du classement : les ex æquo, et ce que la parité ne voit pas
 
 > **Couche : conceptuelle (exactitude).** Zéro vitesse. Elle ferme un mode de divergence
