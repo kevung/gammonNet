@@ -23,3 +23,16 @@ node_modules/
 gnu_bearoff_database/
 # Lien vers les bases de fin de partie, quand on travaille depuis un worktree.
 gnu_bearoff_database
+
+# T70 — les corpus et registres d'arbitrage. Le corpus figé, son manifeste et le
+# registre RÉSOLU du contexte money-10000 sont versionnés (c'est l'instrument de
+# T70, 32 h·cœur à reproduire, et la fiche demande qu'il soit versionné). Tout le
+# reste sous docs/corpus/ est de l'exécution : journaux de reprise, découpes par
+# machine, campagnes antérieures — reproductible et sans valeur de référence.
+docs/corpus/**/*.journal
+docs/corpus/**/*.journal.*
+docs/corpus/**/*-split-*.jsonl
+docs/corpus/**/*-remainder-*.jsonl
+docs/corpus/t70/money/
+docs/corpus/t70/money-10k/
+docs/corpus/t70/tranches/
