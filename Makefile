@@ -39,7 +39,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision artifact env clean help
+.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube artifact env clean help
 
 all: help
 
@@ -353,6 +353,38 @@ $(BENCH_DECISION): bench/bench_decision.c $(OBJECTS) $(VENDOR_OBJECTS)
 
 bench-decision: build $(BENCH_DECISION) $(MODEL)
 	$(BENCH_DECISION) $(MODEL) 20
+
+# Le gain de lot, largeur par largeur. Ce banc existait sans règle pour le
+# construire ; il se compilait à la main, donc au hasard des drapeaux — et
+# l'écart entre -O2 et -O3 y vaut 48 % (mesuré le 2026-09-02). La règle fixe
+# -O3, comme BATCH_CFLAGS le fait pour le noyau livré.
+#
+# ATTENTION à ce qu'il mesure : sa largeur de lot est une VARIABLE d'exécution
+# et il n'a pas la sparsité de la couche 1. Sa courbe n'est donc PAS celle du
+# noyau livré, dont la largeur est une constante de compilation. Il répond à
+# « le lot rend-il, et reste-t-il bit à bit », pas à « quelle largeur choisir ».
+BENCH_BATCH := $(BUILD)/bench_batch
+
+$(BENCH_BATCH): bench/bench_batch.c $(OBJECTS) $(VENDOR_OBJECTS)
+	@mkdir -p $(BUILD)
+	$(CC) $(filter-out -O2,$(CFLAGS)) -O3 $(INCLUDES) -o $@ $^ -lm
+
+bench-batch: build $(BENCH_BATCH) $(MODEL)
+	$(PYTHON) tools/dump_reference.py
+	$(BENCH_BATCH) $(MODEL) $(BUILD)/reference.bin
+
+# Ce que le videau coûte, money et au score. `gn_cube_value` est appelé une fois
+# par nœud évalué sous `use_cube` (gn_search.c:289) : au score il pèse deux
+# ordres de grandeur de plus qu'en money, et c'est ce que ce banc établit.
+BENCH_CUBE := $(BUILD)/bench_cube
+
+$(BENCH_CUBE): bench/bench_cube.c $(OBJECTS) $(VENDOR_OBJECTS)
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ -lm
+
+bench-cube: build $(BENCH_CUBE) $(MODEL)
+	$(PYTHON) tools/dump_reference.py
+	$(BENCH_CUBE) $(MODEL) $(BUILD)/reference.bin
 
 # ── Serveur HTTP (#18) ───────────────────────────────────────────────
 
