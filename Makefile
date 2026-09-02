@@ -39,7 +39,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube tie-census artifact env clean help
+.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube tie-census test-tile artifact env clean help
 
 all: help
 
@@ -428,6 +428,34 @@ $(BENCH_CUBE): bench/bench_cube.c $(OBJECTS) $(VENDOR_OBJECTS)
 bench-cube: build $(BENCH_CUBE) $(MODEL)
 	$(PYTHON) tools/dump_reference.py
 	$(BENCH_CUBE) $(MODEL) $(BUILD)/reference.bin
+
+# ── T90 : l'arrondi des tuiles, sous ASan ────────────────────────────
+#
+# Zéro gain. Un garde-fou posé AVANT que T84 déplace ce qu'il garde : le jour
+# où une largeur ou une tuile cesse d'être une puissance de deux, `n & ~(t-1)`
+# rend une valeur qui n'est PAS un multiple de la tuile, et la boucle lit hors
+# de la matrice. Le portage Go a livré exactement cette ligne.
+#
+# Compilé À PART, avec -fsanitize=address : le débordement est de trois
+# flottants au bout d'une ligne, donc invisible sans redzone.
+TILE_ASAN := $(BUILD)/tile_asan
+ASAN_FLAGS ?= -fsanitize=address,undefined -fno-omit-frame-pointer -g
+
+$(TILE_ASAN): tests/tile_asan.c src/gn_tile.h
+	@mkdir -p $(BUILD)
+	$(CC) -O1 -std=c11 -Wall -Wextra $(ASAN_FLAGS) -Isrc -o $@ tests/tile_asan.c
+
+.PHONY: test-tile
+test-tile: $(TILE_ASAN)
+	$(TILE_ASAN)
+	@# Le volet NÉGATIF : la forme masquée doit mourir. Si elle survit, ce
+	@# n'est pas que le code est sain, c'est qu'ASan ne tourne pas.
+	@if $(TILE_ASAN) --trap >/dev/null 2>&1; then \
+	    echo "ÉCHEC : la forme masquée n'a pas débordé — ASan est-il actif ?"; \
+	    exit 1; \
+	else \
+	    echo "  --trap : la forme masquée meurt bien sur un débordement de tas"; \
+	fi
 
 # ── Serveur HTTP (#18) ───────────────────────────────────────────────
 
