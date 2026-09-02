@@ -31,8 +31,43 @@ PIN = ROOT / "models" / "release_pin.json"
 
 OPENING_31_XGID = "XGID=-b----E-C---eE---c-e----B-:0:0:1:31:0:0:0:0:10"
 
+def _pinned_weights_missing() -> str | None:
+    """Ce qui manque pour que `tools/serve.py` puisse démarrer, ou None.
+
+    Ces tests démarrent le VRAI serveur, qui refuse de démarrer si les deux
+    fichiers de poids nommés par `models/release_pin.json` ne sont pas là. La
+    présence du fichier d'épingle ne le garantit pas : les poids ne sont pas
+    dans le dépôt, ils vivent dans l'archive publiée que `tools/fetch_release.py`
+    télécharge.
+
+    Le cas qui a rendu ce garde-fou nécessaire est la PUBLICATION elle-même :
+    au moment où le workflow `release` construit la version N, l'épingle
+    désigne encore la version N-1 et l'archive de N n'existe pas — aucune des
+    deux n'est présente. Le workflow échouait donc à l'étape « Tests » avant
+    d'atteindre « Assembler », et cela depuis la v1.1.0. Un test qui ne peut
+    pas s'exécuter doit être IGNORÉ en le disant ; il n'a rien mesuré, donc il
+    n'a rien à faire échouer.
+    """
+    if not PIN.is_file():
+        return "models/release_pin.json absent"
+    try:
+        pin = json.loads(PIN.read_text())
+    except (OSError, ValueError) as exc:
+        return f"models/release_pin.json illisible : {exc}"
+    absents = [
+        pin[key]["filename"]
+        for key in ("network_fp16", "prune_fp16")
+        if not (PIN.parent / pin[key]["filename"]).is_file()
+    ]
+    if absents:
+        return ("poids épinglés absents (" + ", ".join(absents)
+                + ") — lancer : python tools/fetch_release.py")
+    return None
+
+
 needs_weights = pytest.mark.skipif(
-    not PIN.is_file(), reason="models/release_pin.json absent"
+    _pinned_weights_missing() is not None,
+    reason=_pinned_weights_missing() or "",
 )
 
 
@@ -72,8 +107,9 @@ def _post(base_url: str, path: str, payload: dict) -> tuple[int, dict]:
 
 @pytest.fixture(scope="module")
 def server():
-    if not PIN.is_file():
-        pytest.skip("models/release_pin.json absent")
+    manque = _pinned_weights_missing()
+    if manque:
+        pytest.skip(manque)
     port = _free_port()
     proc = subprocess.Popen(
         # --max-ply 1 keeps this suite fast: a real 2-ply decision measures
