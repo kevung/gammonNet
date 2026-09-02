@@ -278,6 +278,7 @@ wasm-parity: wasm $(MODEL)
 wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/api_invariants.mjs
 	node $(WASM_DIR)/worker_invariants.mjs
+	node $(WASM_DIR)/pool_invariants.mjs
 
 # La parité du CODEC, sur le corpus T12 entier et à l'égalité EXACTE — un
 # identifiant est une chaîne, il n'y a pas de tolérance à lui accorder. Le
