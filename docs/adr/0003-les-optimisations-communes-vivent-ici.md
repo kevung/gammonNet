@@ -107,6 +107,22 @@ laisse vivre.
   invisible** — et elle change le coup annoncé. C'est le contre-exemple parfait à l'idée
   qu'une tolérance numérique suffit à prouver deux implémentations d'accord.
 
+> **Les deux sont corrigés le 2026-09-02** — mesure :
+> `docs/mesures/2026-09-02-T88-census-ex-aequo.md`.
+>
+> Le second n'était pas théorique, et il n'était pas non plus partout : le `qsort` de la
+> glibc est stable en pratique, celui d'Emscripten ne l'est pas. **Le classement divergeait
+> donc dans l'artefact servi au navigateur, et nulle part ailleurs** — 89 des 433 décisions
+> à meilleur coup ex æquo du corpus T12 y annonçaient un autre coup que le natif, à équité
+> égale au bit près. La règle de départage retenue est celle du portage Go (à équité égale,
+> l'ordre d'arrivée est conservé), précisément parce que l'objet de cette décision est
+> l'accord et non la seule détermination.
+>
+> Ce que cet épisode ajoute à la décision ci-dessus : **un défaut d'exactitude peut vivre
+> sous le seuil que les tests regardent ET n'apparaître que sur une cible**. Le harnais qui
+> l'aurait vu n'est pas un harnais plus tolérant, c'est un harnais qui compare des ORDRES et
+> pas seulement des nombres.
+
 ## Ce que cela coûte
 
 Écrire d'abord ici est plus lent pour qui a le correctif sous la main dans son langage. C'est
