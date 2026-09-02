@@ -203,7 +203,7 @@ WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
                 src/gn_position_id.c src/gn_infer_reference.c \
                 src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
                 src/gn_search.c src/gn_met.c src/gn_choose.c \
-                src/gn_gemm_int8.c \
+                src/gn_gemm_int8.c src/gn_int8_model.c \
                 $(REFERENCE)/c_engine/bg_engine.c \
                 $(REFERENCE)/c_inference/nn_eval.c
 
