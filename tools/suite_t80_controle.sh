@@ -27,8 +27,10 @@ say() { echo "[$(date '+%m-%d %H:%M:%S')] $*"; }
 # jamais les shells qui les nomment (piège du 2026-08-27).
 busy() {
     [ "$(pgrep -cf 'suite_t71_etape[1]\.sh')" -gt 0 ] ||
+    [ "$(pgrep -cf 'suite_t71_repris[e]\.sh')" -gt 0 ] ||
     [ "$(pgrep -cf 'build_labels_t7[1]\.py')" -gt 0 ] ||
-    [ "$(pgrep -cf 'measure_t7[0]\.py')" -gt 0 ]
+    [ "$(pgrep -cf 'measure_t7[0]\.py')" -gt 0 ] ||
+    [ "$(pgrep -cf 'train_t7[1]\.py')" -gt 0 ]
 }
 
 say "═══ contrôle T80 — attente de la fin de la suite T71 ═══"

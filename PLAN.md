@@ -1239,6 +1239,20 @@ Campagne d'étiquetage lancée sur **deux machines à graines disjointes** (moch
 processus, melbaa 120 000 sur 24). Les deux builds produisent la même étiquette à **2,2e-16**
 près — non pas au bit près, et c'est dit plutôt que supposé.
 
+**Première tentative, le 2026-09-02 : le corpus a été amputé par le rapatriement, et le palier B1
+n'est donc PAS rendu.** Un `scp` laissé avant le `tar` renommant a écrasé 24 des 30 parts de
+mochy par celles de melbaa — 224 000 étiquettes perdues, 133 134 doublons, aucun message d'erreur.
+L'élève a été entraîné sur **162 864 positions distinctes** au lieu de ~390 000 et perd **0,00661**
+par décision [0,00634 ; 0,00688] contre l'étalon 0,00313, avec 7,71 % de décisions hors registre
+(au-delà du seuil de 5 % où le banc note le corpus autant que le moteur). Fiche :
+[`docs/mesures/2026-09-02-T71-b1-corpus-ampute.md`](docs/mesures/2026-09-02-T71-b1-corpus-ampute.md).
+
+**Le critère d'arrêt de DS-14 ne s'applique pas à cette mesure** : il est écrit pour 400 000 à
+500 000 étiquettes. Arrêter une piste sur un corpus qu'on sait abîmé serait l'inverse de la
+discipline de la fiche. La régénération est déterministe et tourne ; `tools/suite_t71_reprise.sh`
+refera entraînement et mesures, avec un garde qui **refuse** de continuer si une part de mochy est
+identique à une part de melbaa.
+
 ## T72 — Réduire le réseau par distillation : 60–100 k MACs
 
 > **La ligne P3.** Le premier levier de vitesse — ×2,5 à ×6,6 sur toute décision, natif et
@@ -1290,6 +1304,24 @@ bit-exact).
   dégradé SSE2 sans FMA/VNNI, gain de lot comparé — l'explication ISA est confirmée ou réfutée.
 - La taille de l'artefact int8 + Brotli est mesurée (attendu : < 300 Kio transférés), poids hors
   chemin critique, chargement en flux.
+
+**Mesure du 2026-09-02 — ce que l'int8 coûte, jugé par l'arbitre de T70**, fiche
+[`docs/mesures/2026-09-02-T73-int8-arbitre-t70.md`](docs/mesures/2026-09-02-T73-int8-arbitre-t70.md).
+
+Sur le registre money de T70, au réglage servi : **0,00373 par décision disputée**
+[0,00358 ; 0,00389] contre l'étalon float32 **0,00313** [0,00298 ; 0,00327]. Les intervalles ne se
+recouvrent pas : **la quantification coûte +0,00060 par décision, soit +19 %.** C'est la première
+fois que le chemin int8 est jugé par le même instrument que le reste du projet.
+
+Le chiffre **sous-estime** la perte : 247 décisions (2,47 %) sont hors registre — le réseau int8 y
+joue un coup que le corpus n'a pas acheté — et sont écartées plutôt que comptées zéro. La borner
+demanderait de les arbitrer, ce qui est un calcul et non une déduction.
+
+La fiche ne tranche pas pour autant : sa question est « le gain de vitesse vaut-il ce coût », et
+l'autre moitié de la balance est le micro-banc (×2,13 au lot du moteur), le débit réel (×1,30) et
+la taille (540 Kio contre 2,1 Mio, ×3,9). Les deux moitiés se lisent ensemble, par qui décide de
+l'artefact.
+
 
 ## T74 — Élagage aux nœuds internes, et Star2 en expérience
 
