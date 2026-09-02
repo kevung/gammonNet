@@ -47,21 +47,45 @@ fratrie évaluée ensemble. Mesurée sur 353 fratries réelles :
 Les frères ne diffèrent que d'un coup : leurs entrées non nulles se recouvrent presque. **80,5 %
 de la première couche est sautable, par lot.**
 
-**Ce que ça rend, par réseau** — projection à partir des tailles de couches, à mesurer :
+**Ce que ça rend, par réseau** — projection à partir des tailles de couches, ~~à mesurer~~
+**mesurée le 2026-09-02, T89** :
 
-| | première couche / total | gain projeté sur le passage avant |
-|---|---|---|
-| grand réseau (196→512→512→256→128→5) | 100 352 / 526 976 = 19,0 % | **~15 %** |
-| **petit réseau (196→32→5)** | 6 272 / 6 432 = **97,5 %** | **~78 %** |
+| | première couche / total | gain **projeté** | gain **mesuré** (isolation, fratrie) |
+|---|---|---|---|
+| grand réseau (196→512→512→256→128→5) | 100 352 / 526 976 = 19,0 % | ~15 % | **×1,15** — confirmé |
+| **petit réseau (196→32→5)** | 6 272 / 6 432 = **97,5 %** | ~~**~78 %**~~ | **×1,39 — le 78 % est RETIRÉ** |
 
-Et comme le petit réseau fait quatre à cinq fois plus d'évaluations que le grand à toute
-profondeur, c'est **le** candidat. Au 4-ply, où il porte 22,2 M évaluations sur 26,9 M, l'ordre de
-grandeur du gain global se compte en facteurs, pas en pourcents.
+~~Et comme le petit réseau fait quatre à cinq fois plus d'évaluations que le grand à toute
+profondeur, c'est **le** candidat.~~
+
+> **CORRIGÉ le 2026-09-02 — `docs/mesures/2026-09-02-T89-sparsite-par-reseau.md`.**
+>
+> Les deux affirmations barrées ci-dessus sont fausses, et de la même façon : elles supposent
+> que le temps suit le nombre de multiplications. Mesuré, réseau par réseau, en A/B apparié
+> par décision :
+>
+> - la sparsité rend **+39 %** au petit réseau en isolation, pas 78 % ; le reste de son
+>   passage avant (transposition de 32×196, relevé des colonnes vivantes, sortie, sigmoïdes)
+>   ne rétrécit pas avec l'union, et ses 25 Kio de poids tiennent en L1 ;
+> - sur une **décision**, le petit réseau apporte **+2 %** et le grand **+10 %** — parce que
+>   le petit, c'est 77 % des voies calculées mais **5 %** du temps : sa voie est bon marché.
+>   Une optimisation du petit réseau ne vaut donc pas quatre à cinq fois celle du grand, elle
+>   en vaut le **cinquième**.
+>
+> Le poste est **déjà livré** (`gn_infer_reference.c`, 2026-08-26) et **déjà rentabilisé** à
+> +13 % sur une décision. Il n'y a pas de chantier « sparsité du petit réseau » à ouvrir.
+
+**Et une distinction que ce registre ne faisait pas** : l'union dépend du **type de lot**.
+Sur une **fratrie** elle vaut 40,5 / 196 (les 38,3 ci-dessus, confirmés) ; sur des positions
+**quelconques** — ce que `bench/bench_batch.c` évalue — elle monte à **124,0 / 196** et le
+gain tombe à ×1,04 sur les deux réseaux. Il ne devient jamais une **perte** ici, contrairement
+au portage Go (−9 %), parce que la compaction est un `memcpy` par colonne et non ~3,3 cycles
+par flottant.
 
 **Ce qu'il faudrait mesurer ensuite** : le coût de la construction de la liste des indices non
-nuls (elle se fait pendant la transposition, qui parcourt déjà les 196 caractéristiques), et le
-gain réel — les projections ci-dessus supposent que le temps suit le nombre de multiplications,
-ce que ce dépôt a déjà vu être faux deux fois.
+nuls (elle se fait pendant la transposition, qui parcourt déjà les 196 caractéristiques). Les
+projections ci-dessus supposaient que le temps suit le nombre de multiplications, ce que ce
+dépôt a maintenant vu être faux **trois** fois.
 
 ## 2. Les filtres à seuil d'équité, comme gnubg — adaptatifs, pas dégradants
 
@@ -129,7 +153,10 @@ d'évaluation qui verrouille les journaux T35. C'est un choix de format d'artefa
 
 ## L'ordre que la mesure impose
 
-1. **La sparsité des entrées.** Exacte, chiffrée à l'entrée, et elle frappe le réseau qui domine.
+1. ~~**La sparsité des entrées.** Exacte, chiffrée à l'entrée, et elle frappe le réseau qui
+   domine.~~ **LIVRÉE le 2026-08-26, mesurée le 2026-09-02 (T89) : +13 % sur une décision,
+   dont +10 % pour le grand réseau et +2 % pour le petit.** Elle ne « frappe pas le réseau qui
+   domine » : le petit réseau domine les VOIES, pas le TEMPS. Rien à rouvrir.
 2. **Les filtres à seuil.** Gain adaptatif, et il rapproche notre configuration de celle de gnubg,
    ce qui rend les comparaisons plus honnêtes.
 3. **Mesurer** le taux de transposition avant d'envisager la table.

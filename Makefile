@@ -39,7 +39,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube tie-census test-tile artifact env clean help
+.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube bench-sparsity tie-census test-tile artifact env clean help
 
 all: help
 
@@ -428,6 +428,42 @@ $(BENCH_CUBE): bench/bench_cube.c $(OBJECTS) $(VENDOR_OBJECTS)
 bench-cube: build $(BENCH_CUBE) $(MODEL)
 	$(PYTHON) tools/dump_reference.py
 	$(BENCH_CUBE) $(MODEL) $(BUILD)/reference.bin
+
+# ── T89 : la sparsité, par réseau et par type de lot ─────────────────
+#
+# La sparsité de la couche 1 est livrée depuis le 2026-08-26 et vaut ×1,16 —
+# mais c'est le chiffre des DEUX réseaux ensemble, et le registre attend 78 %
+# sur le PETIT seul. Personne n'a séparé les deux.
+#
+# Deux choses que ce banc fait et qu'aucun autre ne fait :
+#   — il éteint la sparsité RÉSEAU PAR RÉSEAU (`-DGN_BATCH_SPARSITY_SWITCH`,
+#     compilé hors de la bibliothèque livrée : la sparsité n'est pas une option
+#     d'exécution, c'est le noyau) ;
+#   — il distingue un lot FRATRIE (les coups légaux d'un plateau et d'un lancer,
+#     ce que la recherche donne réellement au noyau) d'un lot de positions
+#     QUELCONQUES (ce que `bench_batch.c` mesure sans le dire). L'union des
+#     entrées actives n'a pas la même largeur dans les deux cas, et le portage
+#     Go a mesuré une PERTE de 9 % sur le second.
+BENCH_SPARSITY := $(BUILD)/bench_sparsity
+SPARSITY_SOURCES := $(filter-out src/gn_infer_reference.c,$(SOURCES))
+
+$(BENCH_SPARSITY): bench/bench_sparsity.c $(SOURCES) $(HEADERS) \
+                   $(REFERENCE)/c_engine/bg_engine.c $(REFERENCE)/c_inference/nn_eval.c
+	@mkdir -p $(BUILD)
+	$(CC) $(BATCH_CFLAGS) -DGN_BATCH_SPARSITY_SWITCH $(INCLUDES) \
+	      -c src/gn_infer_reference.c -o $(BUILD)/gn_infer_sparsity.o
+	$(CC) $(CFLAGS) -ffp-contract=off $(INCLUDES) \
+	      -c src/gn_search.c -o $(BUILD)/gn_search_sparsity.o
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ bench/bench_sparsity.c \
+	      $(filter-out src/gn_infer_reference.c src/gn_search.c,$(SOURCES)) \
+	      $(BUILD)/gn_infer_sparsity.o $(BUILD)/gn_search_sparsity.o \
+	      $(BUILD)/bg_engine.o $(BUILD)/nn_eval.o -lm
+
+REPS ?= 7
+DECISIONS ?= 12
+
+bench-sparsity: build $(BENCH_SPARSITY) $(MODEL) $(PRUNE_MODEL)
+	$(BENCH_SPARSITY) $(MODEL) $(PRUNE_MODEL) $(REPS) $(DECISIONS)
 
 # ── T90 : l'arrondi des tuiles, sous ASan ────────────────────────────
 #

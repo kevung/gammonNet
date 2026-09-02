@@ -36,7 +36,48 @@ struct GnNetwork {
     enum GnNetworkFormat format;
     NNModel model;          /* valid when format == GN_NETWORK_FLOAT */
     GnInt8Model int8_model; /* valid when format == GN_NETWORK_INT8 */
+#ifdef GN_BATCH_SPARSITY_SWITCH
+    /* T89 ONLY. Compiled out of the shipped library, exactly like
+     * GN_BATCH_FILL_STATS: the layer-1 sparsity is not a run-time choice, it
+     * is the kernel. What T89 needs and could not get otherwise is to turn it
+     * off ON ONE NETWORK AT A TIME -- the ×1,16 published on 2026-09-02 is the
+     * two networks together, and the registry's 78 % claim is about the small
+     * one alone. `gn_search.c` holds both networks and hands them to
+     * `gn_evaluate_batch` without saying which is which, so the flag has to
+     * live on the network rather than in a global. */
+    int sparsity;   /* 1 = compact the live columns (the shipped behaviour) */
+    int slot;       /* 0 = big, 1 = small; a label for the counters below */
+#endif
 };
+
+#ifdef GN_BATCH_SPARSITY_SWITCH
+unsigned long gn_sparsity_calls[2] = {0, 0};
+unsigned long gn_sparsity_active[2] = {0, 0};
+unsigned long gn_sparsity_widest[2] = {0, 0};
+
+void gn_batch_sparsity_set(GnNetwork *net, int enabled)
+{
+    if (net != NULL) {
+        net->sparsity = enabled ? 1 : 0;
+    }
+}
+
+void gn_batch_sparsity_label(GnNetwork *net, int slot)
+{
+    if (net != NULL && (slot == 0 || slot == 1)) {
+        net->slot = slot;
+    }
+}
+
+void gn_batch_sparsity_reset(void)
+{
+    for (int i = 0; i < 2; i++) {
+        gn_sparsity_calls[i] = 0;
+        gn_sparsity_active[i] = 0;
+        gn_sparsity_widest[i] = 0;
+    }
+}
+#endif
 
 /* IEEE 754 binary16 -> binary32. Exact : tout demi-flottant fini est un
  * flottant simple, et les deux formats partagent leur arrondi. */
@@ -191,6 +232,10 @@ GnNetwork *gn_network_load(const char *path)
     if (net == NULL) {
         return NULL;
     }
+#ifdef GN_BATCH_SPARSITY_SWITCH
+    net->sparsity = 1;   /* the shipped behaviour is the default */
+    net->slot = 0;
+#endif
 
     if (gn_int8_model_is(path)) {
         net->format = GN_NETWORK_INT8;
@@ -544,8 +589,19 @@ int gn_evaluate_batch(const GnNetwork *net,
             }
         }
 
+#ifdef GN_BATCH_SPARSITY_SWITCH
+        gn_sparsity_calls[net->slot]++;
+        gn_sparsity_active[net->slot] += (unsigned long)n_nonzero;
+        if ((unsigned long)n_nonzero > gn_sparsity_widest[net->slot]) {
+            gn_sparsity_widest[net->slot] = (unsigned long)n_nonzero;
+        }
+        forward_batch(&net->model, g_batch_in, chunk,
+                      net->sparsity ? nonzero : NULL, n_nonzero,
+                      probs + base);
+#else
         forward_batch(&net->model, g_batch_in, chunk, nonzero, n_nonzero,
                       probs + base);
+#endif
     }
     return 0;
 }
