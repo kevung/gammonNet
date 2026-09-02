@@ -247,9 +247,9 @@ export class EvaluatorPool {
    *        16     47,3 s          ×4,47                     731,1
    *
    * Le travail est IDENTIQUE à toutes les lignes — 1 851 884 évaluations, même
-   * empreinte de coups. Passer de 8 à 16 workers achète donc **4 à 6 %** de
-   * temps mural en dépensant **deux fois plus** de secondes-worker et deux
-   * fois plus de mémoire. Sur le chemin des lots (`analyze`), 16 workers sont
+   * empreinte de coups. Passer de 8 à 16 workers achète donc **6,2 %** de temps
+   * mural ici (et 3,7 % sur un second balayage du plateau) en dépensant **deux
+   * fois plus** de secondes-worker et deux fois plus de mémoire. Sur le chemin des lots (`analyze`), 16 workers sont
    * carrément PLUS LENTS que 8 (×3,28 contre ×3,55) et font passer la pire
    * tâche du fil principal de 4,3 à 21,7 ms.
    *

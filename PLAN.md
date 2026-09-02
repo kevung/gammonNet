@@ -2073,7 +2073,7 @@ recouvrent et T73 hérite du verdict de largeur.
 > `tests/test_arena.py` vérifie que la mesure de force n'en bouge pas.
 >
 > **Le nombre utile de workers : `min(fils annoncés, 8)`.** Sur le chemin des décisions, ×4,20
-> à 8 workers ; passer à 16 achète **4 à 6 %** de mural pour **deux fois** la mémoire et
+> à 8 workers ; passer à 16 achète **3,7 à 6,2 %** de mural pour **deux fois** la mémoire et
 > **deux fois** les secondes-worker (211,6 s-worker à 1 worker, 390 à 8, **731 à 16 pour le
 > même travail** — chaque worker ajouté ralentit tous les autres). Sur le chemin des lots,
 > 16 workers sont **plus lents** que 8 (×3,28 contre ×3,55) et font passer la pire tâche du

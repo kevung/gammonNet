@@ -25,7 +25,7 @@ système, headless, profil neuf, build SIMD · **Branche** `feat/t87-ordonnancem
 >    reproductible sur trois exécutions. C'est la seule des deux applications
 >    qui franchit le seuil, et c'est celle-là qui est livrée.
 > 4. Le nombre utile de workers est **`min(fils annoncés, 8)`**, mesuré sur
->    quatre configurations ; passer de 8 à 16 achète 4 à 6 % de temps mural
+>    quatre configurations ; passer de 8 à 16 achète 3,7 à 6,2 % de temps mural
 >    pour **deux fois** plus de mémoire et de secondes-worker. Une seule machine
 >    m'était accessible pour le chemin des décisions, et le §5 le dit sans le
 >    maquiller.
@@ -240,8 +240,9 @@ change.
 > bande passante que T23 avait diagnostiquée sans pouvoir la chiffrer — chaque
 > worker relit sa propre copie des poids, faute de `SharedArrayBuffer`.
 >
-> **Passer de 8 à 16 workers achète 4 à 6 % de temps mural, pour deux fois
-> plus de mémoire (24 → 48 Mo) et deux fois plus de secondes-worker.** Le C
+> **Passer de 8 à 16 workers achète 6,2 % de temps mural au premier balayage
+> et 3,7 % au second, pour deux fois plus de mémoire (24 → 48 Mo) et deux fois
+> plus de secondes-worker.** Le C
 > mesurait 19 % pour le même doublement (mesures d'entrée, §7) ; le navigateur
 > en rend trois fois moins.
 
@@ -346,19 +347,21 @@ parties entières de calcul.
 
 2 500 paires, 8 processus, `first-play` contre `random`, passes entrelacées :
 
-| tâches/processus | tâches | médiane | |
+| tâches/processus | tâches | médiane de 5 passes | gain |
 |---:|---:|---:|---:|
-| 1 | 8 | 12,06 s | — |
-| 2 | 16 | 11,41 s | −0,3 % |
-| 4 | 32 | 10,76 s | +5,3 % |
-| 8 | 64 | 10,80 s | +5,1 % |
-| **16** | **128** | **11,32 s** | **+6,1 %** |
+| 1 *(l'ancien défaut)* | 8 | 11,371 s | — |
+| 2 | 16 | 11,408 s | −0,32 % |
+| 4 | 32 | 10,763 s | +5,34 % |
+| 8 | 64 | 10,796 s | +5,05 % |
+| **16** | **128** | **10,676 s** | **+6,11 %** |
 
-*(Les deux colonnes de temps viennent de deux exécutions distinctes ; ce sont
-les pourcentages, mesurés dos à dos dans chaque exécution, qui se comparent.)*
+Deux confirmations, chacune dans sa propre exécution entrelacée : **+6,23 %** à
+5 000 paires (3 passes) et **+6,10 %** à 2 500 paires sur 9 passes (12,059 s
+contre 11,323 s). Les granularités 4 et 8, elles, ne se reproduisent pas — +5,3 %
+puis +2,4 % — ce qui suffit à préférer 16.
 
-Trois exécutions indépendantes lisent **+6,11 %, +6,23 % et +6,10 %** pour 16
-tâches par processus. **C'est au-dessus du seuil de 5 %, et c'est la seule des
+Trois exécutions indépendantes lisent donc **+6,11 %, +6,23 % et +6,10 %** pour
+16 tâches par processus. **C'est au-dessus du seuil de 5 %, et c'est la seule des
 deux applications de la règle qui le franchit** : le défaut d'`arena.py` passe
 donc à 16, et `tests/test_arena.py` vérifie que le résultat — la mesure de force
 elle-même — n'en bouge pas d'un chiffre.
