@@ -13,6 +13,52 @@
 
 const F32 = 4;
 
+/*
+ * L'EFFICACITÉ DU VIDEAU, MESURÉE, INDEXÉE PAR LE POSSESSEUR — et jamais
+ * appliquée d'office.
+ *
+ * Ce module posait `efficiency = 0.566` en défaut de `rankPlays` et de
+ * `cubeDecision`, dont le défaut de possesseur est `0` = `GN_CUBE_CENTRED`.
+ * Or 0,566 est l'efficacité du videau POSSÉDÉ ; celle du videau centré vaut
+ * 0,688 (T34, `docs/mesures/t34-efficacite.json`). Le seul défaut du dépôt
+ * était donc le mauvais, et il vivait dans l'artefact distribué : le C n'a
+ * aucun défaut et EXIGE le paramètre, le Python indexe le triplet mesuré par
+ * l'état de possession, et ce wrapper inventait une valeur pour son propre
+ * compte.
+ *
+ * Ce que ça a coûté, et qui n'est pas hypothétique : gammonGo a redécouvert
+ * 0,688 EMPIRIQUEMENT, par bissection contre un cas d'or, et son commentaire
+ * conclut que le défaut du build WebAssembly n'est « pas quelque chose à
+ * croire sans le lire une seconde fois ».
+ *
+ * Le remède n'est pas 0,566 → 0,688 : un défaut juste reste un défaut, et il
+ * redeviendrait faux le jour où la mesure bougerait sans que l'appelant le
+ * sache. C'est donc, comme en C, PAS DE DÉFAUT — l'appelant fournit la valeur
+ * — plus cette constante nommée pour qu'il n'ait pas à la deviner. Elle est
+ * indexée comme `GnCubeOwner` et comme `GnRolloutConfig.cube_x` :
+ * `[centré, possédé, adverse]`.
+ *
+ * Elle est RECOPIÉE de la mesure, faute de pouvoir lire un fichier du dépôt
+ * dans un navigateur ; `measured_efficiency()` (python/gammonnet/cubeful.py)
+ * reste la lecture faisant foi, et les deux doivent bouger ensemble.
+ */
+export const MEASURED_EFFICIENCY = Object.freeze([0.688, 0.566, 0.687]);
+
+/* Le paramètre est exigé, jamais inventé : une décision de videau calculée
+ * avec l'efficacité d'un AUTRE état de possession est parfaitement plausible
+ * et fausse — exactement le mode de défaillance que CLAUDE.md nomme. */
+function requireEfficiency(value, owner, method) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  throw new Error(
+    `${method} : \`efficiency\` est obligatoire et doit être un nombre. ` +
+    "Elle se MESURE (bench/fit_efficiency.py) ; pour la mesure courante, " +
+    `passez \`efficiency: MEASURED_EFFICIENCY[${owner}]\` ` +
+    `(= ${MEASURED_EFFICIENCY[owner] ?? "?"}, T34 : ` +
+    "centré 0,688 / possédé 0,566 / adverse 0,687).");
+}
+
 /**
  * A loaded evaluator.
  *
@@ -113,9 +159,16 @@ export class Evaluator {
     ply = 0, filterTop = 0, filterInner = 0,
     useMatch = false, awayOnRoll = 0, awayOpponent = 0,
     cube = 1, crawford = false, max = 10,
-    cubeOwner = null, efficiency = 0.566,
+    cubeOwner = null, efficiency = null,
   } = {}) {
     const m = this.#module;
+    // Exigée exactement là où elle sert. `cubeOwner === null` laisse la
+    // recherche cubeless (`gn_wasm.c` : `cube_owner < 0` n'allume pas le
+    // videau), et alors aucune efficacité n'entre dans le calcul -- en
+    // réclamer une serait réclamer un chiffre que rien ne lit.
+    const x = cubeOwner === null
+      ? 0.0
+      : requireEfficiency(efficiency, cubeOwner, "rankPlays");
     const outPtr = m._malloc(4 * 6 * max);
     const idPtr = m._malloc(15 * max);
     try {
@@ -126,7 +179,7 @@ export class Evaluator {
          "number", "number", "number"],
         [positionId, turn, d1, d2, ply, filterTop, filterInner,
          useMatch ? 1 : 0, awayOnRoll, awayOpponent, cube, crawford ? 1 : 0,
-         cubeOwner === null ? -1 : cubeOwner, efficiency,
+         cubeOwner === null ? -1 : cubeOwner, x,
          max, outPtr, idPtr]);
       if (count < 0) {
         throw new Error("classement refusé : position illisible, ou score " +
@@ -158,14 +211,18 @@ export class Evaluator {
    * prise, en plus de l'action.
    *
    * `efficiency` est MESURÉE (`bench/fit_efficiency.py`), jamais empruntée à
-   * une constante publiée.
+   * une constante publiée — et elle est OBLIGATOIRE : ce wrapper n'en invente
+   * plus une, parce que celle qu'il inventait était celle d'un autre état de
+   * possession que son propre défaut d'`owner`. Pour la mesure courante,
+   * `efficiency: MEASURED_EFFICIENCY[owner]`.
    */
   cubeDecision(positionId, turn, {
     owner = 0, useMatch = false, awayOnRoll = 0, awayOpponent = 0,
-    cube = 1, crawford = false, efficiency = 0.566, jacoby = true,
+    cube = 1, crawford = false, efficiency = null, jacoby = true,
     ply = 0, filterTop = 0, filterInner = 0,
   } = {}) {
     const m = this.#module;
+    const x = requireEfficiency(efficiency, owner, "cubeDecision");
     const outPtr = m._malloc(8 * 9);
     try {
       const status = m.ccall(
@@ -173,7 +230,7 @@ export class Evaluator {
         ["string", "number", "number", "number", "number", "number", "number",
          "number", "number", "number", "number", "number", "number", "number"],
         [positionId, turn, owner, useMatch ? 1 : 0, awayOnRoll, awayOpponent,
-         cube, crawford ? 1 : 0, efficiency, jacoby ? 1 : 0,
+         cube, crawford ? 1 : 0, x, jacoby ? 1 : 0,
          ply, filterTop, filterInner, outPtr]);
       if (status !== 0) {
         throw new Error("décision de videau refusée : position illisible, ou " +

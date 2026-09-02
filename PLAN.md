@@ -1856,6 +1856,15 @@ donnent déjà, et cesse de le réécrire à côté.
   Le seul défaut du dépôt est le mauvais, et il est dans l'artefact distribué. **Le remède n'est
   pas de changer 0,566 en 0,688** : c'est de faire ce que le C fait — pas de défaut, ou un défaut
   **indexé par `owner`**.
+  > **FAIT le 2026-09-02** (ce seul point ; le reste de la fiche est ouvert). Retenu : **pas
+  > de défaut du tout**, comme en C — le paramètre est exigé et son absence lève une erreur
+  > qui nomme la valeur à passer, plus une constante exportée `MEASURED_EFFICIENCY`
+  > `[centré, possédé, adverse]` pour que l'appelant n'ait pas à la deviner. Ce qu'inventer
+  > la valeur coûtait, mesuré : **point de prise 0,726436 à x = 0,688 contre 0,720610 à
+  > x = 0,566**, même position — de quoi retourner un verdict à la marge sans jamais avoir
+  > l'air faux. Et gammonGo avait déjà payé en rétro-ingénierie, ayant **retrouvé 0,688 par
+  > bissection** contre un cas d'or. Détail :
+  > `docs/mesures/2026-09-02-T88-census-ex-aequo.md` §6.
 - **Une source unique pour les formes canoniques** (`prune_k = 12`, filtre `(0,1,3)`,
   profondeur 2), aujourd'hui recopiées quatre fois. Le `PRUNE_K_FAST = 3` que gammonGo introduit
   sans mesure amont en a une ici : `k=3` perd +0,00389 d'équité par décision

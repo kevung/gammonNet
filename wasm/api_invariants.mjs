@@ -19,7 +19,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { Evaluator } from "./gammonnet.mjs";
+import { Evaluator, MEASURED_EFFICIENCY } from "./gammonnet.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -148,12 +148,42 @@ if (last.length === 1) {
         `(${last[0].probs.join(", ")}) équité ${last[0].equity}`);
 }
 
-/* 6. La décision de videau rend ses trois équités, et un verdict connu. */
-const cube = evaluator.cubeDecision(POSITION, 0, { ...level, owner: 0 });
+/* 6. La décision de videau rend ses trois équités, et un verdict connu.
+ *
+ * L'efficacité est FOURNIE, et c'est le fond du correctif : ce fichier
+ * appelait `cubeDecision` avec `owner: 0` (centré) en laissant le défaut du
+ * wrapper poser 0,566, l'efficacité du videau POSSÉDÉ. Il exerçait donc
+ * exactement le défaut qu'il était censé surveiller, sans le voir passer. */
+const CENTRED = 0;
+const cube = evaluator.cubeDecision(POSITION, 0, {
+  ...level, owner: CENTRED, efficiency: MEASURED_EFFICIENCY[CENTRED],
+});
 const VERDICTS = new Set(["no-double", "double-take", "double-pass", "too-good"]);
 check("verdict de videau connu", VERDICTS.has(cube.action), cube.action);
 check("équités de videau finies",
       Number.isFinite(cube.equityNoDouble) && Number.isFinite(cube.equityDouble));
+
+/* 6b. L'EFFICACITÉ N'EST PLUS INVENTÉE.
+ *
+ * L'omettre doit refuser, bruyamment, plutôt que rendre une décision
+ * plausible calculée avec le chiffre d'un autre état de possession. */
+let refused = false;
+try {
+  evaluator.cubeDecision(POSITION, 0, { ...level, owner: CENTRED });
+} catch {
+  refused = true;
+}
+check("cubeDecision sans efficacité : refusé, jamais approximé", refused);
+
+/* Et la valeur passée est bien celle qui sert : deux efficacités différentes
+ * ne peuvent pas rendre la même équité de double. */
+const other = evaluator.cubeDecision(POSITION, 0, {
+  ...level, owner: CENTRED, efficiency: MEASURED_EFFICIENCY[1],
+});
+check("l'efficacité fournie est celle qui sert",
+      cube.takePoint !== other.takePoint,
+      `x=0,688 → point de prise ${cube.takePoint.toFixed(6)} ; ` +
+      `x=0,566 → ${other.takePoint.toFixed(6)}`);
 
 console.log(failures === 0
   ? "\n✅ invariants de l'API tenus"
