@@ -122,6 +122,11 @@ double gn_cube_equity(const GnCubeInputs *inputs, GnCubeOwner owner,
  * That antisymmetry is what lets an expectiminimax carry cubeful values with
  * the same negations it uses for cubeless ones, and a test holds it.
  *
+ * In the Crawford game (`state->crawford`) there is no cube in play, and the
+ * value is the DEAD one at the current stake -- the cubeless match equity --
+ * whatever `owner` and `efficiency` say. Post-Crawford gets no special case:
+ * the table already carries it.
+ *
  * Returns the value, or sets `*failed` (when non-NULL) and returns 0.0 for a
  * distribution or state that cannot be valued -- refused, never approximated.
  */

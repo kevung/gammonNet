@@ -130,6 +130,28 @@ def test_cube_value_is_antisymmetric_in_match():
                 )
 
 
+def test_crawford_search_with_use_cube_is_the_cubeless_search(network):
+    """À un score de Crawford, `use_cube` ne doit rien changer : ni le coup,
+    ni son équité -- le videau est mort, la feuille cubeful EST la feuille
+    cubeless. Avant le 2026-09-02 la recherche valuait un videau vivant et
+    déplaçait des choix de coups d'ouverture (probe contre gnubg)."""
+    for away_on_roll, away_opponent in ((4, 1), (1, 4)):
+        state = MatchState(away_on_roll=away_on_roll, away_opponent=away_opponent,
+                           cube=1, crawford=True)
+        cubeless = SearchConfig(ply=1, use_match=True, match=state)
+        cubeful = SearchConfig(ply=1, use_match=True, match=state,
+                               use_cube=True, cube_owner=CubeOwner.CENTRED, cube_x=X)
+        for position in CORPUS[:8]:
+            for d1, d2 in ((6, 4), (3, 1), (5, 2)):
+                a = best_play(network, position, d1, d2, cubeless)
+                b = best_play(network, position, d1, d2, cubeful)
+                if a is None:
+                    assert b is None
+                    continue
+                assert a.result == b.result, f"{away_on_roll}/{away_opponent} {position} {d1}{d2}"
+                assert a.equity == pytest.approx(b.equity, abs=1e-9)
+
+
 # ── Les feuilles exactes dans le domaine de la table (money) ──────────
 
 

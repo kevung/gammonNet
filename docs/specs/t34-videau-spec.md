@@ -7,7 +7,16 @@
 > **Provenance** : le modèle est celui de Rick Janowski (*Take-Points in Money Games*, 1993) —
 > littérature publiée. Les formules ci-dessous sont **redérivées**, pas recopiées : le point de
 > prise vivant a été retrouvé par la récursion de re-doublement et coïncide avec la forme fermée
-> sur deux cas de contrôle indépendants. Aucune source de GNU Backgammon n'a été lue.
+> sur deux cas de contrôle indépendants.
+>
+> **Amendement du 2026-09-01.** La rédaction initiale portait « aucune source de GNU Backgammon
+> n'a été lue ». Ce n'est plus vrai, et il faut le dire : le tableau des équités vivantes §2
+> aplatissait ses deux queues (`max(1, e(p))` au-dessus de `CP_live`, `min(−1, e(p))` sous
+> `TP_live`), ce qui rendait le verdict `TOO_GOOD` de §4 inatteignable sur toute position réelle.
+> Le diagnostic a été posé en confrontant une position à `MoneyLive()` de `gnubg/eval.c` (GPL),
+> qui interpole jusqu'à `(1, W)` là où nous plafonnions. **Aucune ligne de GNU Backgammon n'a été
+> copiée** : la forme rétablie ci-dessous est celle de Janowski 1993, et gammonNet reste sous
+> licence MIT. Ce que la lecture a fourni est le constat de l'écart, pas la formule.
 
 ## 1. Notation
 
@@ -66,13 +75,28 @@ CP_live = (L + 1)   / (W + L + 1/2)
 
 ### Équités vivantes, par état du videau (par unité de `c`)
 
-Piecewise-linéaires en `p` ; « trop bon » traité par la continuation morte :
+Piecewise-linéaires en `p` sur **tout** `[0, 1]` : la courbe part de `(0, −L)`, arrive à
+`(1, +W)`, et plie aux points de rupture que l'état du videau met sur son chemin. Aucune queue
+n'est un plateau.
 
 | état | forme |
 |---|---|
-| **je possède** | linéaire de `(0, −L)` à `(CP_live, +1)` ; au-delà : `max(1, e(p))` |
-| **adversaire possède** | pour `p ≤ TP_live` : `min(−1, e(p))` ; linéaire de `(TP_live, −1)` à `(1, W)` |
-| **centré** | `min(−1, e(p))` sous `TP_live` ; linéaire de `(TP_live, −1)` à `(CP_live, +1)` ; `max(1, e(p))` au-delà |
+| **je possède** | `(0, −L)` → `(CP_live, +1)` → `(1, +W)` |
+| **adversaire possède** | `(0, −L)` → `(TP_live, −1)` → `(1, +W)` |
+| **centré** | `(0, −L)` → `(TP_live, −1)` → `(CP_live, +1)` → `(1, +W)` |
+
+**Pourquoi les queues montent.** Au-dessus de `CP_live`, le possesseur du videau ne s'arrête pas
+à l'équivalent-cash `+1` : il joue la partie pour le gammon, videau toujours en main, et vaut son
+gain moyen `W` en `p = 1`. Aplatir cette queue revient à priser à zéro le videau qu'on conserve,
+et rend `E_nd > +1` impossible tant que l'équité **cubeless** ne dépasse pas déjà un point — donc
+`TOO_GOOD` (§4) inatteignable. La version antérieure à 2026-09-01 le faisait ; voir la note de
+provenance.
+
+**Invariance du calibrage.** À `W = L = 1` — le domaine sans gammon de la table bilatérale contre
+laquelle `x` est ajusté (§3) — la queue haute vaut `1 + (W−1)·(…) = 1` et la queue basse `−1` :
+**exactement** l'ancien plafond. La correction ne déplace donc aucun `x` mesuré ; elle ne change
+que les positions à gammons, précisément celles que §3 dit n'être validées que par comparaison
+externe.
 
 **Ancrages (gammonless, `p = 0,5`)** : possédé `+0,25`, adverse `−0,25`, centré `0` — les valeurs
 classiques du modèle continu.

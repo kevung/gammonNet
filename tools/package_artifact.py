@@ -345,53 +345,51 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.0.1 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.2.0 — À LIRE AVANT DE METTRE À JOUR
 
-**`rankPlays` rend maintenant les probabilités du JOUEUR QUI JOUE le coup**, du
-même côté que l'`equity` posée à côté d'elles. Jusqu'en v1.0.1 elles décrivaient
-la position *résultante*, donc l'adversaire, et un champ `forMover` portait le
-retournement.
+**En partie de Crawford, la valeur du videau est la valeur morte.** `gn_cube_decide`
+savait déjà ne jamais doubler pendant la partie de Crawford (spec §5, fait plat),
+mais `gn_cube_value` — la valuation de feuille de `use_cube`, et le nombre que
+`gn_cube_decide` rend à côté de son verdict — déroulait quand même la chaîne de
+redoublement §9 et rendait une valeur à videau **vivant**. Sur le 6-4 d'ouverture
+à 4-away/1-away Crawford, la recherche `use_cube` valuait la position à +0,68
+(équité normalisée) contre +0,16 pour le videau mort ; GNU Backgammon rend le
+même nombre cubeful et cubeless dans cette partie, et des choix de coups
+bougeaient avec (73 % d'accord avec gnubg contre 93 % en cubeless).
 
-| | v1.0.1 | v1.1.0 |
-|---|---|---|
-| `probs` | position résultante (adversaire) | **le joueur qui joue** |
-| `forMover` | le retournement, à afficher | **supprimé** |
+Corrigé : `state->crawford` ⇒ `2·M_dead(p) − 1`, quels que soient le possesseur
+et l'efficacité ; dans `gn_cube_decide`, `equity_no_double` porte cette valeur et
+la branche « double » vaut exactement ne pas doubler — pas de « double manqué » à
+lire dans une partie où doubler est interdit. Post-Crawford ne change pas : la
+table le porte déjà.
 
-Sur l'ouverture 3-1, le meilleur coup passe donc de `probs[0] = 0,4456` à
-**0,5544** — la valeur que `/v1/eval` rend déjà en HTTP, et celle qu'une
-interface affiche.
+**Ce que vous devez faire** : rien dans le code appelant. Si vous avez STOCKÉ des
+décisions de videau ou des recherches `use_cube` de positions jouées **pendant une
+partie de Crawford**, leur équité « ne pas doubler » était fausse et doit être
+recalculée. Le verdict, lui, était juste.
 
-**Ce que vous devez faire** : si vous lisiez `probs`, retirez votre
-retournement. Si vous lisiez `forMover`, lisez `probs`. `forMover` a été
-supprimé plutôt que laissé en place à côté d'un `probs` déjà retourné : un
-appelant qui ne relit pas ces notes obtient `undefined`, ce qui casse tout de
-suite — au contraire de cinq nombres parfaitement plausibles et faux.
+**Comment le vérifier vous-même** : à un score de Crawford, `gn_cube_value` doit
+égaler `gn_match_equity` pour toute distribution, tout possesseur et tout `x`, et
+une recherche `use_cube` doit rendre le coup et l'équité de la recherche cubeless
+— `tests/test_cube.py::test_crawford_values_a_dead_cube` et
+`tests/test_search_cube.py::test_crawford_search_with_use_cube_is_the_cubeless_search`.
 
-**Comment le vérifier vous-même** : à `ply: 0`, `2·w + wg + wbg − lg − lbg − 1`
-reproduit l'équité du même candidat. `verify/api_invariants.mjs` le contrôle sur
-les douze coups de l'ouverture 3-1 (max|Δ| mesuré : 7,68e-8). Aucune
-vérification d'imbrication ne peut voir une inversion de référentiel — une
-distribution retournée reste parfaitement imbriquée — et c'est par là que
-celle-ci est passée.
-
-**Un défaut corrigé au passage** : les probabilités d'un coup qui TERMINE la
-partie valaient zéro. Retournées pour l'affichage, elles disaient « gain
-certain, aucun gammon » sur une sortie qui gagne un gammon (équité +2,
-probabilités disant +1). C'est le dernier coup de chaque partie. Elles portent
-désormais l'issue exacte, calculée et non évaluée.
+**Ce que la mesure a établi au passage** (`docs/mesures/2026-09-02-jets-d-ouverture-au-score.md`,
+15 jets d'ouverture × 15 contextes de score, gnubg 1.08.003 en 2-ply) : la recherche
+`use_match` coïncide avec le cubeless de gnubg (95 % des choix, aucun écart > 0,02) ;
+l'écart avec ce que gnubg **joue** (77 %, 27 écarts) est celui de gnubg cubeless
+contre son propre cubeful (80 %, 23) — gammon-go et gammon-save à l'ouverture sont
+des effets du videau, que `use_cube` restitue (89 %, 2 écarts, tous post-Crawford
+2-away/1-away). Un appelant qui veut le coup que jouent XG et gnubg au score doit
+donc activer `use_cube`, pas seulement `use_match`.
 
 **Ce qui NE change pas** : les poids, bit pour bit — mêmes SHA-256 que ceux de
-v1.0.1, seuls les noms de fichiers portent la nouvelle version (`BRIEF.md` §8 :
-un réseau ne devient un autre réseau que si ses poids changent). Aucune équité
-ne bouge, aucune mesure de force ci-dessous n'est affectée, et la parité
-WebAssembly ↔ natif reste à 0 en scalaire et 6,407e-7 en SIMD.
+v1.0.1, v1.1.0 et v1.2.0, seuls les noms de fichiers portent la nouvelle version
+(`BRIEF.md` §8). Aucune probabilité, aucune équité de coup hors `use_cube` à
+Crawford, aucune mesure de force ci-dessous n'est affectée.
 
-**Ce qui reste divergent, et délibérément** : au-delà de 0-ply, ces cinq nombres
-viennent de la passe superficielle qui a servi à classer les coups, pas de la
-recherche profonde qui a produit l'équité. Le côté est le bon à toute
-profondeur ; la profondeur, non. `/v1/eval` tranche autrement — il les omet dès
-`ply >= 1`. `rankPlays` les garde, parce qu'une interface d'analyse les affiche,
-et le dit dans sa propre documentation.
+Les notes de la v1.2.0 (le verdict « trop bon » rendu atteignable) restent
+valables et ne sont pas répétées ici.
 
 """
 

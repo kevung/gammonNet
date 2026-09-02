@@ -98,6 +98,67 @@ def test_live_equities_at_half_gammonless():
     assert inputs.equity(CubeOwner.CENTRED, 1, 1.0) == pytest.approx(0.0, abs=1e-9)
 
 
+def test_live_curve_reaches_the_extreme_anchors():
+    """La courbe vivante part de `(0, −L)` et arrive à `(1, +W)`, dans les
+    trois états du videau — §2, « aucune queue n'est un plateau ».
+
+    C'est l'ancrage que la rédaction antérieure au 2026-09-01 violait : elle
+    plafonnait la queue haute à `max(1, e(p))`, donc à `+1` dès que `W > 1`,
+    et le videau conservé en jouant la suite valait zéro.
+    """
+    for W, L in [(1.0, 1.0), (1.8, 1.2), (2.5, 1.0), (1.0, 2.5)]:
+        top = CubeInputs(win=1.0, win_points=W, lose_points=L)
+        bottom = CubeInputs(win=0.0, win_points=W, lose_points=L)
+        for owner in CubeOwner:
+            assert top.equity(owner, 1, 1.0) == pytest.approx(W, abs=1e-9), f"{owner} W={W}"
+            assert bottom.equity(owner, 1, 1.0) == pytest.approx(-L, abs=1e-9), f"{owner} L={L}"
+
+
+def test_gammonless_tails_stay_flat():
+    """Sans gammon (`W = L = 1`), les queues sont plates à `±1` — la valeur
+    exacte de l'ancien plafond.
+
+    C'est l'invariance de calibrage annoncée par §2 : `x` a été ajusté (§3)
+    contre une table bilatérale dont le domaine est gammonless, et sur ce
+    domaine la correction de la courbe est l'identité. Aucun `x` mesuré ne
+    bouge ; ce test le rend faux si un jour quelqu'un « améliore » la queue
+    d'une façon qui invaliderait la mesure de T34.
+    """
+    for p in (0.85, 0.90, 0.95, 0.99, 1.0):
+        assert CubeInputs(win=p, win_points=1.0, lose_points=1.0).equity(
+            CubeOwner.CENTRED, 1, 1.0
+        ) == pytest.approx(1.0, abs=1e-9)
+    for p in (0.0, 0.01, 0.05, 0.10, 0.15):
+        assert CubeInputs(win=p, win_points=1.0, lose_points=1.0).equity(
+            CubeOwner.OPPONENT, 1, 1.0
+        ) == pytest.approx(-1.0, abs=1e-9)
+
+
+def test_too_good_on_a_gammonish_position():
+    """Une position de jeu réel où « trop bon » est le verdict, et où le
+    modèle le manquait.
+
+    XGID=bB-B--C-A---eE---c-caa--B-:0:0:1:00:0:0:0:0:0, videau centré, money.
+    Les probabilités sont celles que le réseau rend à 2-ply. Les deux moteurs
+    de référence, sur la même position :
+
+        gnubg 0-ply   ND +1.160   DT +1.773   trop bon / passe (20,7 %)
+        gnubg 2-ply   ND +1.099   DT +1.707   trop bon / passe (14,0 %)
+        XG Roller++   ND +1.082   DT +1.678   trop bon / passe (12,1 %)
+
+    Avant le 2026-09-01 le modèle rendait ND = +0,995 — sous l'équivalent-cash,
+    donc « double, passe ». La borne ci-dessous est large à dessein : ce test
+    pin le CÔTÉ de +1 et l'ordre de grandeur, pas un chiffre au millième que
+    le prochain jeu de poids déplacerait.
+    """
+    evaluation = Evaluation(win=0.7292, win_gammon=0.5347, win_backgammon=0.0475,
+                            lose_gammon=0.0545, lose_backgammon=0.0030)
+    result = decide(evaluation, CubeOwner.CENTRED, 0.688, jacoby=False)
+    assert result.action == CubeAction.TOO_GOOD
+    assert 1.05 < result.equity_no_double < 1.25
+    assert result.equity_no_double > result.equity_double
+
+
 # ── §6.1 : les propriétés génériques ──────────────────────────────────
 
 
@@ -280,6 +341,48 @@ def test_crawford_never_doubles():
     for p in (0.05, 0.5, 0.95):
         result = decide(gammonless(p), CubeOwner.CENTRED, X, state=state)
         assert result.action == CubeAction.NO_DOUBLE
+
+
+def test_crawford_values_a_dead_cube():
+    """Pendant la partie de Crawford, la VALEUR est celle du videau mort --
+    l'équité de match cubeless, quels que soient le possesseur et `x`.
+
+    Trouvé le 2026-09-02 en confrontant les jets d'ouverture à gnubg :
+    `gn_cube_decide` savait ne jamais doubler, mais `gn_cube_value` déroulait
+    quand même la chaîne §9 et valuait l'ouverture à 4-away/1-away Crawford
+    à +0,68 (échelle normalisée) contre +0,16 pour le videau mort -- gnubg,
+    lui, rend cubeful == cubeless dans cette partie. Le verdict était juste,
+    le nombre à côté ne l'était pas.
+    """
+    from gammonnet.cube import value
+
+    for away_on_roll, away_opponent in ((4, 1), (1, 4), (2, 1), (1, 1)):
+        state = MatchState(away_on_roll=away_on_roll, away_opponent=away_opponent,
+                           cube=1, crawford=True)
+        for q in (gammonless(0.3), gammonless(0.72), with_gammons(0.55, 0.2, 0.1),
+                  with_gammons(0.9, 0.5, 0.02)):
+            dead = state.equity(q)
+            for owner in CubeOwner:
+                for x in (0.0, 0.3, 0.688, 1.0):
+                    assert value(q, owner, x, state=state) == pytest.approx(dead, abs=1e-9), (
+                        f"{away_on_roll}/{away_opponent} {q} {owner} x={x}")
+            result = decide(q, CubeOwner.CENTRED, X, state=state)
+            assert result.action == CubeAction.NO_DOUBLE
+            # Sur l'échelle MWC de `decide` : la valeur morte, et aucune branche
+            # « double » qui vaudrait autre chose que ne pas doubler.
+            assert result.equity_no_double == pytest.approx(state.winning_chance(q), abs=1e-9)
+            assert result.equity_double == pytest.approx(result.equity_no_double, abs=1e-12)
+
+
+def test_post_crawford_is_not_flattened_by_the_crawford_fix():
+    """Le contrôle inverse : post-Crawford (drapeau à faux, un joueur à
+    1-away), le videau est vivant et la valeur cubeful DIFFÈRE de la valeur
+    morte -- le mené double, et cela se voit dans le nombre."""
+    from gammonnet.cube import value
+
+    state = MatchState(away_on_roll=2, away_opponent=1, cube=1, crawford=False)
+    q = gammonless(0.5)
+    assert abs(value(q, CubeOwner.CENTRED, X, state=state) - state.equity(q)) > 0.05
 
 
 def test_post_crawford_trailer_at_two_away_doubles_systematically():
