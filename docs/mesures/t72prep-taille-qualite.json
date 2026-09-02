@@ -1,0 +1,112 @@
+{
+ "corpus": {
+  "path": "/home/kunger/dev/gammonNet/build/prune_corpus.npz",
+  "positions": 800000
+ },
+ "date": "2026-09-02",
+ "networks": [
+  {
+   "best_epoch": 161,
+   "held_out_bce": 0.24215655028820038,
+   "macs": 526976,
+   "mean_abs_error": 0.004785254597663879,
+   "path": "/home/kunger/dev/gammonNet/models/t72prep_512-512-256-128.bin",
+   "ratio": 1.0,
+   "seconds": 37.88176145701436,
+   "sha256": "774a03bb09da04796fa331fbd5e976e47e1c185cdcac82aba14f630812aa9a97",
+   "shape": [
+    512,
+    512,
+    256,
+    128
+   ]
+  },
+  {
+   "best_epoch": 164,
+   "held_out_bce": 0.2424042522907257,
+   "macs": 127120,
+   "mean_abs_error": 0.006178686860948801,
+   "path": "/home/kunger/dev/gammonNet/models/t72prep_320-160-80.bin",
+   "ratio": 0.2412254068496478,
+   "seconds": 28.75065055899904,
+   "sha256": "80593ee06790413f8c6b1cc0bc6736ccc890540bab557c3f891d1f3313a19cbe",
+   "shape": [
+    320,
+    160,
+    80
+   ]
+  },
+  {
+   "best_epoch": 162,
+   "held_out_bce": 0.2424563616514206,
+   "macs": 91456,
+   "mean_abs_error": 0.006524540018290281,
+   "path": "/home/kunger/dev/gammonNet/models/t72prep_256-128-64.bin",
+   "ratio": 0.17354870051008014,
+   "seconds": 27.892045482993126,
+   "sha256": "08cc74d0987238c43dbf6c1ec2e94890cf2e8eb93488f91127f7566e6c0b3136",
+   "shape": [
+    256,
+    128,
+    64
+   ]
+  },
+  {
+   "best_epoch": 175,
+   "held_out_bce": 0.2424798309803009,
+   "macs": 60912,
+   "mean_abs_error": 0.006635455880314112,
+   "path": "/home/kunger/dev/gammonNet/models/t72prep_192-96-48.bin",
+   "ratio": 0.11558780665533155,
+   "seconds": 27.802672885998618,
+   "sha256": "153549a053dca3731709609c4c9fd67140911e937cb2637625cc3689fef8fafa",
+   "shape": [
+    192,
+    96,
+    48
+   ]
+  },
+  {
+   "best_epoch": 179,
+   "held_out_bce": 0.24281346797943115,
+   "macs": 35488,
+   "mean_abs_error": 0.008196909911930561,
+   "path": "/home/kunger/dev/gammonNet/models/t72prep_128-64-32.bin",
+   "ratio": 0.06734272528540199,
+   "seconds": 28.213558825984364,
+   "sha256": "9a42664516f9d7de3cc95e2bec3443e88a73b36b36c2b07116eab6d5b2a8d158",
+   "shape": [
+    128,
+    64,
+    32
+   ]
+  },
+  {
+   "best_epoch": 182,
+   "held_out_bce": 0.24312378466129303,
+   "macs": 24696,
+   "mean_abs_error": 0.009428920224308968,
+   "path": "/home/kunger/dev/gammonNet/models/t72prep_96-48-24.bin",
+   "ratio": 0.04686361428224435,
+   "seconds": 29.611479266022798,
+   "sha256": "1ae2e593b80db169f2cd222c777104a091a680414a6a88b68a8b777e79c4bfe6",
+   "shape": [
+    96,
+    48,
+    24
+   ]
+  }
+ ],
+ "task": "T72 (préparation) — courbe taille → qualité",
+ "training": {
+  "batch_size": 8192,
+  "device": "cuda",
+  "epochs": 200,
+  "holdout": 0.05,
+  "lr": 0.001,
+  "patience": 20,
+  "seed": 20260903,
+  "torch": "2.4.1+cu121"
+ },
+ "verdict": "AUCUN — la qualité se mesure sur l'instrument de T70, jamais sur l'entropie croisée retenue."
+}
