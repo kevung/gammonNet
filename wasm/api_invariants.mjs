@@ -148,6 +148,37 @@ if (last.length === 1) {
         `(${last[0].probs.join(", ")}) équité ${last[0].equity}`);
 }
 
+/* 5c. L'ORDRE DES EX ÆQUO (T88).
+ *
+ * `compare_candidates` ne comparait que l'équité et `qsort` n'est pas stable :
+ * l'ordre de deux candidats de MÊME équité venait de la libc. Ici, c'est celle
+ * d'Emscripten (musl, smoothsort), et elle N'EST PAS stable — mesuré sur des
+ * éléments de 72 octets, comme `GnCandidate` : 13 / 64 / 297 / 1 184 ex æquo
+ * permutés à n = 32 / 128 / 512 / 2 048, là où la glibc n'en permute aucun.
+ * C'est donc précisément ici, dans l'artefact servi au navigateur, que le
+ * défaut sortait — et la parité ne pouvait pas le voir, puisqu'elle compare
+ * des équités à 1e-6 et qu'une permutation d'ex æquo les laisse identiques.
+ *
+ * La position ci-dessous est du corpus T12 : sur le 1-1, ses NEUF coups
+ * légaux gagnent tous immédiatement et valent tous exactement -1. Le
+ * classement n'est donc QUE l'ordre de départage, et le repère est l'ordre
+ * rendu par le natif (`make tie-census PLY=0 TIE_DUMP=1`), qui est l'ordre de
+ * génération de `gn_legal_plays` — la règle du portage Go. */
+const TIED = "AQAAfB4AAAAAAA";
+const TIED_ORDER = [
+  "3wMAAAQAAAAAAA", "vwUAAAQAAAAAAA", "7wIAAAIAAAAAAA",
+  "fwYAAAQAAAAAAA", "XwMAAAIAAAAAAA", "twEAAAEAAAAAAA",
+  "zwEAAAEAAAAAAA", "6wAAgAAAAAAAAA", "eQAAQAAAAAAAAA",
+];
+const tied = evaluator.rankPlays(TIED, 1, 1, 1, { ply: 0, max: 40 });
+check("neuf coups d'équité BIT-À-BIT égale", 
+      tied.length === TIED_ORDER.length
+      && tied.every((c) => c.equity === tied[0].equity),
+      `${tied.length} coups, équités ${new Set(tied.map((c) => c.equity)).size} distinctes`);
+check("ex æquo : le module rend l'ORDRE du natif, pas celui de sa libc",
+      tied.every((c, i) => c.resultId === TIED_ORDER[i]),
+      tied.map((c) => c.resultId).join(" "));
+
 /* 6. La décision de videau rend ses trois équités, et un verdict connu.
  *
  * L'efficacité est FOURNIE, et c'est le fond du correctif : ce fichier
