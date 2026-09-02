@@ -134,6 +134,7 @@ qu'une fiche existe. Une étude n'ouvre rien : elle donne à la décision de quo
 | 2026-08-19 | [Le videau appris sans a priori](2026-08-19-videau-appris-sans-a-priori.md) | Peut-on apprendre la gestion du videau **en match** sans MET ni formule de Janowski, au niveau de gnubg ? | Dossier. Rien d'ouvert ; conditionné à T35 |
 | 2026-08-19 | [Le videau appris — plan détaillé](2026-08-19-plan-videau-appris.md) | Quel programme, et l'architecture du réseau est-elle en cause ? | Plan conditionnel, fiches T60-T69. Rien d'ouvert |
 | 2026-08-26 | [Dépasser franchement gnubg — plan de recherche](../recherche/00-plan-depasser-gnubg.md) | Que faudrait-il pour dépasser nettement gnubg **tout en étant aussi rapide** ? | Plan de quatorze recherches approfondies, en trois vagues. Rien d'ouvert |
+| 2026-09-02 | [Retours du portage Go](2026-09-02-retours-du-portage-go.md) | Que le portage Go de blunderDB a-t-il mesuré qui déplace ce qui est écrit ici ? | Quatre constats : la largeur 32 pourrait être ce qui rend le regroupement nécessaire ; la sparsité couche 1 rapporte ~6 % et non ~15 % ; précalculer les `metAfter` du videau vaut 1 % et `level_solve` en pèse 83 % ; « les doubles sont chers » est faux (écart réel 1,54×). Rien d'ouvert ici |
 
 ## Sources
 
