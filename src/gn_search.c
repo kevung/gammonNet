@@ -984,6 +984,87 @@ static int position_probs(const GnNetwork *net, const GnPosition *pos,
     return 0;
 }
 
+/*
+ * The same backup as `position_probs` at the root, keeping each roll's own
+ * distribution instead of only their weighted average.
+ *
+ * Nothing new is computed: the root loop of `position_probs` already forms
+ * `mine` for each of the 21 rolls and then discards it into a sum. What was
+ * thrown away is exactly the dispersion of the position -- the quantity T71's
+ * auxiliary head is trained on -- so it is collected here rather than paid for
+ * a second time by 21 separate searches.
+ */
+static int probs_by_roll(const GnNetwork *net, const GnPosition *pos,
+                         const GnSearchConfig *config, int depth,
+                         GnMatchState state, int owner,
+                         float out[GN_NUM_ROLLS][GN_NUM_OUTPUTS],
+                         double weights[GN_NUM_ROLLS])
+{
+    build_rolls();
+
+    GnCandidate *candidates = malloc(sizeof(GnCandidate) * MAX_PLAYS);
+    if (candidates == NULL) {
+        return -1;
+    }
+
+    for (int r = 0; r < GN_NUM_ROLLS; r++) {
+        const int count = rank_plays(net, pos, g_rolls[r].d1, g_rolls[r].d2,
+                                     config, depth, state, owner,
+                                     candidates, MAX_PLAYS);
+        if (count < 0) {
+            free(candidates);
+            return -1;
+        }
+
+        float theirs[GN_NUM_OUTPUTS];
+        int failed;
+        if (count > 0) {
+            failed = position_probs(net, &candidates[0].play.result, config,
+                                    depth, swap_sides(state),
+                                    mirror_owner(owner), theirs);
+        } else {
+            GnPosition passed = *pos;
+            gn_position_swap_turn(&passed);
+            failed = position_probs(net, &passed, config, depth,
+                                    swap_sides(state), mirror_owner(owner),
+                                    theirs);
+        }
+        if (failed != 0) {
+            free(candidates);
+            return -1;
+        }
+
+        invert_probs(theirs, out[r]);
+        if (weights != NULL) {
+            weights[r] = g_rolls[r].weight;
+        }
+    }
+
+    free(candidates);
+    return 0;
+}
+
+int gn_search_probs_by_roll(const GnNetwork *net, const GnPosition *pos,
+                            const GnSearchConfig *config,
+                            float out[GN_NUM_ROLLS][GN_NUM_OUTPUTS],
+                            double weights[GN_NUM_ROLLS])
+{
+    if (net == NULL || pos == NULL || config == NULL || out == NULL) {
+        return -1;
+    }
+    if (config->ply < 1) {
+        /* Below one ply there is no roll to enumerate: the caller is asking
+         * for a dispersion that does not exist, and answering zero would be a
+         * plausible-looking lie. */
+        return -1;
+    }
+    if (gn_position_is_over(pos)) {
+        return -1;
+    }
+    return probs_by_roll(net, pos, config, config->ply - 1, config->match,
+                         config->cube_owner, out, weights);
+}
+
 int gn_search_probs(const GnNetwork *net, const GnPosition *pos,
                     const GnSearchConfig *config, float out[GN_NUM_OUTPUTS])
 {

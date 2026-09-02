@@ -80,6 +80,18 @@ _LIB.gn_search_probs.argtypes = [
 ]
 _LIB.gn_search_probs.restype = ctypes.c_int
 
+NUM_ROLLS = 21
+_RollProbArray = (ctypes.c_float * NUM_OUTPUTS) * NUM_ROLLS
+_RollWeightArray = ctypes.c_double * NUM_ROLLS
+_LIB.gn_search_probs_by_roll.argtypes = [
+    ctypes.c_void_p,
+    ctypes.POINTER(_CPosition),
+    ctypes.POINTER(_CSearchConfig),
+    _RollProbArray,
+    _RollWeightArray,
+]
+_LIB.gn_search_probs_by_roll.restype = ctypes.c_int
+
 _LIB.gn_terminal_equity.argtypes = [ctypes.POINTER(_CPosition)]
 _LIB.gn_terminal_equity.restype = ctypes.c_double
 
@@ -276,6 +288,37 @@ def position_equity(
     return _LIB.gn_search_equity(
         network._handle, ctypes.byref(position._to_c()), ctypes.byref(config._to_c())
     )
+
+
+def probs_by_roll(
+    network: Network, position: Position, config: SearchConfig | None = None,
+) -> tuple[list[Evaluation], list[float]]:
+    """Les 21 distributions du backup, une par jet, et leurs poids.
+
+    `position_probs` en est exactement la moyenne pondérée — c'est la même
+    boucle, prise avant la somme. Ce que la moyenne jette est la **dispersion**
+    de la position sur les jets, la grandeur que la tête auxiliaire de T71
+    apprend ; la reprendre ici ne coûte rien, la redemander par 21 recherches
+    séparées coûterait tout le backup une seconde fois.
+
+    Exige `config.ply >= 1` et une position non terminée : en dessous il n'y a
+    aucun jet à énumérer, et rendre des zéros serait la réponse plausible et
+    fausse que ce dépôt refuse.
+    """
+    config = config or SearchConfig()
+    if config.ply < 1:
+        raise ValueError("probs_by_roll exige au moins un ply : sans jet énuméré, "
+                         "il n'y a pas de dispersion à lire")
+    buffer = _RollProbArray()
+    weights = _RollWeightArray()
+    result = _LIB.gn_search_probs_by_roll(
+        network._handle, ctypes.byref(position._to_c()),
+        ctypes.byref(config._to_c()), buffer, weights,
+    )
+    if result != 0:
+        raise ValueError("dispersion non calculable pour cette position")
+    return ([Evaluation(*buffer[r]) for r in range(NUM_ROLLS)],
+            [weights[r] for r in range(NUM_ROLLS)])
 
 
 def position_probs(

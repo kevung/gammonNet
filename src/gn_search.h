@@ -266,6 +266,27 @@ int gn_search_probs(const GnNetwork *net, const GnPosition *pos,
                     const GnSearchConfig *config, float out[GN_NUM_OUTPUTS]);
 
 /*
+ * The same backup, one distribution PER ROLL instead of their average --
+ * `out[r]` is what `gn_search_probs` would average, and `weights[r]` is the
+ * weight it would use (1/36 for a double, 2/36 otherwise). Their weighted mean
+ * is `gn_search_probs` exactly; a test holds that identity.
+ *
+ * Why it exists: the dispersion of a position over the 21 rolls is what T71's
+ * auxiliary volatility head learns, and the root loop of the distributional
+ * backup already forms every one of these vectors before summing them away.
+ * Recovering them here costs nothing; asking 21 separate searches for them
+ * would cost the whole backup again.
+ *
+ * Requires `config->ply >= 1` and an unfinished position: below one ply there
+ * is no roll to enumerate, and returning zeros would be exactly the silent
+ * plausible answer this project refuses. Returns 0, or -1 on error.
+ */
+int gn_search_probs_by_roll(const GnNetwork *net, const GnPosition *pos,
+                            const GnSearchConfig *config,
+                            float out[GN_NUM_ROLLS][GN_NUM_OUTPUTS],
+                            double weights[GN_NUM_ROLLS]);
+
+/*
  * Exact equity of a finished game, from `pos->turn`'s point of view.
  *
  * `pos->turn` names the LOSER at a terminal position (see `gn_rules.h`), so
