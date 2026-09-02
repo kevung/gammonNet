@@ -1,0 +1,60 @@
+{
+  "by_class": {
+    "backgame": {
+      "advantage": 0.0025797730082515323,
+      "n": 433
+    },
+    "bearoff_contact": {
+      "advantage": 0.0006709639082889269,
+      "n": 582
+    },
+    "blitz": {
+      "advantage": 0.002741006061544181,
+      "n": 1251
+    },
+    "contact": {
+      "advantage": 0.002280718598046904,
+      "n": 5004
+    },
+    "crashed": {
+      "advantage": 0.0004835902149035284,
+      "n": 428
+    },
+    "holding": {
+      "advantage": 0.001921438359526111,
+      "n": 1177
+    },
+    "prime_vs_prime": {
+      "advantage": 0.001956337555900262,
+      "n": 456
+    },
+    "race_contact": {
+      "advantage": 0.00213641899040864,
+      "n": 669
+    }
+  },
+  "ci95": [
+    0.0019372575016661268,
+    0.002325360998372255
+  ],
+  "context": "money",
+  "core_hours": 15.98058040879987,
+  "decisions": 10000,
+  "dropped_both": 0,
+  "dropped_student_only": 0,
+  "dropped_teacher_only": 0,
+  "model": "cubeless_prob5_512_512_256_128.bin",
+  "paired": 10000,
+  "registry": "registre-money.jsonl",
+  "student_ply": 0,
+  "student_seconds": 1.1934080249920953,
+  "teacher_advantage": 0.0021257699366593356,
+  "teacher_ply": 2,
+  "teacher_seconds": 1916.4762410309922,
+  "unpairable": 0,
+  "unpairable_rate": 0.0,
+  "verdict": "professeur confirm\u00e9",
+  "workers": 30,
+  "z": 21.547514384618765,
+  "z_threshold": 3.0
+}

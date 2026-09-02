@@ -165,6 +165,10 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=20260827)
     parser.add_argument("--label", default="")
     parser.add_argument("--out", default="")
+    parser.add_argument("--dump", default="",
+                        help="écrire la perte DÉCISION PAR DÉCISION (.jsonl) — "
+                             "ce qu'il faut pour apparier deux moteurs, "
+                             "l'agrégat de --out ne le permettant pas")
     args = parser.parse_args()
 
     registry = Path(args.registry)
@@ -255,6 +259,21 @@ def main() -> int:
     if args.out:
         Path(args.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
         print(f"\n  → {args.out}")
+    if args.dump:
+        # Une ligne par décision, index du registre compris : deux moteurs notés
+        # sur le même registre se relisent alors APPARIÉS. Une moyenne et son
+        # intervalle ne le permettent pas — la différence appariée a une
+        # variance bien plus petite que celle des deux moyennes séparées, et
+        # c'est précisément ce que l'étape 0 de T71 doit voir.
+        with Path(args.dump).open("w") as handle:
+            handle.write(json.dumps({"header": True, "label": label,
+                                     "model": Path(args.model).name,
+                                     "ply": args.ply, "context": context,
+                                     "registry": registry.name,
+                                     "decisions": len(scored)}) + "\n")
+            for s in sorted(scored, key=lambda r: r["index"]):
+                handle.write(json.dumps(s, sort_keys=True) + "\n")
+        print(f"  → {args.dump}  ({len(scored)} décisions, appariables)")
     return 0
 
 
