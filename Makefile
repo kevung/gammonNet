@@ -257,10 +257,66 @@ WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
 # Prix payé, mesuré : la parité WebAssembly <-> natif n'est plus au bit près
 # mais à 4,77e-7 — sous le seuil de 1e-6 de T20. L'ordre des sommes change,
 # le résultat pratiquement pas.
+#
+# ── T91 : CE DRAPEAU N'EST PLUS DANS L'ARTEFACT ─────────────────────
+#
+# Il y est resté d'août 2026 à ce jour, et T84 a mesuré le 2026-09-02 que la
+# configuration livrée était, dans un navigateur, LA PLUS LENTE des six
+# qu'elle chronométrait : 12 062 éval/s contre 37 923 au noyau écrit à la main.
+# La raison est que le chemin chaud a changé sous le drapeau. T21 l'a adopté
+# pour `forward_raw` de `nn_eval.c`, un accumulateur scalaire que la
+# réassociation libère ; depuis T35 une décision passe par le noyau PAR LOT de
+# `gn_infer_reference.c`, où la réassociation ne libère rien et gêne
+# l'auto-vectorisation — 27 890 → 9 905 éval/s à largeur 16.
+#
+# Mesuré ici, avec le noyau écrit à la main (Node/V8, 2026-09-02, largeur 16) :
+# 45 666 éval/s sans le drapeau, 48 046 avec — et une décision à 0,3309 s
+# contre 0,3021 s. Il ne rend donc plus qu'environ 8 % là où il en coûtait 280,
+# parce que les intrinsèques ne lui laissent plus rien à réassocier dans le
+# noyau.
+#
+# Et il coûte deux exactitudes, l'une et l'autre mesurées :
+#   — le noyau par lot n'est plus bit à bit contre le chemin scalaire du MÊME
+#     artefact (max|Δ| = 3,3e-07), parce que c'est la RÉFÉRENCE qui bouge ;
+#   — la parité WebAssembly <-> natif reste à 6,4e-07 au lieu de tomber à zéro.
+#
+# Huit pour cent contre le bit à bit : c'est le bit à bit qui gagne. Le drapeau
+# reste défini — `make wasm WASM_EXTRA="$(FP_RELAXED)"` le rend, et
+# `bench-width-wasm-fp` le mesure — mais il n'est plus le défaut.
 FP_RELAXED ?= -fassociative-math -fno-signed-zeros -fno-trapping-math -fno-math-errno
 
-WASM_EXTRA ?= $(FP_RELAXED)
-WASM_FLAGS := -O3 -std=c11 $(WASM_EXTRA) $(INCLUDES) \
+# Le noyau écrit à la main (T84) est le DÉFAUT de la cible WebAssembly, et il
+# l'est SANS CONDITION là où le natif ne peut pas : `gammonnet-simd.wasm`
+# assume déjà SIMD128, donc il n'y a pas de répartition à l'exécution à écrire.
+# La construction scalaire prend la même définition et retombe sur la variante
+# scalaire du noyau (`GN_VEC_LANES 1`), qui est bit à bit elle aussi.
+#
+# `-ffp-contract=off` accompagne obligatoirement : sans lui le compilateur est
+# libre de contracter en FMA des multiplications et des additions écrites
+# séparément — un arrondi au lieu de deux — et le bit à bit tombe. WebAssembly
+# n'a pas de FMA hors `relaxed-simd`, mais le drapeau ne coûte rien et la
+# garantie ne doit pas dépendre d'une extension que le module n'active pas.
+WASM_KERNEL ?= -DGN_KERNEL_INTRINSICS -ffp-contract=off
+
+# La largeur de lot de la cible WebAssembly, tranchée SÉPARÉMENT du natif.
+#
+# T84 a clos la question en natif (largeur 32 conservée : passer à 16 n'y rend
+# que 6,9 %), mais son sixième écart — Chromium, 32 → 16, −11,6 % — était le
+# seul à dépasser le seuil, et il portait sur cette cible-ci. Remesuré ici sur
+# le noyau écrit à la main, l'écart est plus grand encore que ce que T84 lisait.
+# SIMD128 n'a que quatre voies : à largeur 32 la tuile dégénère en 1 ligne × 8
+# vecteurs (une seule chaîne d'accumulation par ligne), à largeur 16 elle vaut
+# 2 lignes × 4 vecteurs — deux chaînes indépendantes, et c'est là tout l'objet
+# du noyau.
+#
+# Le regroupement des 21 lancers reste, et n'a jamais été en cause : un lot de
+# 16 se remplit à 96,5 % PARCE QU'il est groupé ; dégroupé il retomberait vers
+# les 84 % que le portage Go mesure.
+WASM_BATCH ?= -DGN_EVAL_BATCH=16
+
+WASM_EXTRA ?=
+WASM_CFLAGS := -O3 -std=c11 $(WASM_KERNEL) $(WASM_BATCH) $(WASM_EXTRA) $(INCLUDES)
+WASM_FLAGS := $(WASM_CFLAGS) \
   -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node \
   -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 \

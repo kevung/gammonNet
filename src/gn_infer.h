@@ -137,6 +137,24 @@ int gn_evaluate_batch(const GnNetwork *net,
                       float (*probs)[GN_NUM_OUTPUTS]);
 
 /*
+ * The same, entered from FEATURES the caller already holds, laid out row-major
+ * (`count` vectors of GN_NUM_FEATURES).
+ *
+ * BIT-IDENTICAL to calling gn_evaluate_features once per vector, for the same
+ * reason gn_evaluate_batch is: the kernel parallelises over positions, not over
+ * the summation. The chunks that do not fill GN_EVAL_BATCH lanes go through the
+ * scalar door instead of forwarding a mostly empty batch — which is only
+ * allowed BECAUSE the two agree bit for bit.
+ *
+ * T91 added it for `gnw_evaluate_batch`, the WebAssembly export that gammonGo's
+ * `analyze()` calls with hundreds of vectors at a time and that used to loop
+ * the scalar path — the loop whose single accumulator was the whole reason the
+ * artifact carried `-fassociative-math`.
+ */
+int gn_evaluate_features_batch(const GnNetwork *net, const float *features,
+                               int count, float (*probs)[GN_NUM_OUTPUTS]);
+
+/*
  * Which batch kernel this build compiled ("auto-vectorisé", or the hand-written
  * one with its target and its row x vector tile), and at what width.
  *
