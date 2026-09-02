@@ -1710,6 +1710,61 @@ cher et qui attend T70.
 **Machine** — la machine de calcul. **Coût** — *hypothèse* : ×2 à ×5 les étiquettes de T81,
 démarrage à chaud depuis ses poids.
 
+## T83 — Brancher la fin de partie apprise, et mesurer ce qu'elle coûte
+
+> **La fiche que T78 avait annoncée, et que T80 rend complète.** T78 a distillé la colonne
+> cubeless, T80 les trois cubeful. Aucune des deux n'est consultée par quoi que ce soit : ni
+> `gn_search`, ni le module WebAssembly. Un réseau mesuré et jamais branché ne joue aucune partie.
+
+**Objectif** — que le moteur consulte le réseau de fin de partie **là où la table exacte n'est pas
+installée**, et que ce que le branchement coûte et rapporte soit mesuré, pas déduit.
+
+**Ce qui rend ce branchement simple, et qu'il faut vérifier plutôt que croire** — le chemin existe
+déjà. `gn_bearoff_probs` convertit l'équité cubeless en cinq probabilités, et il **teste** que
+personne n'a de gammon possible (les deux camps ont sorti au moins un pion) au lieu de le supposer.
+Le réseau rend exactement les quatre mêmes colonnes que `gn_bearoff_equities`. Le branchement est
+donc une **seconde source** derrière la même frontière, pas une couture nouvelle.
+
+**Périmètre**
+- `src/gn_bearoff_net.c` / `.h` : lecteur du format `GNBONET1` (l'en-tête, le code appris par
+  disposition, les couches), le rang combinatoire d'une disposition, et la passe avant. Une
+  implémentation C d'un domaine déjà écrit en Python est **deux choses qui peuvent diverger** —
+  c'est pourquoi la parité au bit près avec `python/gammonnet/bearoff_net.py` est un critère et
+  non un souhait.
+- Le point d'accroche, dans l'ordre : **table exacte** si installée, **réseau de fin de partie**
+  s'il est chargé, puis le cache et le grand réseau. La table garde la priorité partout où elle
+  existe : elle est exacte, il n'y a rien à gagner à lui préférer une régression.
+- Le même ordre pour le chemin cubeful (`gn_search.c`, la lecture des quatre colonnes).
+- WebAssembly : le réseau embarqué dans le module, et la taille du `.wasm` **avant et après**.
+
+**Critères d'acceptation**
+- **Parité C ↔ Python** sur au moins 10 000 positions du domaine, à la tolérance de float32 —
+  et l'écart maximal est publié, pas seulement « conforme ».
+- **Rien ne change quand la table est là.** Avec la table installée, le corpus de non-régression
+  de T12 rejoue à l'identique : le branchement ne doit pas déplacer une seule décision là où
+  l'exactitude était déjà atteinte.
+- **La queue est battue sans la table.** Le pire cas de fin de partie, aujourd'hui 0,0170 au
+  2-ply sans table (T79), passe sous le repère de GNU Backgammon (0,0023). Mesuré par le banc de
+  T79, pas déduit de l'erreur de régression.
+- **La vitesse est mesurée, aux deux bouts.** 66 048 MACs remplacent 470 000 sur toute feuille du
+  domaine : le gain en évaluations par seconde est **chronométré**, natif et WebAssembly, machine
+  au repos. Une accélération déduite d'un compte de MACs n'est pas une mesure (règle 3).
+- **Le coût en taille est dit** : octets ajoutés au `.wasm`, et ce que cela fait au temps de
+  premier chargement — la grandeur que DS-09 dit dominante dans un navigateur.
+- Le verdict d'équité par partie est celui de T79 (0,000073 [0,000039 ; 0,000107], soit 0,00083
+  PR) : **le branchement ne se justifie pas par la moyenne**, il se justifie par la queue et par
+  la vitesse. La fiche le dit d'entrée pour que personne n'aille chercher un gain moyen qui
+  n'existe pas.
+
+**Exclut** — le videau en match (la table est money) ; le remplacement de la table exacte en
+natif ; toute reprise de l'entraînement, qui appartient à T78 et T80.
+
+**Dépendances** — T80 doit avoir rendu son contrôle à une seule variable : brancher un réseau dont
+la colonne cubeless est peut-être dégradée par une interférence entre têtes reviendrait à publier
+le défaut avant de l'avoir compris.
+
+---
+
 # Phase 5 — Publication
 
 ## T50 — Publier l'artefact
