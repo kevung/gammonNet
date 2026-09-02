@@ -18,6 +18,8 @@ Phase 4 — Modèle propre au projet  T40 T41 T42                  ← CONDITION
 Phase 5 — Publication              T50
 Phase 7 — Dépasser                 T70 T71 T72 T73              ← CHOISIE le 2026-08-27
                                    T74 T75 T76 T77              (programme du plan de recherche)
+                                   T78 T79 T80 T81 T82 T83      (la fin de partie, apprise)
+Phase 8 — Vitesse pour l'appelant  T84 T85 T86 T87 T88 T89 T90  ← OUVERTE le 2026-09-02
 ```
 
 **Chemin critique** :
@@ -1762,6 +1764,298 @@ natif ; toute reprise de l'entraînement, qui appartient à T78 et T80.
 **Dépendances** — T80 doit avoir rendu son contrôle à une seule variable : brancher un réseau dont
 la colonne cubeless est peut-être dégradée par une interférence entre têtes reviendrait à publier
 le défaut avant de l'avoir compris.
+
+---
+
+# Phase 8 — Aller plus vite là où l'utilisateur paie *(ouverte le 2026-09-02)*
+
+> **Le fait qui ouvre la phase.** Une décision 2-ply `(0,1,3)` `k=12` coûte **~2 689 ms** dans
+> Firefox sur un worker (T21b) et **0,36 s** en natif ici. Le portage Go de blunderDB fait la
+> même décision en **0,277 s**. C'est l'utilisateur de gammonGo qui paie l'écart.
+>
+> **Les mesures d'entrée sont prises** :
+> [`docs/mesures/2026-09-02-optimisation-mesures-d-entree.md`](docs/mesures/2026-09-02-optimisation-mesures-d-entree.md).
+> **Le raisonnement, l'ordre et la discipline** :
+> [`docs/etudes/2026-09-02-optimiser-pour-le-navigateur.md`](docs/etudes/2026-09-02-optimiser-pour-le-navigateur.md).
+>
+> **La règle de la phase, décidée le 2026-09-02** : les optimisations **conceptuelles** — la
+> forme de l'algorithme — vivent ici, et les consommateurs (portage Go de blunderDB, module
+> WebAssembly, `gammonnet serve`) les reprennent. Les optimisations **d'implémentation** —
+> assembleur AVX2, intrinsèques SIMD128, ce que `gcc` vectorise — sont irréductiblement par
+> cible. **Chaque fiche dit laquelle des deux elle touche**, et ce que les consommateurs
+> reprennent. Une fiche qui améliore le C sans le dire laisse les trois implémentations diverger.
+>
+> **Trois disciplines, non négociables** : un poste par commit, avec son chiffre dans le
+> message ; **un poste sans gain mesurable n'est pas livré** — chaque fiche porte son seuil
+> d'abandon *avant* que le code existe ; **rien ne déplace une sortie** — T12 et
+> `verify/reference.bin` (1e-6) sont les juges, et le bit à bit là où il est atteignable.
+
+## T86 — La surface de l'artefact WebAssembly : un worker qui expose la recherche
+
+> **Couche : conceptuelle + artefact.** Elle ne fait gagner **aucune microseconde**, et elle est
+> première : sans elle, T85 et T87 améliorent un code que le navigateur n'appelle pas.
+
+**Le constat qui l'ouvre.** gammonGo réécrit du moteur en TypeScript, et ses propres commentaires
+disent pourquoi : `wasm/worker.mjs` *« only relays raw evaluateBatch chunks »*. Vérifié — son
+protocole est `init` / `evaluate` / `stop`. **Les points d'entrée de la recherche sont pourtant
+exportés du module** (`_gnw_best_play`, `_gnw_rank_plays`, `_gnw_cube_decide`) : le manque est
+dans le worker, pas dans `EXPORTED_FUNCTIONS`.
+
+**Objectif** — qu'un consommateur navigateur obtienne du module ce que le C et le serveur Python
+donnent déjà, et cesse de le réécrire à côté.
+
+**Périmètre**
+- **Le worker relaie la recherche** : `bestPlay`, `rankPlays`, `cubeDecision`, avec annulation
+  entre nœuds comme `evaluate` l'a déjà. Puis `wasm/pool.mjs` distribue **des décisions**, pas
+  seulement des lots de caractéristiques.
+- **Le codec de position exporté.** Le C a `gn_position_id`, `gn_position_from_id`,
+  `gn_position_from_xgid`, `gn_xgid` ; aucun n'est enveloppé dans `wasm/gn_wasm.c`. gammonGo a
+  **deviné** le sien puis l'a validé empiriquement à 5,85e-9 — c'est la seule des trois écritures
+  de ce codec qui ne descende pas d'une référence.
+- **La notation de coup.** Elle n'existe **nulle part en C** : il n'y a rien à exporter, il y a
+  quelque chose à écrire, et c'est la frontière du dépôt qui le justifie (une position entre, son
+  évaluation sort — et le nom du coup fait partie de la réponse, pas de l'interface utilisateur).
+- **La sémantique du videau, documentée dans l'API** plutôt que rétro-conçue chez l'appelant.
+- **Un défaut à corriger, confirmé** : `wasm/gammonnet.mjs` expose `efficiency = 0.566` en défaut
+  de `rankPlays` **et** de `cubeDecision`, dont le défaut d'`owner` est `0` = `GN_CUBE_CENTRED`.
+  Or 0,566 est l'efficacité **possédée** ; celle du centré est 0,688
+  (`docs/mesures/2026-08-07-T34-ajustement.md` : 0,688 / 0,566 / 0,687). Le C n'a **aucun**
+  défaut, il exige le paramètre ; le Python indexe le triplet mesuré par l'état de possession.
+  Le seul défaut du dépôt est le mauvais, et il est dans l'artefact distribué. **Le remède n'est
+  pas de changer 0,566 en 0,688** : c'est de faire ce que le C fait — pas de défaut, ou un défaut
+  **indexé par `owner`**.
+- **Une source unique pour les formes canoniques** (`prune_k = 12`, filtre `(0,1,3)`,
+  profondeur 2), aujourd'hui recopiées quatre fois. Le `PRUNE_K_FAST = 3` que gammonGo introduit
+  sans mesure amont en a une ici : `k=3` perd +0,00389 d'équité par décision
+  [+0,00232 ; +0,00585] contre +0,00023 pour `k=12` (T3A).
+
+**Critères d'acceptation**
+- **T21b est rejoué sur cette machine d'abord.** Toute la phase projette depuis un relevé du
+  2026-08-27 fait sur `melbaa` ; sans un point de comparaison local, aucun gain navigateur n'est
+  mesurable. C'est la première commande de la fiche, pas la dernière.
+- Un exemple de bout en bout — une décision complète depuis un Position ID, dans un worker,
+  **sans une ligne de recherche en JavaScript** — tourne dans `wasm/decision.html`.
+- **Le coût en taille est mesuré, point d'entrée par point d'entrée** : octets ajoutés au
+  `.wasm` (repère : 92 483 o en SIMD aujourd'hui, poids float16 1 059 640 o) et effet sur le
+  temps de premier chargement. Seuil : au-delà de **+25 %** sur le `.wasm`, livrer par étapes et
+  publier ce que chaque point d'entrée coûte.
+- La parité `wasm-parity` et `wasm-api` passent inchangées ; le codec exporté est vérifié contre
+  `tests/` côté C, pas contre l'écriture TypeScript qu'il remplace.
+
+**Ce que les consommateurs reprennent** — gammonGo supprime `eval-worker.ts`, `match-analysis.ts`,
+`position-id.ts` et `move-notation.ts` au profit du pool amont ; blunderDB n'est pas concerné (il
+appelle le C par cgo) mais hérite de la notation de coup si elle est écrite en C.
+
+**Exclut** — toute optimisation de vitesse. Cette fiche déplace une frontière, elle n'accélère
+rien.
+
+## T85 — Valuer le videau par lot sur les candidats
+
+> **Couche : conceptuelle.** Le seul gros poste ouvert, et le seul que le portage Go dit
+> explicitement n'avoir **pas** tenté.
+
+**La mesure d'entrée.** `bench/bench_cube.c`, 2 000 distributions réelles :
+`gn_cube_value` — l'appel que la recherche fait **une fois par nœud** (`gn_search.c:289`) —
+coûte **14 ns en money** et **2 029 ns au score** (5-away/5-away). À `k=12` une décision évalue
+43 218 nœuds :
+
+```
+43 218 × 2 029 ns ≈ 88 ms,  soit ~20-25 % d'une décision AU SCORE
+```
+
+Et la décomposition du portage Go, qui porte sur la **structure** de `gn_cube.c` donc vaut ici :
+`level_solve` **83 %** de `build_levels`, les consultations de la table d'équité **11 %**.
+
+**Objectif** — payer les 60 bissections d'un candidat en même temps que celles des autres.
+
+**Périmètre** — Les bissections de chaque candidat sont **indépendantes** : même figure que le
+noyau réseau, vectorisation sur la dimension des candidats, chaque voie gardant **sa propre
+séquence**. La largeur fixe et le nombre d'itérations fixe sont ici les mêmes dispositifs
+d'exactitude que dans `forward_batch`.
+
+**Ce qui est FERMÉ et ne doit pas être rouvert** — précalculer et dédupliquer les consultations
+de la table d'équité de match. Le portage Go l'a écrit, mesuré à **1 %** (2 106 contre 2 126 ns,
+sous son plancher de bruit), et **annulé**. C'est 11 % d'un poste ; la mesure dit que cela ne se
+voit pas.
+
+**Critères d'acceptation**
+- **La mesure d'entrée est complétée avant la première ligne de code** : les 88 ms sont un
+  *produit* de deux mesures, pas un chronométrage. `bench_decision` doit savoir activer
+  `use_cube` et `use_match`, et le nombre de nœuds portant réellement une valuation doit être
+  compté.
+- **Bit à bit.** Le corpus T12 et `verify/reference.bin` rejouent à l'identique, et l'égalité par
+  candidat est tenue par un test au même titre que `tests/test_batch.py` tient celle du réseau.
+- Le gain est mesuré **au score** et **en money** séparément : en money le poste vaut 0,6 ms par
+  décision, donc rien, et un gain global moyenné cacherait ce fait.
+- **Seuil d'abandon : < 5 %** sur une décision au score ⇒ la branche est annulée et la mesure
+  publiée, comme le portage Go a publié la sienne.
+
+**Ce que les consommateurs reprennent** — la **forme** : le portage Go de blunderDB porte la même
+vectorisation sur candidats dans son `cube.go` ; le module WebAssembly l'obtient gratuitement
+puisque c'est le même C. `blunderDB/CLAUDE.md` impose déjà que tout changement de `cube.go`
+atterrisse d'abord ici et dans `docs/specs/t34-videau-spec.md` §2 : cette fiche est le cas d'usage
+de cette règle.
+
+## T88 — Le déterminisme du classement : les ex æquo, et ce que la parité ne voit pas
+
+> **Couche : conceptuelle (exactitude).** Zéro vitesse. Elle ferme un mode de divergence
+> silencieuse entre les trois cibles.
+
+**Le constat.** `compare_candidates` (`gn_search.c:366`) ne compare **que l'équité**, et `qsort`
+n'est pas stable. L'ordre de deux candidats de même équité dépend donc de l'implémentation de
+`qsort` : la glibc en natif, celle d'Emscripten en WebAssembly, une troisième dans le portage Go.
+**Le harnais de parité compare des équités à 1e-6 : la permutation lui est invisible**, et elle
+change le coup annoncé.
+
+**Objectif** — que le coup annoncé soit une fonction de la position, du jet et des poids, et de
+rien d'autre.
+
+**Périmètre** — Une clé de départage **totale et portable** (l'ordre de génération des coups, qui
+est déterministe), ou un tri stable écrit ici plutôt qu'emprunté à la libc. Et un cas de
+non-régression qui **contient** des ex æquo exacts, sans quoi le harnais continuera de ne rien
+voir.
+
+**Critères d'acceptation**
+- Le taux réel d'ex æquo exacts est **mesuré** sur le corpus T12 et publié. S'il est nul en
+  pratique, la fiche se ferme sur ce chiffre — c'est une issue acceptable, pas un échec.
+- Un corpus d'ex æquo est ajouté au harnais de parité, et natif ↔ WebAssembly rendent le **même
+  ordre**, pas seulement les mêmes équités.
+- Le coût est mesuré : la mesure d'entrée dit que le tri pèse 0,80–0,90 ms par décision, soit
+  0,16 % — un tri stable ne doit pas coûter plus que ce que le tri actuel coûte.
+
+**Ce que les consommateurs reprennent** — la règle de départage, à l'identique. C'est le type même
+de la décision conceptuelle : trois implémentations qui départagent différemment sont trois
+moteurs différents.
+
+## T84 — La largeur de lot, tranchée par des intrinsèques et non par le compilateur
+
+> **Couche : conceptuelle (faut-il regrouper les 21 lancers ?) ET implémentation (le noyau, par
+> cible).** La question n'est pas « 8 ou 32 » : c'est *le regroupement des 21 lancers gagne-t-il
+> encore sa complexité si le noyau est écrit à la main ?*
+
+**Ce que la mesure d'entrée a déjà tranché, et qui déplace la question.** Le regroupement remplit
+le grand réseau à **93,6 %** à `k=12` — mieux que les 84,3 % que le portage Go obtient à
+largeur 8 **sans** regrouper. Le remplissage n'est donc pas l'argument. Deux autres faits :
+
+- Le **petit** réseau consomme **76,6 %** des voies calculées à `k=12` et **93,5 %** à `k=3`,
+  avec le plus mauvais remplissage (74,4 %, 65,8 %). Fusionner ses lots a déjà été mesuré à
+  0,7–0,9 % (T3A) : ce n'est pas son remplissage qui compte, c'est que sa voie est bon marché.
+- Un balayage recompilé de `GN_EVAL_BATCH` donne ici 16 devant 32 de 7 % — **non concluant** :
+  un seul relevé par largeur, machine dérivant de 20 %, et l'inverse de ce que T3A avait mesuré
+  sans élagage.
+
+**Le piège, nommé par T3A et confirmé** : `gcc` ne vectorise la boucle chaude qu'à partir de 24.
+**Tester une largeur de 8 sans écrire d'intrinsèques revient à tomber de la falaise**, pas à
+mesurer le matériel. En WebAssembly l'enjeu est plus grand : SIMD128 n'a que **quatre** voies
+flottantes.
+
+**Objectif** — répondre à la question par une mesure à noyau écrit à la main, natif et Wasm.
+
+**Périmètre** — Un noyau en intrinsèques (AVX2 natif, SIMD128 Wasm) à largeur paramétrable,
+mesuré à 8, 16 et 32, contre le noyau actuel. Le balayage d'entrée est refait au repos, plusieurs
+relevés par largeur, `-fopt-info-vec` relu à chaque fois.
+
+**Critères d'acceptation**
+- Le débit crête est mesuré aux trois largeurs, **natif et navigateur**, machine au repos, et le
+  bit à bit tient à chacune (`bench_batch` le fait déjà : `max|Δ| = 0,000e+00`).
+- Le verdict sur le **regroupement** est explicite : conservé, ou supprimé avec la mesure qui
+  l'autorise. Sa suppression retirerait les trois phases de `rank_plays`
+  (`gn_search.c:568-849`) — c'est une simplification réelle, pas seulement une vitesse.
+- **Seuil d'abandon : < 10 %** à noyau écrit à la main ⇒ la largeur 32 et le regroupement restent,
+  et la question est **close pour de bon**, comme T3A avait clos le réglage de `GN_EVAL_BATCH`.
+
+**Dépendances** — à mener **avant** T73, qui réécrit ce noyau de toute façon ; les deux fiches se
+recouvrent et T73 hérite du verdict de largeur.
+
+## T87 — L'ordonnancement par nombre de tâches, et le nombre utile de workers
+
+> **Couche : conceptuelle.** Elle vaut pour `wasm/pool.mjs`, pour le `ProcessPoolExecutor` de
+> `python/gammonnet/arena.py`, et pour tout ordonnanceur qu'un consommateur écrirait.
+
+**Deux faits mesurés, et le premier est contre-intuitif.**
+
+**« Les doubles sont les lancers coûteux » est faux.** Les doubles génèrent 1 800 coups contre
+168, mais l'élagage n'en garde que `k` et la position qu'ils laissent est plus contrainte :
+l'écart réel entre lancers n'est que de **1,54×** en évaluations. Trier par « doubles d'abord »
+n'apporte rien et peut nuire. Ce qui a payé dans le portage Go, c'est le **nombre de tâches** :
+aplatir la frontière pour présenter 63 tâches en une barrière au lieu de 21 par barrière a fait
+tomber l'oisiveté de ~15 % à **3-5 %** ; un tri par coût décroissant correct ne vaut que ~5 %.
+
+**Le parallélisme est borné par les cœurs physiques**, confirmé en C ici : ×4,23 sur 8 processus
+(8 cœurs physiques), et le SMT n'ajoute que **19 %** en doublant les processus. Or chaque worker
+recharge sa propre copie des **1,07 Mo** de poids float16 (pas de `SharedArrayBuffer` sur un
+hébergeur statique) : huit workers ⇒ ~8,6 Mo résidents pour ×4,2.
+
+**Objectif** — que le pool présente le bon **nombre** de tâches, et le bon nombre de workers.
+
+**Périmètre** — `wasm/pool.mjs` découpe aujourd'hui en **exactement `size` tâches**
+(`per = ceil(count / slots)`, une par worker) : l'oisiveté y est exactement le déséquilibre du
+découpage initial. Le remède est le nombre de tâches, pas le tri. Si un tri doit exister, sa clé
+est le **nombre d'évaluations** — déterministe et portable —, jamais un temps mesuré ni un proxy
+sur le type de lancer.
+
+**Critères d'acceptation**
+- L'oisiveté est **instrumentée** avant d'être corrigée, dans le navigateur, sur un match complet.
+- Le nombre utile de workers est mesuré sur au moins deux machines de classes différentes, et
+  l'API cesse de laisser croire que `navigator.hardwareConcurrency` est la réponse.
+- **Seuil d'abandon : < 5 %** de temps mural sur un match complet ⇒ non livré.
+
+**Dépendances** — T86. Tant que le pool ne distribue que des lots de caractéristiques, il ne sert
+pas la décision qui coûte 2,7 s.
+
+**Ce que les consommateurs reprennent** — la règle (« le nombre de tâches, pas le tri ; la clé est
+le nombre d'évaluations ») et le pool lui-même, une fois T86 faite.
+
+## T89 — La sparsité, mesurée sur le petit réseau
+
+> **Couche : conceptuelle.** Une **mesure** avant d'être un chantier.
+
+**L'état.** La sparsité de la couche 1 est livrée depuis le 2026-08-26 et vaut **×1,16** — mesuré
+A/B dos à dos ici, reproductible à 0,3 %. Le portage Go mesure 6 % pour la même transformation et
+impute l'écart au coût de sa compaction : **l'hypothèse est confirmée, c'était un artefact de Go**.
+
+Mais ce ×1,16 est celui des **deux réseaux ensemble**. Le registre attend **78 %** sur le petit,
+dont la couche 1 pèse 97,5 % des MACs — et le petit consomme 76,6 à 93,5 % des voies calculées.
+Personne n'a séparé les deux, ni ici, ni dans le portage Go.
+
+**Objectif** — savoir ce que la sparsité rend sur chaque réseau, et si l'union se comporte
+différemment sur les fratries que le petit réseau voit.
+
+**Périmètre** — Un banc de sparsité **par réseau** et **par type de lot**. Le portage Go a dû
+ajouter un banc « fratrie » distinct pour obtenir un chiffre honnête : sur huit plateaux **sans
+rapport** l'union monte à ~64 entrées sur 196 et le gain devient une **perte de 9 %** ; sur une
+fratrie elle vaut ~32. `bench/bench_batch.c` évalue des positions quelconques et mesure donc
+autre chose que ce que la recherche fait — cette distinction est à porter ici.
+
+**Critères d'acceptation**
+- Le gain est publié **par réseau**, et le registre du 2026-08-26 est corrigé ou confirmé sur son
+  chiffre de 78 %.
+- Le banc distingue « fratrie » et « positions quelconques », et l'écart entre les deux est publié.
+- **Seuil d'abandon : < 5 %** de gain supplémentaire sur une décision ⇒ le chiffre de 78 % est
+  **retiré** du registre, et la fiche se ferme sur ce constat.
+
+## T90 — L'arrondi des tuiles, et les formes canoniques en un seul endroit
+
+> **Couche : implémentation + artefact.** Zéro gain. Un garde-fou posé **avant** que T73 et T84
+> déplacent ce qu'il garde.
+
+**Le piège, importé du portage Go.** Il a écrit `outDim & ^(tile-1)` pour arrondir au multiple
+inférieur — correct **seulement pour une puissance de deux**. À tuile 6, la boucle lisait une
+tuile de poids **hors matrice**. Les tests ne l'ont pas vu parce que la tuile valait 4 quand ils
+ont été écrits. `GN_EVAL_BATCH` vaut 32 ici, donc le code actuel est sauf.
+
+**Objectif** — que le jour où une largeur cesse d'être une puissance de deux, la chose se voie.
+
+**Périmètre**
+- Une assertion de compilation sur toute largeur ou tuile supposée puissance de deux, et un
+  arrondi qui ne suppose rien là où la supposition n'est pas garantie.
+- Un test qui exerce une tuile **non** puissance de deux, sous ASan, plutôt qu'un commentaire.
+- Les formes canoniques (`prune_k = 12`, filtre `(0,1,3)`, profondeur 2), aujourd'hui recopiées
+  dans quatre dépôts, exposées par l'API comme des **valeurs**, avec leur mesure de qualité
+  attachée (T3A : `k=12` perd +0,00023 d'équité par décision, `k=3` +0,00389).
+
+**Critères d'acceptation** — la suite passe sous ASan avec une tuile de 6 ; aucun consommateur
+n'a besoin de recopier une constante pour obtenir le préréglage « normal ».
 
 ---
 
