@@ -1583,6 +1583,24 @@ sur une décision de seuil ; et son domaine est le plus discrétisé du jeu. T80
 d'existence** — « un réseau *peut* battre Janowski sur une décision de videau » — pas un pronostic
 pour le contact ni pour le match.
 
+**Résultat — rendu le 2026-09-02**, fiche
+[`docs/mesures/2026-09-02-T80-videau-exact-distille.md`](docs/mesures/2026-09-02-T80-videau-exact-distille.md).
+
+**La preuve d'existence est faite.** Sur l'échantillon de la fiche (2 000 positions, graine
+20260808, taux publiés reproduits exactement d'abord), l'équité perdue par décision de videau
+passe de 0,000723 à **0,000003** au videau possédé (facteur 241) et de 0,001352 à **0,000001** au
+centré (facteur 1 352) ; le pire cas tombe de 0,2778 à 0,0053 et 0,0012 ; l'accord avec la
+décision exacte atteint 99,9 % et **100,0 %**. Quatre sorties coûtent **0,6 % de plus** qu'une
+seule (66 048 MACs contre 65 664), pas un second réseau.
+
+**Deux réserves, dites plutôt que noyées.** À 20 000 positions le pire cas au videau **centré**
+remonte à 0,0555 et **dépasse le seuil de 0,05** — un critère sur deux manqué de 11 %. Et la
+colonne cubeless est dégradée au banc de T78 (pire cas 0,0014 → 0,0094, douze décisions au-delà
+du repère gnubg contre zéro) : la règle de diagnostic nomme « interférence entre têtes », mais
+**la cause n'est pas établie** — l'étage d'affinage par décision de coup n'a pas tourné faute de
+processeurs libres, et deux choses ont donc changé au lieu d'une. Le contrôle à une seule variable
+est la suite immédiate.
+
 **Ce que cette fiche offre à l'axe « videau appris » (T81/T82)** — une **vérité de terrain sans
 variance**. T81 demande si le videau se réduit aux cinq probabilités, et le juge sur des
 étiquettes de rollout, avec leur bruit. Dans le domaine de la table, la réponse exacte existe :

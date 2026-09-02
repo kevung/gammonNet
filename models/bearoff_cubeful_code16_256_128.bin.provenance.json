@@ -1,0 +1,147 @@
+{
+  "task": "T78",
+  "written": "2026-09-02T09:36:06+00:00",
+  "architecture": [
+    128,
+    256,
+    128,
+    4
+  ],
+  "parameters": 264452,
+  "macs": 66048,
+  "feature_version": 1,
+  "outputs": 4,
+  "output": "tanh",
+  "embedding": 16,
+  "matrix": {
+    "path": "build/ts6x11_cubeful.u16",
+    "sha256": "115bb65fc2f2f50d85fc405a6bfd629f33628e8e928c8eb07b06ebac15c080c5"
+  },
+  "training": {
+    "steps": 40000,
+    "batch": 16384,
+    "lr": 0.003,
+    "seed": 20260828,
+    "device": "cuda",
+    "threads": 16,
+    "mine_rounds": 3,
+    "mine_steps": 4000,
+    "mine_keep": 1000000,
+    "mine_mix": 0.5,
+    "decision_corpus": "",
+    "decision_steps": 0,
+    "margin": 0.002,
+    "anchor": 1.0,
+    "cube_steps": 12000,
+    "cube_batch": 8192,
+    "cube_lr": 0.0002,
+    "cube_margin": 0.002
+  },
+  "exhaustive_error": {
+    "after_regression": {
+      "pairs": 153140625,
+      "mean_abs": 0.0009591835171773767,
+      "rms": 0.001319267596678855,
+      "worst_abs": 0.07864958047866821,
+      "worst_at": [
+        11,
+        11
+      ],
+      "above_0.01": 47087,
+      "guaranteed_decision_loss": 0.15729916095733643,
+      "columns": {
+        "cubeless": {
+          "mean_abs": 0.0009591835171773767,
+          "rms": 0.001319267596678855,
+          "worst_abs": 0.07864958047866821
+        },
+        "owned": {
+          "mean_abs": 0.0011759418825371972,
+          "rms": 0.0017000450191529503,
+          "worst_abs": 0.08574771881103516
+        },
+        "centered": {
+          "mean_abs": 0.0014111818354442865,
+          "rms": 0.0020921714827688434,
+          "worst_abs": 0.08983057737350464
+        },
+        "opponent_owns": {
+          "mean_abs": 0.0012698211375363883,
+          "rms": 0.001864483953657107,
+          "worst_abs": 0.09967732429504395
+        }
+      }
+    },
+    "after_mining": {
+      "pairs": 153140625,
+      "mean_abs": 0.0012264730367715986,
+      "rms": 0.0016278388913781652,
+      "worst_abs": 0.03735071420669556,
+      "worst_at": [
+        130,
+        16
+      ],
+      "above_0.01": 18281,
+      "guaranteed_decision_loss": 0.07470142841339111,
+      "columns": {
+        "cubeless": {
+          "mean_abs": 0.0012264730367715986,
+          "rms": 0.0016278388913781652,
+          "worst_abs": 0.03735071420669556
+        },
+        "owned": {
+          "mean_abs": 0.0014726474046351994,
+          "rms": 0.0020700252919686572,
+          "worst_abs": 0.04123944044113159
+        },
+        "centered": {
+          "mean_abs": 0.0017733288691917399,
+          "rms": 0.0025468250743969703,
+          "worst_abs": 0.04809153079986572
+        },
+        "opponent_owns": {
+          "mean_abs": 0.0016092696890907378,
+          "rms": 0.0022516353520487596,
+          "worst_abs": 0.04396003484725952
+        }
+      }
+    },
+    "after_decisions": null,
+    "after_cube": {
+      "pairs": 153140625,
+      "mean_abs": 0.0009267903666757537,
+      "rms": 0.0012510266408240973,
+      "worst_abs": 0.060753703117370605,
+      "worst_at": [
+        5,
+        8
+      ],
+      "above_0.01": 18314,
+      "guaranteed_decision_loss": 0.12150740623474121,
+      "columns": {
+        "cubeless": {
+          "mean_abs": 0.0009267903666757537,
+          "rms": 0.0012510266408240973,
+          "worst_abs": 0.060753703117370605
+        },
+        "owned": {
+          "mean_abs": 0.0011377483745007087,
+          "rms": 0.0016084474409347436,
+          "worst_abs": 0.05761516094207764
+        },
+        "centered": {
+          "mean_abs": 0.0013539755793862314,
+          "rms": 0.0019537894157004515,
+          "worst_abs": 0.05649334192276001
+        },
+        "opponent_owns": {
+          "mean_abs": 0.0012150528563332186,
+          "rms": 0.001738672416535225,
+          "worst_abs": 0.056153297424316406
+        }
+      }
+    }
+  },
+  "weights_sha256": "94554c257856fd809e45441d770f8f94f78495268e246940ec6e232c327b5885",
+  "minutes": 7.3798326092830395
+}

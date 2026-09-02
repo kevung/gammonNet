@@ -88,6 +88,12 @@ def distilled_choice(net: BearoffNet, position, plays):
         # `result.turn` est l'adversaire : ce que la position vaut pour lui,
         # négué, est ce qu'elle vaut pour celui qui vient de jouer.
         batch = -net.equities_from_counts(np.array(mine), np.array(theirs))
+        # Un réseau à quatre sorties (T80) rend `(N, 4)` : cubeless, puis les
+        # trois cubeful. Le classement des coups ne lit QUE la cubeless — c'est
+        # exactement la comparaison que T80 doit soutenir contre le réseau à une
+        # sortie de T78, sur le même banc et sans lui laisser d'autre colonne.
+        if batch.ndim == 2:
+            batch = batch[:, 0]
         for slot, value in zip(slots, batch):
             values[slot] = float(value)
 

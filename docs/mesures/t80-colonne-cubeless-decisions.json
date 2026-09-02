@@ -1,0 +1,30 @@
+{
+  "task": "T78",
+  "seed": 20260806,
+  "decisions": 8000,
+  "network": {
+    "path": "models/bearoff_cubeful_code16_256_128.bin",
+    "sizes": [
+      128,
+      256,
+      128,
+      4
+    ],
+    "parameters": 264452,
+    "macs": 66048,
+    "bytes": 1057856
+  },
+  "rows": [
+    {
+      "engine": "bearoff-net",
+      "decisions": 8000,
+      "agreement": 0.98575,
+      "mean_loss": 1.1791409170672146e-05,
+      "mean_loss_when_wrong": 0.0008274673102226067,
+      "p99": 0.00012207217517357094,
+      "p999": 0.0029299458304722996,
+      "worst_loss": 0.009430075532158355,
+      "above_gnubg_worst": 12
+    }
+  ]
+}
