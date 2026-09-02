@@ -210,6 +210,17 @@ def test_parallel_workers_change_nothing():
     # et l'ordonnancement n'aurait rien à déplacer.
     assert serial.ppg != 0.0
 
+    # Et le NOMBRE DE TÂCHES ne déplace rien non plus (T87) : c'est la
+    # condition pour qu'on puisse en changer sans redouter une mesure de force
+    # différente. Les issues sont réassemblées dans l'ordre des indices, et
+    # chaque partie tire ses dés du couple (graine, indice).
+    for grain in (2, 5):
+        finer = play_pair(
+            a, b, pairs=120, base_seed=SEED, workers=4, bootstrap=500,
+            chunks_per_worker=grain,
+        )
+        assert finer == serial, f"{grain} tâches par worker déplacent le résultat"
+
 
 # ── L'intervalle de confiance ────────────────────────────────────────
 
