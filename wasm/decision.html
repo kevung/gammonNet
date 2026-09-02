@@ -188,12 +188,17 @@
     payload.worker = {
       ms: Number(workerMs.toFixed(3)),
       resultId: fromWorker.resultId,
+      // Le coup NOMMÉ, et c'est celui que la recherche a choisi : il vient de
+      // `GnPlay.moves`, pas d'une différence de plateaux. Un `resultId` seul
+      // est ambigu — deux appariements peuvent laisser le même plateau.
+      notation: fromWorker.notation,
       equity: fromWorker.equity,
       evaluations: fromWorker.evaluations,
       agreesWithNative: workerAgrees,
     };
     log(`\ndans un worker ${workerMs.toFixed(2).padStart(12)} ` +
         `${String(fromWorker.evaluations).padStart(9)}    ${workerAgrees ? "✅" : "❌"}`);
+    log(`coup retenu : « ${fromWorker.notation} »`);
     log(`décision complète depuis un Position ID, zéro ligne de recherche en JS.`);
 
     // Et l'annulation, dans les conditions réelles. Ce qui est vérifié n'est

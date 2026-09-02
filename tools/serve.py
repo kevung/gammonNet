@@ -76,7 +76,7 @@ from gammonnet.cube import value as cube_value  # noqa: E402
 from gammonnet.infer import Evaluation, Network  # noqa: E402
 from gammonnet.met import MatchState  # noqa: E402
 from gammonnet.rollout import RolloutConfig, rollout as run_rollout  # noqa: E402
-from gammonnet.rules import BAR, OFF, WHITE  # noqa: E402
+from gammonnet.notation import play_notation  # noqa: E402
 from gammonnet.search import Candidate, SearchConfig, search_plays  # noqa: E402
 
 DEFAULT_PIN = ROOT / "models" / "release_pin.json"
@@ -129,32 +129,19 @@ def verify_pinned(path: Path, expected_sha256: str, label: str) -> None:
 # that formula, read for whichever colour is actually on roll, already IS
 # each player's own 1-24 numbering (ace point nearest to bearing off is
 # always 1, the far point is always 24). No second convention to invent.
-
-
-def _point_number(index: int, mover: int) -> str:
-    if index == BAR:
-        return "bar"
-    if index == OFF:
-        return "off"
-    return str(index + 1) if mover == WHITE else str(24 - index)
+#
+# ELLE N'EST PLUS ÉCRITE ICI (T86). Ce fut la seule notation de gammonNet, et
+# le module WebAssembly n'en ayant aucune, un consommateur en a écrit une
+# TROISIÈME par différence de plateaux — dont l'auteur documente qu'elle peut
+# afficher un appariement que la recherche n'a pas choisi. Le remède n'était
+# pas d'en ajouter une quatrième : elle est descendue en C
+# (`src/gn_notation.c`, port exact de ce qui était ici), les deux surfaces
+# publiées l'appellent, et ce module ne fait plus que déléguer.
 
 
 def format_play(candidate: Candidate, mover: int) -> str:
     """Standard notation, e.g. `24/18 13/11(2)` — repeated submoves collapsed."""
-    counts: dict[tuple[str, str], int] = {}
-    order: list[tuple[str, str]] = []
-    for move in candidate.play.moves:
-        pair = (_point_number(move.from_, mover), _point_number(move.to, mover))
-        if pair not in counts:
-            order.append(pair)
-        counts[pair] = counts.get(pair, 0) + 1
-    if not order:
-        return ""
-    parts = []
-    for src, dst in order:
-        n = counts[(src, dst)]
-        parts.append(f"{src}/{dst}" + (f"({n})" if n > 1 else ""))
-    return " ".join(parts)
+    return play_notation(candidate.play, mover)
 
 
 def _probs_json(evaluation: Evaluation) -> dict:

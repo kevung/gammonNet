@@ -13,6 +13,9 @@
 
 const F32 = 4;
 
+/* GN_NOTATION_LENGTH (`src/gn_notation.h`) : la place d'une notation de coup. */
+const NOTATION_LENGTH = 40;
+
 /**
  * A loaded evaluator.
  *
@@ -118,16 +121,18 @@ export class Evaluator {
     const m = this.#module;
     const outPtr = m._malloc(4 * 6 * max);
     const idPtr = m._malloc(15 * max);
+    /* GN_NOTATION_LENGTH, comme les 15 ci-dessus sont GN_POSITION_ID_LENGTH. */
+    const notationPtr = m._malloc(NOTATION_LENGTH * max);
     try {
       const count = m.ccall(
         "gnw_rank_plays", "number",
         ["string", "number", "number", "number", "number", "number", "number",
          "number", "number", "number", "number", "number", "number", "number",
-         "number", "number", "number"],
+         "number", "number", "number", "number"],
         [positionId, turn, d1, d2, ply, filterTop, filterInner,
          useMatch ? 1 : 0, awayOnRoll, awayOpponent, cube, crawford ? 1 : 0,
          cubeOwner === null ? -1 : cubeOwner, efficiency,
-         max, outPtr, idPtr]);
+         max, outPtr, idPtr, notationPtr]);
       if (count < 0) {
         throw new Error("classement refusé : position illisible, ou score " +
                         "hors de la table d'équité de match");
@@ -139,6 +144,16 @@ export class Evaluator {
         out.push({
           equity: m.HEAPF32[base],
           resultId: m.UTF8ToString(idPtr + i * 15),
+          // LE NOM DU COUP, tel que la recherche l'a retenu — « 6/5 8/5 »
+          // sur l'ouverture 3-1. L'ordre des sous-coups est celui que la
+          // recherche a produit, pas un ordre d'affichage.
+          //
+          // `resultId` est un PLATEAU, et un plateau ne dit pas quel pion est
+          // allé où : deux appariements peuvent laisser le même. Le rendre
+          // seul revenait à jeter la moitié de la réponse. Voir
+          // `src/gn_notation.h` ; c'est la MÊME notation que le champ `move`
+          // de `/v1/eval`, et non une seconde.
+          notation: m.UTF8ToString(notationPtr + i * NOTATION_LENGTH),
           // Du côté du joueur qui joue, comme `equity` : `gnw_rank_plays`
           // retourne la distribution une fois pour toutes.
           probs,
@@ -146,7 +161,7 @@ export class Evaluator {
       }
       return out;
     } finally {
-      m._free(outPtr); m._free(idPtr);
+      m._free(outPtr); m._free(idPtr); m._free(notationPtr);
     }
   }
 
@@ -360,18 +375,20 @@ export class Evaluator {
     // une allocation dans la mesure, ce que le chemin par lot évite déjà.
     const idPtr = m._malloc(16);
     const countPtr = m._malloc(4);
+    const notationPtr = m._malloc(NOTATION_LENGTH);
     try {
       const equity = m.ccall(
         "gnw_best_play", "number",
         ["string", "number", "number", "number", "number", "number", "number",
-         "number", "number", "number", "number", "number", "number", "number"],
+         "number", "number", "number", "number", "number", "number", "number",
+         "number"],
         [positionId, turn, d1, d2, ply, filterTop, filterInner,
          match ? 1 : 0,
          match ? match.awayOnRoll : 0,
          match ? match.awayOpponent : 0,
          match ? (match.cube ?? 1) : 1,
          match ? (match.crawford ? 1 : 0) : 0,
-         idPtr, countPtr],
+         idPtr, countPtr, notationPtr],
       );
       if (equity <= -99.0) {
         // Refusé : position illisible, aucun coup légal, ou score hors table.
@@ -381,11 +398,14 @@ export class Evaluator {
       return {
         equity,
         resultId: m.UTF8ToString(idPtr),
+        // Le coup, nommé. Voir `rankPlays` ci-dessus et `src/gn_notation.h`.
+        notation: m.UTF8ToString(notationPtr),
         evaluations: m.HEAP32[countPtr >> 2],
       };
     } finally {
       m._free(idPtr);
       m._free(countPtr);
+      m._free(notationPtr);
     }
   }
 

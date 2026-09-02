@@ -254,6 +254,7 @@ int gnw_has_simd(void)
  */
 
 #include "gn_met.h"
+#include "gn_notation.h"
 #include "gn_position_id.h"
 #include "gn_search.h"
 
@@ -402,7 +403,7 @@ int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
                    int use_match, int away_on_roll, int away_opponent,
                    int cube, int crawford,
                    int cube_owner, double efficiency,
-                   int max_out, float *out, char *out_ids)
+                   int max_out, float *out, char *out_ids, char *out_notations)
 {
     if (g_network == NULL || position_id == NULL || out == NULL
         || max_out <= 0) {
@@ -497,6 +498,14 @@ int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
         if (out_ids != NULL) {
             gn_position_id(&candidates[i].play.result, out_ids + (size_t)i * 15);
         }
+        /* LE NOM DU COUP, et non seulement le plateau qu'il laisse. Le
+         * plateau est ambigu — deux appariements peuvent le produire — donc
+         * le rendre seul revient à jeter la moitié de la réponse : quel coup
+         * la recherche a retenu. Voir `gn_notation.h`. */
+        if (out_notations != NULL) {
+            gn_play_notation(&candidates[i].play, (int)position.turn,
+                             out_notations + (size_t)i * GN_NOTATION_LENGTH);
+        }
     }
     free(candidates);
     return count;
@@ -584,7 +593,7 @@ double gnw_best_play(const char *position_id, int turn, int d1, int d2,
                      int ply, int filter_top, int filter_inner,
                      int use_match, int away_on_roll, int away_opponent,
                      int cube, int crawford,
-                     char *out_id, int *out_evaluations)
+                     char *out_id, int *out_evaluations, char *out_notation)
 {
     if (g_network == NULL || position_id == NULL) {
         return -99.0;
@@ -627,6 +636,9 @@ double gnw_best_play(const char *position_id, int turn, int d1, int d2,
 
     if (out_id != NULL) {
         gn_position_id(&best.play.result, out_id);
+    }
+    if (out_notation != NULL) {
+        gn_play_notation(&best.play, (int)position.turn, out_notation);
     }
     if (out_evaluations != NULL) {
         *out_evaluations = (int)gn_search_evaluations();

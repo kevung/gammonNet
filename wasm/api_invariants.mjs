@@ -192,6 +192,30 @@ check("le XGID de l'ouverture est l'identifiant canonique",
       evaluator.xgid(opening).startsWith("XGID=-b----E-C---eE---c-e----B-"),
       evaluator.xgid(opening));
 
+/* 8. LE COUP EST NOMMÉ, ET C'EST LE COUP QUE LA RECHERCHE A CHOISI (T86).
+ *
+ * `resultId` est un PLATEAU : il ne dit pas quel pion est allé où, et deux
+ * appariements peuvent le produire. La notation vient de `GnPlay.moves`, la
+ * liste ordonnée que la recherche a réellement retenue — ce n'est pas une
+ * présentation ajoutée, c'est une partie de la réponse qu'on cessait de
+ * rendre. Elle est la MÊME que celle du champ `move` de `/v1/eval` : le C
+ * l'écrit une fois (`src/gn_notation.c`) et les deux surfaces l'appellent. */
+check("le meilleur coup d'ouverture 3-1 se nomme", best.notation === "6/5 8/5",
+      `« ${best.notation} »`);
+check("chaque candidat porte sa notation",
+      reference.every((c) => typeof c.notation === "string" && c.notation.length > 0),
+      `${reference.length} candidats`);
+check("rankPlays[0] et bestPlay nomment le même coup",
+      reference[0].notation === best.notation,
+      `« ${reference[0].notation} » / « ${best.notation} »`);
+
+/* Un double regroupe ses sous-coups identiques : `13/8(2)` et non
+ * `13/8 13/8`. C'est la forme que la notation ajoute à une simple paire. */
+const heavy = evaluator.rankPlays(POSITION, 0, 5, 5, { ply: 0, max: 5 });
+check("les sous-coups répétés sont regroupés",
+      heavy.some((c) => /\(\d\)/.test(c.notation)),
+      heavy.map((c) => c.notation).join(" | "));
+
 console.log(failures === 0
   ? "\n✅ invariants de l'API tenus"
   : `\n❌ ${failures} invariant(s) rompu(s)`);
