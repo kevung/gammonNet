@@ -22,6 +22,11 @@
 #include "nn_eval.h"
 
 #include "gn_int8_model.h"
+#include "gn_tile.h"
+
+#ifdef GN_KERNEL_INTRINSICS
+#include "gn_kernel_f32.h"
+#endif
 
 /*
  * Two backends behind one opaque type -- the design `gn_infer.h` already
@@ -36,7 +41,48 @@ struct GnNetwork {
     enum GnNetworkFormat format;
     NNModel model;          /* valid when format == GN_NETWORK_FLOAT */
     GnInt8Model int8_model; /* valid when format == GN_NETWORK_INT8 */
+#ifdef GN_BATCH_SPARSITY_SWITCH
+    /* T89 ONLY. Compiled out of the shipped library, exactly like
+     * GN_BATCH_FILL_STATS: the layer-1 sparsity is not a run-time choice, it
+     * is the kernel. What T89 needs and could not get otherwise is to turn it
+     * off ON ONE NETWORK AT A TIME -- the ×1,16 published on 2026-09-02 is the
+     * two networks together, and the registry's 78 % claim is about the small
+     * one alone. `gn_search.c` holds both networks and hands them to
+     * `gn_evaluate_batch` without saying which is which, so the flag has to
+     * live on the network rather than in a global. */
+    int sparsity;   /* 1 = compact the live columns (the shipped behaviour) */
+    int slot;       /* 0 = big, 1 = small; a label for the counters below */
+#endif
 };
+
+#ifdef GN_BATCH_SPARSITY_SWITCH
+unsigned long gn_sparsity_calls[2] = {0, 0};
+unsigned long gn_sparsity_active[2] = {0, 0};
+unsigned long gn_sparsity_widest[2] = {0, 0};
+
+void gn_batch_sparsity_set(GnNetwork *net, int enabled)
+{
+    if (net != NULL) {
+        net->sparsity = enabled ? 1 : 0;
+    }
+}
+
+void gn_batch_sparsity_label(GnNetwork *net, int slot)
+{
+    if (net != NULL && (slot == 0 || slot == 1)) {
+        net->slot = slot;
+    }
+}
+
+void gn_batch_sparsity_reset(void)
+{
+    for (int i = 0; i < 2; i++) {
+        gn_sparsity_calls[i] = 0;
+        gn_sparsity_active[i] = 0;
+        gn_sparsity_widest[i] = 0;
+    }
+}
+#endif
 
 /* IEEE 754 binary16 -> binary32. Exact : tout demi-flottant fini est un
  * flottant simple, et les deux formats partagent leur arrondi. */
@@ -191,6 +237,10 @@ GnNetwork *gn_network_load(const char *path)
     if (net == NULL) {
         return NULL;
     }
+#ifdef GN_BATCH_SPARSITY_SWITCH
+    net->sparsity = 1;   /* the shipped behaviour is the default */
+    net->slot = 0;
+#endif
 
     if (gn_int8_model_is(path)) {
         net->format = GN_NETWORK_INT8;
@@ -331,6 +381,26 @@ static int batch_kernel_applies(const NNModel *model)
     return 1;
 }
 
+/* Which kernel this build actually compiled, so that no measurement is ever
+ * reported without saying which code produced it. */
+const char *gn_batch_kernel(void)
+{
+#ifdef GN_KERNEL_INTRINSICS
+    /* Built once, not recomputed: the tile is a compile-time constant and the
+     * caller prints it beside every figure. */
+    static char name[64];
+    if (name[0] == '\0') {
+        snprintf(name, sizeof(name), "%s intrinsèques, %d lignes x %d vecteurs de %d",
+                 GN_KERNEL_NAME, GN_KERNEL_ROWS, GN_KERNEL_VECS, GN_VEC_LANES);
+    }
+    return name;
+#else
+    return "auto-vectorisé";
+#endif
+}
+
+int gn_batch_width(void) { return GN_EVAL_BATCH; }
+
 static float batch_relu(float x) { return x > 0.0f ? x : 0.0f; }
 static float batch_sigmoid(float x) { return 1.0f / (1.0f + expf(-x)); }
 
@@ -373,6 +443,68 @@ static void forward_batch(const NNModel *model, const float *in, int live,
         const float *bias = model->bias[L];
         const int is_output = (L == model->num_hidden);
 
+        /* The live source for this layer: compacted at layer 0 when the
+         * sparsity applies, dense otherwise. Choosing it ONCE per layer rather
+         * than per row keeps the two kernels below reading the same thing. */
+        const int packed = (L == 0 && nonzero != NULL);
+        const float *source = packed ? packed_in : current;
+        const int count = packed ? n_nonzero : cols;
+
+#ifdef GN_KERNEL_INTRINSICS
+        /* T84: the hand-written kernel, tiled over GN_KERNEL_ROWS output rows
+         * so that a narrow batch is not one dependent chain of adds. The
+         * summation order per (i, n) is the scalar one, unchanged -- see
+         * gn_kernel_f32.h. */
+        int i = 0;
+        for (; i + GN_KERNEL_ROWS <= rows; i += GN_KERNEL_ROWS) {
+            float acc[GN_KERNEL_ROWS * GN_EVAL_BATCH];
+            for (int r = 0; r < GN_KERNEL_ROWS; r++) {
+                for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                    acc[r * GN_EVAL_BATCH + n] = bias[i + r];
+                }
+            }
+            if (packed) {
+                float packed_w[GN_KERNEL_ROWS * GN_NUM_FEATURES];
+                for (int r = 0; r < GN_KERNEL_ROWS; r++) {
+                    const float *w_row = W + (size_t)(i + r) * cols;
+                    for (int idx = 0; idx < n_nonzero; idx++) {
+                        packed_w[r * n_nonzero + idx] = w_row[nonzero[idx]];
+                    }
+                }
+                gn_kernel_block(acc, packed_w, source, count);
+            } else {
+                gn_kernel_block(acc, W + (size_t)i * cols, source, count);
+            }
+            for (int r = 0; r < GN_KERNEL_ROWS; r++) {
+                float *row_out = next + (size_t)(i + r) * GN_EVAL_BATCH;
+                const float *a = acc + r * GN_EVAL_BATCH;
+                for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                    row_out[n] = is_output ? batch_sigmoid(a[n])
+                                           : batch_relu(a[n]);
+                }
+            }
+        }
+        for (; i < rows; i++) {
+            float acc[GN_EVAL_BATCH];
+            for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                acc[n] = bias[i];
+            }
+            const float *w_row = W + (size_t)i * cols;
+            if (packed) {
+                float packed_w[GN_NUM_FEATURES];
+                for (int idx = 0; idx < n_nonzero; idx++) {
+                    packed_w[idx] = w_row[nonzero[idx]];
+                }
+                gn_kernel_row(acc, packed_w, source, count);
+            } else {
+                gn_kernel_row(acc, w_row, source, count);
+            }
+            float *row_out = next + (size_t)i * GN_EVAL_BATCH;
+            for (int n = 0; n < GN_EVAL_BATCH; n++) {
+                row_out[n] = is_output ? batch_sigmoid(acc[n]) : batch_relu(acc[n]);
+            }
+        }
+#else
         for (int i = 0; i < rows; i++) {
             float acc[GN_EVAL_BATCH];
             for (int n = 0; n < GN_EVAL_BATCH; n++) {
@@ -383,7 +515,7 @@ static void forward_batch(const NNModel *model, const float *in, int live,
              * single reordering is the whole speed-up. The order of the sum
              * over j, per (i, n), is unchanged. */
             const float *w_row = W + (size_t)i * cols;
-            if (L == 0 && nonzero != NULL) {
+            if (packed) {
                 /* Compacted: the weights of the live features gathered once
                  * into a contiguous row, so the inner loop streams instead of
                  * jumping. The first attempt indexed `w_row[nonzero[idx]]`
@@ -394,18 +526,17 @@ static void forward_batch(const NNModel *model, const float *in, int live,
                 for (int idx = 0; idx < n_nonzero; idx++) {
                     packed_w[idx] = w_row[nonzero[idx]];
                 }
-                for (int idx = 0; idx < n_nonzero; idx++) {
+                for (int idx = 0; idx < count; idx++) {
                     const float w = packed_w[idx];
-                    const float *column = packed_in
-                        + (size_t)idx * GN_EVAL_BATCH;
+                    const float *column = source + (size_t)idx * GN_EVAL_BATCH;
                     for (int n = 0; n < GN_EVAL_BATCH; n++) {
                         acc[n] += w * column[n];
                     }
                 }
             } else {
-                for (int j = 0; j < cols; j++) {
+                for (int j = 0; j < count; j++) {
                     const float w = w_row[j];
-                    const float *column = current + (size_t)j * GN_EVAL_BATCH;
+                    const float *column = source + (size_t)j * GN_EVAL_BATCH;
                     for (int n = 0; n < GN_EVAL_BATCH; n++) {
                         acc[n] += w * column[n];
                     }
@@ -417,6 +548,7 @@ static void forward_batch(const NNModel *model, const float *in, int live,
                 row_out[n] = is_output ? batch_sigmoid(acc[n]) : batch_relu(acc[n]);
             }
         }
+#endif
 
         current = next;
         next = (next == g_batch_a) ? g_batch_b : g_batch_a;
@@ -544,8 +676,19 @@ int gn_evaluate_batch(const GnNetwork *net,
             }
         }
 
+#ifdef GN_BATCH_SPARSITY_SWITCH
+        gn_sparsity_calls[net->slot]++;
+        gn_sparsity_active[net->slot] += (unsigned long)n_nonzero;
+        if ((unsigned long)n_nonzero > gn_sparsity_widest[net->slot]) {
+            gn_sparsity_widest[net->slot] = (unsigned long)n_nonzero;
+        }
+        forward_batch(&net->model, g_batch_in, chunk,
+                      net->sparsity ? nonzero : NULL, n_nonzero,
+                      probs + base);
+#else
         forward_batch(&net->model, g_batch_in, chunk, nonzero, n_nonzero,
                       probs + base);
+#endif
     }
     return 0;
 }

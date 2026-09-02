@@ -1,0 +1,245 @@
+[
+  {
+    "target": "native",
+    "width": 8,
+    "kernel": "auto",
+    "label": "auto-vectorisé (base x86-64, SSE)",
+    "kernel_built": "auto-vectorisé",
+    "rate": 21721.3,
+    "rate_gain": 0.5632416089283491,
+    "decision": 0.7062,
+    "decision_gain": 0.6206457094307561,
+    "decision_min": 0.6144,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 24435.7,
+        "decision": 0.6189
+      },
+      {
+        "rate": 21721.3,
+        "decision": 0.7082
+      },
+      {
+        "rate": 21558.3,
+        "decision": 0.7062
+      }
+    ]
+  },
+  {
+    "target": "native",
+    "width": 8,
+    "kernel": "auto-avx2",
+    "label": "auto-vectorisé (-march=native, AVX2)",
+    "kernel_built": "auto-vectorisé",
+    "rate": 23947.8,
+    "rate_gain": 0.6209756046965107,
+    "decision": 0.6602,
+    "decision_gain": 0.663889730384732,
+    "decision_min": 0.6461,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 23342.1,
+        "decision": 0.6501
+      },
+      {
+        "rate": 23947.8,
+        "decision": 0.6602
+      },
+      {
+        "rate": 24074.6,
+        "decision": 0.6877
+      }
+    ]
+  },
+  {
+    "target": "native",
+    "width": 8,
+    "kernel": "intrin",
+    "label": "intrinsèques (AVX2, écrites à la main)",
+    "kernel_built": "avx intrinsèques, 8 lignes x 1 vecteurs de 8",
+    "rate": 68556.6,
+    "rate_gain": 1.7776988341700204,
+    "decision": 0.2504,
+    "decision_gain": 1.7503993610223643,
+    "decision_min": 0.2456,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 80856.9,
+        "decision": 0.2461
+      },
+      {
+        "rate": 68556.6,
+        "decision": 0.2504
+      },
+      {
+        "rate": 57404.3,
+        "decision": 0.2941
+      }
+    ]
+  },
+  {
+    "target": "native",
+    "width": 16,
+    "kernel": "auto",
+    "label": "auto-vectorisé (base x86-64, SSE)",
+    "kernel_built": "auto-vectorisé",
+    "rate": 36353.8,
+    "rate_gain": 0.9426679251545451,
+    "decision": 0.5153,
+    "decision_gain": 0.8505724820492917,
+    "decision_min": 0.4364,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 37267.2,
+        "decision": 0.438
+      },
+      {
+        "rate": 36353.8,
+        "decision": 0.5174
+      },
+      {
+        "rate": 30508.9,
+        "decision": 0.5153
+      }
+    ]
+  },
+  {
+    "target": "native",
+    "width": 16,
+    "kernel": "auto-avx2",
+    "label": "auto-vectorisé (-march=native, AVX2)",
+    "kernel_built": "auto-vectorisé",
+    "rate": 36504.4,
+    "rate_gain": 0.9465730407003278,
+    "decision": 0.4199,
+    "decision_gain": 1.0438199571326507,
+    "decision_min": 0.4005,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 41441.3,
+        "decision": 0.4455
+      },
+      {
+        "rate": 36504.4,
+        "decision": 0.4104
+      },
+      {
+        "rate": 26806.6,
+        "decision": 0.4199
+      }
+    ]
+  },
+  {
+    "target": "native",
+    "width": 16,
+    "kernel": "intrin",
+    "label": "intrinsèques (AVX2, écrites à la main)",
+    "kernel_built": "avx intrinsèques, 4 lignes x 2 vecteurs de 8",
+    "rate": 92334.0,
+    "rate_gain": 2.3942559017549683,
+    "decision": 0.2257,
+    "decision_gain": 1.9419583517944174,
+    "decision_min": 0.2212,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 84806.0,
+        "decision": 0.2295
+      },
+      {
+        "rate": 92334.0,
+        "decision": 0.2248
+      },
+      {
+        "rate": 95832.9,
+        "decision": 0.2257
+      }
+    ]
+  },
+  {
+    "target": "native",
+    "width": 32,
+    "kernel": "auto",
+    "label": "auto-vectorisé (base x86-64, SSE)",
+    "kernel_built": "auto-vectorisé",
+    "rate": 38564.8,
+    "rate_gain": 1.0,
+    "decision": 0.4383,
+    "decision_gain": 1.0,
+    "decision_min": 0.4315,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 39252.7,
+        "decision": 0.445
+      },
+      {
+        "rate": 38564.8,
+        "decision": 0.4383
+      },
+      {
+        "rate": 34577.9,
+        "decision": 0.4375
+      }
+    ]
+  },
+  {
+    "target": "native",
+    "width": 32,
+    "kernel": "auto-avx2",
+    "label": "auto-vectorisé (-march=native, AVX2)",
+    "kernel_built": "auto-vectorisé",
+    "rate": 59052.5,
+    "rate_gain": 1.5312538895573164,
+    "decision": 0.3144,
+    "decision_gain": 1.3940839694656488,
+    "decision_min": 0.3122,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 59276.2,
+        "decision": 0.3141
+      },
+      {
+        "rate": 59052.5,
+        "decision": 0.3148
+      },
+      {
+        "rate": 55495.4,
+        "decision": 0.3144
+      }
+    ]
+  },
+  {
+    "target": "native",
+    "width": 32,
+    "kernel": "intrin",
+    "label": "intrinsèques (AVX2, écrites à la main)",
+    "kernel_built": "avx intrinsèques, 2 lignes x 4 vecteurs de 8",
+    "rate": 83816.2,
+    "rate_gain": 2.1733860930174664,
+    "decision": 0.2423,
+    "decision_gain": 1.8089145687164674,
+    "decision_min": 0.2397,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 83816.2,
+        "decision": 0.2415
+      },
+      {
+        "rate": 84260.6,
+        "decision": 0.2438
+      },
+      {
+        "rate": 81702.2,
+        "decision": 0.2423
+      }
+    ]
+  }
+]

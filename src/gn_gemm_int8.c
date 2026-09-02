@@ -5,6 +5,8 @@
 
 #include <stddef.h>
 
+#include "gn_tile.h"
+
 #if defined(__wasm_simd128__)
 #  include <wasm_simd128.h>
 #  define GN_INT8_SIMD128 1
@@ -17,6 +19,23 @@
 #endif
 
 #define GN_INT8_PRODUCT_MAX 16129 /* 127 * 127 */
+
+/*
+ * The lane tile every vector path below steps the batch dimension by: eight
+ * uint8 activations widened to eight int32 accumulators, which is one 128-bit
+ * register of each on both SIMD128 and SSE2/AVX2.
+ *
+ * Named rather than spelled `8` in three loop conditions, and rounded with
+ * `gn_round_down_multiple` rather than with a mask, so that the day this
+ * becomes a tile the hardware chooses -- T84 parameterises the float kernel's
+ * width -- the loop bound is still a multiple of the tile. See `gn_tile.h` for
+ * the Go-port bug this shape forecloses. The assertion below is not idle: the
+ * scalar tail makes any positive tile CORRECT, and a power of two is what makes
+ * the widening pair (`extmul_low`/`extmul_high`, `unpacklo`/`unpackhi`) split
+ * the register evenly.
+ */
+#define GN_INT8_LANES 8
+GN_STATIC_ASSERT_POWER_OF_TWO(GN_INT8_LANES);
 
 double gn_gemm_int8_headroom(int cols)
 {
@@ -79,8 +98,9 @@ static void accumulate_lane(int32_t *dst, int32_t w, const uint8_t *column,
                             int batch)
 {
     const v128_t weight = wasm_i16x8_splat((int16_t)w);
+    const int tiled = gn_round_down_multiple(batch, GN_INT8_LANES);
     int n = 0;
-    for (; n + 8 <= batch; n += 8) {
+    for (; n < tiled; n += GN_INT8_LANES) {
         const v128_t bytes = wasm_v128_load64_zero(column + n);
         const v128_t widened = wasm_u16x8_extend_low_u8x16(bytes);
         const v128_t low = wasm_i32x4_extmul_low_i16x8(widened, weight);
@@ -102,8 +122,9 @@ static void accumulate_lane(int32_t *dst, int32_t w, const uint8_t *column,
                             int batch)
 {
     const __m128i weight = _mm_set1_epi16((short)w);
+    const int tiled = gn_round_down_multiple(batch, GN_INT8_LANES);
     int n = 0;
-    for (; n + 8 <= batch; n += 8) {
+    for (; n < tiled; n += GN_INT8_LANES) {
         const __m128i bytes = _mm_loadl_epi64((const __m128i *)(column + n));
         const __m128i widened = _mm_unpacklo_epi8(bytes, _mm_setzero_si128());
         /* Low and high halves separately: the activations are 0..127 and the

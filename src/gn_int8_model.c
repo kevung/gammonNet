@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "gn_gemm_int8.h"
+#include "gn_tile.h"
 
 /* The chunk width this file forwards the kernel at. Not a kernel limit
  * (`gn_gemm_int8_relu_pc`'s accumulator caps a call at 256) -- it is the
@@ -17,6 +18,16 @@
  * decision's candidates get exactly the batch this project has evidence
  * for, not a wider one nobody has measured. */
 #define GN_INT8_CHUNK 32
+
+/* `gn_gemm_int8_relu` holds one row's int32 accumulators in a 256-entry array
+ * and REFUSES a wider batch at run time. That refusal is the right shape for a
+ * library entry point taking a caller's number; it is the wrong shape for a
+ * width this file fixes at compile time, where the same mistake should stop the
+ * build instead of returning -1 from every evaluation. Stated here so that
+ * raising GN_INT8_CHUNK past the kernel's accumulator is a compile error and
+ * not a silent, total failure at run time. */
+GN_STATIC_ASSERT(GN_INT8_CHUNK >= 1 && GN_INT8_CHUNK <= 256,
+                 "GN_INT8_CHUNK must fit gn_gemm_int8_relu's row accumulator");
 
 /* The widest layer (input or hidden) these static scratch buffers can hold.
  * `gn_int8_model_load` refuses anything wider, the same shape of refusal

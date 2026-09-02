@@ -1,0 +1,164 @@
+[
+  {
+    "target": "wasm",
+    "width": 8,
+    "kernel": "auto",
+    "label": "auto-vectorisé (SIMD128)",
+    "kernel_built": "auto-vectorisé",
+    "rate": 23826.5,
+    "rate_gain": 2.358055481329731,
+    "decision": 0.604,
+    "decision_gain": 2.293543046357616,
+    "decision_min": 0.5968,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 21261.1,
+        "decision": 0.7088
+      },
+      {
+        "rate": 23826.5,
+        "decision": 0.604
+      },
+      {
+        "rate": 24087.9,
+        "decision": 0.5974
+      }
+    ]
+  },
+  {
+    "target": "wasm",
+    "width": 8,
+    "kernel": "intrin",
+    "label": "intrinsèques (SIMD128, écrites à la main)",
+    "kernel_built": "simd128 intrinsèques, 4 lignes x 2 vecteurs de 4",
+    "rate": 46008.3,
+    "rate_gain": 4.553338677592708,
+    "decision": 0.3472,
+    "decision_gain": 3.9899193548387095,
+    "decision_min": 0.3359,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 38027.2,
+        "decision": 0.3894
+      },
+      {
+        "rate": 46008.3,
+        "decision": 0.3364
+      },
+      {
+        "rate": 46782.1,
+        "decision": 0.3472
+      }
+    ]
+  },
+  {
+    "target": "wasm",
+    "width": 16,
+    "kernel": "auto",
+    "label": "auto-vectorisé (SIMD128)",
+    "kernel_built": "auto-vectorisé",
+    "rate": 27889.7,
+    "rate_gain": 2.760181308947676,
+    "decision": 0.5326,
+    "decision_gain": 2.6010138941043937,
+    "decision_min": 0.5281,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 27548.2,
+        "decision": 0.5326
+      },
+      {
+        "rate": 28005.7,
+        "decision": 0.5302
+      },
+      {
+        "rate": 27889.7,
+        "decision": 0.5464
+      }
+    ]
+  },
+  {
+    "target": "wasm",
+    "width": 16,
+    "kernel": "intrin",
+    "label": "intrinsèques (SIMD128, écrites à la main)",
+    "kernel_built": "simd128 intrinsèques, 2 lignes x 4 vecteurs de 4",
+    "rate": 49167.9,
+    "rate_gain": 4.866037231673644,
+    "decision": 0.331,
+    "decision_gain": 4.185196374622357,
+    "decision_min": 0.3252,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 49176.2,
+        "decision": 0.3312
+      },
+      {
+        "rate": 45218.2,
+        "decision": 0.3261
+      },
+      {
+        "rate": 49167.9,
+        "decision": 0.331
+      }
+    ]
+  },
+  {
+    "target": "wasm",
+    "width": 32,
+    "kernel": "auto",
+    "label": "auto-vectorisé (SIMD128)",
+    "kernel_built": "auto-vectorisé",
+    "rate": 10104.3,
+    "rate_gain": 1.0,
+    "decision": 1.3853,
+    "decision_gain": 1.0,
+    "decision_min": 1.3796,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 10132.9,
+        "decision": 1.4032
+      },
+      {
+        "rate": 10104.3,
+        "decision": 1.3853
+      },
+      {
+        "rate": 9999.2,
+        "decision": 1.3841
+      }
+    ]
+  },
+  {
+    "target": "wasm",
+    "width": 32,
+    "kernel": "intrin",
+    "label": "intrinsèques (SIMD128, écrites à la main)",
+    "kernel_built": "simd128 intrinsèques, 1 lignes x 8 vecteurs de 4",
+    "rate": 43501.3,
+    "rate_gain": 4.305226487732946,
+    "decision": 0.3824,
+    "decision_gain": 3.622646443514644,
+    "decision_min": 0.3696,
+    "max_delta": 0.0,
+    "samples": [
+      {
+        "rate": 41500.7,
+        "decision": 0.3757
+      },
+      {
+        "rate": 43501.3,
+        "decision": 0.3824
+      },
+      {
+        "rate": 43669.2,
+        "decision": 0.4004
+      }
+    ]
+  }
+]
