@@ -39,7 +39,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube bench-sparsity bench-width bench-width-wasm tie-census test-tile artifact env clean help
+.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube bench-sparsity bench-width bench-width-wasm bench-width-wasm-fp tie-census test-tile artifact env clean help
 
 all: help
 
@@ -560,9 +560,10 @@ kernel-fill:
 # réassociation change l'ordre des sommes, donc le `max|Δ| = 0` que ce banc
 # vérifie n'aurait plus de sens. Ce que ce volet mesure est le noyau, à
 # arithmétique fixée.
-WASM_KERNEL_FLAGS := -O3 -std=c11 -msimd128 -ffp-contract=off $(INCLUDES) \
-  -sENVIRONMENT=node,web -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=4194304 \
-  --preload-file models@models
+WASM_KERNEL_CFLAGS := -O3 -std=c11 -msimd128 -ffp-contract=off $(INCLUDES)
+WASM_KERNEL_LDFLAGS := -sENVIRONMENT=node,web -sALLOW_MEMORY_GROWTH=1 \
+  -sSTACK_SIZE=4194304 --preload-file models@models
+WASM_KERNEL_FLAGS := $(WASM_KERNEL_CFLAGS) $(WASM_KERNEL_LDFLAGS)
 
 WASM_KERNEL_SOURCES := bench/bench_kernel.c \
   src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
@@ -589,6 +590,61 @@ bench-width-wasm: $(MODEL) $(PRUNE_MODEL)
 
 WASM_KERNEL_REPS ?= 3
 WASM_KERNEL_DECISIONS ?= 3
+
+# ── T91, volet drapeaux : le MÊME banc, aux drapeaux de l'ARTEFACT ───
+#
+# Ce que les deux variantes ci-dessus mesurent est le NOYAU, à arithmétique
+# fixée — délibérément, pour que le `max|Δ| = 0` ait un sens. Ce que
+# l'utilisateur exécute est autre chose : `gammonnet-simd.wasm` porte
+# `$(FP_RELAXED)`, et T84 a mesuré que la réassociation COÛTE un facteur 2,8
+# sur le chemin par lot alors qu'elle achète ×3,9 sur la passe avant scalaire.
+# Les deux chiffres sont vrais et ils portent sur DEUX unités de compilation
+# différentes : `nn_eval.c` (la passe avant vendorée, un accumulateur scalaire
+# que la réassociation libère) et `gn_infer_reference.c` (le noyau par lot, que
+# la réassociation ABÎME et dont elle fait tomber le bit à bit).
+#
+# D'où trois variantes de plus, qui rendent la table « drapeaux de l'artefact »
+# de T84 reproductible et lui ajoutent la seule combinaison qu'elle n'avait pas
+# essayée :
+#
+#   autofp        auto-vectorisé + $(FP_RELAXED) partout — L'ARTEFACT D'AVANT
+#   intrinfp      intrinsèques   + $(FP_RELAXED) partout
+#   intrinsplit   intrinsèques, $(FP_RELAXED) sur `nn_eval.c` SEULEMENT
+#
+# `intrinsplit` est la configuration livrée : elle garde le ×3,9 de T21 là où
+# il a été mesuré et rend au noyau par lot son arithmétique — donc son bit à
+# bit, que ce banc vérifie avant de chronométrer quoi que ce soit.
+WASM_KERNEL_NOFP := $(filter-out $(REFERENCE)/c_inference/nn_eval.c,$(WASM_KERNEL_SOURCES))
+
+# $(1) nom, $(2) drapeaux du noyau, $(3) largeur
+define WASM_KERNEL_SPLIT_BUILD
+	@mkdir -p $(BUILD)/wasm
+	$(EMCC) $(WASM_KERNEL_CFLAGS) $(FP_RELAXED) -c \
+	    $(REFERENCE)/c_inference/nn_eval.c -o $(BUILD)/wasm/nn_eval_relaxed.o
+	$(EMCC) $(WASM_KERNEL_FLAGS) $(2) -DGN_EVAL_BATCH=$(3) \
+	    $(WASM_KERNEL_NOFP) $(BUILD)/wasm/nn_eval_relaxed.o \
+	    -o $(BUILD)/wasm/bench_kernel_$(1)_$(3).js
+endef
+
+.PHONY: wasm-kernel-fp-variants
+wasm-kernel-fp-variants:
+	@mkdir -p $(BUILD)/wasm
+	$(EMCC) $(WASM_KERNEL_FLAGS) $(FP_RELAXED) -DGN_EVAL_BATCH=$(WIDTH) \
+	    $(WASM_KERNEL_SOURCES) -o $(BUILD)/wasm/bench_kernel_autofp_$(WIDTH).js
+	$(EMCC) $(WASM_KERNEL_FLAGS) $(FP_RELAXED) -DGN_EVAL_BATCH=$(WIDTH) \
+	    -DGN_KERNEL_INTRINSICS $(WASM_KERNEL_SOURCES) \
+	    -o $(BUILD)/wasm/bench_kernel_intrinfp_$(WIDTH).js
+	$(call WASM_KERNEL_SPLIT_BUILD,intrinsplit,-DGN_KERNEL_INTRINSICS,$(WIDTH))
+
+# Les cinq variantes, aux largeurs demandées, prêtes pour
+# `node bench/browser_kernel.mjs --kernels autofp,intrinfp,intrinsplit`.
+.PHONY: bench-width-wasm-fp
+bench-width-wasm-fp: $(MODEL) $(PRUNE_MODEL)
+	@for w in $(WASM_FP_WIDTHS); do \
+	    $(MAKE) --no-print-directory wasm-kernel-fp-variants WIDTH=$$w; \
+	done
+
+WASM_FP_WIDTHS ?= 16 32
 
 # ── T89 : la sparsité, par réseau et par type de lot ─────────────────
 #
