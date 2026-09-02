@@ -135,6 +135,7 @@ qu'une fiche existe. Une étude n'ouvre rien : elle donne à la décision de quo
 | 2026-08-19 | [Le videau appris — plan détaillé](2026-08-19-plan-videau-appris.md) | Quel programme, et l'architecture du réseau est-elle en cause ? | Plan conditionnel, fiches T60-T69. Rien d'ouvert |
 | 2026-08-26 | [Dépasser franchement gnubg — plan de recherche](../recherche/00-plan-depasser-gnubg.md) | Que faudrait-il pour dépasser nettement gnubg **tout en étant aussi rapide** ? | Plan de quatorze recherches approfondies, en trois vagues. Rien d'ouvert |
 | 2026-09-02 | [Retours du portage Go](2026-09-02-retours-du-portage-go.md) | Que le portage Go de blunderDB a-t-il mesuré qui déplace ce qui est écrit ici ? | Quatre constats : la largeur 32 pourrait être ce qui rend le regroupement nécessaire ; la sparsité couche 1 rapporte ~6 % et non ~15 % ; précalculer les `metAfter` du videau vaut 1 % et `level_solve` en pèse 83 % ; « les doubles sont chers » est faux (écart réel 1,54×). Rien d'ouvert ici |
+| 2026-09-02 | [Optimiser pour le navigateur](2026-09-02-optimiser-pour-le-navigateur.md) | Où va le temps d'une décision, et qu'est-ce qui atteint réellement le navigateur ? | **Fiches T84–T90 ouvertes.** Mesures d'entrée prises sur la machine de bureau. Le videau au score pèse ~2 µs par nœud (T85) ; la sparsité vaut ×1,16 en C et non 6 % ; trois des six postes du chantier Go sont des artefacts de langage ; l'artefact WebAssembly sous-exporte, et sans T86 rien n'atteint le navigateur |
 
 ## Sources
 
