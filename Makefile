@@ -134,12 +134,17 @@ endif
 # chronométrer quoi que ce soit). Le gain n'est pas discutable et le résultat
 # ne bouge pas d'un bit.
 #
-# Ce n'est PAS le défaut, et c'est délibéré, pour la même raison que NATIVE_FP :
-# le binaire livré cible le x86-64 DE BASE, sans AVX2. Les intrinsèques
-# demandent `-march=native` (ou au moins `-mavx`), donc un binaire qui ne
-# tournerait plus sur une machine sans AVX2 — ou une répartition à l'exécution,
-# qui est un autre chantier. La décision appartient à T50, pas à un jeu de
-# drapeaux.
+# Ce n'est PAS le défaut EN NATIF, et c'est délibéré, pour la même raison que
+# NATIVE_FP : le binaire livré cible le x86-64 DE BASE, sans AVX2. Les
+# intrinsèques demandent `-march=native` (ou au moins `-mavx`), donc un binaire
+# qui ne tournerait plus sur une machine sans AVX2 — ou une répartition à
+# l'exécution, qui est un autre chantier. La décision appartient à T50, pas à un
+# jeu de drapeaux.
+#
+# La cible WebAssembly, elle, n'a pas cette contrainte : `gammonnet-simd.wasm`
+# assume déjà SIMD128, donc rien à répartir. T91 y a fait des intrinsèques LE
+# DÉFAUT — voir `WASM_KERNEL` plus bas, et
+# docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md.
 #
 # `-ffp-contract=off` accompagne obligatoirement : sans lui gcc contracte les
 # multiplications et additions ÉCRITES SÉPARÉMENT en FMA (un arrondi au lieu de
@@ -612,10 +617,11 @@ kernel-fill:
 # écrit à la main a moins de marge. Le même `bench/bench_kernel.c`, les mêmes
 # largeurs, les deux noyaux.
 #
-# PAS de `-fassociative-math` ici, contrairement à l'artefact livré : la
-# réassociation change l'ordre des sommes, donc le `max|Δ| = 0` que ce banc
-# vérifie n'aurait plus de sens. Ce que ce volet mesure est le noyau, à
-# arithmétique fixée.
+# PAS de `-fassociative-math` ici : la réassociation change l'ordre des sommes,
+# donc le `max|Δ| = 0` que ce banc vérifie n'aurait plus de sens. Ce que ce
+# volet mesure est le noyau, à arithmétique fixée — ce qui est aussi, depuis
+# T91, l'arithmétique de l'artefact livré. `bench-width-wasm-fp` construit les
+# variantes qui rendent le drapeau, pour pouvoir le mesurer.
 WASM_KERNEL_CFLAGS := -O3 -std=c11 -msimd128 -ffp-contract=off $(INCLUDES)
 WASM_KERNEL_LDFLAGS := -sENVIRONMENT=node,web -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 --preload-file models@models
