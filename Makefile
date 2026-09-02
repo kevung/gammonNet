@@ -100,11 +100,12 @@ build: $(LIBRARY)
 SOURCES := src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
            src/gn_rollout.c src/gn_bearoff.c src/gn_evalcache.c \
            src/gn_search.c \
-           src/gn_infer_reference.c src/gn_choose.c src/gn_met.c src/gn_cube.c
+           src/gn_infer_reference.c src/gn_choose.c src/gn_met.c src/gn_cube.c \
+           src/gn_gemm_int8.c src/gn_int8_model.c
 HEADERS := src/gn_rules.h src/gn_encoding.h src/gn_position_id.h src/gn_infer.h \
            src/gn_rollout.h src/gn_bearoff.h src/gn_evalcache.h \
            src/gn_choose.h src/gn_search.h src/gn_met.h src/gn_met_table.h \
-           src/gn_cube.h
+           src/gn_cube.h src/gn_gemm_int8.h src/gn_int8_model.h
 OBJECTS := $(patsubst src/%.c,$(BUILD)/%.o,$(SOURCES))
 
 # Sources vendorées, compilées telles quelles — voir VENDOR_CFLAGS.
@@ -202,6 +203,7 @@ WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
                 src/gn_position_id.c src/gn_infer_reference.c \
                 src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
                 src/gn_search.c src/gn_met.c src/gn_choose.c \
+                src/gn_gemm_int8.c \
                 $(REFERENCE)/c_engine/bg_engine.c \
                 $(REFERENCE)/c_inference/nn_eval.c
 
@@ -237,11 +239,11 @@ WASM_FLAGS := -O3 -std=c11 $(WASM_EXTRA) $(INCLUDES) \
   -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node \
   -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 \
-  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPF32,HEAPF64,HEAPU8,HEAP32,UTF8ToString \
-  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache \
+  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPF32,HEAPF64,HEAP8,HEAPU8,HEAP32,UTF8ToString \
+  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw \
   --extern-pre-js $(WASM_DIR)/notice.js
 
-.PHONY: wasm wasm-simd wasm-scalar wasm-parity
+.PHONY: wasm wasm-simd wasm-scalar wasm-parity wasm-parity-int8
 
 wasm: wasm-scalar wasm-simd
 
@@ -268,6 +270,18 @@ wasm-parity: wasm $(MODEL)
 # N meilleurs coups, notamment, où deux défauts silencieux ont été trouvés.
 wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/api_invariants.mjs
+
+DUMP_INT8 := $(BUILD)/dump_reference_int8
+$(DUMP_INT8): tools/dump_reference_int8.c src/gn_gemm_int8.c $(HEADERS)
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) -Isrc -o $@ tools/dump_reference_int8.c src/gn_gemm_int8.c src/gn_int8_model.c
+
+# Parité du chemin int8 DÉTERMINISTE (gn_gemm_int8) : le repère est produit par
+# le noyau natif dispatché sur cette machine (scalaire/SSE2/AVX2), rejoué au
+# bit près -- pas à une tolérance -- par les deux builds WebAssembly.
+wasm-parity-int8: wasm $(DUMP_INT8)
+	$(DUMP_INT8)
+	node $(WASM_DIR)/parity_int8.mjs
 
 # ── Mesure ───────────────────────────────────────────────────────────
 
@@ -313,6 +327,24 @@ bench-encoding: build $(BENCH_ENCODING) $(MODEL)
 
 # Une décision 2-ply, sans Python dans le cadre : ce qu'il faut pour répondre à
 # « où passe le temps d'une décision », et ce qui se passe sous callgrind.
+# T73 -- int8 contre f32 sur les formes du réseau. La cible `bench-gemm-sse2`
+# recompile le même programme sans FMA ni AVX2 : c'est le test décisif de
+# l'anomalie du lot (x2,21 en Wasm contre x8,5 en natif, T21).
+BENCH_GEMM := $(BUILD)/bench_gemm_int8
+
+$(BENCH_GEMM): bench/bench_gemm_int8.c src/gn_gemm_int8.c $(HEADERS)
+	$(CC) $(CFLAGS) -Isrc -o $@ bench/bench_gemm_int8.c src/gn_gemm_int8.c -lm
+
+bench-gemm: $(BENCH_GEMM)
+	$(BENCH_GEMM) 2000 --json docs/mesures/t73-gemm-int8.json
+
+$(BUILD)/bench_gemm_int8_sse2: bench/bench_gemm_int8.c src/gn_gemm_int8.c $(HEADERS)
+	$(CC) $(CFLAGS) -mno-fma -mno-avx2 -msse2 -Isrc -o $@ \
+	      bench/bench_gemm_int8.c src/gn_gemm_int8.c -lm
+
+bench-gemm-sse2: $(BUILD)/bench_gemm_int8_sse2
+	$(BUILD)/bench_gemm_int8_sse2 2000 --json docs/mesures/t73-gemm-int8-sse2.json
+
 BENCH_DECISION := $(BUILD)/bench_decision
 
 $(BENCH_DECISION): bench/bench_decision.c $(OBJECTS) $(VENDOR_OBJECTS)

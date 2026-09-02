@@ -1,0 +1,8 @@
+{
+  "quand": "2026-08-27T11:31:02+02:00",
+  "charge_avant": 0.20,
+  "charge_apres": 1.06,
+  "seuil_de_silence": 2,
+  "campagnes_reelles_concurrentes": 0,
+  "note": "Micro-banc exécuté dans la fenêtre calme ouverte par la fin de la campagne T3D, AVANT la campagne T70. Les chiffres mesurés machine chargée du 2026-08-27 sont conservés sous *-sous-charge.json et ne comptent pas."
+}

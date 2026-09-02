@@ -21,8 +21,21 @@
 
 #include "nn_eval.h"
 
+#include "gn_int8_model.h"
+
+/*
+ * Two backends behind one opaque type -- the design `gn_infer.h` already
+ * commits to ("the backend is deliberately invisible here"). `format`
+ * decides which of `model`/`int8` is live; every entry point below branches
+ * on it once, at the top, rather than leaving it implicit in which field
+ * happens to be non-zero.
+ */
+enum GnNetworkFormat { GN_NETWORK_FLOAT, GN_NETWORK_INT8 };
+
 struct GnNetwork {
-    NNModel model;
+    enum GnNetworkFormat format;
+    NNModel model;          /* valid when format == GN_NETWORK_FLOAT */
+    GnInt8Model int8_model; /* valid when format == GN_NETWORK_INT8 */
 };
 
 /* IEEE 754 binary16 -> binary32. Exact : tout demi-flottant fini est un
@@ -179,6 +192,25 @@ GnNetwork *gn_network_load(const char *path)
         return NULL;
     }
 
+    if (gn_int8_model_is(path)) {
+        net->format = GN_NETWORK_INT8;
+        if (gn_int8_model_load(&net->int8_model, path) != 0) {
+            free(net);
+            return NULL;
+        }
+        /* Same refusal as the float path, same reason: an input size that
+         * is not ours was trained on a different encoding. There is no
+         * "output mode" to check here -- `BGQ8` has no other mode, prob5 is
+         * the only shape `tools/export_qat_int8.py` ever writes. */
+        if (net->int8_model.input_size != GN_NUM_FEATURES) {
+            gn_int8_model_free(&net->int8_model);
+            free(net);
+            return NULL;
+        }
+        return net;
+    }
+
+    net->format = GN_NETWORK_FLOAT;
     const int loaded = is_fp16(path) ? load_fp16(&net->model, path)
                                      : nn_load(&net->model, path);
     if (loaded != 0) {
@@ -210,13 +242,21 @@ void gn_network_free(GnNetwork *net)
     if (net == NULL) {
         return;
     }
-    nn_free(&net->model);
+    if (net->format == GN_NETWORK_INT8) {
+        gn_int8_model_free(&net->int8_model);
+    } else {
+        nn_free(&net->model);
+    }
     free(net);
 }
 
 int gn_network_input_size(const GnNetwork *net)
 {
-    return (net == NULL) ? -1 : net->model.input_size;
+    if (net == NULL) {
+        return -1;
+    }
+    return net->format == GN_NETWORK_INT8 ? net->int8_model.input_size
+                                          : net->model.input_size;
 }
 
 int gn_evaluate_features(const GnNetwork *net, const float *features,
@@ -224,6 +264,10 @@ int gn_evaluate_features(const GnNetwork *net, const float *features,
 {
     if (net == NULL || features == NULL || probs == NULL) {
         return -1;
+    }
+
+    if (net->format == GN_NETWORK_INT8) {
+        return gn_int8_model_evaluate(&net->int8_model, features, 1, probs);
     }
 
     /*
@@ -414,6 +458,33 @@ int gn_evaluate_batch(const GnNetwork *net,
 {
     if (net == NULL || positions == NULL || probs == NULL || count < 0) {
         return -1;
+    }
+
+    if (net->format == GN_NETWORK_INT8) {
+        if (count == 0) {
+            return 0;
+        }
+        /* Row-major, the layout `gn_int8_model_evaluate` expects; it
+         * transposes to feature-major itself, chunked at the kernel's
+         * measured batch width -- not this function's concern twice.
+         * `probs[count][GN_NUM_OUTPUTS]` is already contiguous row-major
+         * float, so it doubles as the flat output buffer directly. */
+        float *features = malloc((size_t)count * GN_NUM_FEATURES * sizeof(float));
+        if (features == NULL) {
+            return -1;
+        }
+        int status = 0;
+        for (int n = 0; n < count && status == 0; n++) {
+            if (gn_encode(positions[n], features + (size_t)n * GN_NUM_FEATURES) != 0) {
+                status = -1;
+            }
+        }
+        if (status == 0) {
+            status = gn_int8_model_evaluate(&net->int8_model, features, count,
+                                            &probs[0][0]);
+        }
+        free(features);
+        return status;
     }
 
 #ifdef GN_BATCH_FILL_STATS
