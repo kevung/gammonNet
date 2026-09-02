@@ -237,7 +237,7 @@ trained by self-play.
 
 ## Project status
 
-Phases 0 through 5 are complete, and v1.2.0 is the artefact they produce. Phase 4 — a
+Phases 0 through 5 are complete, and v1.2.1 is the artefact they produce. Phase 4 — a
 project-specific model — stays closed: it was conditional on the model proving insufficient, and it
 did not. Phase 7 is under way: going past parity with GNU Backgammon rather than matching it.
 
