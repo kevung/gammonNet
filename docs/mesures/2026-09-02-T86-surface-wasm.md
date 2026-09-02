@@ -76,7 +76,14 @@ T86.
 | `wasm-api` | 19 invariants, verts |
 | `wasm-codec` (nouveau) | 2 050 positions, **égalité exacte**, deux builds |
 | `wasm/worker_invariants.mjs` (nouveau) | 13 invariants, verts |
-| `pytest tests/` | vert |
+| `wasm/workers.html` (Chromium) | annulation honorée, pool réutilisable après, `worstDelta` 6,407e-7 aux trois largeurs |
+| `pytest` — codec, notation, règles, recherche, videau, régression | 1 339 passés, 3 ignorés |
+| `pytest tests/test_serve.py` | 18 passés (après `make fetch-release` : l'artefact épinglé v1.2.1 n'était pas dans le worktree) |
+
+`workers.html` est le chemin `evaluate` d'origine, laissé intact : il est
+rejoué pour que « T86 ajoute, elle ne remplace pas » soit un fait vérifié et
+non une intention. Le débit à huit workers y est inchangé (28 090 éval/s,
+×3,25).
 
 Le 6,407e-7 du SIMD est celui d'avant la branche : c'est le prix de la
 réassociation flottante, documenté depuis T20, et T86 ne le déplace pas d'un
