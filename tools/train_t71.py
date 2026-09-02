@@ -178,6 +178,9 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=4096)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--holdout", type=float, default=0.05)
+    parser.add_argument("--limit", type=int, default=0,
+                        help="n'utiliser qu'un sous-échantillon tiré au sort de N "
+                             "positions — le mécanisme de la courbe volume → force")
     parser.add_argument("--patience", type=int, default=25)
     parser.add_argument("--aux-weight", type=float, default=AUX_WEIGHT)
     parser.add_argument("--seed", type=int, default=20260902)
@@ -203,6 +206,18 @@ def main() -> int:
         return 2
     print(f"  corpus : {features.shape[0]:,} positions distinctes "
           f"({duplicates} doublons écartés), {features.shape[1]} entrées")
+    if args.limit and args.limit < features.shape[0]:
+        # Un sous-échantillon TIRÉ AU SORT, pas les N premières lignes : les
+        # parts sont écrites worker par worker, donc les premières lignes sont
+        # les premières parties de quelques marches seulement. Un préfixe
+        # mesurerait le volume ET un biais de marche, et on ne saurait plus
+        # lequel des deux bouge.
+        picked = np.random.default_rng(args.seed).choice(
+            features.shape[0], size=args.limit, replace=False)
+        features, probs, volatility = (features[picked], probs[picked],
+                                       volatility[picked])
+        print(f"  limite : {args.limit:,} positions tirées au sort sur "
+              f"{len(picked):,}")
     print(f"  volatilité : moyenne {float(volatility.mean()):.4f}, "
           f"max {float(volatility.max()):.4f}")
 
@@ -284,6 +299,7 @@ def main() -> int:
         "date": date.today().isoformat(),
         "labels": {
             "directory": str(args.labels),
+            "limit": args.limit,
             "positions": int(features.shape[0]),
             "duplicates_dropped": int(duplicates),
             "manifests": manifests,
