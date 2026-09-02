@@ -1,0 +1,224 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>gammonNet — l'oisiveté d'un pool, mesurée (T87)</title>
+<style>
+  body { font: 14px/1.55 ui-monospace, monospace; margin: 2rem; max-width: 60rem; }
+  pre { white-space: pre-wrap; }
+</style>
+<h1>T87 — l'oisiveté, et le nombre utile de workers</h1>
+<pre id="out">…</pre>
+
+<script type="module">
+  /*
+   * CE QUE CETTE PAGE MESURE, ET DANS QUEL ORDRE.
+   *
+   * La fiche T87 impose que l'oisiveté soit INSTRUMENTÉE avant d'être
+   * corrigée, dans un navigateur, sur un match complet. Cette page est cet
+   * instrument. Elle ne corrige rien : elle relève, et le même fichier sert
+   * avant et après, sans quoi la comparaison ne vaudrait rien.
+   *
+   * Trois modes :
+   *   mode=idle          l'oisiveté des DEUX chemins du pool, à N workers
+   *   mode=sweep-decide  le nombre utile de workers, chemin `decide`
+   *   mode=sweep-analyze le même, chemin `analyze`
+   *
+   * LE CHEMIN QUI COMPTE EST `decide`. `analyze` distribue des lots de
+   * caractéristiques — un travail parfaitement homogène, où chaque position
+   * coûte une passe avant identique. `decide` distribue des DÉCISIONS, dont
+   * le coût varie d'un facteur dix selon le jet et la position. C'est là que
+   * l'ordonnancement a un objet, et c'est là que le consommateur passe ses
+   * 2,7 s.
+   *
+   * L'EMPREINTE DES RÉPONSES est relevée à chaque passage. Un changement
+   * d'ordonnancement qui déplacerait un seul coup retenu ne serait pas un
+   * ordonnancement, ce serait un bug : l'empreinte le dirait.
+   */
+  const params = new URLSearchParams(location.search);
+  const build = params.get("build") === "scalar" ? "gammonnet" : "gammonnet-simd";
+  const mode = params.get("mode") || "idle";
+  const counts = (params.get("workers") || "8").split(",").map(Number);
+  const limit = Number(params.get("limit") || 0);
+  const tasksPerWorker = params.get("tasksPerWorker");
+  const chunk = Number(params.get("chunk") || 256);
+
+  const out = document.getElementById("out");
+  const log = (line) => { out.textContent += line + "\n"; };
+
+  async function report(payload) {
+    try {
+      await fetch("/report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch { /* page statique : personne n'écoute */ }
+  }
+
+  /* Une empreinte stable des réponses : la concaténation des coups retenus.
+   * Pas de hachage cryptographique — la chaîne est courte et sa comparaison
+   * est exacte, ce qu'un condensé tronqué ne garantirait pas. */
+  function digest(outcomes) {
+    let acc = 0;
+    const first = (o) => (Array.isArray(o) ? o[0] : o);
+    const text = outcomes
+      .map((o) => { const c = first(o); return c ? `${c.resultId}|${c.notation}` : "∅"; })
+      .join(";");
+    for (let i = 0; i < text.length; i++) {
+      acc = (acc * 31 + text.charCodeAt(i)) >>> 0;
+    }
+    return { hash: acc.toString(16).padStart(8, "0"), length: text.length };
+  }
+
+  try {
+    const { EvaluatorPool } = await import("/wasm/pool.mjs");
+    const { Evaluator } = await import("/wasm/gammonnet.mjs");
+
+    const modelBytes = new Uint8Array(
+      await (await fetch("/models/cubeless_prob5_512_512_256_128.bin")).arrayBuffer(),
+    );
+    const pruneBytes = new Uint8Array(
+      await (await fetch("/models/prune_32.bin")).arrayBuffer(),
+    );
+
+    /* LE MATCH. 139 décisions de coup d'un vrai match en 7 points, au score
+     * et au videau réels de chaque décision — le corpus de T3C, réduit à ce
+     * qu'une décision demande. */
+    const match = await (await fetch("/docs/corpus/t87-match-7pts.json")).json();
+    const decisions = (limit > 0 ? match.decisions.slice(0, limit) : match.decisions)
+      .map((d) => ({
+        positionId: d.positionId, turn: d.turn, d1: d.d1, d2: d.d2,
+        /* Le nombre de coups légaux : une clé de coût DÉTERMINISTE, connue
+         * sans rien évaluer. La fiche interdit un temps mesuré ; elle
+         * n'interdit pas un compte. */
+        legal: d.legal,
+        options: {
+          useMatch: true, awayOnRoll: d.awayOnRoll, awayOpponent: d.awayOpponent,
+          cube: d.cube, crawford: d.crawford,
+        },
+      }));
+
+    /* Le niveau « normal » : 2-ply filtre (0,1,3), élagage k=12. `pruneK` ne
+     * voyage pas dans les options de `rankPlays` — c'est une configuration du
+     * worker, posée à la création du pool. */
+    const level = Evaluator.level("normal");
+    const pruneK = level.pruneK;
+    delete level.pruneK;
+
+    const factoryUrl = `/build/wasm/${build}.mjs`;
+    const workerUrl = "/wasm/worker.mjs";
+    const config = { pruneBytes, pruneK };
+
+    /* Le corpus de caractéristiques du chemin `analyze`, et son repère. */
+    const raw = await (await fetch("/build/reference.bin")).arrayBuffer();
+    const view = new DataView(raw);
+    const refCount = view.getInt32(4, true);
+    const numFeatures = view.getInt32(8, true);
+    const numOutputs = view.getInt32(12, true);
+    const features = new Float32Array(raw, 16, refCount * numFeatures);
+    const expected = new Float32Array(
+      raw, 16 + refCount * numFeatures * 4, refCount * numOutputs,
+    );
+
+    const payload = {
+      test: "ordonnancement", mode, build,
+      userAgent: navigator.userAgent,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      deviceMemory: navigator.deviceMemory ?? null,
+      match: { source: match.source, decisions: decisions.length },
+      referencePositions: refCount,
+      pruneK, level,
+      chunk,
+      tasksPerWorker: tasksPerWorker === null ? null : Number(tasksPerWorker),
+      runs: [],
+    };
+
+    log(`build ${build} · ${navigator.hardwareConcurrency} cœurs annoncés · mode ${mode}`);
+    log(`match : ${decisions.length} décisions · repère : ${refCount} positions`);
+    log(`niveau normal : ply ${level.ply}, filtre (${level.filterTop},${level.filterInner}), k=${pruneK}\n`);
+
+    const analyzeOptions = () => (tasksPerWorker === null
+      ? { chunk }
+      : { chunk, tasksPerWorker: Number(tasksPerWorker) });
+
+    async function runDecide(workers) {
+      const pool = await EvaluatorPool.create(
+        workers, workerUrl, factoryUrl, modelBytes, config);
+      /* Un tour à blanc COURT : les workers viennent de charger leurs poids,
+       * et la première décision paie le premier contact des pages. Deux
+       * décisions suffisent à le payer ; en refaire 139 doublerait la
+       * mesure pour rien. */
+      await pool.decide(decisions.slice(0, Math.min(workers, decisions.length)),
+                        { kind: "bestPlay", options: { ...level, ply: 0 } }).done;
+
+      /* `bestPlay` et non `rankPlays` : c'est le SEUL des deux qui rend le
+       * NOMBRE D'ÉVALUATIONS de la décision. Or c'est précisément la clé de
+       * tri que la fiche autorise — déterministe, portable, indépendante de
+       * la machine. La chercher ailleurs qu'à la source aurait voulu dire la
+       * deviner. La recherche est la même ; seule la forme de la réponse
+       * change. */
+      const job = pool.decide(decisions, { kind: "bestPlay", options: level });
+      const outcomes = await job.done;
+      const schedule = job.schedule.toJSON({ entries: true });
+      const fingerprint = outcomes === null ? null : digest(outcomes);
+      /* Le coût RÉEL de chaque décision, dans l'ordre du corpus : c'est lui
+       * qu'on confrontera au nombre de coups légaux et au temps mesuré. */
+      const evaluations = outcomes === null ? null
+        : outcomes.map((o) => o?.evaluations ?? 0);
+      pool.destroy();
+      return {
+        path: "decide", workers, ...schedule, fingerprint,
+        evaluations,
+        legal: decisions.map((d) => d.legal),
+        totalEvaluations: evaluations === null
+          ? null : evaluations.reduce((a, b) => a + b, 0),
+      };
+    }
+
+    async function runAnalyze(workers) {
+      const pool = await EvaluatorPool.create(
+        workers, workerUrl, factoryUrl, modelBytes, config);
+      await pool.analyze(features, refCount, numFeatures, analyzeOptions()).done;
+
+      const job = pool.analyze(features, refCount, numFeatures, analyzeOptions());
+      const outputs = await job.done;
+      const schedule = job.schedule.toJSON({ entries: true });
+      let worst = 0;
+      for (let i = 0; i < outputs.length; i++) {
+        worst = Math.max(worst, Math.abs(outputs[i] - expected[i]));
+      }
+      pool.destroy();
+      return { path: "analyze", workers, ...schedule, worstDelta: worst };
+    }
+
+    function show(row) {
+      const pct = (x) => `${(x * 100).toFixed(1)} %`;
+      log(`${row.path.padEnd(8)} w=${String(row.workers).padStart(2)} ` +
+          `tâches ${String(row.tasks).padStart(4)} · ` +
+          `mural ${row.wallMs.toFixed(0).padStart(7)} ms · ` +
+          `oisiveté pool ${pct(row.idlePool).padStart(7)} / worker ${pct(row.idleWorker).padStart(7)} · ` +
+          `tâche min/méd/max ${row.taskMsMin.toFixed(0)}/${row.taskMsMedian.toFixed(0)}/${row.taskMsMax.toFixed(0)} ms` +
+          (row.fingerprint ? ` · empreinte ${row.fingerprint.hash}` : "") +
+          (row.worstDelta !== undefined ? ` · Δ ${row.worstDelta.toExponential(1)}` : ""));
+    }
+
+    if (mode === "idle" || mode === "sweep-decide") {
+      for (const workers of counts) {
+        const row = await runDecide(workers);
+        payload.runs.push(row);
+        show(row);
+      }
+    }
+    if (mode === "idle" || mode === "sweep-analyze") {
+      for (const workers of counts) {
+        const row = await runAnalyze(workers);
+        payload.runs.push(row);
+        show(row);
+      }
+    }
+
+    await report(payload);
+  } catch (error) {
+    log("❌ " + (error?.stack || error));
+    await report({ error: String(error?.stack || error) });
+  }
+</script>

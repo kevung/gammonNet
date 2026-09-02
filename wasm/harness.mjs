@@ -86,7 +86,17 @@ const server = createServer(async (request, response) => {
 
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const { port } = server.address();
-const url = `http://127.0.0.1:${port}/?mode=${mode}&build=${build}&reps=${reps}`;
+/* Les arguments que le HARNAIS consomme ; tout le reste est passé à la PAGE.
+ * Une page de mesure a ses propres réglages — un nombre de workers, une taille
+ * de tâche, une troncature de corpus — et les faire transiter par le harnais
+ * revenait jusqu'ici à l'éditer à chaque fois. Ils voyagent maintenant tels
+ * quels dans la query. */
+const HARNESS_ARGS = new Set(["browser", "headless", "debug", "page", "timeout"]);
+const query = new URLSearchParams({ mode, build, reps });
+for (const [key, value] of args) {
+  if (!HARNESS_ARGS.has(key) && !query.has(key)) query.set(key, value);
+}
+const url = `http://127.0.0.1:${port}/?${query}`;
 
 const profile = await mkdtemp(join(tmpdir(), "gammonnet-profile-"));
 
