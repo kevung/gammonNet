@@ -15,6 +15,7 @@ from __future__ import annotations
 import ctypes
 import enum
 from dataclasses import dataclass
+from typing import Sequence
 
 from .infer import Evaluation, _ProbArray
 from .met import MatchState, _CMatchState
@@ -217,6 +218,47 @@ def value(
     if failed.value:
         raise ValueError(f"valeur cubeful refusée ({state})")
     return result
+
+
+_LIB.gn_cube_value_batch.argtypes = [
+    ctypes.POINTER(ctypes.POINTER(ctypes.c_float)),
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.POINTER(_CMatchState),
+    ctypes.c_double,
+    ctypes.POINTER(ctypes.c_double),
+]
+_LIB.gn_cube_value_batch.restype = ctypes.c_int
+
+
+def value_batch(
+    evaluations: Sequence[Evaluation],
+    owner: CubeOwner,
+    efficiency: float,
+    state: MatchState | None = None,
+) -> list[float]:
+    """Les mêmes valeurs, pour plusieurs distributions qui partagent un état de
+    videau — `gn_cube_value_batch`, la forme par lot de T85.
+
+    Elle existe parce que les soixante bissections d'un candidat sont une chaîne
+    de dépendances sérielle, et que celles de deux candidats sont indépendantes :
+    les faire en pas cadencé remplit la latence de l'une avec le travail de
+    l'autre. **Le résultat est celui du scalaire au bit près**, et
+    `tests/test_cube_batch.py` le tient plutôt que de l'affirmer.
+    """
+    count = len(evaluations)
+    if count == 0:
+        return []
+    buffers = [_ProbArray(*e.as_tuple()) for e in evaluations]
+    pointers = (ctypes.POINTER(ctypes.c_float) * count)(
+        *[ctypes.cast(b, ctypes.POINTER(ctypes.c_float)) for b in buffers]
+    )
+    out = (ctypes.c_double * count)()
+    c_state = ctypes.byref(state._to_c()) if state is not None else None
+    if _LIB.gn_cube_value_batch(pointers, count, int(owner), c_state,
+                                efficiency, out) != 0:
+        raise ValueError(f"valeur cubeful par lot refusée ({state})")
+    return list(out)
 
 
 _LIB.gn_cube_verdict.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double]

@@ -178,10 +178,17 @@ int gnw_evaluate_features(const float *features, float *out)
 /*
  * Evaluate `count` feature vectors laid out back to back.
  *
- * The bench path, and eventually the search path. One boundary crossing for
+ * The bench path, and gammonGo's `analyze()` path. One boundary crossing for
  * many evaluations: at 0-ply speeds the JS/WASM call overhead would otherwise
  * be a large share of what we are trying to measure, and we would be timing
  * the boundary rather than the network.
+ *
+ * T91: it goes through the BATCH kernel, not a loop over the scalar door.
+ * The loop was the last consumer of `-fassociative-math` in this artifact --
+ * `nn_forward_prob5` accumulates in one variable, so the only way to speed it
+ * up was to let the compiler reassociate that sum, which cost the module its
+ * bit-exact parity with the native engine. The batch kernel is faster AND bit
+ * for bit, so the flag is gone and this call is what replaces it.
  */
 EMSCRIPTEN_KEEPALIVE
 int gnw_evaluate_batch(const float *features, float *out, int count)
@@ -189,14 +196,8 @@ int gnw_evaluate_batch(const float *features, float *out, int count)
     if (g_network == NULL || count < 0) {
         return -1;
     }
-    for (int i = 0; i < count; i++) {
-        if (gn_evaluate_features(g_network,
-                                 features + (size_t)i * GN_NUM_FEATURES,
-                                 out + (size_t)i * GN_NUM_OUTPUTS) != 0) {
-            return -1;
-        }
-    }
-    return 0;
+    return gn_evaluate_features_batch(g_network, features, count,
+                                      (float (*)[GN_NUM_OUTPUTS])out);
 }
 
 EMSCRIPTEN_KEEPALIVE

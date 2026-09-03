@@ -39,7 +39,7 @@ ORACLE ?= 1
 VENDOR := vendor
 REFERENCE := $(VENDOR)/backgammon-ai-engine
 
-.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube tie-census artifact env clean help
+.PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube bench-sparsity bench-width bench-width-wasm bench-width-wasm-fp tie-census test-tile artifact env clean help
 
 all: help
 
@@ -124,6 +124,34 @@ $(BUILD)/%.o: src/%.c $(HEADERS)
 BATCH_CFLAGS := $(filter-out -O2,$(CFLAGS)) -O3
 ifeq ($(NATIVE_FP),1)
 BATCH_CFLAGS += -fassociative-math -fno-signed-zeros -fno-trapping-math -fno-math-errno
+endif
+
+# Le noyau de lot écrit à la main (T84) — OPT-IN, `make build KERNEL_INTRINSICS=1`.
+#
+# Mesuré le 2026-09-02 : ×2,17 sur le débit du noyau et ×1,81 sur une décision
+# 2-ply k=12, à largeur 32, contre l'auto-vectorisation — et BIT À BIT
+# (max|Δ| = 0 aux trois largeurs, `bench/bench_kernel.c` le vérifie avant de
+# chronométrer quoi que ce soit). Le gain n'est pas discutable et le résultat
+# ne bouge pas d'un bit.
+#
+# Ce n'est PAS le défaut EN NATIF, et c'est délibéré, pour la même raison que
+# NATIVE_FP : le binaire livré cible le x86-64 DE BASE, sans AVX2. Les
+# intrinsèques demandent `-march=native` (ou au moins `-mavx`), donc un binaire
+# qui ne tournerait plus sur une machine sans AVX2 — ou une répartition à
+# l'exécution, qui est un autre chantier. La décision appartient à T50, pas à un
+# jeu de drapeaux.
+#
+# La cible WebAssembly, elle, n'a pas cette contrainte : `gammonnet-simd.wasm`
+# assume déjà SIMD128, donc rien à répartir. T91 y a fait des intrinsèques LE
+# DÉFAUT — voir `WASM_KERNEL` plus bas, et
+# docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md.
+#
+# `-ffp-contract=off` accompagne obligatoirement : sans lui gcc contracte les
+# multiplications et additions ÉCRITES SÉPARÉMENT en FMA (un arrondi au lieu de
+# deux) et le bit à bit tombe.
+KERNEL_ARCH ?= -march=native
+ifeq ($(KERNEL_INTRINSICS),1)
+BATCH_CFLAGS += -DGN_KERNEL_INTRINSICS -ffp-contract=off $(KERNEL_ARCH)
 endif
 # La recherche, et elle seule, sans contraction FMA.
 #
@@ -234,10 +262,66 @@ WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
 # Prix payé, mesuré : la parité WebAssembly <-> natif n'est plus au bit près
 # mais à 4,77e-7 — sous le seuil de 1e-6 de T20. L'ordre des sommes change,
 # le résultat pratiquement pas.
+#
+# ── T91 : CE DRAPEAU N'EST PLUS DANS L'ARTEFACT ─────────────────────
+#
+# Il y est resté d'août 2026 à ce jour, et T84 a mesuré le 2026-09-02 que la
+# configuration livrée était, dans un navigateur, LA PLUS LENTE des six
+# qu'elle chronométrait : 12 062 éval/s contre 37 923 au noyau écrit à la main.
+# La raison est que le chemin chaud a changé sous le drapeau. T21 l'a adopté
+# pour `forward_raw` de `nn_eval.c`, un accumulateur scalaire que la
+# réassociation libère ; depuis T35 une décision passe par le noyau PAR LOT de
+# `gn_infer_reference.c`, où la réassociation ne libère rien et gêne
+# l'auto-vectorisation — 27 890 → 9 905 éval/s à largeur 16.
+#
+# Mesuré ici, avec le noyau écrit à la main (Node/V8, 2026-09-02, largeur 16) :
+# 45 666 éval/s sans le drapeau, 48 046 avec — et une décision à 0,3309 s
+# contre 0,3021 s. Il ne rend donc plus qu'environ 8 % là où il en coûtait 280,
+# parce que les intrinsèques ne lui laissent plus rien à réassocier dans le
+# noyau.
+#
+# Et il coûte deux exactitudes, l'une et l'autre mesurées :
+#   — le noyau par lot n'est plus bit à bit contre le chemin scalaire du MÊME
+#     artefact (max|Δ| = 3,3e-07), parce que c'est la RÉFÉRENCE qui bouge ;
+#   — la parité WebAssembly <-> natif reste à 6,4e-07 au lieu de tomber à zéro.
+#
+# Huit pour cent contre le bit à bit : c'est le bit à bit qui gagne. Le drapeau
+# reste défini — `make wasm WASM_EXTRA="$(FP_RELAXED)"` le rend, et
+# `bench-width-wasm-fp` le mesure — mais il n'est plus le défaut.
 FP_RELAXED ?= -fassociative-math -fno-signed-zeros -fno-trapping-math -fno-math-errno
 
-WASM_EXTRA ?= $(FP_RELAXED)
-WASM_FLAGS := -O3 -std=c11 $(WASM_EXTRA) $(INCLUDES) \
+# Le noyau écrit à la main (T84) est le DÉFAUT de la cible WebAssembly, et il
+# l'est SANS CONDITION là où le natif ne peut pas : `gammonnet-simd.wasm`
+# assume déjà SIMD128, donc il n'y a pas de répartition à l'exécution à écrire.
+# La construction scalaire prend la même définition et retombe sur la variante
+# scalaire du noyau (`GN_VEC_LANES 1`), qui est bit à bit elle aussi.
+#
+# `-ffp-contract=off` accompagne obligatoirement : sans lui le compilateur est
+# libre de contracter en FMA des multiplications et des additions écrites
+# séparément — un arrondi au lieu de deux — et le bit à bit tombe. WebAssembly
+# n'a pas de FMA hors `relaxed-simd`, mais le drapeau ne coûte rien et la
+# garantie ne doit pas dépendre d'une extension que le module n'active pas.
+WASM_KERNEL ?= -DGN_KERNEL_INTRINSICS -ffp-contract=off
+
+# La largeur de lot de la cible WebAssembly, tranchée SÉPARÉMENT du natif.
+#
+# T84 a clos la question en natif (largeur 32 conservée : passer à 16 n'y rend
+# que 6,9 %), mais son sixième écart — Chromium, 32 → 16, −11,6 % — était le
+# seul à dépasser le seuil, et il portait sur cette cible-ci. Remesuré ici sur
+# le noyau écrit à la main, l'écart est plus grand encore que ce que T84 lisait.
+# SIMD128 n'a que quatre voies : à largeur 32 la tuile dégénère en 1 ligne × 8
+# vecteurs (une seule chaîne d'accumulation par ligne), à largeur 16 elle vaut
+# 2 lignes × 4 vecteurs — deux chaînes indépendantes, et c'est là tout l'objet
+# du noyau.
+#
+# Le regroupement des 21 lancers reste, et n'a jamais été en cause : un lot de
+# 16 se remplit à 96,5 % PARCE QU'il est groupé ; dégroupé il retomberait vers
+# les 84 % que le portage Go mesure.
+WASM_BATCH ?= -DGN_EVAL_BATCH=16
+
+WASM_EXTRA ?=
+WASM_CFLAGS := -O3 -std=c11 $(WASM_KERNEL) $(WASM_BATCH) $(WASM_EXTRA) $(INCLUDES)
+WASM_FLAGS := $(WASM_CFLAGS) \
   -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node \
   -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 \
@@ -278,6 +362,7 @@ wasm-parity: wasm $(MODEL)
 wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/api_invariants.mjs
 	node $(WASM_DIR)/worker_invariants.mjs
+	node $(WASM_DIR)/pool_invariants.mjs
 
 # La parité du CODEC, sur le corpus T12 entier et à l'égalité EXACTE — un
 # identifiant est une chaîne, il n'y a pas de tolérance à lui accorder. Le
@@ -446,6 +531,246 @@ $(BENCH_CUBE): bench/bench_cube.c $(OBJECTS) $(VENDOR_OBJECTS)
 bench-cube: build $(BENCH_CUBE) $(MODEL)
 	$(PYTHON) tools/dump_reference.py
 	$(BENCH_CUBE) $(MODEL) $(BUILD)/reference.bin
+
+# ── T84 : la largeur de lot, tranchée par des intrinsèques ───────────
+#
+# La question n'est pas « 8 ou 32 » : c'est *le regroupement des 21 lancers
+# gagne-t-il encore sa complexité si le noyau est écrit à la main ?*
+#
+# Tout balayage précédent a mesuré autre chose. T3A l'avait nommé : gcc ne
+# vectorise la boucle chaude qu'à partir de 24, donc tester une largeur de 8
+# sans intrinsèques revient à tomber de la falaise. Et `bench_batch.c` prend sa
+# largeur en VARIABLE d'exécution, donc sa courbe est la sienne, pas celle du
+# noyau livré.
+#
+# `make bench-width` construit NEUF binaires — trois largeurs × trois noyaux —
+# et les fait tourner l'un après l'autre. Les trois noyaux :
+#
+#   auto        ce qui est livré : auto-vectorisé, cible x86-64 de base (SSE)
+#   auto-avx2   auto-vectorisé, -march=native (AVX2) — la MÊME source
+#   intrin      les intrinsèques de src/gn_kernel_f32.h, -march=native
+#
+# Les deux dernières colonnes séparent « écrit à la main » de « jeu
+# d'instructions plus large », que le premier chiffre venu confondrait.
+#
+# -ffp-contract=off partout où -march=native entre : sans lui gcc contracte en
+# FMA (un arrondi au lieu de deux) et le bit à bit tombe — y compris sur des
+# intrinsèques écrites explicitement. Les sources VENDORÉES restent à -O2 de
+# base dans les neuf cas : elles sont la RÉFÉRENCE scalaire, elle ne doit pas
+# bouger d'un binaire à l'autre.
+KERNEL_WIDTHS ?= 8 16 32
+KERNEL_REPS ?= 5
+KERNEL_PASSES ?= 3
+KERNEL_DECISIONS ?= 10
+
+KERNEL_BASE_FLAGS := -std=c11 -Wall -Wextra -O3 -ffp-contract=off
+
+# $(1) nom, $(2) drapeaux supplémentaires, $(3) largeur
+define KERNEL_BUILD
+	@mkdir -p $(BUILD)/kernel
+	$(CC) $(KERNEL_BASE_FLAGS) $(2) -DGN_EVAL_BATCH=$(3) -fopt-info-vec \
+	      $(INCLUDES) -c src/gn_infer_reference.c \
+	      -o $(BUILD)/kernel/infer_$(1)_$(3).o 2> $(BUILD)/kernel/vec_$(1)_$(3).log
+	$(CC) $(KERNEL_BASE_FLAGS) $(2) -DGN_EVAL_BATCH=$(3) -ffp-contract=off \
+	      $(INCLUDES) -c src/gn_search.c -o $(BUILD)/kernel/search_$(1)_$(3).o
+	$(CC) $(CFLAGS) -DGN_EVAL_BATCH=$(3) $(2) $(INCLUDES) -o $(BUILD)/kernel/bench_$(1)_$(3) \
+	      bench/bench_kernel.c \
+	      $(filter-out src/gn_infer_reference.c src/gn_search.c,$(SOURCES)) \
+	      $(BUILD)/kernel/infer_$(1)_$(3).o $(BUILD)/kernel/search_$(1)_$(3).o \
+	      $(BUILD)/bg_engine.o $(BUILD)/nn_eval.o -lm
+endef
+
+.PHONY: bench-width
+bench-width: build $(MODEL) $(PRUNE_MODEL)
+	@for w in $(KERNEL_WIDTHS); do \
+	    $(MAKE) --no-print-directory kernel-variants WIDTH=$$w; \
+	done
+	$(PYTHON) bench/width_sweep.py --passes $(KERNEL_PASSES) \
+	    --reps $(KERNEL_REPS) --decisions $(KERNEL_DECISIONS) \
+	    --json docs/mesures/t84-largeur-noyau.json
+
+.PHONY: kernel-variants
+kernel-variants:
+	$(call KERNEL_BUILD,auto,,$(WIDTH))
+	$(call KERNEL_BUILD,auto-avx2,-march=native,$(WIDTH))
+	$(call KERNEL_BUILD,intrin,-march=native -DGN_KERNEL_INTRINSICS,$(WIDTH))
+
+# Le remplissage des voies par largeur — la preuve directe sur le REGROUPEMENT,
+# et non sur la vitesse. Un binaire à part : les compteurs n'ont rien à faire
+# dans celui qu'on chronomètre.
+.PHONY: bench-width-fill
+bench-width-fill: build $(MODEL) $(PRUNE_MODEL)
+	@for w in $(KERNEL_WIDTHS); do \
+	    $(MAKE) --no-print-directory kernel-fill WIDTH=$$w; \
+	    $(BUILD)/kernel/bench_fill_$$w $(MODEL) $(PRUNE_MODEL) 1 8 \
+	        | grep -E "largeur|remplissage|  (grand|petit) "; \
+	done
+
+.PHONY: kernel-fill
+kernel-fill:
+	$(call KERNEL_BUILD,fill,-march=native -DGN_KERNEL_INTRINSICS -DGN_BATCH_FILL_STATS,$(WIDTH))
+
+# ── T84, volet navigateur : le même banc, compilé en WebAssembly ─────
+#
+# L'enjeu y est plus grand qu'en natif : SIMD128 n'a que QUATRE voies
+# flottantes, donc une largeur de 8 y tient en deux vecteurs et le noyau
+# écrit à la main a moins de marge. Le même `bench/bench_kernel.c`, les mêmes
+# largeurs, les deux noyaux.
+#
+# PAS de `-fassociative-math` ici : la réassociation change l'ordre des sommes,
+# donc le `max|Δ| = 0` que ce banc vérifie n'aurait plus de sens. Ce que ce
+# volet mesure est le noyau, à arithmétique fixée — ce qui est aussi, depuis
+# T91, l'arithmétique de l'artefact livré. `bench-width-wasm-fp` construit les
+# variantes qui rendent le drapeau, pour pouvoir le mesurer.
+WASM_KERNEL_CFLAGS := -O3 -std=c11 -msimd128 -ffp-contract=off $(INCLUDES)
+WASM_KERNEL_LDFLAGS := -sENVIRONMENT=node,web -sALLOW_MEMORY_GROWTH=1 \
+  -sSTACK_SIZE=4194304 --preload-file models@models
+WASM_KERNEL_FLAGS := $(WASM_KERNEL_CFLAGS) $(WASM_KERNEL_LDFLAGS)
+
+WASM_KERNEL_SOURCES := bench/bench_kernel.c \
+  src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
+  src/gn_infer_reference.c src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
+  src/gn_search.c src/gn_met.c src/gn_choose.c src/gn_gemm_int8.c \
+  src/gn_int8_model.c src/gn_rollout.c \
+  $(REFERENCE)/c_engine/bg_engine.c $(REFERENCE)/c_inference/nn_eval.c
+
+.PHONY: bench-width-wasm wasm-kernel-variants
+wasm-kernel-variants:
+	@mkdir -p $(BUILD)/wasm
+	$(EMCC) $(WASM_KERNEL_FLAGS) -DGN_EVAL_BATCH=$(WIDTH) $(WASM_KERNEL_SOURCES) \
+	    -o $(BUILD)/wasm/bench_kernel_auto_$(WIDTH).js
+	$(EMCC) $(WASM_KERNEL_FLAGS) -DGN_EVAL_BATCH=$(WIDTH) -DGN_KERNEL_INTRINSICS \
+	    $(WASM_KERNEL_SOURCES) -o $(BUILD)/wasm/bench_kernel_intrin_$(WIDTH).js
+
+bench-width-wasm: $(MODEL) $(PRUNE_MODEL)
+	@for w in $(KERNEL_WIDTHS); do \
+	    $(MAKE) --no-print-directory wasm-kernel-variants WIDTH=$$w; \
+	done
+	$(PYTHON) bench/width_sweep.py --target wasm --passes $(KERNEL_PASSES) \
+	    --reps $(WASM_KERNEL_REPS) --decisions $(WASM_KERNEL_DECISIONS) \
+	    --json docs/mesures/t84-largeur-noyau-wasm.json
+
+WASM_KERNEL_REPS ?= 3
+WASM_KERNEL_DECISIONS ?= 3
+
+# ── T91, volet drapeaux : le MÊME banc, aux drapeaux de l'ARTEFACT ───
+#
+# Ce que les deux variantes ci-dessus mesurent est le NOYAU, à arithmétique
+# fixée — délibérément, pour que le `max|Δ| = 0` ait un sens. Ce que
+# l'utilisateur exécute est autre chose : `gammonnet-simd.wasm` porte
+# `$(FP_RELAXED)`, et T84 a mesuré que la réassociation COÛTE un facteur 2,8
+# sur le chemin par lot alors qu'elle achète ×3,9 sur la passe avant scalaire.
+# Les deux chiffres sont vrais et ils portent sur DEUX unités de compilation
+# différentes : `nn_eval.c` (la passe avant vendorée, un accumulateur scalaire
+# que la réassociation libère) et `gn_infer_reference.c` (le noyau par lot, que
+# la réassociation ABÎME et dont elle fait tomber le bit à bit).
+#
+# D'où trois variantes de plus, qui rendent la table « drapeaux de l'artefact »
+# de T84 reproductible et lui ajoutent la seule combinaison qu'elle n'avait pas
+# essayée :
+#
+#   autofp        auto-vectorisé + $(FP_RELAXED) partout — L'ARTEFACT D'AVANT
+#   intrinfp      intrinsèques   + $(FP_RELAXED) partout
+#   intrinsplit   intrinsèques, $(FP_RELAXED) sur `nn_eval.c` SEULEMENT
+#
+# `intrinsplit` est la configuration livrée : elle garde le ×3,9 de T21 là où
+# il a été mesuré et rend au noyau par lot son arithmétique — donc son bit à
+# bit, que ce banc vérifie avant de chronométrer quoi que ce soit.
+WASM_KERNEL_NOFP := $(filter-out $(REFERENCE)/c_inference/nn_eval.c,$(WASM_KERNEL_SOURCES))
+
+# $(1) nom, $(2) drapeaux du noyau, $(3) largeur
+define WASM_KERNEL_SPLIT_BUILD
+	@mkdir -p $(BUILD)/wasm
+	$(EMCC) $(WASM_KERNEL_CFLAGS) $(FP_RELAXED) -c \
+	    $(REFERENCE)/c_inference/nn_eval.c -o $(BUILD)/wasm/nn_eval_relaxed.o
+	$(EMCC) $(WASM_KERNEL_FLAGS) $(2) -DGN_EVAL_BATCH=$(3) \
+	    $(WASM_KERNEL_NOFP) $(BUILD)/wasm/nn_eval_relaxed.o \
+	    -o $(BUILD)/wasm/bench_kernel_$(1)_$(3).js
+endef
+
+.PHONY: wasm-kernel-fp-variants
+wasm-kernel-fp-variants:
+	@mkdir -p $(BUILD)/wasm
+	$(EMCC) $(WASM_KERNEL_FLAGS) $(FP_RELAXED) -DGN_EVAL_BATCH=$(WIDTH) \
+	    $(WASM_KERNEL_SOURCES) -o $(BUILD)/wasm/bench_kernel_autofp_$(WIDTH).js
+	$(EMCC) $(WASM_KERNEL_FLAGS) $(FP_RELAXED) -DGN_EVAL_BATCH=$(WIDTH) \
+	    -DGN_KERNEL_INTRINSICS $(WASM_KERNEL_SOURCES) \
+	    -o $(BUILD)/wasm/bench_kernel_intrinfp_$(WIDTH).js
+	$(call WASM_KERNEL_SPLIT_BUILD,intrinsplit,-DGN_KERNEL_INTRINSICS,$(WIDTH))
+
+# Les cinq variantes, aux largeurs demandées, prêtes pour
+# `node bench/browser_kernel.mjs --kernels autofp,intrinfp,intrinsplit`.
+.PHONY: bench-width-wasm-fp
+bench-width-wasm-fp: $(MODEL) $(PRUNE_MODEL)
+	@for w in $(WASM_FP_WIDTHS); do \
+	    $(MAKE) --no-print-directory wasm-kernel-fp-variants WIDTH=$$w; \
+	done
+
+WASM_FP_WIDTHS ?= 16 32
+
+# ── T89 : la sparsité, par réseau et par type de lot ─────────────────
+#
+# La sparsité de la couche 1 est livrée depuis le 2026-08-26 et vaut ×1,16 —
+# mais c'est le chiffre des DEUX réseaux ensemble, et le registre attend 78 %
+# sur le PETIT seul. Personne n'a séparé les deux.
+#
+# Deux choses que ce banc fait et qu'aucun autre ne fait :
+#   — il éteint la sparsité RÉSEAU PAR RÉSEAU (`-DGN_BATCH_SPARSITY_SWITCH`,
+#     compilé hors de la bibliothèque livrée : la sparsité n'est pas une option
+#     d'exécution, c'est le noyau) ;
+#   — il distingue un lot FRATRIE (les coups légaux d'un plateau et d'un lancer,
+#     ce que la recherche donne réellement au noyau) d'un lot de positions
+#     QUELCONQUES (ce que `bench_batch.c` mesure sans le dire). L'union des
+#     entrées actives n'a pas la même largeur dans les deux cas, et le portage
+#     Go a mesuré une PERTE de 9 % sur le second.
+BENCH_SPARSITY := $(BUILD)/bench_sparsity
+SPARSITY_SOURCES := $(filter-out src/gn_infer_reference.c,$(SOURCES))
+
+$(BENCH_SPARSITY): bench/bench_sparsity.c $(SOURCES) $(HEADERS) \
+                   $(REFERENCE)/c_engine/bg_engine.c $(REFERENCE)/c_inference/nn_eval.c
+	@mkdir -p $(BUILD)
+	$(CC) $(BATCH_CFLAGS) -DGN_BATCH_SPARSITY_SWITCH $(INCLUDES) \
+	      -c src/gn_infer_reference.c -o $(BUILD)/gn_infer_sparsity.o
+	$(CC) $(CFLAGS) -ffp-contract=off $(INCLUDES) \
+	      -c src/gn_search.c -o $(BUILD)/gn_search_sparsity.o
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ bench/bench_sparsity.c \
+	      $(filter-out src/gn_infer_reference.c src/gn_search.c,$(SOURCES)) \
+	      $(BUILD)/gn_infer_sparsity.o $(BUILD)/gn_search_sparsity.o \
+	      $(BUILD)/bg_engine.o $(BUILD)/nn_eval.o -lm
+
+REPS ?= 7
+DECISIONS ?= 12
+
+bench-sparsity: build $(BENCH_SPARSITY) $(MODEL) $(PRUNE_MODEL)
+	$(BENCH_SPARSITY) $(MODEL) $(PRUNE_MODEL) $(REPS) $(DECISIONS)
+
+# ── T90 : l'arrondi des tuiles, sous ASan ────────────────────────────
+#
+# Zéro gain. Un garde-fou posé AVANT que T84 déplace ce qu'il garde : le jour
+# où une largeur ou une tuile cesse d'être une puissance de deux, `n & ~(t-1)`
+# rend une valeur qui n'est PAS un multiple de la tuile, et la boucle lit hors
+# de la matrice. Le portage Go a livré exactement cette ligne.
+#
+# Compilé À PART, avec -fsanitize=address : le débordement est de trois
+# flottants au bout d'une ligne, donc invisible sans redzone.
+TILE_ASAN := $(BUILD)/tile_asan
+ASAN_FLAGS ?= -fsanitize=address,undefined -fno-omit-frame-pointer -g
+
+$(TILE_ASAN): tests/tile_asan.c src/gn_tile.h
+	@mkdir -p $(BUILD)
+	$(CC) -O1 -std=c11 -Wall -Wextra $(ASAN_FLAGS) -Isrc -o $@ tests/tile_asan.c
+
+.PHONY: test-tile
+test-tile: $(TILE_ASAN)
+	$(TILE_ASAN)
+	@# Le volet NÉGATIF : la forme masquée doit mourir. Si elle survit, ce
+	@# n'est pas que le code est sain, c'est qu'ASan ne tourne pas.
+	@if $(TILE_ASAN) --trap >/dev/null 2>&1; then \
+	    echo "ÉCHEC : la forme masquée n'a pas débordé — ASan est-il actif ?"; \
+	    exit 1; \
+	else \
+	    echo "  --trap : la forme masquée meurt bien sur un débordement de tas"; \
+	fi
 
 # ── Serveur HTTP (#18) ───────────────────────────────────────────────
 

@@ -52,15 +52,22 @@
     const factoryUrl = `/build/wasm/${build}.mjs`;
     const workerUrl = "/wasm/worker.mjs";
 
+    /* `hardwareConcurrency` est relevé, jamais suivi : il compte des FILS,
+     * et le débit est borné par les cœurs physiques et la bande passante.
+     * Ce que le pool conseille est à côté, et le balayage ci-dessous dit
+     * lequel des deux avait raison sur cette machine. */
+    const suggested = EvaluatorPool.suggestedSize();
     const payload = {
       test: "workers",
       userAgent: navigator.userAgent,
       hardwareConcurrency: navigator.hardwareConcurrency,
+      suggestedWorkers: suggested,
       positions: count,
       scaling: [],
     };
 
-    out.textContent = `build ${build} · ${navigator.hardwareConcurrency} cœurs annoncés\n`;
+    out.textContent = `build ${build} · ${navigator.hardwareConcurrency} fils annoncés · ` +
+      `${suggested} workers conseillés (${EvaluatorPool.memoryCostMB(suggested)} Mo de poids)\n`;
     log(`corpus ${count} positions\n`);
     log("workers   ms      éval/s      gain   parité   tâche max fil principal");
 

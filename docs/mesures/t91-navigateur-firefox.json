@@ -1,0 +1,34 @@
+[
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "autofp",
+    "rate": 8213.9,
+    "decision": 1.3287,
+    "maxDelta": 2.086e-7
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "rate": 17860.5,
+    "decision": 0.686,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 32,
+    "kernel": "autofp",
+    "rate": 10308.7,
+    "decision": 1.1547,
+    "maxDelta": 1.788e-7
+  },
+  {
+    "browser": "firefox",
+    "width": 32,
+    "kernel": "intrin",
+    "rate": 21186.2,
+    "decision": 0.6963,
+    "maxDelta": 0
+  }
+]

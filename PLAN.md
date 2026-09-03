@@ -1969,6 +1969,49 @@ puisque c'est le même C. `blunderDB/CLAUDE.md` impose déjà que tout changemen
 atterrisse d'abord ici et dans `docs/specs/t34-videau-spec.md` §2 : cette fiche est le cas d'usage
 de cette règle.
 
+> ### FAITE — le 2026-09-02
+>
+> Mesure complète : `docs/mesures/2026-09-02-T85-videau-par-lot.md`.
+> Forme consignée pour les consommateurs : `docs/specs/t34-videau-spec.md` **§7.1**.
+>
+> **La mesure d'entrée d'abord, et elle a fallu être construite.** `bench_decision` sait
+> maintenant `--cube`, `--match=a/b`, `--owner=`, `--crawford`, `--repeat=` et surtout `--ab`
+> — les deux configurations chronométrées **décision par décision dans le même processus** ;
+> et `gn_search_cube_valuations()` compte le dénominateur au lieu de le supposer. Les
+> décisions sont enregistrées par une marche cubeless puis rejouées, sans quoi allumer le
+> videau comparerait deux parties. **Les 20-25 % de cette fiche sont confirmés comme
+> chronométrage : 20,5 % au score, zéro en money** — mais pas pour les raisons du produit,
+> dont les deux facteurs étaient faux en sens contraire (2 029 ns supposées contre 2 711
+> réelles ; 43 218 nœuds supposés contre 43 163 comptés). Le §1.3 vaut d'être lu : le MÊME
+> poste se lit **10,6 %, 26 % ou 20,5 %** selon qu'on soustrait deux exécutions consécutives,
+> deux passes alternées, ou qu'on entrelace — un facteur 2,5, le même après-midi, sur un
+> seuil d'abandon fixé à 5 %.
+>
+> **Le poste est de la latence, pas du travail.** Trois niveaux × deux points de rupture ×
+> soixante pas ≈ 360 divisions **à la file** par candidat, chacune décidant l'entrée de la
+> suivante. `gn_cube_value_batch` mène les voies en pas cadencé et la latence de l'une est
+> payée par le travail de l'autre. `build_levels` est coupé en `build_level_anchors` +
+> `resolve_levels`, la coupe étant exactement là où le lot en a besoin.
+>
+> **Gain, huit paires alternées, référence construite sur le commit d'instrument :**
+> au score, le videau passe de **103,6 ms à 42,7 ms** par décision (2 401 → 988 ns par
+> valuation, **×2,43**), sa part d'une décision de **19,35 % à 9,05 %**, soit **×1,13 sur la
+> décision entière — 11,4 % de moins**, deux fois le seuil d'abandon. **En money : rien**, et
+> rien n'était possible — le money reste scalaire, les huit relevés encadrent zéro.
+>
+> **Exactitude, sans tolérance** : `tests/test_cube_batch.py` tient l'accord avec le scalaire
+> **au bit près** (141 distributions × 3 possessions × 7 états, `==` et non `approx`) et
+> l'invariance au découpage ; le corpus T12 rejoue **12 600 classements 0-ply** et **252
+> classements 2-ply** avec `diff` = 0 ligne, équités comparées en hexadécimal IEEE-754 et
+> ORDRE compris (leçon de T88). Le même `diff` à `GN_CUBE_BATCH` = 16 rend les mêmes lignes.
+>
+> **Ce qui est resté fermé** : les consultations de la table d'équité ne sont ni hoistées ni
+> dédupliquées, bien qu'elles soient identiques dans toutes les voies. C'était le piège.
+>
+> **Non conclu, et dit comme tel** : la largeur de voie. 8 est nettement moins bon ; entre 16,
+> 32 et 64 l'écart entre deux relevés d'une même largeur dépasse l'écart entre largeurs. 32
+> est conservé faute de contestation, pas pour avoir gagné.
+
 ## T88 — Le déterminisme du classement : les ex æquo, et ce que la parité ne voit pas
 
 > **Couche : conceptuelle (exactitude).** Zéro vitesse. Elle ferme un mode de divergence
@@ -2073,6 +2116,51 @@ recouvrent et T73 hérite du verdict de largeur.
 
 > **Couche : conceptuelle.** Elle vaut pour `wasm/pool.mjs`, pour le `ProcessPoolExecutor` de
 > `python/gammonnet/arena.py`, et pour tout ordonnanceur qu'un consommateur écrirait.
+
+> ### FAIT le 2026-09-02 — mesure : `docs/mesures/2026-09-02-T87-ordonnancement.md`
+>
+> **Le poste d'ordonnancement est ABANDONNÉ dans le navigateur, et livré en Python.** Les deux
+> décisions viennent de la même mesure.
+>
+> **L'oisiveté a été instrumentée avant d'être touchée** (`ScheduleReport`, deux occupations —
+> celle du pool et celle que le worker rapporte lui-même, l'écart étant le coût du protocole),
+> puis relevée dans Chromium sur un **match complet** : les 139 décisions de `test.sgf`, 2-ply
+> `(0,1,3)`, `k=12`, au score réel. Elle vaut **2,62 % puis 2,48 %** sur deux passages — et la
+> fiche avait raison sans le savoir : ce chemin présente **déjà** 139 tâches pour 8 workers.
+>
+> **Le plafond est calculé, pas espéré.** Coûts réels rejoués : la borne basse (somme ÷ 8) est
+> à 2,63 % de l'ordre actuel. **Aucun ordonnancement, même omniscient, ne peut gagner plus de
+> 2,6 %** ; le tri par nombre d'évaluations en récupère **1,18 %**, celui par coups légaux
+> 1,45 %. Corrélation temps ↔ évaluations : **0,511** seulement (le coût d'une évaluation
+> varie d'un facteur trois selon la position). Seuil à 5 % : **non livré, et pas livrable.**
+>
+> **Sur l'autre chemin, le remède est une régression — mesurée.** `analyze()` distribue des
+> lots de caractéristiques ; y multiplier les tâches fait tomber l'oisiveté de **17,6 % à
+> 7,2 %** et allonge le travail de **50 %** (70,3 → 106,3 ms, 8 workers, sept passes
+> entrelacées). Une tâche y coûte 250 Ko clonés par `postMessage`, et c'est le fil principal,
+> seul, qui paie. D'où **la règle dans sa forme utile** : *le nombre de tâches paie quand une
+> tâche coûte cher à CALCULER et rien à TRANSMETTRE.* Le défaut reste 1 ; `tasksPerWorker` est
+> exposé avec sa courbe.
+>
+> **Et là où la condition est remplie, la règle rend ce qu'elle promet** : le
+> `ProcessPoolExecutor` de `arena.py` gagne **+6,1 %** en passant de 8 à 128 tâches (+6,11,
+> +6,23, +6,10 sur trois exécutions). Son défaut passe à 16 tâches par processus, et
+> `tests/test_arena.py` vérifie que la mesure de force n'en bouge pas.
+>
+> **Le nombre utile de workers : `min(fils annoncés, 8)`.** Sur le chemin des décisions, ×4,20
+> à 8 workers ; passer à 16 achète **3,7 à 6,2 %** de mural pour **deux fois** la mémoire et
+> **deux fois** les secondes-worker (211,6 s-worker à 1 worker, 390 à 8, **731 à 16 pour le
+> même travail** — chaque worker ajouté ralentit tous les autres). Sur le chemin des lots,
+> 16 workers sont **plus lents** que 8 (×3,28 contre ×3,55) et font passer la pire tâche du
+> fil principal de 4,3 à **21,7 ms**. `EvaluatorPool.suggestedSize()` et `memoryCostMB()`
+> remplacent la lecture de `navigator.hardwareConcurrency`.
+>
+> **Ce que je n'ai pas pu faire, et qui manque au critère.** Une seule machine m'était
+> accessible pour le chemin des décisions (poste 8c/16f). Le bridage à quatre fils
+> (`taskset`) change le nombre de fils, pas la classe de machine ; les deux autres machines
+> citées (T23, 16 fils ; T21b, 28 fils) sont réelles et de classes différentes mais mesurées
+> sur le chemin des **lots**, avant T86. **Aucun appareil mobile** — le manque le plus gênant,
+> et le même que T23 signalait déjà.
 
 **Deux faits mesurés, et le premier est contre-intuitif.**
 

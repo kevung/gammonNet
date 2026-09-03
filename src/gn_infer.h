@@ -103,8 +103,17 @@ int gn_evaluate_features(const GnNetwork *net, const float *features,
 
 /* Largest number of positions one gn_evaluate_batch call forwards together.
  * 32 is where bench/bench_batch.c measured the bandwidth win (×2,21); larger
- * counts are handled by the caller chunking. */
+ * counts are handled by the caller chunking.
+ *
+ * OVERRIDABLE AT COMPILE TIME (`-DGN_EVAL_BATCH=8`), and only so that T84 can
+ * measure what a narrow width costs with the width still a COMPILE-TIME
+ * CONSTANT. That distinction is the whole reason the question was open: a bench
+ * whose width is a run-time variable emits a different vector/epilogue path and
+ * measures its own shape, not the kernel's (`bench/bench_batch.c` says so about
+ * itself). It is not a run-time setting and there is no dispatch on it. */
+#ifndef GN_EVAL_BATCH
 #define GN_EVAL_BATCH 32
+#endif
 
 /*
  * Evaluate up to `count` positions in one pass over the weights.
@@ -126,6 +135,36 @@ int gn_evaluate_features(const GnNetwork *net, const float *features,
 int gn_evaluate_batch(const GnNetwork *net,
                       const GnPosition *const *positions, int count,
                       float (*probs)[GN_NUM_OUTPUTS]);
+
+/*
+ * The same, entered from FEATURES the caller already holds, laid out row-major
+ * (`count` vectors of GN_NUM_FEATURES).
+ *
+ * BIT-IDENTICAL to calling gn_evaluate_features once per vector, for the same
+ * reason gn_evaluate_batch is: the kernel parallelises over positions, not over
+ * the summation. The chunks that do not fill GN_EVAL_BATCH lanes go through the
+ * scalar door instead of forwarding a mostly empty batch — which is only
+ * allowed BECAUSE the two agree bit for bit.
+ *
+ * T91 added it for `gnw_evaluate_batch`, the WebAssembly export that gammonGo's
+ * `analyze()` calls with hundreds of vectors at a time and that used to loop
+ * the scalar path — the loop whose single accumulator was the whole reason the
+ * artifact carried `-fassociative-math`.
+ */
+int gn_evaluate_features_batch(const GnNetwork *net, const float *features,
+                               int count, float (*probs)[GN_NUM_OUTPUTS]);
+
+/*
+ * Which batch kernel this build compiled ("auto-vectorisé", or the hand-written
+ * one with its target and its row x vector tile), and at what width.
+ *
+ * Reported by every batch benchmark, so that a number always says which code
+ * produced it -- the same discipline `gn_gemm_int8_path` already imposes on the
+ * int8 side. T84 measures three widths and two kernels; a table of six figures
+ * with no such label would be six figures nobody can reproduce.
+ */
+const char *gn_batch_kernel(void);
+int gn_batch_width(void);
 
 /*
  * Cubeless money equity, in points, from a distribution.

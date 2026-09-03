@@ -89,6 +89,29 @@ let running = false;
 
 const yieldToLoop = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+/*
+ * LE TEMPS RÉELLEMENT PASSÉ DANS LE WASM, pour la tâche en cours (T87).
+ *
+ * Le pool relève de son côté l'occupation d'un worker de l'ENVOI à la
+ * RÉPONSE : cette mesure-là compte la sérialisation et les deux traversées de
+ * `postMessage`. Prise seule, elle ferait passer une latence de messagerie
+ * pour du travail et SOUS-ESTIMERAIT l'oisiveté. Le worker rapporte donc ce
+ * qu'il a vraiment calculé, et l'écart entre les deux est publié comme tel.
+ *
+ * Les `await yieldToLoop()` n'entrent pas dans ce compte : rendre la main
+ * n'est pas calculer, et c'est précisément ce qu'il fallait pouvoir
+ * distinguer.
+ */
+let computeMs = 0;
+const timed = (fn) => {
+  const start = performance.now();
+  try {
+    return fn();
+  } finally {
+    computeMs += performance.now() - start;
+  }
+};
+
 function requireEvaluator() {
   if (evaluator === null) throw new Error("worker non initialisé");
   return evaluator;
@@ -138,14 +161,14 @@ async function runDecision(kind, message, mine) {
 
   const deep = options.ply ?? 0;
   if (progressive && deep > 0) {
-    const shallow = call({ ...options, ply: 0, filterTop: 0, filterInner: 0 });
+    const shallow = timed(() => call({ ...options, ply: 0, filterTop: 0, filterInner: 0 }));
     if (stale()) return undefined;
     self.postMessage({ type: "partial", id: message.requestId, kind, ply: 0, outcome: shallow });
     await yieldToLoop();
     if (stale()) return undefined;
   }
 
-  const outcome = call(options);
+  const outcome = timed(() => call(options));
   if (stale()) return undefined;
   return { outcome, ply: deep };
 }
@@ -165,13 +188,13 @@ async function runAnalysis(message, mine) {
     if (generation !== mine) return undefined;
     const p = positions[i];
     const opts = { ...options, ...(p.options || {}) };
-    outcomes.push(
+    outcomes.push(timed(() => (
       kind === "cubeDecision"
         ? ev.cubeDecision(p.positionId, p.turn, opts)
         : kind === "bestPlay"
           ? ev.bestPlay(p.positionId, p.turn, p.d1, p.d2, opts)
-          : ev.rankPlays(p.positionId, p.turn, p.d1, p.d2, opts),
-    );
+          : ev.rankPlays(p.positionId, p.turn, p.d1, p.d2, opts)
+    )));
     self.postMessage({
       type: "progress", id: message.requestId,
       done: i + 1, total: positions.length,
@@ -211,12 +234,14 @@ async function pump() {
         continue;
       }
       try {
+        computeMs = 0;
         const answer = await serve(message, mine);
         self.postMessage(answer === undefined
-          ? { type: "cancelled", id: message.requestId }
+          ? { type: "cancelled", id: message.requestId, computeMs }
           : {
             type: "result", id: message.requestId,
             kind: message.type, ply: answer.ply, outcome: answer.outcome,
+            computeMs,
           });
       } catch (error) {
         self.postMessage({
@@ -264,6 +289,7 @@ self.onmessage = async (event) => {
       const outputs = new Float32Array(count * evaluator.numOutputs);
       const size = chunk || count;
 
+      computeMs = 0;
       let done = 0;
       while (done < count && !cancelled) {
         const batch = Math.min(size, count - done);
@@ -271,7 +297,8 @@ self.onmessage = async (event) => {
           done * evaluator.numFeatures,
           (done + batch) * evaluator.numFeatures,
         );
-        outputs.set(evaluator.evaluateBatch(slice, batch), done * evaluator.numOutputs);
+        outputs.set(timed(() => evaluator.evaluateBatch(slice, batch)),
+                    done * evaluator.numOutputs);
         done += batch;
         /* Yield between chunks so `stop` can be delivered. A worker that never
          * returns to its event loop cannot be interrupted. */
@@ -279,9 +306,10 @@ self.onmessage = async (event) => {
       }
 
       if (cancelled) {
-        self.postMessage({ type: "cancelled", id, done });
+        self.postMessage({ type: "cancelled", id, done, computeMs });
       } else {
-        self.postMessage({ type: "result", id, outputs, count }, [outputs.buffer]);
+        self.postMessage({ type: "result", id, outputs, count, computeMs },
+                         [outputs.buffer]);
       }
       return;
     }

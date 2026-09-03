@@ -151,7 +151,7 @@ qu'une qui sert aussi le navigateur**, puisque c'est là qu'une décision coûte
 | 2 | **T85** — valuer le videau par lot sur les candidats | **conceptuelle** | natif, navigateur, serve | 15–20 % d'une décision **au score** ; rien en money | < 5 % sur une décision au score ⇒ annulé, comme le portage Go a annulé le sien |
 | 3 | **T88** — le déterminisme du classement | **conceptuelle** (exactitude) | les trois | zéro vitesse ; ferme un mode de divergence silencieuse entre cibles | aucun : si la mesure montre que les ex æquo n'existent pas en pratique, la fiche se ferme sur ce chiffre, publié |
 | 4 | **T84** — la largeur de lot, tranchée par des intrinsèques | conceptuelle **et** implémentation | natif, navigateur | inconnu ; SIMD128 n'a que **4** voies flottantes, donc l'enjeu y est plus grand qu'en AVX2 | < 10 % à noyau écrit à la main ⇒ la largeur 32 et le regroupement restent, et la question est close pour de bon |
-| 5 | **T87** — l'ordonnancement par nombre de tâches | **conceptuelle** | navigateur, serve, arena | oisiveté de ~15 % à 3-5 % (mesuré en Go) ; le nombre utile de workers borné par les cœurs physiques | < 5 % de temps mural sur un match complet ⇒ non livré |
+| 5 | **T87** — l'ordonnancement par nombre de tâches | **conceptuelle** | navigateur, serve, arena | ~~oisiveté de ~15 % à 3-5 %~~ → **FAIT 2026-09-02** : oisiveté déjà à 2,6 % au navigateur (plafond théorique 2,6 %, tri 1,2 %) ⇒ **non livré** ; **+6,1 % en Python** ⇒ livré | < 5 % de temps mural sur un match complet ⇒ non livré |
 | 6 | **T89** — la sparsité sur le petit réseau | conceptuelle | les trois | le registre attend 78 % sur un réseau qui consomme **76,6 à 93,5 %** des voies calculées | < 5 % sur une décision ⇒ le chiffre de 78 % est retiré du registre |
 | 7 | **T90** — l'arrondi des tuiles et les formes canoniques | implémentation + artefact | les trois | zéro ; c'est un garde-fou et une source unique de vérité | aucun |
 | — | **T73** (déjà ouverte) — QAT int8 + noyau SIMD128 | implémentation, par cible | navigateur surtout | le levier de fond ; DS-09 fixe son seuil à 1,3× | inchangé |
@@ -180,6 +180,15 @@ seul résultat certain est un **résultat négatif utile** : fermer la question 
 **T87 en cinquième** parce que son gain est réel mais borné : le portage mesure ~5 % pour un tri
 correct et 10-12 points d'oisiveté récupérés par l'aplatissement de la frontière. Elle dépend en
 outre de T86 pour exister dans le navigateur.
+
+> **Ce que la mesure en a fait** (2026-09-02, `docs/mesures/2026-09-02-T87-ordonnancement.md`).
+> Le rang était bon, le pronostic non. Dans le navigateur, le chemin qui coûte présentait
+> **déjà** 139 tâches pour 8 workers : son oisiveté vaut 2,6 %, et la borne basse des coûts
+> réels dit qu'aucun ordonnancement — même omniscient — ne peut y gagner davantage. Le poste
+> est **sous son propre seuil par construction**. En revanche il rend **+6,1 %** sur le
+> `ProcessPoolExecutor` de l'arène, où une tâche coûte cher à calculer et rien à transmettre :
+> c'est cette condition, et non le langage, qui décide. Sur `analyze()`, où une tâche fait
+> voyager 250 Ko, le même remède **allonge** le travail de 50 %.
 
 **T89 et T90 en dernier** : la première est une mesure avant d'être un chantier ; la seconde est
 une dette d'hygiène qui devient urgente le jour où T73 déplace les tuiles, pas avant.

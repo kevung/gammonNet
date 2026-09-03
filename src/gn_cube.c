@@ -382,13 +382,25 @@ static double level_solve(const GnMatchLevel *lv, GnCubeOwner owner,
  * memoised recursion: each (state, k) is computed once, from the base case
  * down.
  */
-static int build_levels(const GnMatchState *state,
-                        const double outcomes[GN_NUM_EXCLUSIVE],
-                        GnMatchLevel levels[GN_CUBE_MAX_LEVELS])
+/*
+ * The ANCHORS of the chain: everything about a level that does not depend on
+ * the levels above it. Split out of `build_levels` for T85, and the split is
+ * exactly where the batch needs it -- the anchors of a candidate depend only
+ * on that candidate, while the breakpoints depend on the level above, which
+ * is the part run in lockstep across candidates.
+ *
+ * The SHAPE of the chain -- how many levels, which of them is dead -- comes
+ * out of `state` alone: `lv->dead` compares the stake to the away scores, and
+ * the loop's exit does the same. Two candidates at one score therefore always
+ * produce the same `count`. `gn_cube_value_batch` relies on that and checks
+ * it anyway.
+ */
+static int build_level_anchors(const GnMatchState *state,
+                               const double outcomes[GN_NUM_EXCLUSIVE],
+                               GnMatchLevel levels[GN_CUBE_MAX_LEVELS])
 {
     int count = 0;
     int stake = state->cube;
-    int i;
 
     /* `gn_met_after` caps every payout at the away scores (at most 25), so
      * any stake beyond 64 is indistinguishable from 64 -- for the level's
@@ -427,12 +439,33 @@ static int build_levels(const GnMatchState *state,
             stake *= 2;
     }
 
+    return count;
+}
+
+/* The breakpoints, deepest first, so each level's bisection targets a
+ * fully-built `2k` level. Verbatim what `build_levels` always did after its
+ * anchor loop. */
+static void resolve_levels(GnMatchLevel *levels, int count)
+{
+    int i;
+
     for (i = count - 2; i >= 0; i--) {
         levels[i].tp = level_solve(&levels[i + 1], GN_CUBE_OWNED, -1.0,
                                    levels[i].pass);
         levels[i].cp = level_solve(&levels[i + 1], GN_CUBE_OPPONENT, -1.0,
                                    levels[i].cash);
     }
+}
+
+static int build_levels(const GnMatchState *state,
+                        const double outcomes[GN_NUM_EXCLUSIVE],
+                        GnMatchLevel levels[GN_CUBE_MAX_LEVELS])
+{
+    const int count = build_level_anchors(state, outcomes, levels);
+
+    if (count == 0)
+        return 0;
+    resolve_levels(levels, count);
     return count;
 }
 
@@ -487,6 +520,176 @@ double gn_cube_value(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
          * what makes the two valuations swappable inside one recursion. */
         return 2.0 * level_blend(&levels[0], inputs.win, owner, efficiency) - 1.0;
     }
+}
+
+/* ── T85: the same valuation, `n` candidates at a time ───────────────── */
+
+/*
+ * WHY THIS IS HERE AND NOT A LOOP AT THE CALL SITE
+ *
+ * `level_solve` is one serial chain: sixty steps, each a division whose
+ * result chooses the next step's input. Nothing in a processor can overlap
+ * that with itself. It CAN overlap it with another candidate's, because the
+ * bisections of two candidates share nothing -- and the search always has a
+ * whole sibling loop of candidates in hand when it values one of them
+ * (`value_sweep`, gn_search.c).
+ *
+ * So the batch runs the sixty steps for every lane in lockstep: iteration by
+ * iteration across the lanes, rather than lane by lane across the iterations.
+ * The arithmetic per lane is the same arithmetic, in the same order, on the
+ * same values -- only the interleaving changes, which is why the result is
+ * bit for bit the scalar's.
+ *
+ * TWO DEVICES OF EXACTNESS, THE SAME TWO AS `forward_batch`
+ *
+ *   - A FIXED lane width. A chunk is filled to at most GN_CUBE_BATCH and the
+ *     tail chunk simply runs fewer lanes; no lane's arithmetic depends on how
+ *     many neighbours it has.
+ *   - A FIXED iteration count. Sixty steps, always, exactly as the scalar --
+ *     never "until the lanes have converged", which would make one lane's
+ *     answer depend on another's.
+ *
+ * WHAT IS DELIBERATELY *NOT* DONE HERE
+ *
+ * The match-equity lookups are NOT hoisted or deduplicated, even though
+ * `pass`, `cash` and `branch_mwc`'s three `gn_met_after` calls depend only on
+ * the state and are therefore identical in every lane. That optimisation was
+ * written, measured at 1 % and reverted by the Go port
+ * (docs/etudes/2026-09-02-retours-du-portage-go.md); it is 11 % of a post the
+ * measurement says does not show. Every lane pays for its own lookups here,
+ * exactly as the scalar does.
+ */
+
+/*
+ * One breakpoint, resolved for every lane at once.
+ *
+ * `owner == GN_CUBE_OWNED` resolves `tp` against the level above's owned
+ * curve and this level's `pass`; `GN_CUBE_OPPONENT` resolves `cp` against its
+ * opponent curve and this level's `cash`. That is `resolve_levels`, split by
+ * breakpoint instead of by candidate.
+ *
+ * The update is written as two selects rather than an if/else on purpose: the
+ * comparison is unpredictable by construction (a bisection is a coin flip at
+ * every step), so a branch here costs a misprediction per lane per iteration
+ * -- and a select over a value the lane already holds is the identical
+ * assignment.
+ */
+static void solve_lanes(GnMatchLevel (*levels)[GN_CUBE_MAX_LEVELS], int lanes,
+                        int level, GnCubeOwner owner)
+{
+    double low[GN_CUBE_BATCH], high[GN_CUBE_BATCH], target[GN_CUBE_BATCH];
+    int j, it;
+
+    for (j = 0; j < lanes; j++) {
+        low[j] = 0.0;
+        high[j] = 1.0;
+        target[j] = (owner == GN_CUBE_OWNED) ? levels[j][level].pass
+                                             : levels[j][level].cash;
+    }
+
+    for (it = 0; it < 60; it++) {
+        for (j = 0; j < lanes; j++) {
+            const double mid = 0.5 * (low[j] + high[j]);
+            const double value = level_live(&levels[j][level + 1], mid, owner);
+            const int below = (value < target[j]);
+
+            low[j] = below ? mid : low[j];
+            high[j] = below ? high[j] : mid;
+        }
+    }
+
+    for (j = 0; j < lanes; j++) {
+        const double p = 0.5 * (low[j] + high[j]);
+
+        if (owner == GN_CUBE_OWNED)
+            levels[j][level].tp = p;
+        else
+            levels[j][level].cp = p;
+    }
+}
+
+int gn_cube_value_batch(const float *const *probs, int n, GnCubeOwner owner,
+                        const GnMatchState *state, double efficiency,
+                        double *out)
+{
+    int base;
+
+    if (probs == NULL || out == NULL || n < 0)
+        return -1;
+    if (n == 0)
+        return 0;
+
+    /* Money: the scalar, per item. T85 §1.2 measured this post at zero in
+     * money (four readings straddling it), so there is nothing here for a
+     * batch to win, and gathering for nothing would be a pure cost. */
+    if (state == NULL) {
+        int j;
+
+        for (j = 0; j < n; j++) {
+            int failed = 0;
+
+            out[j] = gn_cube_value(probs[j], owner, NULL, efficiency, &failed);
+            if (failed)
+                return -1;
+        }
+        return 0;
+    }
+
+    if (!gn_match_state_is_valid(state))
+        return -1;
+
+    for (base = 0; base < n; base += GN_CUBE_BATCH) {
+        GnMatchLevel levels[GN_CUBE_BATCH][GN_CUBE_MAX_LEVELS];
+        double win[GN_CUBE_BATCH];
+        const int remaining = n - base;
+        const int lanes = (remaining < GN_CUBE_BATCH) ? remaining
+                                                      : GN_CUBE_BATCH;
+        int count = 0;
+        int j, i;
+
+        for (j = 0; j < lanes; j++) {
+            GnCubeInputs inputs;
+            double outcomes[GN_NUM_EXCLUSIVE];
+            int here;
+
+            if (probs[base + j] == NULL ||
+                gn_cube_inputs(probs[base + j], &inputs) != 0)
+                return -1;
+            win[j] = inputs.win;
+
+            gn_probs_exclusive(probs[base + j], outcomes);
+            here = build_level_anchors(state, outcomes, levels[j]);
+            if (here < 2)
+                return -1;
+            if (j == 0) {
+                count = here;
+            } else if (here != count) {
+                /* Unreachable: the shape is a function of `state` alone (see
+                 * `build_level_anchors`). Refused rather than papered over --
+                 * a batch whose lanes disagreed about how many levels the
+                 * chain has would resolve some of them against the wrong
+                 * level, and every answer would still look plausible. */
+                return -1;
+            }
+        }
+
+        /* Deepest first, exactly as `resolve_levels` -- but each breakpoint
+         * resolved for all lanes before the next one is started. */
+        for (i = count - 2; i >= 0; i--) {
+            solve_lanes(levels, lanes, i, GN_CUBE_OWNED);
+            solve_lanes(levels, lanes, i, GN_CUBE_OPPONENT);
+        }
+
+        for (j = 0; j < lanes; j++) {
+            /* `gn_cube_value`'s tail, verbatim -- including the Crawford
+             * game, which has no cube in play at all (spec §5). */
+            out[base + j] = state->crawford
+                ? 2.0 * level_dead(&levels[j][0], win[j]) - 1.0
+                : 2.0 * level_blend(&levels[j][0], win[j], owner, efficiency)
+                      - 1.0;
+        }
+    }
+    return 0;
 }
 
 /* ── The decision, money and match sharing one verdict table ─────────── */

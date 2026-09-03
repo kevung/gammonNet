@@ -620,6 +620,14 @@ class PairResult:
         )
 
 
+#: Combien de tâches par processus le harnais parallèle fabrique.
+#:
+#: **1 = une tâche par processus**, la forme dont T87 a mesuré qu'elle laisse
+#: l'oisiveté sans rattrapage. 16 est le réglage mesuré ici : +6,1 % de temps
+#: mural, reproductible sur trois exécutions. Voir `play_pair`.
+DEFAULT_CHUNKS_PER_WORKER = 16
+
+
 def _worker(payload):
     a, b, base_seed, indices = payload
     results = []
@@ -635,18 +643,54 @@ def play_pair(
     base_seed: int = 0,
     workers: int = 1,
     bootstrap: int = 10_000,
+    chunks_per_worker: int = DEFAULT_CHUNKS_PER_WORKER,
 ) -> PairResult:
     """Play `pairs` duplicate pairs (so `2 * pairs` games) and summarise.
 
     The result never carries a bare number: `BRIEF.md` §5 makes the confidence
     interval part of the figure, not an optional decoration.
+
+    ## `chunks_per_worker` : le nombre de tâches, et ce qu'il vaut ici (T87)
+
+    Ce harnais découpait en **exactement `workers` tâches**, une par processus.
+    C'est la forme dont T87 a montré qu'elle rend l'oisiveté irrattrapable : le
+    processus qui a fini n'a rien à prendre, quelle que soit la finesse du
+    découpage initial.
+
+    La règle, telle que la mesure l'a précisée, est que le nombre de tâches
+    **paie quand une tâche coûte cher à calculer et rien à transmettre**. Une
+    tâche est ici une liste d'indices en entrée et quelques flottants en
+    sortie, pour des parties entières de calcul : c'est le bon cas — au
+    contraire du chemin `analyze` du pool WebAssembly, où 250 Ko de
+    caractéristiques par tâche renversent le bilan et coûtent 50 % de temps en
+    plus.
+
+    **Mesuré** (2 500 paires, 8 workers, `first-play` contre `random`, passes
+    entrelacées, médiane) :
+
+        tâches/worker   tâches   médiane
+                    1        8   12,06 s
+                   16      128   11,32 s   **+6,1 %**
+
+    Trois exécutions indépendantes lisent +6,11 %, +6,23 % et +6,10 % : c'est
+    au-dessus du seuil de 5 % que la fiche impose, et c'est la SEULE des deux
+    applications de la règle qui le franchit.
+
+    Le découpage reste **entrelacé** (`indices[i::groups]`) et non par
+    tranches : il répartit déjà les parties longues, et le gain ci-dessus est
+    donc bien celui du rattrapage, pas celui d'un tri déguisé. Le résultat ne
+    dépend pas du découpage — les issues sont réassemblées dans l'ordre des
+    indices et chaque partie tire ses dés du couple (graine, indice) ; c'est
+    vérifié par `tests/test_arena.py`, sans quoi changer ce nombre reviendrait
+    à changer une mesure de force.
     """
     indices = list(range(pairs))
 
     if workers <= 1:
         outcomes = _worker((a, b, base_seed, indices))
     else:
-        chunks = [indices[i::workers] for i in range(workers)]
+        groups = max(1, workers * max(1, chunks_per_worker))
+        chunks = [c for c in (indices[i::groups] for i in range(groups)) if c]
         with ProcessPoolExecutor(max_workers=workers) as pool:
             gathered = list(pool.map(_worker, [(a, b, base_seed, c) for c in chunks]))
         # Reassemble in index order so the result cannot depend on scheduling.

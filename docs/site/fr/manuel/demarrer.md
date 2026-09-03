@@ -55,6 +55,48 @@ console.log(best.equity, best.resultId, best.evaluations);
 position, que tout logiciel de backgammon sait produire. Le `0` qui suit désigne le joueur au
 trait.
 
+## Un match entier, sans figer la page
+
+Une décision 2-ply coûte ~2 s dans un navigateur : une centaine de décisions sur le fil qui
+dessine, et l'interface est gelée pendant plusieurs minutes. Le pool distribue les décisions à des
+Web Workers, **une décision par tâche**, et rend la main entre chacune.
+
+```javascript
+import { EvaluatorPool } from "./api/pool.mjs";
+
+// COMBIEN DE WORKERS : surtout pas `navigator.hardwareConcurrency`. Il compte
+// des FILS, quand le débit est borné par les cœurs physiques et par la bande
+// passante — chaque worker recharge sa propre copie des poids, faute de
+// `SharedArrayBuffer` sur un hébergeur statique.
+const size = EvaluatorPool.suggestedSize();
+
+const pool = await EvaluatorPool.create(
+  size, "./api/worker.mjs", "./gammonnet-simd.mjs", weights,
+  { pruneBytes: prune, pruneK: files.prune_k });
+
+const { done, cancel, schedule } = pool.decide(
+  decisions,                       // [{ positionId, turn, d1, d2, options }, …]
+  { kind: "rankPlays",
+    options: Evaluator.level("normal"),
+    onProgress: (fait, total) => console.log(`${fait}/${total}`) });
+
+const analyses = await done;       // parallèle à `decisions`, ou `null` si annulé
+console.log(schedule.toJSON());    // le relevé d'ordonnancement de CE travail
+pool.destroy();
+```
+
+`cancel()` périme ce qui attend et ce qui est en vol **sans détruire les workers** : leurs poids
+restent chargés, et le pool sert la demande suivante immédiatement.
+
+```{admonition} Mesurez sur votre appareil, ne nous croyez pas
+:class: tip
+
+`suggestedSize()` est une **règle prudente tirée de trois relevés**, pas une mesure de votre
+appareil : la plateforme ne dit pas combien de cœurs physiques elle a, et `hardwareConcurrency`
+est plafonné à 4 sur iOS quel que soit le téléphone. `schedule.toJSON()` rend l'oisiveté de
+chaque travail — c'est avec elle qu'on tranche, sur la machine qui compte.
+```
+
 ## Les identifiants de position
 
 gammonNet ne lit **pas** de fichiers de match — c'est une frontière volontaire du projet. Il
