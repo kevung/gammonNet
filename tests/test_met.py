@@ -11,6 +11,7 @@ voit jamais.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -147,23 +148,43 @@ def test_take_point_approaches_25_percent_in_a_long_match():
 
 @pytest.fixture(scope="module")
 def reference_met():
-    """La MET de blunderDB (MIT), interrogée comme implémentation indépendante.
+    """L'export canonique `data/met_kazaross_xg2.json` (#24), relu comme repère.
 
-    `PLAN.md` demande que les valeurs coïncident avec une implémentation de
-    référence. blunderDB est celle que `BRIEF.md` §3.3 cite comme précédent
-    MIT — et c'est de son fichier que la table a été transcrite, donc ce
-    contrôle vérifie la **transcription**, pas la table elle-même. Le dire
-    importe : il ne prouve pas que Kazaross a raison, il prouve qu'on a copié
-    juste.
+    Il est produit par `tools/extract_met.py` à partir des mêmes `pre`/`post`
+    en mémoire que `src/gn_met_table.h` — un test qui comparerait la table C à
+    elle-même ne prouverait rien. Ce que ce test vérifie, c'est qu'une
+    régénération future n'a pas silencieusement décalé un indice entre les
+    deux fichiers dérivés. blunderDB et gammonGo lisent ce même export au
+    lieu de retranscrire la table à la main.
     """
-    path = ROOT / "tests" / "data" / "met_reference.json"
+    path = ROOT / "data" / "met_kazaross_xg2.json"
     if not path.is_file():
-        pytest.skip("repère blunderDB absent — voir tools/extract_met.py")
+        pytest.skip("export canonique absent — voir tools/extract_met.py")
     return json.loads(path.read_text())
 
 
+def test_the_export_checksum_pin_is_current():
+    """`data/met_kazaross_xg2.sha256` must name the export's actual digest.
+
+    blunderDB embeds a byte-identical copy of `data/met_kazaross_xg2.json`
+    and verifies it against this pin instead of reparsing gammonNet's
+    repository; a stale pin here would let that check pass against a copy
+    that has quietly drifted from what this repository actually generates.
+    """
+    export = ROOT / "data" / "met_kazaross_xg2.json"
+    pin = ROOT / "data" / "met_kazaross_xg2.sha256"
+    if not export.is_file() or not pin.is_file():
+        pytest.skip("export ou repère absent — voir tools/extract_met.py")
+    digest = hashlib.sha256(export.read_bytes()).hexdigest()
+    recorded = pin.read_text().split()[0]
+    assert digest == recorded, (
+        f"data/met_kazaross_xg2.sha256 est périmé : {recorded}, "
+        f"attendu {digest} — régénérer avec tools/extract_met.py"
+    )
+
+
 def test_values_match_the_independent_implementation(reference_met):
-    """Chaque entrée coïncide avec celle de blunderDB."""
+    """Chaque entrée de la bibliothèque C coïncide avec l'export canonique."""
     worst = 0.0
     for entry in reference_met["pre"]:
         ours = pre_crawford(entry["away_a"], entry["away_b"])
@@ -171,7 +192,7 @@ def test_values_match_the_independent_implementation(reference_met):
     for entry in reference_met["post"]:
         ours = post_crawford(entry["away"])
         worst = max(worst, abs(ours - entry["mwc"]))
-    assert worst < 1e-6, f"écart maximal {worst:.3e} avec blunderDB"
+    assert worst < 1e-9, f"écart maximal {worst:.3e} avec l'export canonique"
 
 
 # ── La conversion, et ce qu'elle rend visible que le money cache ─────
