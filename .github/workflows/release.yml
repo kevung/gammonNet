@@ -111,6 +111,27 @@ jobs:
         # meilleurs coups ont été trouvés là où la parité ne voyait rien.
         run: make wasm-api
 
+      - name: L'artefact ÉPINGLÉ, pour que les tests du serveur puissent tourner
+        # `tests/test_serve.py` démarre le VRAI serveur, qui refuse de démarrer
+        # sans les deux fichiers de poids nommés par `models/release_pin.json`.
+        # Ces poids ne sont pas dans le dépôt : ils vivent dans l'archive
+        # publiée. Sans cette étape, les 17 tests du serveur ne se contentaient
+        # pas d'être ignorés — ils ÉCHOUAIENT, et l'étape « Tests » avec eux,
+        # avant que « Assembler » ne soit atteinte. Les publications v1.1.0,
+        # v1.2.0 et v1.2.1 ont toutes trois un run rouge pour cette seule raison.
+        #
+        # L'épingle désigne la version PRÉCÉDENTE — celle qu'on est en train de
+        # remplacer, et la seule qui existe à ce moment-là. C'est exactement ce
+        # qu'on veut vérifier : que le code du serveur de cette version-ci sert
+        # correctement l'artefact publié.
+        #
+        # `continue-on-error` parce que ceci achète de la COUVERTURE, pas le
+        # droit de publier : si l'épingle désigne une version pas encore
+        # publiée, ou si le réseau refuse, les tests concernés s'ignorent
+        # d'eux-mêmes (`_pinned_weights_missing`) et la publication continue.
+        continue-on-error: true
+        run: python tools/fetch_release.py
+
       - name: Tests
         run: python -m pytest tests/ -q
 

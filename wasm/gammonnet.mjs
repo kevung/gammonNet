@@ -318,10 +318,15 @@ export class Evaluator {
       // 0-ply : le réseau seul. ~6 ms par décision dans un navigateur.
       instant: { ply: 0, filterTop: 0, filterInner: 0, pruneK: 0 },
       // Le défaut. 2-ply filtré, élagage k=12 : ×3,65 pour une perte d'équité
-      // dans le bruit. ~2,7 s par décision, ~74 s le match à huit workers.
+      // dans le bruit. Mesuré en v1.3.0 sur un Ryzen 7 PRO 6850U : 0,33 s par
+      // décision dans Chromium 152, 0,69 s dans Firefox 154 (T91). Le même
+      // fichier vaut un facteur 2,7 entre les deux moteurs — ne transportez ce
+      // chiffre ni vers un autre navigateur, ni vers une autre machine.
       normal: { ply: 2, filterTop: 3, filterInner: 1, pruneK: 12 },
-      // Le même sans élagage : ~9,8 s par décision. Pour trancher une
-      // décision précise, pas pour parcourir un match.
+      // Le même sans élagage, pour trancher une décision précise et non pour
+      // parcourir un match. Son seul relevé — ~9,8 s par décision — date d'avant
+      // le noyau SIMD128 de T91 et n'a pas été rejoué ; il vaut donc une borne
+      // haute, pas une mesure.
       thorough: { ply: 2, filterTop: 3, filterInner: 1, pruneK: 0 },
     };
     const level = LEVELS[name];

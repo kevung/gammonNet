@@ -131,6 +131,7 @@ mesurable.
 | **4** | Modèle propre au projet | T40–T42 | **Conditionnelle, restée fermée** — T35 n'a pas révélé de plafond ; T41 est remplacée par T71 |
 | **5** | Publication de l'artefact | T50 | Force mesurée, notice et attribution en place |
 | **7** | Dépasser — programme du plan de recherche (`docs/recherche/`, §14–§15) | T70–T83 | **Choisie le 2026-08-27** — l'avantage 2-ply par décision sort de zéro (T71, arbitré par T70) et la vitesse gagnée est mesurée (T72–T73) |
+| **8** | Vitesse pour l'appelant, là où il paie : le navigateur | T84–T91 | **Ouverte le 2026-09-02, ses huit fiches closes le 2026-09-03** — une décision 2-ply `(0,1,3)` `k=12` passe de 1,4980 s à 0,3343 s dans Chromium (×4,48) et de 1,1547 s à 0,6860 s dans Firefox (×1,68), le classement des ex æquo devient déterministe entre cibles, et l'artefact WebAssembly redevient bit à bit avec le natif |
 
 **Chemin critique** : `T00 → T01 → T02 → T10 → T20 → T21 → T30 → T32 → T35 → T50`.
 **T02 (le codec de position) est le goulot** — une erreur y est silencieuse et contamine toutes
@@ -143,5 +144,5 @@ enthousiasme.
 ## Pointeurs
 
 - `BRIEF.md` — sources, licences, chaîne technique, recette d'entraînement, protocole de mesure.
-- `PLAN.md` — le plan d'exécution : 29 fiches de tâches, chacune avec son critère d'acceptation.
+- `PLAN.md` — le plan d'exécution : 50 fiches de tâches, chacune avec son critère d'acceptation.
 - `THIRD-PARTY.md` — l'inventaire des briques et de leurs licences.
