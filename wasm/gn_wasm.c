@@ -885,3 +885,34 @@ int gnw_pip_count(const int *board, int player)
     }
     return gn_position_pip_count(&position, player);
 }
+
+/*
+ * A CANONICAL SEARCH LEVEL, from the ONE table (`gn_search.c`'s `LEVELS`,
+ * issue #25) -- so `wasm/api_invariants.mjs` can hold `Evaluator.level()`'s
+ * hand-copied JS numbers to what this build actually ships, rather than
+ * trusting that a copy stays accurate forever.
+ *
+ * `out` receives, in order: ply, filterTop (filter[ply]), filterInner
+ * (filter[ply-1], 0 below ply 2), pruneK -- the same four numbers
+ * `Evaluator.level()` returns. `out_quality` receives prune_equity_loss,
+ * its CI low, its CI high. Returns 0 on success, -1 for an unknown name.
+ */
+EMSCRIPTEN_KEEPALIVE
+int gnw_search_level(const char *name, int *out, double *out_quality)
+{
+    if (name == NULL || out == NULL || out_quality == NULL) {
+        return -1;
+    }
+    const GnSearchLevel *level = gn_search_level(name);
+    if (level == NULL) {
+        return -1;
+    }
+    out[0] = level->ply;
+    out[1] = (level->ply >= 1) ? level->filter[level->ply] : 0;
+    out[2] = (level->ply >= 2) ? level->filter[level->ply - 1] : 0;
+    out[3] = level->prune_k;
+    out_quality[0] = level->prune_equity_loss;
+    out_quality[1] = level->prune_equity_loss_ci_low;
+    out_quality[2] = level->prune_equity_loss_ci_high;
+    return 0;
+}

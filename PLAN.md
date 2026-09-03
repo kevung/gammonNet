@@ -2369,6 +2369,15 @@ n'a besoin de recopier une constante pour obtenir le préréglage « normal ».
 > **Le second volet de la fiche — les formes canoniques exposées par l'API — a été livré par
 > T86** (`GnEngine.level()`), qui travaillait sur `wasm/gammonnet.mjs` en parallèle. Il avait
 > été mis de côté ici pour ne pas entrer en collision : la fiche est close des deux côtés.
+>
+> **Correction, le 2026-09-03 (issue #25).** Ce que T86 avait livré n'était que la copie
+> JavaScript, sans le C, sans le Python, sans la mesure de qualité attachée, et sans garde
+> mécanique — la fiche se croyait close, elle ne l'était qu'à moitié : `wasm/gammonnet.mjs`
+> restait la SEULE écriture, et blunderDB/gammonGo continuaient de recopier les trois nombres à
+> la main. `gn_search_level` (`src/gn_search.c`) est désormais la source qui fait foi,
+> `data/search_levels.json` son export (sur le modèle de `data/met_kazaross_xg2.json`, issue
+> #24), et `Evaluator.level()` porte enfin `pruneEquityLoss`/son IC, vérifiés contre le C par
+> `wasm/api_invariants.mjs`. Voir issue #25 pour ce qui reste côté blunderDB/gammonGo.
 
 ## T91 — Le noyau écrit à la main devient l'artefact WebAssembly
 

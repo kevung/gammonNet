@@ -1344,3 +1344,81 @@ double gn_search_equity(const GnNetwork *net, const GnPosition *pos,
     return position_equity(net, pos, config, config->ply, config->match,
                            config->cube_owner);
 }
+
+/*
+ * THE CANONICAL LEVELS, and the ONE table they are read from -- see
+ * gn_search.h for what this closes (issue #25). Filter indices follow
+ * GnSearchConfig's own convention: `filter[d]` applies at depth d, so the
+ * published "(0,1,3)" reads as `{0, 1, 3, 0, 0}` here, matching what
+ * gn_wasm.c's `gnw_rank_plays` builds when `filter_top = 3, filter_inner = 1`
+ * at `ply = 2`.
+ *
+ * `prune_equity_loss` and its CI are docs/mesures/2026-08-26-T3A-regroupement.md
+ * (450 decisions, 2-ply, filter (0,1,3), pruned search vs the SAME search
+ * unpruned) -- see the header comment for the full citation. They are
+ * transcribed by hand exactly once, here; every other reader of these three
+ * numbers (Python, the WASM export, `data/search_levels.json`) is generated
+ * or tested against THIS table, never re-measured or re-typed.
+ */
+static const GnSearchLevel LEVELS[] = {
+    {
+        /* The network alone -- ~6 ms per decision in a browser (T91). */
+        .name = "instant",
+        .ply = 0,
+        .filter = {0, 0, 0, 0, 0},
+        .prune_k = 0,
+        .prune_equity_loss = 0.0,
+        .prune_equity_loss_ci_low = 0.0,
+        .prune_equity_loss_ci_high = 0.0,
+    },
+    {
+        /* The default. 2-ply filtered, pruned at k=12: x3.6-3.9 for an
+         * equity loss inside the noise (T3A). */
+        .name = "normal",
+        .ply = 2,
+        .filter = {0, 1, 3, 0, 0},
+        .prune_k = 12,
+        .prune_equity_loss = 0.00023,
+        .prune_equity_loss_ci_low = -0.00000,
+        .prune_equity_loss_ci_high = 0.00067,
+    },
+    {
+        /* The same, unpruned -- for settling one decision precisely, not for
+         * walking a whole match. */
+        .name = "thorough",
+        .ply = 2,
+        .filter = {0, 1, 3, 0, 0},
+        .prune_k = 0,
+        .prune_equity_loss = 0.0,
+        .prune_equity_loss_ci_low = 0.0,
+        .prune_equity_loss_ci_high = 0.0,
+    },
+};
+
+#define GN_NUM_LEVELS ((int)(sizeof(LEVELS) / sizeof(LEVELS[0])))
+
+const GnSearchLevel *gn_search_level(const char *name)
+{
+    if (name == NULL) {
+        return NULL;
+    }
+    for (int i = 0; i < GN_NUM_LEVELS; i++) {
+        if (strcmp(LEVELS[i].name, name) == 0) {
+            return &LEVELS[i];
+        }
+    }
+    return NULL;
+}
+
+int gn_search_level_count(void)
+{
+    return GN_NUM_LEVELS;
+}
+
+const char *gn_search_level_name(int index)
+{
+    if (index < 0 || index >= GN_NUM_LEVELS) {
+        return NULL;
+    }
+    return LEVELS[index].name;
+}

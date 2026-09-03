@@ -312,22 +312,48 @@ export class Evaluator {
    * Rend l'objet d'options à passer à `rankPlays` / `bestPlay`. Les budgets de
    * temps sont mesurés et documentés ; les composer autrement est possible,
    * mais alors c'est à vous de mesurer ce que ça coûte.
+   *
+   * DEPUIS L'ISSUE #25, la mesure de qualité de l'élagage voyage avec la
+   * forme : `pruneEquityLoss` et son IC à 95 %. Ces trois nombres sont
+   * RECOPIÉS depuis `gn_search_level` (`src/gn_search.c`), la source qui fait
+   * foi — comme `MEASURED_EFFICIENCY` ci-dessus, parce qu'un module chargé
+   * dans un navigateur ne peut pas lire un fichier du dépôt. `ply`,
+   * `filterTop`, `filterInner` et `pruneK` le sont depuis toujours (T91) ; ce
+   * qui change ici est seulement l'ajout du coût, jamais les formes
+   * elles-mêmes. `wasm/api_invariants.mjs` vérifie que cette copie n'a pas
+   * dérivé du C, à chaque `make wasm-api`.
+   *
+   * `k = 12` perd +0,00023 [-0,00000 ; +0,00067] d'équité par décision contre
+   * la même recherche non élaguée — un downstream ayant un jour introduit
+   * `k = 3` sans mesure amont y aurait perdu +0,00389 [+0,00232 ; +0,00585],
+   * dix-sept fois plus, pour deux fois la vitesse seulement
+   * (docs/mesures/2026-08-26-T3A-regroupement.md).
    */
   static level(name) {
     const LEVELS = {
       // 0-ply : le réseau seul. ~6 ms par décision dans un navigateur.
-      instant: { ply: 0, filterTop: 0, filterInner: 0, pruneK: 0 },
+      // Aucun élagage : rien à perdre.
+      instant: {
+        ply: 0, filterTop: 0, filterInner: 0, pruneK: 0,
+        pruneEquityLoss: 0, pruneEquityLossCi: [0, 0],
+      },
       // Le défaut. 2-ply filtré, élagage k=12 : ×3,65 pour une perte d'équité
       // dans le bruit. Mesuré en v1.3.0 sur un Ryzen 7 PRO 6850U : 0,33 s par
       // décision dans Chromium 152, 0,69 s dans Firefox 154 (T91). Le même
       // fichier vaut un facteur 2,7 entre les deux moteurs — ne transportez ce
       // chiffre ni vers un autre navigateur, ni vers une autre machine.
-      normal: { ply: 2, filterTop: 3, filterInner: 1, pruneK: 12 },
+      normal: {
+        ply: 2, filterTop: 3, filterInner: 1, pruneK: 12,
+        pruneEquityLoss: 0.00023, pruneEquityLossCi: [-0.00000, 0.00067],
+      },
       // Le même sans élagage, pour trancher une décision précise et non pour
       // parcourir un match. Son seul relevé — ~9,8 s par décision — date d'avant
       // le noyau SIMD128 de T91 et n'a pas été rejoué ; il vaut donc une borne
-      // haute, pas une mesure.
-      thorough: { ply: 2, filterTop: 3, filterInner: 1, pruneK: 0 },
+      // haute, pas une mesure. Aucun élagage : rien à perdre.
+      thorough: {
+        ply: 2, filterTop: 3, filterInner: 1, pruneK: 0,
+        pruneEquityLoss: 0, pruneEquityLossCi: [0, 0],
+      },
     };
     const level = LEVELS[name];
     if (!level) {

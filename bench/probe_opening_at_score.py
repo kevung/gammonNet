@@ -44,7 +44,7 @@ from gammonnet.cube import CubeOwner  # noqa: E402
 from gammonnet.infer import Network  # noqa: E402
 from gammonnet.met import MatchState  # noqa: E402
 from gammonnet.rules import BAR, OFF  # noqa: E402
-from gammonnet.search import SearchConfig, search_plays  # noqa: E402
+from gammonnet.search import SearchConfig, search_level, search_plays  # noqa: E402
 
 MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
 PRUNE = ROOT / "models" / "prune_32.bin"
@@ -128,7 +128,11 @@ def gammonnet_job(args):
     state = None if me is None else MatchState(away_on_roll=me, away_opponent=opp,
                                                cube=1, crawford=crawford)
     conv = normalised(state)
-    kw = dict(ply=2, filter=(0, 1, 3), prune_net=prune, prune_k=12)
+    # La forme canonique "normal" (issue #25) : ply=2, filtre (0,1,3), k=12 --
+    # une seule source, `gn_search_level` (src/gn_search.c), lue ici plutôt
+    # que retapée.
+    level = search_level("normal")
+    kw = dict(ply=level.ply, filter=level.filter, prune_net=prune, prune_k=level.prune_k)
     if state is not None:
         kw.update(use_match=True, match=state)
     if cubeful:
@@ -218,9 +222,11 @@ def main() -> int:
         print(f"  {'TOTAL':12s} {tot_n:3d} {tot_a/tot_n*100:6.0f}%   >0,02 : {sum(c['over_0.02'] for c in s.values())}")
 
     if args.out:
+        level = search_level("normal")
         args.out.write_text(json.dumps({
             "probe": "opening rolls at score: gammonNet vs gnubg 1.08.003",
-            "setting": {"ply": 2, "prune_k": 12, "filter": [0, 1, 3], "cube_x": CUBE_X,
+            "setting": {"ply": level.ply, "prune_k": level.prune_k,
+                        "filter": list(level.filter[:3]), "cube_x": CUBE_X,
                         "gnubg": "2-ply, movefilter wide open, prune on", "match_length": MATCH_LENGTH},
             "summaries": summaries, "rows": rows}, indent=1))
         print(f"\n  écrit : {args.out}")

@@ -330,6 +330,61 @@ unsigned long gn_search_prune_evaluations(void);
  */
 unsigned long gn_search_cube_valuations(void);
 
+/*
+ * A CANONICAL SEARCH LEVEL -- the shape of a decision (`ply`, `filter`,
+ * `prune_k`), named, with the quality it costs attached to the same struct as
+ * the numbers themselves. Verticale 5 (issue #25): before this, `ply = 2`,
+ * `filter = (0,1,3)` and `prune_k = 12` were retyped by hand four to five
+ * times across this repo, blunderDB and gammonGo, and the ONE thing that
+ * never travelled with any of those copies was what the setting costs --
+ * which is exactly how a downstream consumer once shipped a `prune_k = 3`
+ * "fast" mode with no measurement behind it at all.
+ *
+ * `prune_equity_loss` and its 95% CI are MEASURED
+ * (docs/mesures/2026-08-26-T3A-regroupement.md, 450 decisions -- 300
+ * contact, 150 race -- at 2-ply filter (0,1,3), against the SAME search
+ * unpruned): `k = 12` loses +0.00023 [-0.00000, +0.00067] equity per
+ * decision; the `k = 3` a downstream consumer once reached for on its own
+ * loses +0.00389 [+0.00232, +0.00585] -- seventeen times as much, for half
+ * the additional speedup (x8.4 against x3.6-3.9, same table). Where pruning
+ * is off (`prune_k == 0`) there is nothing to lose and the three fields are
+ * exactly 0.
+ */
+typedef struct {
+    /* "instant", "normal" or "thorough" -- wasm/gammonnet.mjs's own names
+     * (T91), matched here rather than invented twice. */
+    const char *name;
+
+    /* Same fields as GnSearchConfig, only the ones a canonical level fixes:
+     * no match/cube shaping, that stays the caller's, always. */
+    int ply;
+    int filter[GN_MAX_PLY + 1];
+    int prune_k;
+
+    /* T3A, see above. Zero (not NaN) when prune_k == 0: a caller that adds
+     * this to a running total must not have to special-case "no pruning". */
+    double prune_equity_loss;
+    double prune_equity_loss_ci_low;
+    double prune_equity_loss_ci_high;
+} GnSearchLevel;
+
+/*
+ * Look up a canonical level by name. Returns NULL for an unknown name --
+ * never a guess dressed up as a default; `gn_wasm.c` and the Python binding
+ * both turn NULL into a refusal that names the levels that DO exist.
+ *
+ * The returned pointer is to static storage: valid for the life of the
+ * process, never freed, safe to hold on to.
+ */
+const GnSearchLevel *gn_search_level(const char *name);
+
+/* How many canonical levels exist, and their names in a stable order --
+ * `gn_search_level_name(i)` for `i` in `[0, gn_search_level_count())` walks
+ * every one of them without a caller having to know their names in advance
+ * (`tools/extract_search_levels.py`'s own use). */
+int gn_search_level_count(void);
+const char *gn_search_level_name(int index);
+
 #ifdef __cplusplus
 }
 #endif

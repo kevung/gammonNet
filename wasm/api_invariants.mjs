@@ -312,6 +312,50 @@ check("les sous-coups répétés sont regroupés",
       heavy.some((c) => /\(\d\)/.test(c.notation)),
       heavy.map((c) => c.notation).join(" | "));
 
+/*
+ * 9. LES FORMES CANONIQUES (issue #25) -- `Evaluator.level()` recopie ses
+ * quatre nombres et sa mesure de qualité depuis `gn_search_level`
+ * (`src/gn_search.c`), la table qui fait foi -- exactement comme
+ * `MEASURED_EFFICIENCY` recopie la sienne. Une copie recopiée à la main peut
+ * dériver de sa source sans qu'aucun test qui n'appelle QUE `level()` ne le
+ * voie : celui-ci appelle le C directement (`gnw_search_level`) et compare.
+ */
+{
+  const raw = await factory();
+  const outPtr = raw._malloc(4 * 4);
+  const qualityPtr = raw._malloc(8 * 3);
+  /* `ccall` et non l'export nu, exactement comme `positionId`/`xgid`
+   * ci-dessus : le nom du niveau est une chaîne, et `ccall("string", ...)`
+   * fait la conversion UTF-8 au lieu de la refaire ici à la main. */
+  const callLevel = (name) => raw.ccall(
+    "gnw_search_level", "number", ["string", "number", "number"],
+    [name, outPtr, qualityPtr]);
+  for (const name of ["instant", "normal", "thorough"]) {
+    const status = callLevel(name);
+    const ply = raw.HEAP32[outPtr / 4];
+    const filterTop = raw.HEAP32[outPtr / 4 + 1];
+    const filterInner = raw.HEAP32[outPtr / 4 + 2];
+    const pruneK = raw.HEAP32[outPtr / 4 + 3];
+    const loss = raw.HEAPF64[qualityPtr / 8];
+    const ciLow = raw.HEAPF64[qualityPtr / 8 + 1];
+    const ciHigh = raw.HEAPF64[qualityPtr / 8 + 2];
+    const js = Evaluator.level(name);
+    const same = status === 0 && ply === js.ply && filterTop === js.filterTop
+      && filterInner === js.filterInner && pruneK === js.pruneK
+      && Math.abs(loss - js.pruneEquityLoss) < 1e-9
+      && Math.abs(ciLow - js.pruneEquityLossCi[0]) < 1e-9
+      && Math.abs(ciHigh - js.pruneEquityLossCi[1]) < 1e-9;
+    check(`Evaluator.level("${name}") == gnw_search_level (C)`, same,
+          same ? "" : `JS ${JSON.stringify(js)} / C {ply:${ply}, filterTop:${filterTop}, ` +
+            `filterInner:${filterInner}, pruneK:${pruneK}, loss:${loss}, ci:[${ciLow},${ciHigh}]}`);
+  }
+  const unknown = callLevel("fast");
+  check("un nom inconnu (ex : « fast », l'ancien réglage sans mesure) est " +
+        "refusé côté C, jamais deviné", unknown === -1, `${unknown}`);
+  raw._free(outPtr);
+  raw._free(qualityPtr);
+}
+
 console.log(failures === 0
   ? "\n✅ invariants de l'API tenus"
   : `\n❌ ${failures} invariant(s) rompu(s)`);
