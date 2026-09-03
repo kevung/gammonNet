@@ -45,6 +45,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+sys.path.insert(0, str(ROOT / "python"))
+
+from gammonnet.search import search_level  # noqa: E402
 
 #: Le nom du réseau garde la paternité de son auteur (BRIEF §8). Le nôtre est
 #: celui de la CONFIGURATION, pas des poids.
@@ -266,9 +269,10 @@ const prune = new Uint8Array(
   await (await fetch("./" + files.prune_fp16)).arrayBuffer());
 evaluator.loadPrune(prune, files.prune_k);
 
-// Position de départ, jet 3-1.
-const best = evaluator.bestPlay("4HPwATDgc/ABMA", 0, 3, 1,
-                                { ply: 2, filterTop: 3, filterInner: 1 });
+// Position de départ, jet 3-1 -- la forme canonique "normal" (ply=2,
+// filtre (0,1,3)), lue plutôt que retapée : `Evaluator.level` porte sa
+// mesure de qualité avec elle (issue #25).
+const best = evaluator.bestPlay("4HPwATDgc/ABMA", 0, 3, 1, Evaluator.level("normal"));
 console.log(best.equity, best.resultId, best.evaluations);
 ```
 
@@ -703,7 +707,11 @@ def main() -> int:
         "network_fp16": f"strehl-prob5-512-512-256-128_{args.version}_{date}.bin16",
         "prune": f"strehl-prune-32_{args.version}_{date}.bin",
         "prune_fp16": f"strehl-prune-32_{args.version}_{date}.bin16",
-        "prune_k": 12,
+        # La forme canonique "normal" (issue #25) : `gn_search_level`
+        # (src/gn_search.c) est l'unique source de ce nombre, lue ici plutôt
+        # que retapée -- c'est justement le manifeste que gammonGo/client.ts
+        # et l'artefact QUICKSTART.md lisent au lieu de recopier `12`.
+        "prune_k": search_level("normal").prune_k,
         "wasm": "gammonnet-simd.mjs",
         "wasm_scalar": "gammonnet.mjs",
         "api": "api/gammonnet.mjs",

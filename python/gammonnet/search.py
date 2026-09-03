@@ -104,6 +104,28 @@ _LIB.gn_search_reset_evaluations.restype = None
 _LIB.gn_search_prune_evaluations.argtypes = []
 _LIB.gn_search_prune_evaluations.restype = ctypes.c_ulong
 
+
+class _CSearchLevel(ctypes.Structure):
+    _fields_ = [
+        ("name", ctypes.c_char_p),
+        ("ply", ctypes.c_int),
+        ("filter", ctypes.c_int * (MAX_PLY + 1)),
+        ("prune_k", ctypes.c_int),
+        ("prune_equity_loss", ctypes.c_double),
+        ("prune_equity_loss_ci_low", ctypes.c_double),
+        ("prune_equity_loss_ci_high", ctypes.c_double),
+    ]
+
+
+_LIB.gn_search_level.argtypes = [ctypes.c_char_p]
+_LIB.gn_search_level.restype = ctypes.POINTER(_CSearchLevel)
+
+_LIB.gn_search_level_count.argtypes = []
+_LIB.gn_search_level_count.restype = ctypes.c_int
+
+_LIB.gn_search_level_name.argtypes = [ctypes.c_int]
+_LIB.gn_search_level_name.restype = ctypes.c_char_p
+
 _MAX_CANDIDATES = 2048
 _CandidateArray = _CCandidate * _MAX_CANDIDATES
 
@@ -223,6 +245,66 @@ def prune_evaluations() -> int:
 def reset_evaluations() -> None:
     """Remet à zéro les deux compteurs, le grand réseau et l'élagage."""
     _LIB.gn_search_reset_evaluations()
+
+
+@dataclass(frozen=True)
+class SearchLevel:
+    """Une forme canonique de recherche, nommée, coût de qualité attaché.
+
+    Verticale 5 (issue #25) : `ply = 2`, `filter = (0,1,3)` et `prune_k = 12`
+    étaient recopiés à la main jusqu'à cinq fois à travers ce dépôt, blunderDB
+    et gammonGo. `gn_search_level` (`src/gn_search.c`, la table `LEVELS`) est
+    désormais l'unique endroit qui les définit ; cette classe et
+    `search_level()` en sont la lecture Python — rien n'est réinventé ici.
+
+    `prune_equity_loss` et son intervalle à 95 % sont MESURÉS
+    (`docs/mesures/2026-08-26-T3A-regroupement.md`), toujours 0 quand
+    `prune_k == 0` : il n'y a rien à perdre.
+    """
+
+    name: str
+    ply: int
+    filter: tuple[int, ...]
+    prune_k: int
+    prune_equity_loss: float
+    prune_equity_loss_ci_low: float
+    prune_equity_loss_ci_high: float
+
+    def to_config(self) -> SearchConfig:
+        """La `SearchConfig` correspondante — sans réseau d'élagage : c'est à
+        l'appelant de charger celui qu'il veut brancher (`SearchConfig.prune_net`)."""
+        return SearchConfig(ply=self.ply, filter=self.filter)
+
+
+def search_level(name: str) -> SearchLevel:
+    """La forme canonique nommée (`"instant"`, `"normal"`, `"thorough"`).
+
+    Lève `ValueError` si `name` n'est pas connu — jamais un défaut deviné ; le
+    message nomme les niveaux qui existent réellement, plutôt que de forcer
+    l'appelant à les retrouver dans ce fichier.
+    """
+    ptr = _LIB.gn_search_level(name.encode("utf-8"))
+    if not ptr:
+        known = ", ".join(search_level_names())
+        raise ValueError(f"niveau inconnu : {name!r}. Connus : {known}")
+    c = ptr.contents
+    return SearchLevel(
+        name=c.name.decode("utf-8"),
+        ply=c.ply,
+        filter=tuple(c.filter[: MAX_PLY + 1]),
+        prune_k=c.prune_k,
+        prune_equity_loss=c.prune_equity_loss,
+        prune_equity_loss_ci_low=c.prune_equity_loss_ci_low,
+        prune_equity_loss_ci_high=c.prune_equity_loss_ci_high,
+    )
+
+
+def search_level_names() -> tuple[str, ...]:
+    """Les noms des niveaux canoniques, dans l'ordre de la table C."""
+    count = _LIB.gn_search_level_count()
+    return tuple(
+        _LIB.gn_search_level_name(i).decode("utf-8") for i in range(count)
+    )
 
 
 def terminal_equity(position: Position) -> float:
