@@ -1,0 +1,423 @@
+{
+  "task": "T34-phase2-3a + T80",
+  "seed": 20260808,
+  "positions": 20000,
+  "efficiency": {
+    "OWNED": 0.5660000000000001,
+    "CENTRED": 0.6880000000000001
+  },
+  "network": "/home/kunger/dev/gammonNet/models/bearoff_cubeful_code16_256_128_dec.bin",
+  "per_owner": {
+    "OWNED": {
+      "ply0": {
+        "n": 20000,
+        "agreed": 19664,
+        "rate": 0.9832,
+        "mean_loss": 0.0009275516899366732,
+        "worst_loss": 0.3501182574196995,
+        "above_0.01": 191
+      },
+      "ply1": {
+        "n": 20000,
+        "agreed": 19664,
+        "rate": 0.9832,
+        "mean_loss": 0.0009275516899366732,
+        "worst_loss": 0.3501182574196995,
+        "above_0.01": 191
+      },
+      "net": {
+        "n": 20000,
+        "agreed": 19968,
+        "rate": 0.9984,
+        "mean_loss": 7.92248416876471e-06,
+        "worst_loss": 0.029587243457694257,
+        "above_0.01": 4
+      },
+      "contested": {
+        "ply0": {
+          "n": 10518,
+          "agreed": 10182,
+          "rate": 0.9680547632629778,
+          "mean_loss": 0.0017637415667173858,
+          "worst_loss": 0.3501182574196995,
+          "above_0.01": 191
+        },
+        "ply1": {
+          "n": 10518,
+          "agreed": 10182,
+          "rate": 0.9680547632629778,
+          "mean_loss": 0.0017637415667173858,
+          "worst_loss": 0.3501182574196995,
+          "above_0.01": 191
+        },
+        "net": {
+          "n": 10518,
+          "agreed": 10486,
+          "rate": 0.9969575965012359,
+          "mean_loss": 1.5064620971220213e-05,
+          "worst_loss": 0.029587243457694257,
+          "above_0.01": 4
+        }
+      }
+    },
+    "CENTRED": {
+      "ply0": {
+        "n": 20000,
+        "agreed": 19486,
+        "rate": 0.9743,
+        "mean_loss": 0.001654033722438388,
+        "worst_loss": 0.37804226749065384,
+        "above_0.01": 310
+      },
+      "ply1": {
+        "n": 20000,
+        "agreed": 19485,
+        "rate": 0.97425,
+        "mean_loss": 0.0016609361409933587,
+        "worst_loss": 0.37804226749065384,
+        "above_0.01": 311
+      },
+      "net": {
+        "n": 20000,
+        "agreed": 19979,
+        "rate": 0.99895,
+        "mean_loss": 5.445181963836154e-06,
+        "worst_loss": 0.055527580682078304,
+        "above_0.01": 2
+      },
+      "contested": {
+        "ply0": {
+          "n": 10636,
+          "agreed": 10122,
+          "rate": 0.9516735614892817,
+          "mean_loss": 0.003110255213310244,
+          "worst_loss": 0.37804226749065384,
+          "above_0.01": 310
+        },
+        "ply1": {
+          "n": 10636,
+          "agreed": 10121,
+          "rate": 0.951579541180895,
+          "mean_loss": 0.003123234563733281,
+          "worst_loss": 0.37804226749065384,
+          "above_0.01": 311
+        },
+        "net": {
+          "n": 10636,
+          "agreed": 10615,
+          "rate": 0.9980255735238811,
+          "mean_loss": 1.0239153749221802e-05,
+          "worst_loss": 0.055527580682078304,
+          "above_0.01": 2
+        }
+      }
+    }
+  },
+  "ply_flips": {
+    "n": 1,
+    "toward_exact": 0,
+    "away_from_exact": 1
+  },
+  "worst_disagreements": [
+    {
+      "id": "EAAAiAAAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.055527580682078304,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.1794429423014324,
+      "ply0_loss": 0.055527580682078304,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.1794309107462566,
+      "ply1_loss": 0.055527580682078304,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.025084955617785454,
+      "net_loss": 0.055527580682078304
+    },
+    {
+      "id": "NQAAgBIAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.029587243457694257,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.09493073326349255,
+      "ply0_loss": 0.029587243457694257,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.10034974372386934,
+      "ply1_loss": 0.029587243457694257,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.004580646753311157,
+      "net_loss": 0.029587243457694257
+    },
+    {
+      "id": "YQAAgAkAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.027573052567330336,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.1384761829376221,
+      "ply0_loss": 0.027573052567330336,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.15078792214393621,
+      "ply1_loss": 0.027573052567330336,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.01587057113647461,
+      "net_loss": 0.027573052567330336
+    },
+    {
+      "id": "JgAAQAkAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "NO_DOUBLE",
+      "exact_margin": 0.024185549706263965,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.16841939926147464,
+      "ply0_loss": 0.0,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.17295402908325197,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_TAKE",
+      "net_margin": -0.005676954984664917,
+      "net_loss": 0.024185549706263965
+    },
+    {
+      "id": "FQAAUAkAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.020523384451056392,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.16955013853311546,
+      "ply0_loss": 0.020523384451056392,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.16952305912971502,
+      "ply1_loss": 0.020523384451056392,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.002103358507156372,
+      "net_loss": 0.020523384451056392
+    },
+    {
+      "id": "EwEAoCkAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.012375066758220754,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.18324088615179066,
+      "ply0_loss": 0.012375066758220754,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.18322346824407582,
+      "ply1_loss": 0.012375066758220754,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.0055630505084991455,
+      "net_loss": 0.012375066758220754
+    },
+    {
+      "id": "rQQAgGkBAAAAAA",
+      "owner": "OWNED",
+      "exact": "NO_DOUBLE",
+      "exact_margin": 0.0080720225833526,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.01877855211496371,
+      "ply0_loss": 0.0,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.018771748244762465,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_TAKE",
+      "net_margin": -0.004859864711761475,
+      "net_loss": 0.0080720225833526
+    },
+    {
+      "id": "qAAAsBEAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "NO_DOUBLE",
+      "exact_margin": 0.0074921797512779165,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.14466995366414376,
+      "ply0_loss": 0.0,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.144660243988037,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_TAKE",
+      "net_margin": -0.0023097991943359375,
+      "net_loss": 0.0074921797512779165
+    },
+    {
+      "id": "qxcAAOyrAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.007339589532311175,
+      "ply0": "DOUBLE_TAKE",
+      "ply0_margin": -0.06075283920764918,
+      "ply0_loss": 0.0,
+      "ply1": "DOUBLE_TAKE",
+      "ply1_margin": -0.06076549440622325,
+      "ply1_loss": 0.0,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.0012613534927368164,
+      "net_loss": 0.007339589532311175
+    },
+    {
+      "id": "twIAAF0DAAAAAA",
+      "owner": "OWNED",
+      "exact": "NO_DOUBLE",
+      "exact_margin": 0.007156481269550596,
+      "ply0": "DOUBLE_TAKE",
+      "ply0_margin": -0.04211540579795836,
+      "ply0_loss": 0.007156481269550596,
+      "ply1": "DOUBLE_TAKE",
+      "ply1_margin": -0.042116494417190564,
+      "ply1_loss": 0.007156481269550596,
+      "net": "DOUBLE_TAKE",
+      "net_margin": -0.0048806071281433105,
+      "net_loss": 0.007156481269550596
+    },
+    {
+      "id": "WysAAKxtAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.005264362554360469,
+      "ply0": "DOUBLE_TAKE",
+      "ply0_margin": -0.0479679588675499,
+      "ply0_loss": 0.0,
+      "ply1": "DOUBLE_TAKE",
+      "ply1_margin": -0.04798728185892087,
+      "ply1_loss": 0.0,
+      "net": "NO_DOUBLE",
+      "net_margin": 5.561113357543945e-05,
+      "net_loss": 0.005264362554360469
+    },
+    {
+      "id": "awAAgGUAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.005050736247806498,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.1279184405008951,
+      "ply0_loss": 0.005050736247806498,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.12789289983113586,
+      "ply1_loss": 0.005050736247806498,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.0015913844108581543,
+      "net_loss": 0.005050736247806498
+    },
+    {
+      "id": "ogAAUBIAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.004562447547112214,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.1284781678318978,
+      "ply0_loss": 0.004562447547112214,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.1284772152900696,
+      "ply1_loss": 0.004562447547112214,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.0049436092376708984,
+      "net_loss": 0.004562447547112214
+    },
+    {
+      "id": "IgAAcAAAAAAAAA",
+      "owner": "OWNED",
+      "exact": "NO_DOUBLE",
+      "exact_margin": 0.004531929503318599,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.32056571173667925,
+      "ply0_loss": 0.0,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.320539584875107,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_TAKE",
+      "net_margin": -0.012868210673332214,
+      "net_loss": 0.004531929503318599
+    },
+    {
+      "id": "tAAAQCsAAAAAAA",
+      "owner": "OWNED",
+      "exact": "NO_DOUBLE",
+      "exact_margin": 0.004104676890211101,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.1203264509439469,
+      "ply0_loss": 0.0,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.12084027922153479,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_TAKE",
+      "net_margin": -0.0010882019996643066,
+      "net_loss": 0.004104676890211101
+    },
+    {
+      "id": "3mUAAHhXAwAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.0039215686274509665,
+      "ply0": "DOUBLE_TAKE",
+      "ply0_margin": -0.10074503570795057,
+      "ply0_loss": 0.0,
+      "ply1": "DOUBLE_TAKE",
+      "ply1_margin": -0.10074884587526312,
+      "ply1_loss": 0.0,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.002987504005432129,
+      "net_loss": 0.0039215686274509665
+    },
+    {
+      "id": "xh4AAG5bAQAAAA",
+      "owner": "OWNED",
+      "exact": "NO_DOUBLE",
+      "exact_margin": 0.003616388189517039,
+      "ply0": "DOUBLE_TAKE",
+      "ply0_margin": -0.05462173569202422,
+      "ply0_loss": 0.003616388189517039,
+      "ply1": "DOUBLE_TAKE",
+      "ply1_margin": -0.05462364077568049,
+      "ply1_loss": 0.003616388189517039,
+      "net": "DOUBLE_TAKE",
+      "net_margin": -0.0020897388458251953,
+      "net_loss": 0.003616388189517039
+    },
+    {
+      "id": "2xMAAHSXAAAAAA",
+      "owner": "CENTRED",
+      "exact": "NO_DOUBLE",
+      "exact_margin": 0.0034637979705500754,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.02359947458902978,
+      "ply0_loss": 0.0,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.023581427256266108,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_TAKE",
+      "net_margin": -0.005111038684844971,
+      "net_loss": 0.0034637979705500754
+    },
+    {
+      "id": "GwUAAG0BAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.003402761882963068,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.06462316560745235,
+      "ply0_loss": 0.003402761882963068,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.06459118741750719,
+      "ply1_loss": 0.003402761882963068,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.0006617307662963867,
+      "net_loss": 0.003402761882963068
+    },
+    {
+      "id": "CAAAiAAAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.003036545357442577,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.30157992017269153,
+      "ply0_loss": 0.003036545357442577,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.3015780150890352,
+      "ply1_loss": 0.003036545357442577,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.025183334946632385,
+      "net_loss": 0.003036545357442577
+    }
+  ]
+}

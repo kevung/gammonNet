@@ -1,16 +1,17 @@
 {
  "artifact": {
   "path": "models/t71_b1.bin",
-  "sha256": "a8fa417e6568241d4eafc7ea8b09e83a5d0f075956a76b40f1b32abca5dfc593"
+  "sha256": "3982e94767c92920ba69687036da2f6a4641da03b0a52843f3062cc2ad642547"
  },
- "date": "2026-09-02",
+ "date": "2026-09-03",
  "labels": {
   "directory": "/home/kunger/dev/gammonNet/build/t71-money",
-  "duplicates_dropped": 133134,
+  "duplicates_dropped": 33022,
+  "limit": 0,
   "manifests": [
    {
-    "core_hours": 231.64618843841671,
-    "date": "2026-09-02",
+    "core_hours": 208.73295860663322,
+    "date": "2026-09-03",
     "host": "mochy",
     "labels": 280000,
     "parts": [
@@ -45,7 +46,7 @@
      "labels.part-028.jsonl",
      "labels.part-029.jsonl"
     ],
-    "seconds": 27797.542612610006,
+    "seconds": 25047.955032795988,
     "settings": {
      "count": 280000,
      "model": "cubeless_prob5_512_512_256_128.bin",
@@ -101,20 +102,20 @@
     }
    }
   ],
-  "positions": 162864
+  "positions": 366978
  },
  "task": "T71 étape 1 (palier B1)",
  "training": {
   "aux_weight": 0.2,
   "batch_size": 4096,
-  "best_epoch": 163,
+  "best_epoch": 176,
   "device": "cuda",
-  "epochs_run": 188,
+  "epochs_run": 201,
   "from_scratch": true,
-  "held_out_bce": 0.19789402186870575,
+  "held_out_bce": 0.19645416736602783,
   "holdout": 0.05,
   "lr": 0.001,
-  "seconds": 9.858231569989584,
+  "seconds": 23.95437548100017,
   "seed": 20260902,
   "torch": "2.4.1+cu121",
   "torch_threads": 16

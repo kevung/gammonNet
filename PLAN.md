@@ -1255,6 +1255,17 @@ discipline de la fiche. La régénération est déterministe et tourne ; `tools/
 refera entraînement et mesures, avec un garde qui **refuse** de continuer si une part de mochy est
 identique à une part de melbaa.
 
+**Palier B1 rendu le 2026-09-03, au volume réparé : le candidat ne bat pas l'incumbent.** Sur
+366 978 positions distinctes, la perte est **0,00537** [0,00516 ; 0,00559] contre l'étalon
+**0,00313**, avec 5,84 % de décisions hors registre. Le volume a aidé — 0,00661 à 162 864
+étiquettes, 0,00537 à 366 978 — sans refermer un facteur qui reste de **1,7**. Le critère d'arrêt
+de DS-14 s'applique cette fois, mais la cause est éclairée par un témoin qui n'était pas prévu
+(voir T72 ci-dessous) : **à architecture identique, la distillation supervisée du réseau actuel
+rend 0,00990**, trois fois l'original. Ce n'est donc pas le volume d'étiquettes qui manque, c'est
+que ce réseau ne se reproduit pas par distillation — il vient d'un entraînement par différences
+temporelles sur un volume sans commune mesure. Une courbe volume → force sur 1,5 M d'étiquettes
+(mochy, melbaa et smith réunies) mesure ce qu'il reste à gagner.
+
 ## T72 — Réduire le réseau par distillation : 60–100 k MACs
 
 > **La ligne P3.** Le premier levier de vitesse — ×2,5 à ×6,6 sur toute décision, natif et
@@ -1274,6 +1285,19 @@ volatilité. SVD tronquée en option sur les couches larges restantes.
   face au ×2,5–6,6 attendu.
 - Le corpus de non-régression (T12) est **régénéré** pour le nouveau réseau — un changement de
   poids doit rester visible.
+
+**Préparation rendue le 2026-09-03**, fiche
+[`docs/mesures/2026-09-03-T72prep-taille-et-distillation.md`](docs/mesures/2026-09-03-T72prep-taille-et-distillation.md).
+
+Six architectures distillées du réseau **actuel** (ce n'est pas T72, qui distillera celui de T71),
+mesurées sur le registre de T70. **La contrainte de taille n'est pas le problème** : de 527 000 à
+25 000 MACs, un facteur 21, la perte ne monte que de 0,00990 à 0,01119 (**+13 %**), et quatre des
+tailles testées sont indiscernables entre elles.
+
+**Le témoin est le résultat.** À architecture **identique** à l'original, le redistillé rend
+**0,00990** contre 0,00313 — un facteur **3,2 sans qu'un paramètre ait été retiré**. T72 devra
+donc comparer son résultat au redistillé de même taille, jamais à l'original : sans ce témoin, une
+perte de 0,010 serait attribuée à la réduction alors qu'elle vient à 87 % de la distillation.
 
 ## T73 — QAT int8 et noyau SIMD128 déterministe
 
@@ -1634,6 +1658,14 @@ du repère gnubg contre zéro) : la règle de diagnostic nomme « interférence 
 **la cause n'est pas établie** — l'étage d'affinage par décision de coup n'a pas tourné faute de
 processeurs libres, et deux choses ont donc changé au lieu d'une. Le contrôle à une seule variable
 est la suite immédiate.
+
+**Contrôle à une seule variable, rendu le 2026-09-03** :
+[`docs/mesures/2026-09-03-T80-controle-une-variable.md`](docs/mesures/2026-09-03-T80-controle-une-variable.md).
+Même gabarit, même graine, même budget, **l'étage d'affinage par décision de coup en plus** : le
+pire cas de la colonne cubeless reste **identique** (0,00943), et les décisions au-delà du repère
+gnubg passent de 12 à 11. **L'étage manquant n'expliquait rien : la cause est l'interférence entre
+têtes**, désormais mesurée et non supposée. La suite écrite dans la fiche s'applique — têtes
+séparées, ou pondération des étages, une seule chose changeant à la fois.
 
 **Ce que cette fiche offre à l'axe « videau appris » (T81/T82)** — une **vérité de terrain sans
 variance**. T81 demande si le videau se réduit aux cinq probabilités, et le juge sur des

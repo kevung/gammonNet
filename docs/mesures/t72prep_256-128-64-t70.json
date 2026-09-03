@@ -1,0 +1,55 @@
+{
+  "bounded": 1155,
+  "by_class": {
+    "backgame": {
+      "loss": 0.01065410556543514,
+      "n": 395
+    },
+    "bearoff_contact": {
+      "loss": 0.014189147155862461,
+      "n": 580
+    },
+    "blitz": {
+      "loss": 0.007953712236188265,
+      "n": 1186
+    },
+    "contact": {
+      "loss": 0.01057855224904347,
+      "n": 4668
+    },
+    "crashed": {
+      "loss": 0.019980239475260612,
+      "n": 411
+    },
+    "holding": {
+      "loss": 0.008531462649314878,
+      "n": 1038
+    },
+    "prime_vs_prime": {
+      "loss": 0.013600123336614136,
+      "n": 431
+    },
+    "race_contact": {
+      "loss": 0.0096457841345853,
+      "n": 598
+    }
+  },
+  "ci95": [
+    0.010071153609003075,
+    0.011312692648209935
+  ],
+  "context": "money",
+  "core_hours": 0.8419345457249923,
+  "decisions": 10000,
+  "label": "t72prep_256-128-64 2-ply",
+  "loss": 0.010676558991819756,
+  "model": "t72prep_256-128-64.bin",
+  "outside": 693,
+  "outside_rate": 0.0693,
+  "ply": 2,
+  "registry": "registre-money.jsonl",
+  "scored": 9307,
+  "seconds": 101.03214548699907,
+  "unresolved": 148,
+  "workers": 30
+}

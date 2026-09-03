@@ -1,0 +1,180 @@
+{
+  "task": "T78",
+  "written": "2026-09-03T01:11:53+00:00",
+  "architecture": [
+    128,
+    256,
+    128,
+    4
+  ],
+  "parameters": 264452,
+  "macs": 66048,
+  "feature_version": 1,
+  "outputs": 4,
+  "output": "tanh",
+  "embedding": 16,
+  "matrix": {
+    "path": "build/ts6x11_cubeful.u16",
+    "sha256": "115bb65fc2f2f50d85fc405a6bfd629f33628e8e928c8eb07b06ebac15c080c5"
+  },
+  "training": {
+    "steps": 40000,
+    "batch": 16384,
+    "lr": 0.003,
+    "seed": 20260828,
+    "device": "cuda",
+    "threads": 16,
+    "mine_rounds": 3,
+    "mine_steps": 4000,
+    "mine_keep": 1000000,
+    "mine_mix": 0.5,
+    "decision_corpus": "/home/kunger/dev/gammonNet/build/bearoff_decisions.npz",
+    "decision_steps": 8000,
+    "margin": 0.002,
+    "anchor": 1.0,
+    "cube_steps": 12000,
+    "cube_batch": 8192,
+    "cube_lr": 0.0002,
+    "cube_margin": 0.002
+  },
+  "exhaustive_error": {
+    "after_regression": {
+      "pairs": 153140625,
+      "mean_abs": 0.0009591835171773767,
+      "rms": 0.001319267596678855,
+      "worst_abs": 0.07864958047866821,
+      "worst_at": [
+        11,
+        11
+      ],
+      "above_0.01": 47087,
+      "guaranteed_decision_loss": 0.15729916095733643,
+      "columns": {
+        "cubeless": {
+          "mean_abs": 0.0009591835171773767,
+          "rms": 0.001319267596678855,
+          "worst_abs": 0.07864958047866821
+        },
+        "owned": {
+          "mean_abs": 0.0011759418825371972,
+          "rms": 0.0017000450191529503,
+          "worst_abs": 0.08574771881103516
+        },
+        "centered": {
+          "mean_abs": 0.0014111818354442865,
+          "rms": 0.0020921714827688434,
+          "worst_abs": 0.08983057737350464
+        },
+        "opponent_owns": {
+          "mean_abs": 0.0012698211375363883,
+          "rms": 0.001864483953657107,
+          "worst_abs": 0.09967732429504395
+        }
+      }
+    },
+    "after_mining": {
+      "pairs": 153140625,
+      "mean_abs": 0.0012264730367715986,
+      "rms": 0.0016278388913781652,
+      "worst_abs": 0.03735071420669556,
+      "worst_at": [
+        130,
+        16
+      ],
+      "above_0.01": 18281,
+      "guaranteed_decision_loss": 0.07470142841339111,
+      "columns": {
+        "cubeless": {
+          "mean_abs": 0.0012264730367715986,
+          "rms": 0.0016278388913781652,
+          "worst_abs": 0.03735071420669556
+        },
+        "owned": {
+          "mean_abs": 0.0014726474046351994,
+          "rms": 0.0020700252919686572,
+          "worst_abs": 0.04123944044113159
+        },
+        "centered": {
+          "mean_abs": 0.0017733288691917399,
+          "rms": 0.0025468250743969703,
+          "worst_abs": 0.04809153079986572
+        },
+        "opponent_owns": {
+          "mean_abs": 0.0016092696890907378,
+          "rms": 0.0022516353520487596,
+          "worst_abs": 0.04396003484725952
+        }
+      }
+    },
+    "after_decisions": {
+      "pairs": 153140625,
+      "mean_abs": 0.000975033979039328,
+      "rms": 0.001315320824429271,
+      "worst_abs": 0.09314548969268799,
+      "worst_at": [
+        4,
+        3
+      ],
+      "above_0.01": 32902,
+      "guaranteed_decision_loss": 0.18629097938537598,
+      "columns": {
+        "cubeless": {
+          "mean_abs": 0.000975033979039328,
+          "rms": 0.001315320824429271,
+          "worst_abs": 0.09314548969268799
+        },
+        "owned": {
+          "mean_abs": 0.001155771688772092,
+          "rms": 0.0016371907316898768,
+          "worst_abs": 0.05811864137649536
+        },
+        "centered": {
+          "mean_abs": 0.0013730101860645,
+          "rms": 0.00198345788784567,
+          "worst_abs": 0.05685478448867798
+        },
+        "opponent_owns": {
+          "mean_abs": 0.0012554218174584385,
+          "rms": 0.0017839642814198565,
+          "worst_abs": 0.05981329083442688
+        }
+      }
+    },
+    "after_cube": {
+      "pairs": 153140625,
+      "mean_abs": 0.0009019739747737794,
+      "rms": 0.0012200131457955011,
+      "worst_abs": 0.0535740852355957,
+      "worst_at": [
+        11,
+        11
+      ],
+      "above_0.01": 17788,
+      "guaranteed_decision_loss": 0.1071481704711914,
+      "columns": {
+        "cubeless": {
+          "mean_abs": 0.0009019739747737794,
+          "rms": 0.0012200131457955011,
+          "worst_abs": 0.0535740852355957
+        },
+        "owned": {
+          "mean_abs": 0.0011109951874205878,
+          "rms": 0.0015774775295756393,
+          "worst_abs": 0.055744290351867676
+        },
+        "centered": {
+          "mean_abs": 0.001324520352151367,
+          "rms": 0.001920887037758948,
+          "worst_abs": 0.055805504322052
+        },
+        "opponent_owns": {
+          "mean_abs": 0.0011886303478280276,
+          "rms": 0.0017099103571217723,
+          "worst_abs": 0.060843318700790405
+        }
+      }
+    }
+  },
+  "weights_sha256": "1c9542a3b37572bf8f08f3b5b88b22dedf12ef264a84cbf52f63772bbf89ee85",
+  "minutes": 3.6872670875003677
+}

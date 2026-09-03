@@ -1,0 +1,228 @@
+{
+  "task": "T34-phase2-3a + T80",
+  "seed": 20260808,
+  "positions": 2000,
+  "efficiency": {
+    "OWNED": 0.5660000000000001,
+    "CENTRED": 0.6880000000000001
+  },
+  "network": "/home/kunger/dev/gammonNet/models/bearoff_cubeful_code16_256_128_dec.bin",
+  "per_owner": {
+    "OWNED": {
+      "ply0": {
+        "n": 2000,
+        "agreed": 1966,
+        "rate": 0.983,
+        "mean_loss": 0.0007225909819180592,
+        "worst_loss": 0.27775997558556487,
+        "above_0.01": 20
+      },
+      "ply1": {
+        "n": 2000,
+        "agreed": 1966,
+        "rate": 0.983,
+        "mean_loss": 0.0007225909819180592,
+        "worst_loss": 0.27775997558556487,
+        "above_0.01": 20
+      },
+      "net": {
+        "n": 2000,
+        "agreed": 1996,
+        "rate": 0.998,
+        "mean_loss": 2.9755092698557915e-06,
+        "worst_loss": 0.005264362554360469,
+        "above_0.01": 0
+      },
+      "contested": {
+        "ply0": {
+          "n": 1059,
+          "agreed": 1025,
+          "rate": 0.9678942398489141,
+          "mean_loss": 0.0013646666325175811,
+          "worst_loss": 0.27775997558556487,
+          "above_0.01": 20
+        },
+        "ply1": {
+          "n": 1059,
+          "agreed": 1025,
+          "rate": 0.9678942398489141,
+          "mean_loss": 0.0013646666325175811,
+          "worst_loss": 0.27775997558556487,
+          "above_0.01": 20
+        },
+        "net": {
+          "n": 1059,
+          "agreed": 1055,
+          "rate": 0.996222851746931,
+          "mean_loss": 5.6194698203131095e-06,
+          "worst_loss": 0.005264362554360469,
+          "above_0.01": 0
+        }
+      }
+    },
+    "CENTRED": {
+      "ply0": {
+        "n": 2000,
+        "agreed": 1950,
+        "rate": 0.975,
+        "mean_loss": 0.001352483405813688,
+        "worst_loss": 0.27775997558556487,
+        "above_0.01": 31
+      },
+      "ply1": {
+        "n": 2000,
+        "agreed": 1950,
+        "rate": 0.975,
+        "mean_loss": 0.001352483405813688,
+        "worst_loss": 0.27775997558556487,
+        "above_0.01": 31
+      },
+      "net": {
+        "n": 2000,
+        "agreed": 1997,
+        "rate": 0.9985,
+        "mean_loss": 5.874723430228101e-07,
+        "worst_loss": 0.0011749446860456203,
+        "above_0.01": 0
+      },
+      "contested": {
+        "ply0": {
+          "n": 1065,
+          "agreed": 1015,
+          "rate": 0.9530516431924883,
+          "mean_loss": 0.002539874940495189,
+          "worst_loss": 0.27775997558556487,
+          "above_0.01": 31
+        },
+        "ply1": {
+          "n": 1065,
+          "agreed": 1015,
+          "rate": 0.9530516431924883,
+          "mean_loss": 0.002539874940495189,
+          "worst_loss": 0.27775997558556487,
+          "above_0.01": 31
+        },
+        "net": {
+          "n": 1065,
+          "agreed": 1062,
+          "rate": 0.9971830985915493,
+          "mean_loss": 1.1032344469911928e-06,
+          "worst_loss": 0.0011749446860456203,
+          "above_0.01": 0
+        }
+      }
+    }
+  },
+  "ply_flips": {
+    "n": 0,
+    "toward_exact": 0,
+    "away_from_exact": 0
+  },
+  "worst_disagreements": [
+    {
+      "id": "WysAAKxtAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.005264362554360469,
+      "ply0": "DOUBLE_TAKE",
+      "ply0_margin": -0.0479679588675499,
+      "ply0_loss": 0.0,
+      "ply1": "DOUBLE_TAKE",
+      "ply1_margin": -0.04798728185892087,
+      "ply1_loss": 0.0,
+      "net": "NO_DOUBLE",
+      "net_margin": 5.561113357543945e-05,
+      "net_loss": 0.005264362554360469
+    },
+    {
+      "id": "utsAAOCzDQAAAA",
+      "owner": "CENTRED",
+      "exact": "NO_DOUBLE",
+      "exact_margin": 0.0011749446860456203,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.0019575564066567352,
+      "ply0_loss": 0.0,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.0019327545166014648,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_TAKE",
+      "net_margin": -0.00046944618225097656,
+      "net_loss": 0.0011749446860456203
+    },
+    {
+      "id": "8gwAAK0aAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.0006866559853511145,
+      "ply0": "DOUBLE_TAKE",
+      "ply0_margin": -0.026195302069187187,
+      "ply0_loss": 0.0,
+      "ply1": "DOUBLE_TAKE",
+      "ply1_margin": -0.026201969861984198,
+      "ply1_loss": 0.0,
+      "net": "NO_DOUBLE",
+      "net_margin": 0.002445399761199951,
+      "net_loss": 0.0006866559853511145
+    },
+    {
+      "id": "IAAAgAAAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.37499046311131456,
+      "ply0": "DOUBLE_PASS",
+      "ply0_margin": -0.16275248336791992,
+      "ply0_loss": 0.0,
+      "ply1": "DOUBLE_PASS",
+      "ply1_margin": -0.1627491722106933,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_PASS",
+      "net_margin": -0.3641067147254944,
+      "net_loss": 0.0
+    },
+    {
+      "id": "IAAAgAAAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.49999237048905165,
+      "ply0": "DOUBLE_PASS",
+      "ply0_margin": -0.11700178527832028,
+      "ply0_loss": 0.0,
+      "ply1": "DOUBLE_PASS",
+      "ply1_margin": -0.11699940490722649,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_PASS",
+      "net_margin": -0.48078441619873047,
+      "net_loss": 0.0
+    },
+    {
+      "id": "IAAAgAAAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.37499046311131456,
+      "ply0": "DOUBLE_PASS",
+      "ply0_margin": -0.16275248336791992,
+      "ply0_loss": 0.0,
+      "ply1": "DOUBLE_PASS",
+      "ply1_margin": -0.1627491722106933,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_PASS",
+      "net_margin": -0.3641067147254944,
+      "net_loss": 0.0
+    },
+    {
+      "id": "IAAAgAAAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.49999237048905165,
+      "ply0": "DOUBLE_PASS",
+      "ply0_margin": -0.11700178527832028,
+      "ply0_loss": 0.0,
+      "ply1": "DOUBLE_PASS",
+      "ply1_margin": -0.11699940490722649,
+      "ply1_loss": 0.0,
+      "net": "DOUBLE_PASS",
+      "net_margin": -0.48078441619873047,
+      "net_loss": 0.0
+    }
+  ]
+}
