@@ -20,6 +20,7 @@ Phase 7 — Dépasser                 T70 T71 T72 T73              ← CHOISIE l
                                    T74 T75 T76 T77              (programme du plan de recherche)
                                    T78 T79 T80 T81 T82 T83      (la fin de partie, apprise)
 Phase 8 — Vitesse pour l'appelant  T84 T85 T86 T87 T88 T89 T90  ← OUVERTE le 2026-09-02
+                                   T91                          (l'artefact navigateur)
 ```
 
 **Chemin critique** :
@@ -1872,6 +1873,18 @@ le défaut avant de l'avoir compris.
 > d'abandon *avant* que le code existe ; **rien ne déplace une sortie** — T12 et
 > `verify/reference.bin` (1e-6) sont les juges, et le bit à bit là où il est atteignable.
 
+> ### L'état, au 2026-09-03 — les huit fiches sont closes, et l'artefact est publié
+>
+> T84, T85, T86, T87, T88, T89, T90 et **T91** portent chacune son bloc de clôture ci-dessous.
+> Deux se ferment sur un **abandon mesuré** (T87, T89), une sur un **garde-fou sans gain**
+> (T90), et c'est ce que leurs seuils demandaient.
+>
+> **Ce que la phase rend à l'utilisateur de gammonGo** : une décision 2-ply `(0,1,3)` `k=12`
+> passe de **1,4980 s à 0,3343 s** dans Chromium (×4,48) et de **1,1547 s à 0,6860 s** dans
+> Firefox (×1,68) ; le classement des coups devient **déterministe entre cibles** ; l'artefact
+> redevient **bit à bit avec le natif**, ce qu'il n'était plus depuis T21 ; et
+> `gammonnet-simd.wasm` **rétrécit** de 109 240 à 100 992 o. Publié en **v1.3.0**.
+
 ## T86 — La surface de l'artefact WebAssembly : un worker qui expose la recherche
 
 > **Couche : conceptuelle + artefact.** Elle ne fait gagner **aucune microseconde**, et elle est
@@ -1906,7 +1919,8 @@ donnent déjà, et cesse de le réécrire à côté.
   Le seul défaut du dépôt est le mauvais, et il est dans l'artefact distribué. **Le remède n'est
   pas de changer 0,566 en 0,688** : c'est de faire ce que le C fait — pas de défaut, ou un défaut
   **indexé par `owner`**.
-  > **FAIT le 2026-09-02** (ce seul point ; le reste de la fiche est ouvert). Retenu : **pas
+  > **FAIT le 2026-09-02** (ce point d'abord ; le reste de la fiche a suivi — voir le bloc de
+  > clôture en fin de fiche). Retenu : **pas
   > de défaut du tout**, comme en C — le paramètre est exigé et son absence lève une erreur
   > qui nomme la valeur à passer, plus une constante exportée `MEASURED_EFFICIENCY`
   > `[centré, possédé, adverse]` pour que l'appelant n'ait pas à la deviner. Ce qu'inventer
@@ -1939,6 +1953,40 @@ appelle le C par cgo) mais hérite de la notation de coup si elle est écrite en
 
 **Exclut** — toute optimisation de vitesse. Cette fiche déplace une frontière, elle n'accélère
 rien.
+
+> ### FAITE — le 2026-09-02
+>
+> Mesure complète : `docs/mesures/2026-09-02-T86-surface-wasm.md`.
+>
+> **Le worker relaie la recherche** — `bestPlay`, `rankPlays`, `cubeDecision`, `analyze`,
+> `configure` — avec file et générations : un geste dépassé n'oblige plus à `terminate()` le
+> worker ni à recharger ses 1,06 Mo de poids, et `progressive: true` ramène l'attente perçue
+> d'une décision superflue de ~2,7 s à ~6 ms en postant le 0-ply avant d'engager le 2-ply.
+>
+> **L'annulation est dite honnêtement, et c'est une limite constatée** : un appel WASM déjà en
+> vol n'est pas interruptible depuis JavaScript — le worker est mono-thread, donc `onmessage`
+> ne tourne pas pendant `_gnw_best_play`, et un drapeau coopératif dans le C ne servirait à
+> personne. Les deux échappatoires sont écartées avec leur raison : `SharedArrayBuffer` exige
+> COOP/COEP que l'hébergeur statique ne donne pas, Asyncify dépasse le seuil de taille de la
+> fiche. Ce qui est livré est la **file** abandonnée et le worker qui **survit**.
+>
+> **Le codec de position est exporté** (Position ID, XGID, compte de pips) et vérifié contre le
+> C sur les 2 050 positions du corpus T12, égalité **exacte** — `make wasm-codec`. gammonGo
+> cesse d'être la seule des trois écritures de ce codec à ne pas descendre d'une référence.
+>
+> **La notation de coup descend en C** : une écriture pour trois surfaces, et elle nomme la
+> liste ordonnée que la recherche a réellement retenue — une reconstruction par différence de
+> plateaux serait ambiguë, deux appariements pouvant laisser le même plateau.
+>
+> **Les formes canoniques deviennent des valeurs** : `GnEngine.level("instant" | "normal" |
+> "thorough")` rend le préréglage avec sa mesure de qualité attachée. Cela ferme aussi le
+> second volet de **T90**, laissé de côté là-bas pour ne pas entrer en collision ici.
+>
+> **Coût, le seul chiffre de la fiche** : `gammonnet-simd.wasm` passe de 100 262 o à
+> **109 240 o**, soit **+9,55 %**, sous le seuil de +25 %. Le repère de 92 483 o que la fiche
+> citait était périmé : `gn_int8_model.c` manquait à `WASM_SOURCES` et `make wasm` **ne liait
+> plus** — corrigé au premier commit de la branche, et sans rapport avec T86. T91 fait ensuite
+> **rétrécir** l'artefact à 100 992 o.
 
 ## T85 — Valuer le videau par lot sur les candidats
 
@@ -2130,6 +2178,30 @@ relevés par largeur, `-fopt-info-vec` relu à chaque fois.
 **Dépendances** — à mener **avant** T73, qui réécrit ce noyau de toute façon ; les deux fiches se
 recouvrent et T73 hérite du verdict de largeur.
 
+> ### FAITE — le 2026-09-02
+>
+> Mesure complète : `docs/mesures/2026-09-02-T84-largeur-et-noyau.md`.
+>
+> **Le regroupement des 21 lancers est CONSERVÉ, la largeur 32 est CONSERVÉE en natif, et la
+> question est close** — comme T3A avait clos le réglage de `GN_EVAL_BATCH`. Seuil d'abandon :
+> 10 %. Cinq des six écarts mesurés à noyau écrit à la main sont dessous ; le sixième —
+> Chromium, 32 → 16, **−11,6 %** — plaide pour une **largeur**, pas contre le groupement.
+> Abandonner le groupement coûte **+3,3 %** en natif, disparaît sous le bruit en navigateur, et
+> retirerait les 93,5 % de remplissage que les trois phases de `rank_plays` achètent.
+>
+> **Ce qui clôt la question n'est pas un chiffre de plus : la variable a changé de camp.** Une
+> fois le noyau écrit à la main, **la largeur ne décide plus rien** (11 % entre la meilleure et
+> la pire des trois) et **le noyau décide de tout** — ×1,81 en natif, ×3,70 dans Chromium,
+> ×2,00 dans Firefox, à largeur égale et **à bit égal** (`src/gn_kernel_f32.h`, AVX2 et
+> SIMD128, `max|Δ| = 0,000e+00` contre le chemin de référence).
+>
+> **Livré en opt-in, pas en défaut, et délibérément** : en natif les intrinsèques exigent
+> `-march=native`, donc un binaire qui ne démarre plus sans AVX2, donc une répartition à
+> l'exécution — c'est T50, pas un jeu de drapeaux. **La cible WebAssembly n'a pas cette
+> contrainte**, `gammonnet-simd.wasm` assumant déjà SIMD128 : la fiche a nommé ce chantier
+> « le plus rentable qu'elle laisse derrière elle » et l'a laissé à **T91**, bloqué le temps
+> que T86 rende `wasm/`.
+
 ## T87 — L'ordonnancement par nombre de tâches, et le nombre utile de workers
 
 > **Couche : conceptuelle.** Elle vaut pour `wasm/pool.mjs`, pour le `ProcessPoolExecutor` de
@@ -2242,6 +2314,22 @@ autre chose que ce que la recherche fait — cette distinction est à porter ici
 - **Seuil d'abandon : < 5 %** de gain supplémentaire sur une décision ⇒ le chiffre de 78 % est
   **retiré** du registre, et la fiche se ferme sur ce constat.
 
+> ### FAITE — le 2026-09-02, et **fermée par son seuil d'abandon**
+>
+> Mesure complète : `docs/mesures/2026-09-02-T89-sparsite-par-reseau.md`.
+>
+> **Le 78 % du registre est RETIRÉ.** Il était *projeté* depuis un compte de multiplications, et
+> personne n'avait séparé les deux réseaux. Mesuré par réseau et par type de lot
+> (`make bench-sparsity`, neuf), le gain supplémentaire sur une décision vaut entre **+1,1 % et
+> +4,4 %**, retenu **+2 %** — jamais au-dessus du seuil de 5 %, sur cinq exécutions. La sparsité
+> de la couche 1 déjà livrée le 2026-08-26 (**×1,161**, les deux réseaux ensemble) reste ; rien
+> de plus n'est engagé.
+>
+> **Aucune valeur absolue de cette mesure n'est exploitable, et le document le dit** : deux
+> autres chantiers tournaient sur la machine, la charge moyenne a varié de **3,2 à 12,1** et le
+> débit du **même binaire** de 12 470 à 44 127 éval/s — un facteur 3,5. Seuls les rapports lus
+> **dos à dos** sont retenus, et ils diffèrent de 0,3 point entre les deux extrêmes de charge.
+
 ## T90 — L'arrondi des tuiles, et les formes canoniques en un seul endroit
 
 > **Couche : implémentation + artefact.** Zéro gain. Un garde-fou posé **avant** que T73 et T84
@@ -2264,6 +2352,114 @@ ont été écrits. `GN_EVAL_BATCH` vaut 32 ici, donc le code actuel est sauf.
 
 **Critères d'acceptation** — la suite passe sous ASan avec une tuile de 6 ; aucun consommateur
 n'a besoin de recopier une constante pour obtenir le préréglage « normal ».
+
+> ### FAITE — le 2026-09-02
+>
+> Mesure complète : `docs/mesures/2026-09-02-T90-arrondi-des-tuiles.md`. **Zéro gain, et c'était
+> l'objet** : un garde-fou posé avant que T84 et T91 déplacent ce qu'il garde.
+>
+> L'arrondi ne suppose plus une puissance de deux là où rien ne la garantit, et une assertion de
+> compilation le dit là où elle l'est. Le test a **deux volets** (`make test-tile`, ASan+UBSan,
+> repris par `make test`) : le positif exerce 34 tuiles × 261 largeurs et le noyau tuilé à
+> **tuile 6** sur une ligne allouée **à la taille exacte** — sur un tableau statique il y a
+> simplement de la place, et le débordement ne se verrait pas ; le **négatif** (`--trap`) exige
+> que la forme masquée *meure* en `heap-buffer-overflow`. Sans ce second volet, un build où ASan
+> ne serait pas actif laisserait le premier passer sans rien prouver.
+>
+> **Le second volet de la fiche — les formes canoniques exposées par l'API — a été livré par
+> T86** (`GnEngine.level()`), qui travaillait sur `wasm/gammonnet.mjs` en parallèle. Il avait
+> été mis de côté ici pour ne pas entrer en collision : la fiche est close des deux côtés.
+
+## T91 — Le noyau écrit à la main devient l'artefact WebAssembly
+
+> **Couche : implémentation + artefact, pour la cible WebAssembly seule.** Le natif n'est pas
+> touché. La fiche est écrite après coup, le 2026-09-03 : le travail avait été mené comme la
+> suite immédiate de T84, et le plan ne le portait pas.
+
+**Ce qui l'ouvre.** T84 a livré `src/gn_kernel_f32.h` en **opt-in** et n'a pas changé le défaut,
+pour une raison qui ne vaut qu'en natif : les intrinsèques y demandent `-march=native`, donc un
+binaire qui ne démarre plus sans AVX2, donc une répartition à l'exécution — un autre chantier.
+**La cible WebAssembly n'a pas cette contrainte** : `gammonnet-simd.wasm` assume déjà SIMD128.
+T84 a nommé ce chantier « le plus rentable que cette fiche laisse derrière elle », bloqué le
+temps que T86 rende `wasm/`. T86 est fusionnée.
+
+**Objectif** — que le navigateur exécute le noyau que T84 a mesuré, et non celui que le
+compilateur devine.
+
+**Périmètre** — trois choses à trancher, dont la troisième n'était pas dans l'énoncé :
+1. le noyau écrit à la main comme **défaut** de la cible WebAssembly ;
+2. la **largeur** de lot de cette cible, que T84 avait close pour le natif seul ;
+3. **`-fassociative-math`**, que T84 mesurait à **−2,8×** sur le chemin par lot alors que T21
+   l'avait adopté pour **+3,9×** sur la passe avant.
+
+**Critères d'acceptation**
+- Le gain est mesuré **dans les deux navigateurs**, sur une décision 2-ply `(0,1,3)` `k=12`, la
+  charge de la machine relevée. **Seuil d'abandon : ×1,5.**
+- Le bit à bit du noyau contre le chemin de référence est vérifié **avant** tout chronométrage,
+  et la parité `wasm-parity` ne se dégrade pas.
+- La taille des deux `.wasm` est publiée : un consommateur qui épingle une somme de contrôle
+  doit savoir qu'il la reprend.
+
+> ### FAITE — le 2026-09-03
+>
+> Mesure complète : `docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md`.
+>
+> **Livré** : `GN_KERNEL_INTRINSICS` (simd128, 2 lignes × 4 vecteurs) en défaut de la cible
+> WebAssembly, `GN_EVAL_BATCH` ramené de 32 à **16** pour cette cible seule,
+> `-fassociative-math` **retiré** (et `-ffp-contract=off`), et `gnw_evaluate_batch` qui entre
+> désormais par `gn_evaluate_features_batch` au lieu de boucler sur le chemin scalaire. **Le
+> natif ne bouge pas** : opt-in, largeur 32, question close comme T84 l'a close.
+>
+> **Le gain, dans un vrai navigateur** (profil neuf, serveur statique, aucun protocole
+> d'automatisation, médiane de 3 passes, charge relevée entre 2,0 et 3,1) :
+>
+> | décision 2-ply `(0,1,3)` `k=12` | avant | après | |
+> |---|---|---|---|
+> | Chromium 152 | 1,4980 s | **0,3343 s** | **×4,48** |
+> | Firefox 154 | 1,1547 s | **0,6860 s** | **×1,68** |
+>
+> Les deux passent le seuil de ×1,5, **et il fallait bien les deux** : le même fichier vaut un
+> facteur 2,7 d'écart entre les deux moteurs.
+>
+> **La largeur 16 est retenue pour la cible WebAssembly, et la raison se lit dans le noyau.**
+> SIMD128 n'a que **quatre** voies : à largeur 32, `GN_KERNEL_VECS` vaut 8, la tuile dégénère en
+> 1 ligne × 8 vecteurs et il ne reste qu'une chaîne d'accumulation par ligne de sortie ; à
+> largeur 16 elle vaut **2 lignes × 4 vecteurs**, deux chaînes indépendantes et la colonne lue
+> une fois pour deux lignes — tout l'objet du noyau. Chromium gagne 12,6 %, Firefox 1,5 %,
+> **aucun des deux ne perd**. Le **regroupement** des 21 lancers n'est pas touché et n'a jamais
+> été en cause : un lot de 16 se remplit à 96,5 % *parce qu'il est groupé*.
+>
+> **`-fassociative-math` : ce qu'il achetait avait cessé d'exister, et il restait un
+> consommateur.** T21 l'avait adopté parce que `forward_raw` accumule dans une seule variable ;
+> depuis T35 une décision ne passe plus par là. Mais `gnw_evaluate_batch` — le point d'entrée
+> qu'`analyze()` appelle — bouclait encore sur le chemin scalaire, et retirer le drapeau seul
+> l'effondrait de 8 776 à **2 354 éval/s**. Le remède n'est pas d'arbitrer entre les deux
+> chiffres : c'est de faire entrer ce point d'entrée par la même porte que la recherche →
+> **41 580 éval/s**, soit **×4,74 sur le chemin d'`analyze()`**. Le drapeau reste défini,
+> documenté et mesurable (`make bench-width-wasm-fp`) ; il n'a plus de consommateur.
+>
+> **La parité tombe à ZÉRO, et le coupable n'était pas le noyau.** `make wasm-parity` passe de
+> **6,407e-07 à 0,000e+00** en SIMD (le scalaire y était déjà), avec un **contrôle** reconstruit
+> aux anciens drapeaux qui rend bien 6,407e-07 sur cette machine — donc le zéro est un
+> changement, pas un environnement. Ce qui déplaçait des bits était `-fassociative-math`, qui
+> vectorisait la somme de la **référence** : les deux chemins du même artefact ne répondaient
+> pas la même chose à 2e-07 près. **L'artefact est de nouveau bit à bit avec le natif**, ce
+> qu'il n'était plus depuis T21, et la tolérance de 1e-6 de T20 n'est plus consommée du tout.
+>
+> **Et l'artefact rétrécit** : `gammonnet-simd.wasm` de 109 240 à **100 992 o** (−7,6 %),
+> `gammonnet.wasm` de 97 734 à **97 157 o** (−0,6 %) — l'auto-vectorisation sous réassociation
+> déroulait la boucle chaude, le noyau écrit à la main ne la déroule pas. **Les deux sommes de
+> contrôle changent** : un consommateur qui les épingle reprend les deux.
+>
+> **Ce que gammonGo reprend** : une montée d'épingle, et **rien dans son code appelant** — API,
+> exports et protocole de worker sont identiques. En revanche **tout repère figé produit par
+> l'ancien module doit être régénéré** : les réponses bougent de ≤ 6,4e-07, dans le sens de
+> l'accord avec le natif. Et les mesures d'ordonnancement de **T87 sont à relire, pas à
+> refaire** : les 2,5 % d'oisiveté portent sur un mural quatre fois plus court, donc la
+> conclusion se renforce, tandis que le coût de `postMessage` n'ayant pas bougé, **la frontière
+> de la règle « le découpage paie quand une tâche coûte cher à calculer et rien à transmettre »
+> s'est déplacée contre le découpage** — le défaut `tasksPerWorker = 1` est plus justifié
+> qu'avant.
 
 ---
 

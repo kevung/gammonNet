@@ -32,7 +32,8 @@ from pathlib import Path
 
 import pytest
 
-from test_serve import OPENING_31_XGID, PIN, SERVE, _free_port, _post, _wait_healthy
+from test_serve import (OPENING_31_XGID, SERVE, _free_port, _post,
+                        _pinned_weights_missing, _wait_healthy)
 
 import subprocess
 import sys
@@ -53,8 +54,9 @@ ITERATIONS = 400
 
 @pytest.fixture(scope="module")
 def concurrency_server():
-    if not PIN.is_file():
-        pytest.skip("models/release_pin.json absent")
+    manque = _pinned_weights_missing()
+    if manque:
+        pytest.skip(manque)
     port = _free_port()
     proc = subprocess.Popen(
         [sys.executable, str(SERVE), "--host", "127.0.0.1", "--port", str(port), "--max-ply", "0"],

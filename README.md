@@ -237,9 +237,12 @@ trained by self-play.
 
 ## Project status
 
-Phases 0 through 5 are complete, and v1.2.1 is the artefact they produce. Phase 4 — a
+Phases 0 through 5 are complete, and v1.3.0 is the artefact they produce. Phase 4 — a
 project-specific model — stays closed: it was conditional on the model proving insufficient, and it
 did not. Phase 7 is under way: going past parity with GNU Backgammon rather than matching it.
+Phase 8 is closed: it made a 2-ply decision in the browser 4.5× cheaper in Chromium, made move
+ranking deterministic across targets, and brought the WebAssembly artefact back to bit-for-bit
+agreement with the native engine.
 
 | | Tasks | State |
 |---|---|---|
@@ -250,6 +253,7 @@ did not. Phase 7 is under way: going past parity with GNU Backgammon rather than
 | 4 — Project-specific model | — | closed |
 | 5 — Publication | T50 · T51 | ✅ |
 | 7 — Going further | T70 → T77 | in progress |
+| 8 — Speed where the caller pays | T84 → T91 | ✅ |
 
 Every task carries a report in [`docs/mesures/`](docs/mesures/), which distinguishes what was
 measured from what was estimated. Working documents: [`CLAUDE.md`](CLAUDE.md) (rules),
