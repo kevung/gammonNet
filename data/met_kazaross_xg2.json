@@ -1,4 +1,5 @@
 {
+ "_comment": "Kazaross-XG2 match equity table -- the WORK of Neil Kazaross (XG rollouts to 9 points, GNU Backgammon Supremo full rollouts to 15, extended to 25 by projecting take points). GNU Backgammon is its distribution vehicle, not its author. This file is the single canonical export of gammonNet's src/gn_met_table.h -- read it instead of retranscribing the table. Attribution must survive any reuse; see gammonNet's THIRD-PARTY.md and BRIEF.md section 3.3.",
  "source": "/usr/local/share/gnubg/met/Kazaross-XG2.xml (GNU Backgammon, rendu faisant autorité)",
  "table": "Kazaross-XG2, œuvre de Neil Kazaross",
  "pre": [

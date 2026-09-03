@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère `src/gn_met_table.h` et son repère de contrôle.
+"""Génère `src/gn_met_table.h` et l'export canonique `data/met_kazaross_xg2.json`.
 
 La table Kazaross-XG2 est l'**œuvre de Neil Kazaross**. Cet outil recopie ses
 nombres — il n'en invente aucun.
@@ -14,10 +14,10 @@ nombres — il n'en invente aucun.
    embarquer cette table.
 
 Les deux ont été confrontées : **les 625 entrées pré-Crawford coïncident
-exactement**. Mais la transcription de blunderDB s'arrête à **24** entrées
-post-Crawford là où le XML en porte **25** — la dernière valant 0,001230. La
-troncature est sans conséquence pratique, et c'est précisément pour cela qu'elle
-serait passée inaperçue.
+exactement**. blunderDB transcrivait auparavant seulement **24** entrées
+post-Crawford là où le XML en porte **25** — la dernière valant 0,001230 ; ce
+dépôt sert désormais l'entrée manquante à blunderDB via l'export ci-dessous
+(issue #24), close cette lacune.
 
 Le XML est donc préféré, blunderDB restant le second témoin.
 
@@ -26,13 +26,30 @@ Backgammon. `BRIEF.md` §3.3 est explicite : la table est l'œuvre de Kazaross,
 GNU Backgammon n'en est que le véhicule de distribution, et l'attribution va à
 son auteur.
 
-Deux fichiers en sortent, et leur séparation est délibérée :
+## Une seule transcription faisant foi, trois fichiers qui en découlent (#24)
 
-- `src/gn_met_table.h` — la table, compilée dans la bibliothèque ;
-- `tests/data/met_reference.json` — **les mêmes valeurs**, conservées à part
-  comme repère. Un test qui comparerait la table à elle-même ne prouverait rien ;
-  le repère permet au moins de vérifier qu'une régénération future n'a pas
-  silencieusement décalé un indice.
+`gammonNet` est la source de vérité pour cette table (ADR-0003 : une donnée
+partagée entre blunderDB et gammonGo se décide et se mesure ici, ses
+consommateurs suivent). Un seul appel à `from_gnubg_xml`/`fetch_source`
+produit trois fichiers, tous dérivés des mêmes `pre`/`post` en mémoire — ils ne
+peuvent donc pas diverger entre eux au sein de cette régénération :
+
+- `src/gn_met_table.h` — la table, compilée dans la bibliothèque native et le
+  module WebAssembly, précision `double`, horizon complet (625 entrées
+  pré-Crawford, 25 post-Crawford) ;
+- `data/met_kazaross_xg2.json` — **l'export que blunderDB et gammonGo lisent**
+  au lieu de retranscrire la table à la main : les mêmes valeurs, en JSON,
+  avec la provenance et l'attribution. C'est aussi le repère de contrôle
+  qu'utilise `tests/test_met.py` — un test qui comparerait la table C à
+  elle-même ne prouverait rien, celui-ci vérifie qu'une régénération future
+  n'a pas silencieusement décalé un indice ;
+- `data/met_kazaross_xg2.sha256` — l'empreinte SHA-256 de l'export ci-dessus,
+  sur le modèle de `models/release_pin.json` : un consommateur qui embarque
+  une copie de l'export peut vérifier qu'elle n'a pas divergé sans avoir à la
+  reparser champ par champ. La table pèse ~5,2 Ko de doubles bruts (650
+  entrées) — assez petite pour être embarquée directement partout, sans
+  infrastructure de téléchargement à la `release_pin.json` (celle-ci existe
+  pour des poids de plusieurs Mo, pas pour cette table).
 
 L'antisymétrie est contrôlée **avant** l'écriture. Une table qui ne la
 respecterait pas décrirait deux jeux différents selon le côté d'où on la lit, et
@@ -45,6 +62,7 @@ videau.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -185,8 +203,12 @@ def main() -> int:
     if len(pre) != 25 or any(len(row) != 25 for row in pre):
         print(f"table pré-Crawford malformée : {[len(r) for r in pre]}", file=sys.stderr)
         return 1
-    if len(post) < 24:
-        print(f"table post-Crawford malformée : {len(post)} entrées", file=sys.stderr)
+    # L'horizon complet (#24) est 25 entrées post-Crawford, pas 24 : une
+    # source qui n'en porte que 24 (l'ancienne transcription blunderDB) pose
+    # la question plutôt que de l'éviter en silence.
+    if len(post) < 25:
+        print(f"table post-Crawford malformée : {len(post)} entrées, 25 attendues",
+              file=sys.stderr)
         return 1
 
     # Contrôlé AVANT d'écrire : une table non antisymétrique n'a pas à entrer
@@ -213,16 +235,37 @@ def main() -> int:
     header.write_text("\n".join(lines) + "\n")
     print(f"écrit : {header.relative_to(ROOT)}")
 
-    reference = ROOT / "tests" / "data" / "met_reference.json"
-    reference.parent.mkdir(parents=True, exist_ok=True)
-    reference.write_text(json.dumps({
+    # L'export canonique (#24) : ce que blunderDB et gammonGo lisent au lieu
+    # de retranscrire la table. `_comment` porte l'attribution jusque dans le
+    # fichier lui-même, pour un consommateur qui ne lirait que ce JSON sans
+    # jamais ouvrir ce dépôt.
+    export = ROOT / "data" / "met_kazaross_xg2.json"
+    export.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "_comment": (
+            "Kazaross-XG2 match equity table -- the WORK of Neil Kazaross "
+            "(XG rollouts to 9 points, GNU Backgammon Supremo full rollouts to "
+            "15, extended to 25 by projecting take points). GNU Backgammon is "
+            "its distribution vehicle, not its author. This file is the "
+            "single canonical export of gammonNet's src/gn_met_table.h -- "
+            "read it instead of retranscribing the table. Attribution must "
+            "survive any reuse; see gammonNet's THIRD-PARTY.md and "
+            "BRIEF.md section 3.3."
+        ),
         "source": origin,
         "table": "Kazaross-XG2, œuvre de Neil Kazaross",
         "pre": [{"away_a": i + 1, "away_b": j + 1, "mwc": pre[i][j]}
                 for i in range(25) for j in range(25)],
         "post": [{"away": n + 1, "mwc": post[n]} for n in range(len(post))],
-    }, indent=1, ensure_ascii=False) + "\n")
-    print(f"écrit : {reference.relative_to(ROOT)}")
+    }
+    export_text = json.dumps(payload, indent=1, ensure_ascii=False) + "\n"
+    export.write_text(export_text)
+    print(f"écrit : {export.relative_to(ROOT)}")
+
+    digest = hashlib.sha256(export_text.encode("utf-8")).hexdigest()
+    pin = ROOT / "data" / "met_kazaross_xg2.sha256"
+    pin.write_text(f"{digest}  met_kazaross_xg2.json\n")
+    print(f"écrit : {pin.relative_to(ROOT)} ({digest})")
     return 0
 
 
