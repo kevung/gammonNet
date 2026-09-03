@@ -1266,6 +1266,24 @@ que ce réseau ne se reproduit pas par distillation — il vient d'un entraînem
 temporelles sur un volume sans commune mesure. Une courbe volume → force sur 1,5 M d'étiquettes
 (mochy, melbaa et smith réunies) mesure ce qu'il reste à gagner.
 
+**La courbe volume → force, rendue le 2026-09-03, ne s'aplatit pas** — fiche
+[`docs/mesures/2026-09-03-T71-courbe-volume-force.md`](docs/mesures/2026-09-03-T71-courbe-volume-force.md).
+0,00745 à 100 k, 0,00628 à 200 k, 0,00535 à 400 k, **0,00449 à 800 k** : chaque doublement retire
+**15,5 %** de la perte, à un centième près sur trois doublements (`perte ∝ N^-0,242`, R² 0,9997),
+et le taux hors registre tombe de 8,39 % à 4,09 %. **Le critère d'arrêt de DS-14 vise une idée qui
+ne bouge pas ; celle-ci bouge.** Le verdict littéral du palier reste vrai et publié — le candidat
+ne bat pas l'incumbent à 400 000 — mais la raison d'être du critère n'est pas remplie.
+
+L'extrapolation croise l'étalon vers **3,6 M d'étiquettes**, soit environ une nuit de plus sur les
+trois machines aux débits mesurés. **C'est une extrapolation, pas une mesure** (règle 3), et elle
+ne vaut que comme ordre de grandeur du prochain pari. Rappel : **égaler ne suffit pas**, le
+critère de succès de la fiche est que l'intervalle 2-ply contre l'arbitre passe au-dessus de zéro.
+
+Lecture croisée avec le témoin de T72 : à 800 000 positions et architecture identique, les
+étiquettes **2-ply** rendent 0,00449 contre **0,00990** pour les étiquettes **0-ply** — la
+recherche vaut **2,2×** l'évaluation statique dans l'étiquette. C'est la prémisse de la fiche,
+vérifiée par une comparaison qu'elle n'avait pas prévue.
+
 ## T72 — Réduire le réseau par distillation : 60–100 k MACs
 
 > **La ligne P3.** Le premier levier de vitesse — ×2,5 à ×6,6 sur toute décision, natif et
