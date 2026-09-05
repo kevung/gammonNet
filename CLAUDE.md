@@ -114,6 +114,10 @@ font un réseau nouveau. Voir `BRIEF.md`.
 - **Ne jamais intégrer une source dont la licence n'a pas été lue.** Le nom du dépôt ne suffit
   pas : les modèles peuvent avoir une licence différente du code qui les charge. Un dépôt MIT peut
   parfaitement publier des poids sous clause non commerciale.
+- **Ne nommer aucun appelant, nulle part.** Ni dans un commentaire, ni dans un test, ni dans un
+  message de commit. Une mesure venue d'ailleurs entre comme une **mesure** ; jamais comme une
+  **relation**. Le vocabulaire est dans `CONTEXT.md`, la décision dans ADR-0004, et
+  `tests/test_frontier.py` la vérifie.
 - **Ne pas élargir le périmètre.** L'entraînement d'un modèle propre au projet (phase 4) est
   **conditionnel** au résultat de la phase 1. Ne pas l'engager avant.
 
@@ -143,6 +147,8 @@ enthousiasme.
 
 ## Pointeurs
 
+- `CONTEXT.md` — le glossaire : cible, appelant, portage, source, témoin. C'est là que se lit la
+  différence entre ce que ce dépôt possède et ce qu'il ne connaît pas.
 - `BRIEF.md` — sources, licences, chaîne technique, recette d'entraînement, protocole de mesure.
 - `PLAN.md` — le plan d'exécution : 50 fiches de tâches, chacune avec son critère d'acceptation.
 - `THIRD-PARTY.md` — l'inventaire des briques et de leurs licences.
