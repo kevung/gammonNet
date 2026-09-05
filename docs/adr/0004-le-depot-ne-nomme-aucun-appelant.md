@@ -22,9 +22,9 @@ entre comme une MESURE ; jamais comme une RELATION.**
 ## Ce que la règle n'est pas
 
 Elle n'interdit pas les faits venus d'ailleurs. « Un portage Go indépendant fait la même
-décision en 0,277 s » est une donnée : elle a une date, un protocole, et elle reste. « Notre
-consommateur doit reprendre ceci » est un lien de subordination : il part. La ligne passe entre
-un chiffre et un ordre, pas entre l'ici et l'ailleurs.
+décision en 0,277 s » est une donnée : elle a une date, un protocole, et elle reste. « Voici ce
+que vous devrez reprendre » est un ordre adressé à quelqu'un qu'on prétend ne pas connaître : il
+part. La ligne passe entre un chiffre et un ordre, pas entre l'ici et l'ailleurs.
 
 Elle n'interdit pas non plus l'attribution. Une **source** — le rendu dont un nombre est lu —
 crée une obligation de licence et doit être nommée. Ce que la règle refuse, c'est de nommer un
