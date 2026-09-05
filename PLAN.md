@@ -2124,7 +2124,8 @@ décision conceptuelle : trois cibles qui départagent différemment sont trois 
 > mesuré dans le module livré : **89 des 433 décisions à meilleur coup ex æquo y annonçaient
 > un AUTRE coup que le natif**.
 >
-> **Le correctif** est le tri stable du portage Go (`sortByEquity`), écrit ici en deux formes
+> **Le correctif** est le tri stable — à équité égale, l'ordre d'arrivée est conservé — écrit
+> ici en deux formes
 > et une seule sortie (insertion sous 48, fusion au-dessus). **Coût : médiane 1,00 sur huit
 > mesures dos à dos**, c'est-à-dire rien. **Repères déplacés : aucun** — 41 779 classements
 > natifs à 0-ply et 252 à 2-ply, `diff` = 0 ligne, ce qui est cohérent avec une glibc déjà

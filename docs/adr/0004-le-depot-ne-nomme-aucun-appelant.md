@@ -64,9 +64,10 @@ explicite au lieu d'un repli silencieux. Régénération complète après retrai
 Backgammon en est le véhicule de distribution et non l'auteur, et lire un fichier de données
 n'est pas dériver d'un code. **Retirer la béquille rend l'argument plus fort.**
 
-**Un contrôle a changé de nature, et y a gagné.** `codec_vs_gammongo.mjs` mesurait l'écart avec
-une écriture externe pour qu'une substitution ailleurs soit un fait chiffré. Cette raison
-n'existe plus ici — mais l'algorithme transcrit **est** le Position ID gnubg, un format public, et
+**Un contrôle a changé de nature, et y a gagné.** Un fichier de `wasm/`, nommé d'après un
+appelant, mesurait l'écart avec une écriture externe pour qu'une substitution ailleurs soit un
+fait chiffré. Cette raison n'existe plus ici — mais l'algorithme transcrit **est** le Position ID
+gnubg, un format public, et
 le fichier fait donc quelque chose que `codec_parity.mjs` ne sait pas faire : il traverse quatre
 inversions de convention (26 cases contre 29, numérotation de Noir, positif Noir, joueur au trait
 codé à l'envers) là où la parité compare deux écritures de même convention, qui se tromperaient
