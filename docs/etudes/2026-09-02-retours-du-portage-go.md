@@ -1,6 +1,6 @@
 # Ce que le portage Go a mesuré, et ce que cela change ici
 
-blunderDB embarque un portage Go de gammonNet (son ADR-0011). Le 2 septembre 2026, ce
+Un portage Go indépendant de gammonNet existe. Le 2 septembre 2026, ce
 portage a reçu son noyau d'inférence groupé et une campagne d'optimisation de tout ce qui
 l'entoure. Une décision 2-ply `(0,1,3)` `k=12` y est passée de **5,5 s à 0,277 s** en série.
 
@@ -188,7 +188,7 @@ tuiles.
   rien de ce travail ne les touche, puisque tout y était bit-à-bit conservateur.
 
 Un point du registre est en revanche **confirmé par ailleurs** : une recherche
-bibliographique menée côté blunderDB conclut que les **tables de transposition sur les
+bibliographique menée de ce côté-là conclut que les **tables de transposition sur les
 nœuds internes** et **Star1/Star2** entrent en conflit direct avec l'inférence par lots —
 leurs dépendances séquentielles annulent le gain qui fait toute la vitesse d'un évaluateur
 dense. La section 3 du registre les classe déjà « valeur inconnue, ne pas construire avant

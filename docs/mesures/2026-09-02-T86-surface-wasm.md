@@ -50,21 +50,22 @@ T86.
 
 - **L'étape 1 ne coûte rien du tout**, et c'est le fait central de la fiche :
   les trois points d'entrée de la recherche étaient **déjà** exportés. Le
-  manque était un protocole de worker, c'est-à-dire du JavaScript. Le
-  consommateur a réécrit un ordonnanceur, un codec et une notation pour
-  contourner un fichier de 80 lignes.
+  manque était un protocole de worker, c'est-à-dire du JavaScript. Un
+  ordonnanceur, un codec et une notation ont été réécrits à côté du moteur
+  pour contourner un fichier de 80 lignes.
 - **Le Position ID est presque gratuit** (+900 o) parce que
   `gn_position_id` / `gn_position_from_id` étaient déjà liés : la recherche
   les appelle à chaque décision. On n'ajoutait que l'enveloppe.
 - **Le XGID coûte six fois plus** (+5 947 o, 61 % du total de T86) parce que
   sa paire était éliminée à l'édition de liens, faute d'appelant. C'est le
-  seul poste qu'on pourrait retirer si le budget venait à mordre : gammonGo
-  écrit ne pas en avoir besoin (son plateau est déjà structuré), et blunderDB
-  passe par cgo, pas par ce module. Il est gardé parce que la marge le permet
+  seul poste qu'on pourrait retirer si le budget venait à mordre : un
+  appelant qui part d'un plateau déjà structuré n'en a pas besoin, et celui
+  qui lie le natif ne passe pas par ce module. Il est gardé parce que la
+  marge le permet
   et qu'un codec amputé de la moitié de ses formats invite à réécrire l'autre
   moitié — ce que cette fiche corrige précisément.
 - **La notation coûte 1 206 o**, soit 1,2 % du module, pour supprimer une
-  écriture entière chez un consommateur.
+  écriture entière à côté du moteur.
 
 ## L'exactitude : rien n'a bougé
 
@@ -102,11 +103,12 @@ tolérance à lui accorder.
     scalaire : encode 0 · décode 0 · xgid 0 · xgid⁻¹ 0 · pips 0
     SIMD     : encode 0 · décode 0 · xgid 0 · xgid⁻¹ 0 · pips 0
 
-**L'écart avec l'écriture TypeScript de gammonGo : 0 position sur 2 050**
-(`wasm/codec_vs_gammongo.mjs`, transcription de leur algorithme). Leur codec
-déduit était juste ; il n'en reste pas moins qu'il était validé contre ce
-module et non contre une référence indépendante. La substitution ne change pas
-un seul identifiant.
+**L'écart avec une écriture du même codec en convention de plateau INVERSE :
+0 position sur 2 050** (`wasm/codec_conventions.mjs`). C'est le contrôle que
+la parité ne peut pas rendre : elle compare deux écritures de même convention,
+qui se tromperaient ensemble sur une orientation. Une écriture déduite hors du
+moteur peut être juste — celle-ci l'était — et rester validée contre le module
+qu'elle imite plutôt que contre une référence indépendante.
 
 ## La décision de bout en bout, dans un vrai navigateur
 
@@ -147,9 +149,9 @@ connues sont écartées, et pour des raisons de fiche :
   de +25 % de cette fiche refuse.
 
 Ce qui est livré à la place vaut ce que `terminate()` coûtait : le worker
-**survit** à l'annulation. Un geste dépassé chez le consommateur recharge
-aujourd'hui 1,06 Mo de poids (`progressive-eval.ts` : *« Creates a NEW worker
-each call »*) ; avec la file et les générations, il ne recharge rien. Et
+**survit** à l'annulation. Sans file ni générations, un geste dépassé impose
+de recharger 1,06 Mo de poids, un worker neuf par annulation ; avec elles, il
+ne recharge rien. Et
 `progressive: true` ramène l'attente perçue d'une décision superflue de
 ~2,7 s à ~6 ms, en postant le 0-ply avant d'engager le 2-ply.
 
@@ -161,7 +163,7 @@ make wasm-parity     # réseau, natif ↔ Wasm
 make wasm-parity-int8
 make wasm-api        # invariants du module ET du protocole de worker
 make wasm-codec      # le codec contre le C, égalité exacte
-node wasm/codec_vs_gammongo.mjs
+node wasm/codec_conventions.mjs
 node wasm/harness.mjs --browser chromium --mode decision --build simd \
      --page /wasm/decision.html --timeout 1200000
 ```

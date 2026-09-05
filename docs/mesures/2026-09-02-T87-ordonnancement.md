@@ -309,7 +309,7 @@ Aucun relevé ne montre de gain franc au-delà de huit, et deux montrent une
 perte. La règle **n'est pas une mesure de l'appareil de l'utilisateur** et le dit
 dans sa propre documentation : la plateforme ne publie pas son nombre de cœurs
 physiques, et `hardwareConcurrency` est plafonné à 4 sur iOS quel que soit le
-téléphone. `ScheduleReport` est livré précisément pour que chaque consommateur
+téléphone. `ScheduleReport` est livré précisément pour que chacun
 tranche sur sa machine plutôt que de nous croire.
 
 ---
@@ -371,7 +371,7 @@ elle-même — n'en bouge pas d'un chiffre.
 > de confier une tâche**. C'est cela que l'ADR-0003 doit retenir.
 ---
 
-## 7. Ce que les consommateurs reprennent
+## 7. Ce que cette mesure rend actionnable
 
 **La règle, dans sa forme mesurée** — « le nombre de tâches paie quand une
 tâche coûte cher à calculer et rien à transmettre ; et si un tri doit exister,
@@ -379,29 +379,19 @@ sa clé est le nombre d'évaluations » — **avec la borne qui la rend
 actionnable** : sur le chemin des décisions, aucun ordonnancement ne peut
 gagner plus de 2,6 %.
 
-**gammonGo** écrit aujourd'hui son propre ordonnanceur dans
-`frontend/gammongo/src/lib/gammonnet/` :
+Cette borne est ce qui compte, parce qu'elle **ferme un chantier au lieu de
+l'ouvrir**. Un ordonnanceur écrit à la main hors du pool ne peut pas faire
+mieux que 2,6 % sur ce chemin ; `pool.decide()` — une décision par tâche,
+distribution gloutonne, annulation — est mesuré ici à 2,5 % d'oisiveté sur un
+match complet. Il n'y a donc rien à gagner à le réécrire, et rien à perdre à
+l'abandonner pour celui-ci.
 
-| ce qu'il peut retirer | lignes | pourquoi |
-|---|---:|---|
-| `eval-worker.ts` | 50 | son en-tête dit lui-même pourquoi il existe : *« pool.mjs's own worker.mjs does NOT expose them (it only relays raw `evaluateBatch` chunks) »*. T86 a fermé ce manque, T87 mesure le pool qui le remplace. |
-| `spawn-ply2-worker.ts` | 11 | le lanceur du précédent. |
-| la boucle de distribution de `match-analysis.ts` — `poolSize`, `workers[]`, `inFlight`, `nextIndex`, `runNext`, `finishIfDone`, `cancel` | ~80 | c'est **exactement** `pool.decide()` : une décision par tâche, distribution gloutonne, annulation. Mesurée ici à 2,5 % d'oisiveté sur un match complet — il n'y a rien à y gagner en la réécrivant, et rien à y perdre en l'abandonnant. |
-| son ticket de suivi sur `DEFAULT_POOL_SIZE` | — | le fichier dit *« un compromis assumé, PAS une mesure … 4 est un choix délibérément conservateur en attendant cette mesure — ticket de suivi »*. La mesure est ci-dessus, et `EvaluatorPool.suggestedSize()` la porte. |
+Le pool ne connaît pas ses appelants : la persistance, la reprise et la
+conversion vers un modèle d'affichage sont « ailleurs » et y restent. Ce qui
+descend ici est le seul ordonnancement, avec la borne qui dit ce qu'il vaut.
 
-**~140 lignes de production**, en plus des ~570 que T86 lui avait déjà
-libérées, et les tests qui couvrent cette boucle avec.
-
-Ce qu'il **garde** est ce qui lui appartient vraiment : le magasin de reprise
-(`MatchAnalysisStore`), le comptage `recomputed` que son critère d'acceptation
-nomme, et la conversion `EvalOutcome → PositionAnalysis`. Le pool ne connaît
-pas ses appelants ; la persistance et la reprise sont « ailleurs », et elles
-restent là-bas.
-
-**blunderDB** ne consomme pas ce pool (il passe par cgo) et n'a rien à
-reprendre ici, sinon la règle : son analyse de match en Go découpe elle aussi,
-et la borne de 2,6 % vaut pour elle si son nombre de tâches dépasse déjà son
-nombre de fils.
+Et la borne ne vaut pas que pour le navigateur : elle tient partout où le
+nombre de tâches dépasse déjà le nombre de fils.
 
 ---
 
@@ -409,7 +399,7 @@ nombre de fils.
 
 | | |
 |---|---|
-| **Livré** — `ScheduleReport` | l'oisiveté d'un travail, relevée des deux côtés, pour que chaque consommateur tranche sur SON appareil au lieu de nous croire |
+| **Livré** — `ScheduleReport` | l'oisiveté d'un travail, relevée des deux côtés, pour trancher sur SON appareil au lieu de nous croire |
 | **Livré** — `tasksPerWorker` | le réglage, avec sa courbe mesurée, défaut inchangé (1) |
 | **Livré** — `EvaluatorPool.suggestedSize()` / `memoryCostMB()` | l'API cesse de laisser croire que `hardwareConcurrency` est la réponse |
 | **Livré** — `wasm/pool_invariants.mjs` | les invariants de distribution, avec des workers dont le test choisit le temps de réponse |

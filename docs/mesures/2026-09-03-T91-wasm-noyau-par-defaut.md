@@ -128,9 +128,9 @@ une **décision** ne passe plus par là : elle passe par le noyau par lot de
 `gn_infer_reference.c`, où la réassociation ne libère rien et gêne l'auto-vectorisation.
 D'où le paradoxe que T84 a mesuré : le drapeau qui aidait hier nuisait aujourd'hui.
 
-**Mais il restait un consommateur, et c'est celui de gammonGo.** `gnw_evaluate_batch` — le
-point d'entrée qu'`analyze()` appelle avec des centaines de vecteurs de caractéristiques —
-**bouclait sur le chemin scalaire**, une position à la fois. Retirer le drapeau sans rien
+**Mais il restait un chemin qui le réclamait.** `gnw_evaluate_batch` — le point d'entrée qu'on
+appelle avec des centaines de vecteurs de caractéristiques en une traversée — **bouclait sur le
+chemin scalaire**, une position à la fois. Retirer le drapeau sans rien
 faire d'autre l'effondrait :
 
 | `gnw_evaluate_batch`, Chromium, 2 000 vecteurs | build SIMD | build scalaire |
@@ -148,7 +148,7 @@ la porte scalaire plutôt que de payer un lot presque vide — ce qui n'est perm
 que** les deux sont bit à bit.
 
 Résultat : **×4,74 sur le chemin d'`analyze()`** en plus du ×4,48 sur celui des décisions, et
-`-fassociative-math` n'a plus de consommateur dans cet artefact. Il reste défini et
+plus rien ne réclame `-fassociative-math` dans cet artefact. Il reste défini et
 documenté ; `make wasm WASM_EXTRA="$(FP_RELAXED)"` le rend, et `make bench-width-wasm-fp`
 construit les variantes qui le mesurent.
 
@@ -188,8 +188,8 @@ depuis T21. La tolérance de 1e-6 de T20 n'est plus consommée du tout.
 | `gammonnet-simd.wasm` | 109 240 o | **100 992 o** (−7,6 %) |
 
 Le build SIMD **rétrécit** de 8 Ko : l'auto-vectorisation sous `-fassociative-math` déroulait
-la boucle chaude, le noyau écrit à la main ne la déroule pas. Un consommateur qui épingle une
-somme de contrôle doit la reprendre ; les deux fichiers changent.
+la boucle chaude, le noyau écrit à la main ne la déroule pas. Qui épingle une somme de
+contrôle doit la reprendre ; les deux fichiers changent.
 
 ## Reproduire
 
@@ -209,16 +209,15 @@ make wasm WASM_KERNEL= WASM_BATCH= \
                                                  # l'artefact d'avant, pour comparer
 ```
 
-## Ce que gammonGo doit reprendre
+## Ce que cette version impose à qui épingle l'artefact
 
-1. **Une nouvelle version de gammonNet et une montée d'épingle.** Les deux `.wasm` changent
-   de taille et de somme de contrôle ; un consommateur qui les épingle doit reprendre les
-   deux.
+1. **Une montée d'épingle.** Les deux `.wasm` changent de taille et de somme de contrôle ;
+   qui les épingle reprend les deux.
 2. **Rien à changer dans le code appelant.** L'API, les exports et le protocole de worker
-   sont identiques ; `analyze()` et `rankPlays` deviennent simplement plus rapides.
+   sont identiques ; le chemin par lot et `rankPlays` deviennent simplement plus rapides.
 3. **Les réponses peuvent bouger dans la dernière décimale — dans le bon sens.** Le module
    est maintenant bit à bit avec le natif là où il s'en écartait de 6,4e-07. Tout repère figé
-   côté gammonGo qui aurait été produit par l'ancien module doit être régénéré.
+   qui aurait été produit par l'ancien module est à régénérer.
 4. **Les mesures d'ordonnancement de T87 sont à relire, pas à refaire.** Une décision passe de
    ~1,4 s à ~0,33 s dans Chromium : les 2,5 % d'oisiveté du pool portent sur un mural quatre
    fois plus court, donc la conclusion (« l'ordonnancement est sous le seuil par

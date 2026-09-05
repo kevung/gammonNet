@@ -5,9 +5,9 @@
 · **Fiches ouvertes** : T84 – T90 · **Branche** : `perf/plan-optimisation-navigateur`
 
 > **La question.** Une décision 2-ply `(0,1,3)` `k=12` coûte **~2 689 ms** dans Firefox sur un
-> worker (T21b) et **0,36 s** en natif sur la machine de bureau. Le portage Go de blunderDB fait
-> la même décision en **0,277 s** après sa campagne du 2026-09-02. C'est l'utilisateur de
-> gammonGo qui paie l'écart, et c'est là que le levier est le moins exploité.
+> worker (T21b) et **0,36 s** en natif sur la machine de bureau. Un portage Go indépendant fait
+> la même décision en **0,277 s** après sa campagne du 2026-09-02. C'est la cible navigateur qui
+> paie l'écart, et c'est là que le levier est le moins exploité.
 >
 > Ce document instruit ce chantier. **Il n'implémente rien** : la règle 3 de `CLAUDE.md` interdit
 > d'écrire du code d'optimisation avant que les mesures d'entrée existent, et elles n'existaient
@@ -21,25 +21,25 @@ Elle sépare deux couches, et chaque fiche doit dire laquelle elle touche :
 
 | Couche | Ce que c'est | Où elle se décide |
 |---|---|---|
-| **Conceptuelle** | La forme de l'algorithme : valuer le videau par lot, regrouper ou non les 21 lancers, ordonnancer par nombre de tâches, exploiter la sparsité et sur quel lot | **Ici.** Les consommateurs reprennent |
-| **Implémentation** | L'assembleur AVX2 pour Go, les intrinsèques SIMD128 pour WebAssembly, ce que `gcc` veut bien vectoriser | Irréductiblement par langage et par cible. Personne ne la factorise |
+| **Conceptuelle** | La forme de l'algorithme : valuer le videau par lot, regrouper ou non les 21 lancers, ordonnancer par nombre de tâches, exploiter la sparsité et sur quel lot | **Ici.** Les cibles reprennent |
+| **Implémentation** | Un assembleur AVX2, les intrinsèques SIMD128 pour WebAssembly, ce que `gcc` veut bien vectoriser | Irréductiblement par langage et par cible. Personne ne la factorise |
 
-Le précédent existe : blunderDB s'impose déjà, dans son `CLAUDE.md`, que tout changement à son
-`cube.go` *« lands in gammonNet's gn_cube.c and its spec §2 first »*. La décision d'aujourd'hui
-étend cette règle d'un fichier à **toute optimisation conceptuelle**.
+La règle existait déjà en petit, pour le seul modèle de videau : un changement de forme atterrit
+dans `gn_cube.c` et dans sa spec §2 avant d'exister ailleurs. La décision d'aujourd'hui l'étend
+d'un fichier à **toute optimisation conceptuelle**.
 
-**Corollaire opératoire** : une fiche qui améliore le C sans dire comment le portage Go, le
-module WebAssembly et `gammonnet serve` la reprennent laisse les implémentations diverger. Chaque
-fiche ci-dessous porte donc une ligne « ce que les consommateurs reprennent ».
+**Corollaire opératoire** : une fiche qui améliore le C sans dire comment le natif, le module
+WebAssembly et `gammonnet serve` la reprennent laisse les cibles diverger. Chaque fiche ci-dessous
+porte donc une ligne « ce que les cibles reprennent ».
 
 ## Et la cause racine que les mesures n'atteignent pas
 
-**L'artefact WebAssembly sous-exporte, et gammonGo réécrit du moteur en TypeScript pour
-compenser.** Un relevé des recouvrements entre les trois dépôts l'a établi, avec les commentaires
-de gammonGo qui l'assument :
+**L'artefact WebAssembly sous-exporte, et du moteur se réécrit donc en TypeScript à côté de lui
+pour compenser.** Un relevé des recouvrements entre ce qui est exporté et ce qui est réécrit
+l'établit :
 
-1. **`wasm/pool.mjs` n'est pas utilisé.** gammonGo écrit deux ordonnanceurs à lui, parce que
-   `wasm/worker.mjs` *« only relays raw evaluateBatch chunks »*. Vérifié ici : son protocole est
+1. **`wasm/pool.mjs` n'est pas utilisé.** Deux ordonnanceurs sont écrits à côté, parce que
+   `wasm/worker.mjs` ne relaie que des lots bruts de caractéristiques. Vérifié ici : son protocole est
    `init` / `evaluate` / `stop`, rien d'autre. **Les points d'entrée de la recherche sont pourtant
    exportés du module** — `_gnw_best_play`, `_gnw_rank_plays`, `_gnw_cube_decide` sont dans
    `EXPORTED_FUNCTIONS` — mais le worker ne les relaie pas. Ce qui manque n'est donc pas un
@@ -60,8 +60,8 @@ de gammonGo qui l'assument :
    triplet mesuré par l'état de possession. **Le seul défaut du dépôt est le mauvais, et il est
    dans l'artefact distribué.** Correction proposée en T86, à valider avant écriture.
 6. **Les formes canoniques sont recopiées quatre fois** (`prune_k = 12`, filtre `(0,1,3)`,
-   profondeur 2) : `wasm/gammonnet.mjs` preset `normal`, le portage Go, `client.ts`,
-   `advanced-settings.ts`. gammonGo ajoute un `PRUNE_K_FAST = 3` sans mesure amont — alors que
+   profondeur 2) : le preset `normal` de `wasm/gammonnet.mjs`, et trois recopies à la main hors
+   du moteur. Un `PRUNE_K_FAST = 3` s'y est ajouté sans mesure amont — alors que
    T3A en a une : `k=3` perd +0,00389 d'équité par décision [+0,00232 ; +0,00585], contre
    +0,00023 pour `k=12`.
 
@@ -121,9 +121,9 @@ Le chantier Go a livré six postes hors réseau. Verdict pour chacun :
 | encodage sans revalidation | `gn_encode` appelle `gn_position_is_valid` à chaque appel | validation 44,4 ns sur 91,5 ns d'encodage — **48,5 %** ; ~1,9 ms par décision | **0,5 % — mesurable, pas rentable seul.** À prendre en passant si T84 touche l'encodage, jamais pour lui-même |
 | déduplication par table de hachage | le moteur vendoré déduplique déjà **par position résultante** (`gn_rules_reference.c:220`) | — | **Sans objet.** Déjà fait |
 | alternance des niveaux au lieu d'une copie | `forward_batch` alterne déjà `g_batch_a` / `g_batch_b` ; la recherche copie des `GnPosition` de **29 octets** | — | **Sans objet.** La copie qui coûtait en Go est ici un objet de 29 octets |
-| index de notation | **le C n'a pas de générateur de texte de coup** | — | **Idée à reprendre, mais à l'envers** : ce n'est pas une optimisation, c'est une fonction manquante que gammonGo a dû réécrire. Voir T86 |
+| index de notation | **le C n'a pas de générateur de texte de coup** | — | **Idée à reprendre, mais à l'envers** : ce n'est pas une optimisation, c'est une fonction manquante qu'il a fallu réécrire hors du moteur. Voir T86 |
 
-**La leçon générale, et elle mérite d'être écrite** : quatre des six postes du chantier Go sont
+**La leçon générale, et elle mérite d'être écrite** : quatre des six postes de ce chantier sont
 des **artefacts du langage** — pression sur le ramasse-miettes, réflexion, copies de valeur. Ils
 ne redescendent pas. Ce qui redescend est ce qui touche la **forme de l'algorithme** : le videau
 par lot (T85), l'ordonnancement par nombre de tâches (T87), et un fait de mesure — « les doubles
@@ -197,13 +197,13 @@ une dette d'hygiène qui devient urgente le jour où T73 déplace les tuiles, pa
 
 ## La discipline — elle est la moitié du résultat
 
-Reprise du chantier blunderDB, et elle n'est pas négociable ici non plus.
+Reprise de la campagne d'origine, et elle n'est pas négociable ici non plus.
 
 **Un poste par commit, avec son chiffre dans le message.** Pas de commit « diverses
 optimisations » : on ne sait plus ensuite lequel a payé, ni lequel a coûté.
 
-**Un poste sans gain mesurable n'est pas livré.** Sur blunderDB, le plus gros poste de la liste —
-le videau — a été écrit, mesuré à 1 %, puis **annulé**, et c'est le meilleur résultat du chantier.
+**Un poste sans gain mesurable n'est pas livré.** Là-bas, le plus gros poste de la liste — le
+videau — a été écrit, mesuré à 1 %, puis **annulé**, et c'est le meilleur résultat du chantier.
 Chaque fiche ci-dessus porte son seuil d'abandon *avant* que le code existe, précisément pour que
 l'annulation soit une issue prévue et non un aveu.
 
@@ -229,18 +229,17 @@ Les raisons, dans l'ordre où elles pèsent :
 
 1. **Ce qui est décidé est une frontière, pas une technique.** « L'optimisation conceptuelle
    appartient à gammonNet ; l'implémentation appartient à chaque cible » est exactement le genre
-   d'énoncé qu'un ADR existe pour figer : il se défait très cher une fois que trois dépôts ont
+   d'énoncé qu'un ADR existe pour figer : il se défait très cher une fois que trois cibles ont
    divergé, et il ne se déduit d'aucun fichier.
-2. **gammonNet est l'amont, donc le lieu où la règle est vérifiable.** blunderDB et gammonGo sont
-   des consommateurs ; une règle écrite chez un consommateur ne lie pas les deux autres. Écrite
-   ici, elle est citable par les deux — et le précédent du `cube.go` de blunderDB montre que
-   c'est comme cela que la chose fonctionne déjà, en plus petit.
-3. **Un ADR par dépôt serait le début de la divergence qu'il prétend empêcher.** Trois textes à
+2. **gammonNet est l'amont, donc le lieu où la règle est vérifiable.** Une règle écrite dans
+   l'enveloppe qui expose le moteur ne lie pas les autres enveloppes. Écrite ici, elle vaut pour
+   toutes — et la règle qui existe déjà pour `gn_cube.c`, en plus petit, montre que c'est comme
+   cela que la chose fonctionne.
+3. **Un ADR par cible serait le début de la divergence qu'il prétend empêcher.** Trois textes à
    maintenir en accord, c'est deux de trop.
 
-**Ce que blunderDB et gammonGo font à la place** : une ligne d'invariant dans leur `CLAUDE.md`
-qui **pointe** l'ADR d'ici — la généralisation de celle qui existe déjà chez blunderDB pour
-`cube.go`. Une ligne, pas un document.
+**Ce qu'une écriture faite ailleurs a à faire à la place** : une ligne d'invariant qui **pointe**
+l'ADR d'ici. Une ligne, pas un document.
 
 **Ce que l'ADR doit contenir, et qui n'est pas évident** : le critère qui range une optimisation
 d'un côté ou de l'autre. La proposition, tirée des six postes examinés plus haut : *une

@@ -498,7 +498,7 @@ chacune.
 `CLAUDE.md` pose comme non négociable qu'aucune brique non libre n'entre dans l'artefact
 distribué, et impose l'attribution de tout ce qui vient d'ailleurs. Aujourd'hui, l'artefact
 embarque **une œuvre d'un tiers** : la table Kazaross-XG2, œuvre de Neil Kazaross, utilisée avec
-attribution (précédent blunderDB).
+attribution.
 
 **Une MET apprise la remplace par du calcul que nous avons produit.** Ce n'est pas une question de
 licence — l'usage actuel est légitime et attribué — mais de **provenance** : l'artefact ne
