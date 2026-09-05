@@ -10,7 +10,7 @@
  *
  * WHY THIS FILE EXISTS AT ALL, rather than a scalar equity. `gn_infer.h` insists
  * that the distribution is the output and the money equity a mere projection.
- * This is the consumer that justifies the insistence: a match winning chance
+ * This is the caller that justifies the insistence: a match winning chance
  * needs P(gammon) and P(backgammon) separately, weighted by what each is worth
  * at THIS score. At 2-away/4-away a gammon often wins the match outright; in
  * money it is worth two points like any other. A scalar equity has already
@@ -107,7 +107,7 @@ double gn_met_after(const GnMatchState *state, int points, int on_roll_wins);
  * The six mutually exclusive outcomes come from `gn_probs_exclusive`, which is
  * called rather than reimplemented: T10 found that subtracting nested
  * probabilities naively yields a NEGATIVE probability on real positions, and
- * this function is exactly the consumer that would have carried it into a match
+ * this function is exactly the caller that would have carried it into a match
  * equity. The fragile subtraction is written once, there.
  *
  * Returns -1 if the state is not evaluable.
@@ -135,8 +135,8 @@ double gn_match_winning_chance(const GnMatchState *state,
  * are invariant under any increasing affine map of the MWC, which is all this
  * is -- and a wrong one to hand to a user or to store next to another engine's
  * numbers. An earlier version of this comment called it "the equivalent to
- * money scale that engines print"; a consumer believed it and displayed match
- * equities six times too small (blunderDB ADR-0019). Convert at the edge.
+ * money scale that engines print"; a caller believed it and displayed match
+ * equities six times too small. Convert at the edge.
  */
 double gn_match_equity(const GnMatchState *state,
                        const float probs[GN_NUM_OUTPUTS]);

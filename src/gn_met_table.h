@@ -15,10 +15,11 @@
  * deriving from GNU Backgammon's code; the table is Kazaross's work, and the
  * attribution goes to him.
  *
- * They were cross-checked against `blunderDB` (MIT, Copyright (c) 2024 Facteur
- * Pat), the MIT precedent `BRIEF.md` cites: the 625 pre-Crawford entries agree
- * exactly. blunderDB's transcription stops at 24 post-Crawford entries where
- * the XML carries 25, which is why the XML is preferred.
+ * They were cross-checked against an independent transcription of the same
+ * table: the 625 pre-Crawford entries agree exactly. That transcription is a
+ * WITNESS, not a source -- nothing here derives from it -- and it stops at 24
+ * post-Crawford entries where the XML carries 25, which is why the XML is
+ * preferred.
  *
  * PRE-CRAWFORD. `GN_MET_PRE[i][j]` is the match winning chance of the player
  * who needs `i + 1` points, against an opponent who needs `j + 1`.

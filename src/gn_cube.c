@@ -42,8 +42,8 @@ static double janowski_e(double p, double W, double L)
 
 /* The fixed breakpoints of the x = 1 (fully live) equity curve. Closed form,
  * spec §2 -- verified there against the redouble recursion to 1e-12, and
- * against blunderDB's numbers are not consulted here (nothing here reads
- * another engine's constants; W and L come from THIS position only). */
+ * another engine's constants are not consulted here: W and L come from THIS
+ * position only. */
 static void live_points(double W, double L, double *tp_live, double *cp_live)
 {
     const double denom = W + L + 0.5;

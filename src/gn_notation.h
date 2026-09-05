@@ -18,10 +18,11 @@
  *   2. Elle n'est PAS reconstructible depuis ce que la surface WebAssembly
  *      rend. `resultId` est un PLATEAU, et un plateau ne dit pas quel pion
  *      est allé où : deux appariements différents peuvent laisser le même
- *      plateau. Le consommateur qui l'a reconstruite par différence de
- *      plateaux l'écrit dans son propre en-tête — *« a rare, highly ambiguous
- *      position … may print a pairing gammonNet's own search didn't literally
- *      choose »*.
+ *      plateau. Une reconstruction par différence de plateaux ne peut donc
+ *      pas faire mieux qu'un appariement plausible : sur une position
+ *      ambiguë, elle nomme un coup que la recherche n'a pas littéralement
+ *      choisi. Ce n'est pas une conjecture, c'est ce que l'ambiguïté du
+ *      plateau impose à quiconque tente la reconstruction.
  *
  *   3. Donc ce n'est pas une présentation qu'on ajoute, c'est UNE PARTIE DE
  *      LA RÉPONSE QU'ON CESSE DE JETER. La recherche connaît la liste ordonnée

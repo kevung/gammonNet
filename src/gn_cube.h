@@ -79,7 +79,7 @@ typedef enum {
  * and they are exactly what a scalar equity destroys. Derived from the five
  * nested probabilities via `gn_probs_exclusive` -- called, never reimplemented:
  * T10 found that denesting them naively yields a NEGATIVE probability on real
- * positions, and a cube decision is precisely the consumer that would carry it
+ * positions, and a cube decision is precisely the caller that would carry it
  * into a doubling error.
  */
 typedef struct {

@@ -393,9 +393,9 @@ static void terminal_probs(const GnPosition *pos, float out[GN_NUM_OUTPUTS]);
  * straddling either cut means the three targets deepen DIFFERENT plays, and
  * from there the equities themselves diverge -- well above 1e-6.
  *
- * The rule chosen is the Go port's (`sortByEquity`, blunderDB
- * `engine/gammonnet/search.go`), because the goal is agreement and that port
- * is already stable: the tie-break is the incoming order of the array, which
+ * The rule chosen is the one a stable sort already gives, because the goal is
+ * agreement between targets and not merely determination within one: the
+ * tie-break is the incoming order of the array, which
  * for the first sort is the generation order of `gn_legal_plays` and is
  * deterministic. The alternative -- a total comparator keyed on the resulting
  * position -- would have been just as portable but would have reordered ties
