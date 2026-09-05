@@ -3,8 +3,9 @@
  * T12 entier.
  *
  * POURQUOI CONTRE LE C, ET PAS CONTRE CE QU'IL REMPLACE. Le codec exporté ici
- * remplace une écriture TypeScript que gammonGo a DÉDUITE puis validée contre
- * ce même module. Vérifier l'un contre l'autre serait donc circulaire. La
+ * remplace des écritures faites à côté du moteur, déduites puis validées
+ * contre ce même module. Vérifier l'un contre l'autre serait donc circulaire.
+ * La
  * référence est le C — croisé, lui, contre gnubg-nn sur 10 000 positions
  * (`docs/mesures/`, `tests/test_codec.py`) — et le critère est l'égalité
  * EXACTE : un identifiant est une chaîne, il n'y a pas de tolérance à lui

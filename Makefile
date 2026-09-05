@@ -366,13 +366,20 @@ wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 
 # La parité du CODEC, sur le corpus T12 entier et à l'égalité EXACTE — un
 # identifiant est une chaîne, il n'y a pas de tolérance à lui accorder. Le
-# repère vient du C natif (`tools/dump_codec_reference.py`), jamais de
-# l'écriture JavaScript que ces exports remplacent : la vérifier contre elle
-# serait circulaire, puisqu'elle a été validée contre ce module.
+# repère vient du C natif (`tools/dump_codec_reference.py`), jamais d'une
+# écriture JavaScript que ces exports remplacent : la vérifier contre une
+# écriture qui a elle-même été validée contre ce module serait circulaire.
+#
+# Puis le MÊME corpus relu dans la convention de plateau INVERSE. La parité
+# ci-dessus ne peut pas voir une erreur d'orientation, les deux côtés se
+# trompant ensemble ; `codec_conventions.mjs` traverse exprès les quatre
+# inversions (26 cases contre 29, numérotation de Noir, positif Noir, joueur
+# au trait codé à l'envers) et doit retomber sur le même identifiant.
 .PHONY: wasm-codec
 wasm-codec: wasm build
 	$(PYTHON) tools/dump_codec_reference.py
 	node $(WASM_DIR)/codec_parity.mjs
+	node $(WASM_DIR)/codec_conventions.mjs
 
 DUMP_INT8 := $(BUILD)/dump_reference_int8
 $(DUMP_INT8): tools/dump_reference_int8.c src/gn_gemm_int8.c $(HEADERS)

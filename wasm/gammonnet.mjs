@@ -26,10 +26,10 @@ const F32 = 4;
  * l'état de possession, et ce wrapper inventait une valeur pour son propre
  * compte.
  *
- * Ce que ça a coûté, et qui n'est pas hypothétique : gammonGo a redécouvert
- * 0,688 EMPIRIQUEMENT, par bissection contre un cas d'or, et son commentaire
- * conclut que le défaut du build WebAssembly n'est « pas quelque chose à
- * croire sans le lire une seconde fois ».
+ * Ce que ça a coûté, et qui n'est pas hypothétique : faute de pouvoir lire
+ * 0,688 ici, la valeur a dû être redécouverte EMPIRIQUEMENT ailleurs, par
+ * bissection contre un cas d'or — un défaut de ce fichier n'est donc « pas
+ * quelque chose à croire sans le lire une seconde fois ».
  *
  * Le remède n'est pas 0,566 → 0,688 : un défaut juste reste un défaut, et il
  * redeviendrait faux le jour où la mesure bougerait sans que l'appelant le
@@ -324,8 +324,8 @@ export class Evaluator {
    * dérivé du C, à chaque `make wasm-api`.
    *
    * `k = 12` perd +0,00023 [-0,00000 ; +0,00067] d'équité par décision contre
-   * la même recherche non élaguée — un downstream ayant un jour introduit
-   * `k = 3` sans mesure amont y aurait perdu +0,00389 [+0,00232 ; +0,00585],
+   * la même recherche non élaguée — un `k = 3` introduit sans mesure amont y
+   * aurait perdu +0,00389 [+0,00232 ; +0,00585],
    * dix-sept fois plus, pour deux fois la vitesse seulement
    * (docs/mesures/2026-08-26-T3A-regroupement.md).
    */
@@ -505,12 +505,11 @@ export class Evaluator {
    * depuis JavaScript : le module prenait un identifiant en entrée et n'a
    * jamais su en fabriquer un.
    *
-   * Un consommateur qui part de SON plateau n'avait donc qu'une option,
-   * réécrire le codec. gammonGo l'a fait, et son en-tête est honnête sur la
-   * méthode : algorithme déduit, puis validé empiriquement contre ce module.
-   * C'est la seule des trois écritures de ce codec qui ne descende pas d'une
-   * référence indépendante — une déduction confirmée par son propre
-   * consommateur est un accord avec soi-même, pas une vérification.
+   * Un appelant qui part de SON plateau n'avait donc qu'une option, réécrire
+   * le codec — algorithme déduit, puis validé empiriquement contre ce module.
+   * Une telle écriture ne descend d'aucune référence indépendante : une
+   * déduction confirmée par le module qu'elle imite est un accord avec
+   * soi-même, pas une vérification.
    *
    * UN PLATEAU, dans la convention de `gn_rules.h` et sans en inventer une
    * seconde :

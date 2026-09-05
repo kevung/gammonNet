@@ -154,8 +154,8 @@
     // ── UNE DÉCISION COMPLÈTE, DANS UN WORKER, SANS UNE LIGNE DE RECHERCHE
     //    EN JAVASCRIPT (T86) ────────────────────────────────────────────
     //
-    // Tout ce qui précède tourne sur le thread principal. C'est ce qu'un
-    // consommateur ne peut PAS faire : une décision de 2,7 s y gèle la page.
+    // Tout ce qui précède tourne sur le thread principal. C'est ce qu'une
+    // application ne peut PAS faire : une décision de 2,7 s y gèle la page.
     // Et jusqu'à T86, la seule chose que `worker.mjs` savait relayer était un
     // lot de caractéristiques — donc pour obtenir une décision hors du thread
     // principal il fallait engendrer les coups et parcourir l'arbre en
@@ -206,8 +206,7 @@
     // synchrone n'est pas interruptible sans SharedArrayBuffer — mais que le
     // travail dépassé ne remonte pas ET que le worker reste utilisable, ses
     // 1,06 Mo de poids en place. C'est ce que `Worker.terminate()` ne sait pas
-    // faire, et c'est le coût qu'un geste annulé paye aujourd'hui chez le
-    // consommateur.
+    // faire, et c'est le coût que paye aujourd'hui tout geste annulé.
     //
     // Deux décisions sont postées puis annulées. La PREMIÈRE est déjà partie
     // dans le WASM : elle ira au bout, et le mesurer est le sujet — c'est une

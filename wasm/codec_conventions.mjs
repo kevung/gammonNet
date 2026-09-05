@@ -1,25 +1,27 @@
 /*
- * L'ÉCART entre le codec exporté et l'écriture TypeScript qu'il remplace.
+ * LE CODEC RELU DANS LA CONVENTION OPPOSÉE.
  *
- * gammonGo a DÉDUIT son propre Position ID puis l'a validé empiriquement
- * contre ce module — reproduction de l'identifiant d'ouverture, puis accord à
- * 5,85e-9 sur une équité. C'est la seule des trois écritures de ce codec qui
- * ne descende pas d'une référence indépendante, et T86 la supprime en
- * exportant celle du C.
+ * CE QUE CE FICHIER ATTRAPE, ET QUE LA PARITÉ NE PEUT PAS VOIR.
+ * `wasm/codec_parity.mjs` compare le module WebAssembly au C natif : même
+ * algorithme, même convention de plateau, donc une erreur d'ORIENTATION y est
+ * invisible — les deux côtés se trompent ensemble. Ici, le Position ID gnubg
+ * est réécrit en JavaScript dans une convention de plateau INVERSE de celle
+ * de `gn_rules.h` : 26 cases au lieu de 29, la numérotation de Noir au lieu de
+ * celle de Blanc, positif NOIR au lieu de positif Blanc, et le joueur au trait
+ * codé 0/1 dans l'autre sens.
  *
- * CE FICHIER N'EST PAS UN TEST DE PARITÉ, et il ne doit pas le devenir : la
- * référence du codec est le C, croisé contre gnubg-nn, et c'est
- * `wasm/codec_parity.mjs` qui l'établit. Ici on mesure seulement l'écart entre
- * l'ancienne écriture et la nouvelle, pour que la substitution chez le
- * consommateur soit un fait chiffré et non un acte de foi. Le nombre publié
- * est le nombre de positions du corpus T12 sur lesquelles les deux diffèrent.
+ * C'est exactement la classe de défaut qui ne casse rien et retourne tout : un
+ * identifiant reste bien formé, les comptes de pions restent plausibles, et la
+ * position décrite est celle de l'autre camp. Une seconde écriture qui traverse
+ * ces quatre inversions et retombe sur le MÊME identifiant est la seule preuve
+ * bon marché qu'aucune n'a été prise à l'envers.
  *
- * L'algorithme ci-dessous est TRANSCRIT de
- * `gammonGo/frontend/gammongo/src/lib/gammonnet/position-id.ts` (lecture
- * seule), avec le seul changement qu'impose la comparaison : il prend le
- * tableau de 26 entiers directement plutôt qu'un `EnginePosition`.
+ * CE N'EST PAS UN TEST DE PARITÉ et ça ne doit pas le devenir : la référence du
+ * codec reste le C, croisé contre gnubg-nn sur 10 000 positions. Le nombre
+ * publié ici est le nombre de positions du corpus T12 sur lesquelles les deux
+ * écritures diffèrent, et il doit valoir zéro.
  *
- *   usage : node wasm/codec_vs_gammongo.mjs
+ *   usage : node wasm/codec_conventions.mjs
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,10 +33,10 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 const REFERENCE = join(ROOT, "build", "codec_reference.json");
 
-/* Les constantes de gammonGo, et elles sont l'INVERSE de celles de gammonNet :
- * là-bas BLACK = 0 et WHITE = 1, ici GN_WHITE = 0 et GN_BLACK = 1. C'est le
- * genre de détail qui ne casse rien et retourne tout. */
-const GG_BLACK = 0;
+/* La convention inverse : ici BLACK = 0 et WHITE = 1, là où `gn_rules.h` pose
+ * GN_WHITE = 0 et GN_BLACK = 1. C'est le genre de détail qui ne casse rien et
+ * retourne tout — d'où l'intérêt de le traverser exprès. */
+const ALT_BLACK = 0;
 
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -54,11 +56,11 @@ function keyToBase64(key) {
   return out;
 }
 
-/* La transcription. `board26` : indice 0 = barre de Blanc, 25 = barre de Noir,
- * 1..24 = les points dans la numérotation de NOIR, positif noir / négatif
- * blanc. */
-function gammonGoPositionId(board26, onRoll) {
-  const moverIsBlack = onRoll === GG_BLACK;
+/* La seconde écriture. `board26` : indice 0 = barre de Blanc, 25 = barre de
+ * Noir, 1..24 = les points dans la numérotation de NOIR, positif noir /
+ * négatif blanc. */
+function altPositionId(board26, onRoll) {
+  const moverIsBlack = onRoll === ALT_BLACK;
   const anBoard = [new Array(25).fill(0), new Array(25).fill(0)];
   for (let point = 1; point <= 24; point++) {
     const j = point - 1;
@@ -87,12 +89,13 @@ function gammonGoPositionId(board26, onRoll) {
 }
 
 /*
- * La traduction des 29 entiers de gammonNet vers les 26 de gammonGo.
+ * La traduction des 29 entiers de `gn_rules.h` vers les 26 de la convention
+ * inverse.
  *
- * gammonNet : `points[i]` signé, POSITIF BLANC ; l'indice i désigne le point
- * (i+1) pour Blanc et (24-i) pour Noir. gammonGo : `board26[p]` signé, POSITIF
- * NOIR, p dans la numérotation de Noir. Donc `board26[p] = -points[24 - p]`,
- * et les deux barres changent aussi de signe et de place.
+ * Ici : `points[i]` signé, POSITIF BLANC ; l'indice i désigne le point (i+1)
+ * pour Blanc et (24-i) pour Noir. Là : `board26[p]` signé, POSITIF NOIR, p
+ * dans la numérotation de Noir. Donc `board26[p] = -points[24 - p]`, et les
+ * deux barres changent aussi de signe et de place.
  *
  * Une traduction est une frontière de format ; le compte de pips la contrôle
  * plus bas, comme `BRIEF.md` §6 l'exige.
@@ -110,10 +113,10 @@ const entries = JSON.parse(readFileSync(REFERENCE, "utf-8"));
 let disagreements = 0;
 let firstDisagreement = null;
 for (const e of entries) {
-  /* `turn` gammonNet (0 = Blanc, 1 = Noir) vers `onRoll` gammonGo
-   * (0 = Noir, 1 = Blanc) : les deux conventions sont inversées. */
+  /* `turn` d'ici (0 = Blanc, 1 = Noir) vers `onRoll` de là (0 = Noir,
+   * 1 = Blanc) : la quatrième inversion. */
   const onRoll = e.turn === 1 ? 0 : 1;
-  const theirs = gammonGoPositionId(toBoard26(e.board), onRoll);
+  const theirs = altPositionId(toBoard26(e.board), onRoll);
   if (theirs !== e.position_id) {
     disagreements++;
     firstDisagreement ??= `${e.id} : ${theirs} au lieu de ${e.position_id}`;
@@ -129,12 +132,11 @@ const blackToPlay = entries.filter((e) => e.board[28] === 1).length;
 console.log(`corpus T12 : ${entries.length} positions `
   + `(${withBar} avec un pion sur la barre, ${withOff} avec des pions sortis, `
   + `${blackToPlay} au trait de Noir)`);
-console.log(`écart entre l'écriture TypeScript de gammonGo et le C : `
+console.log(`écart entre l'écriture en convention inverse et le C : `
   + `${disagreements} position(s)`);
 if (firstDisagreement) console.log(`  premier écart : ${firstDisagreement}`);
 console.log(disagreements === 0
-  ? "→ les deux écritures sont d'accord partout : la substitution est sans effet\n"
-    + "  observable, et gammonGo peut supprimer position-id.ts sans changer un\n"
-    + "  seul identifiant."
-  : "→ elles diffèrent : la substitution CHANGE des identifiants, et il faut\n"
-    + "  savoir lesquels avant de supprimer quoi que ce soit.");
+  ? "→ les deux écritures sont d'accord partout : les quatre inversions de\n"
+    + "  convention sont traversées sans qu'aucune ne soit prise à l'envers."
+  : "→ elles diffèrent : une convention est prise à l'envers quelque part, et\n"
+    + "  un identifiant bien formé ne le dira pas tout seul.");

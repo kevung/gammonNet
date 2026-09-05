@@ -6,8 +6,8 @@
  * RÉPOND ; celui-ci vérifie ce que le worker RELAIE. Ce sont deux surfaces
  * distinctes, et c'est la seconde qui manquait : trois points d'entrée de la
  * recherche étaient exportés du `.wasm` sans qu'aucun message ne permette de
- * les atteindre, et le consommateur a réécrit la recherche à côté plutôt que
- * de le remarquer. Une surface non testée est une surface qu'on croit avoir.
+ * les atteindre, et la recherche s'est retrouvée réécrite à côté plutôt que
+ * le manque remarqué. Une surface non testée est une surface qu'on croit avoir.
  *
  * SUR LE FAUX `self`. Node n'a pas l'API `Worker` du DOM. Le protocole est
  * donc exercé en installant un `self` factice avant d'importer `worker.mjs` :
@@ -169,7 +169,7 @@ check("`analyze` rend une décision par position",
 
 /* 8. Le protocole d'AVANT est intact : `evaluate` répond toujours des lots.
  *
- * `gammonnet.mjs` et `pool.mjs` sont vendorisés tels quels par gammonGo ;
+ * `gammonnet.mjs` et `pool.mjs` peuvent être vendorisés tels quels ;
  * T86 ajoute, elle ne remplace pas. */
 const features = new Float32Array(direct.numFeatures * 2);
 send({ type: "evaluate", id: 10, features, count: 2, chunk: 1 });
