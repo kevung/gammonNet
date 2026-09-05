@@ -29,7 +29,7 @@ promises** — that the ranked candidate list is ordered by equity, that its fir
 describe **the same player as the equity beside them**, and that with the move filter off, the N
 best moves do not depend on N.
 
-The frame-of-reference check is the newest, and it took two misreadings by the same consumer to get
+The frame-of-reference check is the newest, and it took two misreadings of the same kind to get
 written. A nesting check cannot do it: a mirrored distribution is still perfectly nested. What bites
 is the identity — cubeless money equity **is** a function of the five probabilities, so at 0-ply,
 recomputing one from the others must reproduce it. Under an inversion the reconstruction comes out

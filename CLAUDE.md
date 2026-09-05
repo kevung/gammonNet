@@ -44,7 +44,7 @@ Un module WebAssembly servi à un navigateur **est une distribution**. Donc :
 | Faire tourner GNU Backgammon comme **oracle de mesure** | FSF, GPL FAQ : *« The output of a program is not, in general, covered by the copyright on the code of the program. »* |
 | Réimplémenter des idées documentées (élagage, filtres de coups, classification) | Une idée n'est pas une œuvre |
 | Tables de fin de partie, quelle que soit leur origine | Calcul exact reproductible, pas une œuvre de création |
-| Table d'équité de match Kazaross-XG2, avec attribution à Neil Kazaross | Œuvre de N. Kazaross ; précédent MIT dans [blunderDB](https://github.com/kevung/blunderDB) |
+| Table d'équité de match Kazaross-XG2, avec attribution à Neil Kazaross | Œuvre de N. Kazaross ; lire `Kazaross-XG2.xml` n'est pas dériver du code de GNU Backgammon |
 | Code et poids sous MIT | Sous réserve de conserver la notice |
 
 **En cas de doute sur une source : ne pas l'intégrer, et poser la question.** Une brique

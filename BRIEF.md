@@ -99,9 +99,10 @@ et elle y est mesurablement plus faible qu'une table exacte. **Mesurablement** �
 
 **La table d'équité de match Kazaross-XG2.** Œuvre de **Neil Kazaross**, générée par rollouts XG
 (jusqu'à 9 points) et GNU Backgammon Supremo (jusqu'à 15 points), étendue à 25 points par
-projection des points de prise. GNU Backgammon n'en est que le véhicule de distribution.
-[blunderDB](https://github.com/kevung/blunderDB), sous licence MIT, l'embarque déjà avec
-attribution (`pkg/blunderdb/engine/met.go`). Au-delà de 25 points, le repli est le modèle de
+projection des points de prise. GNU Backgammon n'en est que le véhicule de distribution, et non l'auteur : les nombres sont lus
+dans `Kazaross-XG2.xml`, le rendu qu'il livre et charge par défaut. **Lire un fichier de données
+n'est pas dériver d'un code** — la table est l'œuvre de Kazaross, et c'est à lui que
+l'attribution est due. Au-delà de 25 points, le repli est le modèle de
 Zadeh (*Management Science* 23, 986, 1977).
 
 ### 3.4 Ce qui est hors périmètre
@@ -127,7 +128,7 @@ pas.
 | Faire tourner GNU Backgammon comme oracle de mesure | FSF, GPL FAQ : *« The output of a program is not, in general, covered by the copyright on the code of the program. »* |
 | Réimplémenter des idées documentées (élagage, filtres de coups, classification contact/crashed/race) | Une idée n'est pas une œuvre |
 | Utiliser les tables de fin de partie | Calcul exact reproductible |
-| Utiliser la table Kazaross-XG2, avec attribution | Œuvre de N. Kazaross ; précédent MIT dans blunderDB |
+| Utiliser la table Kazaross-XG2, avec attribution | Œuvre de N. Kazaross ; lire `Kazaross-XG2.xml` n'est pas dériver du code de GNU Backgammon |
 | Utiliser et redistribuer les poids Strehl | MIT, poids inclus dans le dépôt |
 
 ## 4. La recette d'entraînement de référence
@@ -414,5 +415,3 @@ le nôtre :
   <https://www.gnu.org/licenses/gpl-faq.html#WhatCaseIsOutputGPL>
 - `wildbg` (comparaison) — <https://github.com/carsten-wenderdel/wildbg> (Apache-2.0/MIT), plus
   faible : son README annonce *« an error rate of roughly 5.9 for 1-pointers »*
-- `blunderDB` (précédent MIT pour la table d'équité de match) —
-  <https://github.com/kevung/blunderDB>

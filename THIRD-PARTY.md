@@ -12,7 +12,7 @@ effectivement utilisé**. Tenu à jour à chaque ajout de dépendance.
 | Brique | Auteur | Licence | Ce qui est utilisé | Source |
 |---|---|---|---|---|
 | `backgammon-ai-engine` | Alexander Strehl | MIT | **Les poids** `cubeless_prob5_512_512_256_128`, publiés sous le nom `strehl-prob5-512-512-256-128` — la paternité reste à l'auteur (`BRIEF.md` §8) ; **le moteur de règles** `c_engine/bg_engine.c` et **le moteur d'inférence** `c_inference/nn_eval.c`, compilés dans l'artefact | [dépôt](https://github.com/alexstrehl/backgammon-ai-engine), commit `b2750df` |
-| Table d'équité de match Kazaross-XG2 | Neil Kazaross | œuvre de N. Kazaross, avec attribution | La table, compilée dans l'artefact (`src/gn_met_table.h`) et exportée dans `data/met_kazaross_xg2.json` pour blunderDB et gammonGo (#24) | `Kazaross-XG2.xml` (GNU Backgammon, rendu faisant autorité), cross-vérifiée contre le précédent MIT de [blunderDB](https://github.com/kevung/blunderDB) |
+| Table d'équité de match Kazaross-XG2 | Neil Kazaross | œuvre de N. Kazaross, avec attribution | La table, compilée dans l'artefact (`src/gn_met_table.h`) et exportée dans `data/met_kazaross_xg2.json` (#24) | `Kazaross-XG2.xml` (GNU Backgammon, rendu faisant autorité) |
 | `strehl-prune-32` | poids produits par ce dépôt, **distillés de** `strehl-prob5-...` (Strehl, MIT) | MIT | Le réseau d'élagage, qui trie les coups candidats | `tools/train_prune.py`, provenance dans `models/prune_32.provenance.json` |
 
 > **La notice voyage avec l'artefact.** `tools/package_artifact.py` écrit un fichier `NOTICE`
@@ -49,17 +49,17 @@ exact qui l'a produite.
 
 **La transcription** vient de `Kazaross-XG2.xml`, le rendu que GNU Backgammon charge par défaut —
 le rendu faisant autorité, et donc la table contre laquelle toute comparaison future se fait.
-Elle a été cross-vérifiée contre [blunderDB](https://github.com/kevung/blunderDB) — MIT,
-Copyright (c) 2024 Facteur Pat, fichier `pkg/blunderdb/engine/met.go` — que `BRIEF.md` §3.3 cite
-comme le précédent MIT pour embarquer cette table. Le fichier généré porte les deux mentions.
-Depuis #24, `data/met_kazaross_xg2.json` est **l'export canonique** que blunderDB et gammonGo
-lisent au lieu de retranscrire la table à la main ; `data/met_kazaross_xg2.sha256` en porte
-l'empreinte de contrôle.
+Elle a été cross-vérifiée contre une transcription indépendante de la même table, qui la
+confirme sur les 625 entrées pré-Crawford. **Cette transcription n'est pas une source et rien
+n'en est dérivé** : elle est un témoin, et un témoin plus court que le rendu de référence
+(voir l'encadré). Depuis #24, `data/met_kazaross_xg2.json` est **l'export canonique** de la
+table — une seule écriture, au lieu d'une retranscription à la main par cible ;
+`data/met_kazaross_xg2.sha256` en porte l'empreinte de contrôle.
 
 > **Ce que le contrôle croisé prouve, et ce qu'il ne prouve pas.** Les 625 entrées pré-Crawford
-> coïncident avec celles de blunderDB à pleine précision — mais blunderDB s'arrêtait à 24 entrées
-> post-Crawford là où le XML en porte 25 ; cet écart est refermé par l'export ci-dessus (#24), que
-> blunderDB lit désormais au lieu de porter sa propre transcription. Le contrôle croisé vérifie la
+> coïncident à pleine précision — mais la transcription témoin s'arrête à 24 entrées
+> post-Crawford là où le XML en porte 25, ce qui est précisément pourquoi c'est le XML qui fait
+> foi, et pourquoi l'export canonique existe. Le contrôle croisé vérifie la
 > **transcription**, pas la table elle-même. Ce qui vérifie la table, ce sont ses propriétés :
 > antisymétrie exacte, diagonale à 0,5, monotonie, dentelure pair/impair du post-Crawford, et un
 > point de prise mesuré **dans la table** à **25,20 %** près du money game.
