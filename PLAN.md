@@ -1853,8 +1853,8 @@ le défaut avant de l'avoir compris.
 # Phase 8 — Aller plus vite là où l'utilisateur paie *(ouverte le 2026-09-02)*
 
 > **Le fait qui ouvre la phase.** Une décision 2-ply `(0,1,3)` `k=12` coûte **~2 689 ms** dans
-> Firefox sur un worker (T21b) et **0,36 s** en natif ici. Le portage Go de blunderDB fait la
-> même décision en **0,277 s**. C'est l'utilisateur de gammonGo qui paie l'écart.
+> Firefox sur un worker (T21b) et **0,36 s** en natif ici. Un portage Go indépendant fait la
+> même décision en **0,277 s**. C'est la cible navigateur qui paie l'écart.
 >
 > **Les mesures d'entrée sont prises** :
 > [`docs/mesures/2026-09-02-optimisation-mesures-d-entree.md`](docs/mesures/2026-09-02-optimisation-mesures-d-entree.md).
@@ -1862,11 +1862,11 @@ le défaut avant de l'avoir compris.
 > [`docs/etudes/2026-09-02-optimiser-pour-le-navigateur.md`](docs/etudes/2026-09-02-optimiser-pour-le-navigateur.md).
 >
 > **La règle de la phase, décidée le 2026-09-02** : les optimisations **conceptuelles** — la
-> forme de l'algorithme — vivent ici, et les consommateurs (portage Go de blunderDB, module
-> WebAssembly, `gammonnet serve`) les reprennent. Les optimisations **d'implémentation** —
-> assembleur AVX2, intrinsèques SIMD128, ce que `gcc` vectorise — sont irréductiblement par
-> cible. **Chaque fiche dit laquelle des deux elle touche**, et ce que les consommateurs
-> reprennent. Une fiche qui améliore le C sans le dire laisse les trois implémentations diverger.
+> forme de l'algorithme — vivent ici, et les trois cibles (natif, module WebAssembly,
+> `gammonnet serve`) les reprennent. Les optimisations **d'implémentation** — assembleur AVX2,
+> intrinsèques SIMD128, ce que `gcc` vectorise — sont irréductiblement par cible. **Chaque fiche
+> dit laquelle des deux elle touche**, et ce que les cibles reprennent. Une fiche qui améliore le
+> C sans le dire laisse les cibles diverger.
 >
 > **Trois disciplines, non négociables** : un poste par commit, avec son chiffre dans le
 > message ; **un poste sans gain mesurable n'est pas livré** — chaque fiche porte son seuil
@@ -1879,7 +1879,7 @@ le défaut avant de l'avoir compris.
 > Deux se ferment sur un **abandon mesuré** (T87, T89), une sur un **garde-fou sans gain**
 > (T90), et c'est ce que leurs seuils demandaient.
 >
-> **Ce que la phase rend à l'utilisateur de gammonGo** : une décision 2-ply `(0,1,3)` `k=12`
+> **Ce que la phase rend au navigateur** : une décision 2-ply `(0,1,3)` `k=12`
 > passe de **1,4980 s à 0,3343 s** dans Chromium (×4,48) et de **1,1547 s à 0,6860 s** dans
 > Firefox (×1,68) ; le classement des coups devient **déterministe entre cibles** ; l'artefact
 > redevient **bit à bit avec le natif**, ce qu'il n'était plus depuis T21 ; et
@@ -1890,13 +1890,13 @@ le défaut avant de l'avoir compris.
 > **Couche : conceptuelle + artefact.** Elle ne fait gagner **aucune microseconde**, et elle est
 > première : sans elle, T85 et T87 améliorent un code que le navigateur n'appelle pas.
 
-**Le constat qui l'ouvre.** gammonGo réécrit du moteur en TypeScript, et ses propres commentaires
-disent pourquoi : `wasm/worker.mjs` *« only relays raw evaluateBatch chunks »*. Vérifié — son
-protocole est `init` / `evaluate` / `stop`. **Les points d'entrée de la recherche sont pourtant
+**Le constat qui l'ouvre.** Du moteur se réécrit en TypeScript à côté de l'artefact, et la raison
+est vérifiable ici : `wasm/worker.mjs` ne relaie que des lots bruts de caractéristiques — son
+protocole est `init` / `evaluate` / `stop`, rien d'autre. **Les points d'entrée de la recherche sont pourtant
 exportés du module** (`_gnw_best_play`, `_gnw_rank_plays`, `_gnw_cube_decide`) : le manque est
 dans le worker, pas dans `EXPORTED_FUNCTIONS`.
 
-**Objectif** — qu'un consommateur navigateur obtienne du module ce que le C et le serveur Python
+**Objectif** — que la cible navigateur donne du module ce que le C et le serveur Python
 donnent déjà, et cesse de le réécrire à côté.
 
 **Périmètre**
@@ -1904,7 +1904,7 @@ donnent déjà, et cesse de le réécrire à côté.
   entre nœuds comme `evaluate` l'a déjà. Puis `wasm/pool.mjs` distribue **des décisions**, pas
   seulement des lots de caractéristiques.
 - **Le codec de position exporté.** Le C a `gn_position_id`, `gn_position_from_id`,
-  `gn_position_from_xgid`, `gn_xgid` ; aucun n'est enveloppé dans `wasm/gn_wasm.c`. gammonGo a
+  `gn_position_from_xgid`, `gn_xgid` ; aucun n'est enveloppé dans `wasm/gn_wasm.c`. Il a fallu
   **deviné** le sien puis l'a validé empiriquement à 5,85e-9 — c'est la seule des trois écritures
   de ce codec qui ne descende pas d'une référence.
 - **La notation de coup.** Elle n'existe **nulle part en C** : il n'y a rien à exporter, il y a
@@ -1926,12 +1926,12 @@ donnent déjà, et cesse de le réécrire à côté.
   > `[centré, possédé, adverse]` pour que l'appelant n'ait pas à la deviner. Ce qu'inventer
   > la valeur coûtait, mesuré : **point de prise 0,726436 à x = 0,688 contre 0,720610 à
   > x = 0,566**, même position — de quoi retourner un verdict à la marge sans jamais avoir
-  > l'air faux. Et gammonGo avait déjà payé en rétro-ingénierie, ayant **retrouvé 0,688 par
+  > l'air faux. Et la rétro-ingénierie avait déjà été payée ailleurs : 0,688 **retrouvé par
   > bissection** contre un cas d'or. Détail :
   > `docs/mesures/2026-09-02-T88-census-ex-aequo.md` §6.
 - **Une source unique pour les formes canoniques** (`prune_k = 12`, filtre `(0,1,3)`,
-  profondeur 2), aujourd'hui recopiées quatre fois. Le `PRUNE_K_FAST = 3` que gammonGo introduit
-  sans mesure amont en a une ici : `k=3` perd +0,00389 d'équité par décision
+  profondeur 2), aujourd'hui recopiées quatre fois. Le `PRUNE_K_FAST = 3` introduit hors du
+  moteur sans mesure amont en a une ici : `k=3` perd +0,00389 d'équité par décision
   [+0,00232 ; +0,00585] contre +0,00023 pour `k=12` (T3A).
 
 **Critères d'acceptation**
@@ -1947,9 +1947,9 @@ donnent déjà, et cesse de le réécrire à côté.
 - La parité `wasm-parity` et `wasm-api` passent inchangées ; le codec exporté est vérifié contre
   `tests/` côté C, pas contre l'écriture TypeScript qu'il remplace.
 
-**Ce que les consommateurs reprennent** — gammonGo supprime `eval-worker.ts`, `match-analysis.ts`,
-`position-id.ts` et `move-notation.ts` au profit du pool amont ; blunderDB n'est pas concerné (il
-appelle le C par cgo) mais hérite de la notation de coup si elle est écrite en C.
+**Ce que les cibles reprennent** — la cible WebAssembly gagne l'ordonnanceur, le codec et la
+notation qu'il fallait jusqu'ici réécrire à côté d'elle ; le natif et `serve` héritent de la
+notation de coup, qui n'existait dans aucun des deux en C.
 
 **Exclut** — toute optimisation de vitesse. Cette fiche déplace une frontière, elle n'accélère
 rien.
@@ -1971,8 +1971,8 @@ rien.
 > fiche. Ce qui est livré est la **file** abandonnée et le worker qui **survit**.
 >
 > **Le codec de position est exporté** (Position ID, XGID, compte de pips) et vérifié contre le
-> C sur les 2 050 positions du corpus T12, égalité **exacte** — `make wasm-codec`. gammonGo
-> cesse d'être la seule des trois écritures de ce codec à ne pas descendre d'une référence.
+> C sur les 2 050 positions du corpus T12, égalité **exacte** — `make wasm-codec`. Il n'y a
+> plus de raison d'en écrire une quatrième qui ne descendrait d'aucune référence.
 >
 > **La notation de coup descend en C** : une écriture pour trois surfaces, et elle nomme la
 > liste ordonnée que la recherche a réellement retenue — une reconstruction par différence de
@@ -2029,16 +2029,15 @@ voit pas.
 - **Seuil d'abandon : < 5 %** sur une décision au score ⇒ la branche est annulée et la mesure
   publiée, comme le portage Go a publié la sienne.
 
-**Ce que les consommateurs reprennent** — la **forme** : le portage Go de blunderDB porte la même
-vectorisation sur candidats dans son `cube.go` ; le module WebAssembly l'obtient gratuitement
-puisque c'est le même C. `blunderDB/CLAUDE.md` impose déjà que tout changement de `cube.go`
-atterrisse d'abord ici et dans `docs/specs/t34-videau-spec.md` §2 : cette fiche est le cas d'usage
-de cette règle.
+**Ce que les cibles reprennent** — la **forme**, et elle seule : le module WebAssembly et le
+natif l'obtiennent gratuitement, puisque c'est le même C. La règle qui vaut déjà pour `gn_cube.c`
+— tout changement de forme atterrit ici et dans `docs/specs/t34-videau-spec.md` §2 avant
+d'exister ailleurs — est exactement ce dont cette fiche est le cas d'usage.
 
 > ### FAITE — le 2026-09-02
 >
 > Mesure complète : `docs/mesures/2026-09-02-T85-videau-par-lot.md`.
-> Forme consignée pour les consommateurs : `docs/specs/t34-videau-spec.md` **§7.1**.
+> Forme consignée : `docs/specs/t34-videau-spec.md` **§7.1**.
 >
 > **La mesure d'entrée d'abord, et elle a fallu être construite.** `bench_decision` sait
 > maintenant `--cube`, `--match=a/b`, `--owner=`, `--crawford`, `--repeat=` et surtout `--ab`
@@ -2105,9 +2104,8 @@ voir.
 - Le coût est mesuré : la mesure d'entrée dit que le tri pèse 0,80–0,90 ms par décision, soit
   0,16 % — un tri stable ne doit pas coûter plus que ce que le tri actuel coûte.
 
-**Ce que les consommateurs reprennent** — la règle de départage, à l'identique. C'est le type même
-de la décision conceptuelle : trois implémentations qui départagent différemment sont trois
-moteurs différents.
+**Ce que les cibles reprennent** — la règle de départage, à l'identique. C'est le type même de la
+décision conceptuelle : trois cibles qui départagent différemment sont trois moteurs différents.
 
 > ### FAITE — le 2026-09-02
 >
@@ -2205,7 +2203,7 @@ recouvrent et T73 hérite du verdict de largeur.
 ## T87 — L'ordonnancement par nombre de tâches, et le nombre utile de workers
 
 > **Couche : conceptuelle.** Elle vaut pour `wasm/pool.mjs`, pour le `ProcessPoolExecutor` de
-> `python/gammonnet/arena.py`, et pour tout ordonnanceur qu'un consommateur écrirait.
+> `python/gammonnet/arena.py`, et pour tout ordonnanceur écrit hors du moteur.
 
 > ### FAIT le 2026-09-02 — mesure : `docs/mesures/2026-09-02-T87-ordonnancement.md`
 >
@@ -2283,8 +2281,8 @@ sur le type de lancer.
 **Dépendances** — T86. Tant que le pool ne distribue que des lots de caractéristiques, il ne sert
 pas la décision qui coûte 2,7 s.
 
-**Ce que les consommateurs reprennent** — la règle (« le nombre de tâches, pas le tri ; la clé est
-le nombre d'évaluations ») et le pool lui-même, une fois T86 faite.
+**Ce que les cibles reprennent** — la règle (« le nombre de tâches, pas le tri ; la clé est le
+nombre d'évaluations ») et le pool lui-même, une fois T86 faite.
 
 ## T89 — La sparsité, mesurée sur le petit réseau
 
@@ -2350,8 +2348,8 @@ ont été écrits. `GN_EVAL_BATCH` vaut 32 ici, donc le code actuel est sauf.
   dans quatre dépôts, exposées par l'API comme des **valeurs**, avec leur mesure de qualité
   attachée (T3A : `k=12` perd +0,00023 d'équité par décision, `k=3` +0,00389).
 
-**Critères d'acceptation** — la suite passe sous ASan avec une tuile de 6 ; aucun consommateur
-n'a besoin de recopier une constante pour obtenir le préréglage « normal ».
+**Critères d'acceptation** — la suite passe sous ASan avec une tuile de 6 ; personne n'a besoin
+de recopier une constante pour obtenir le préréglage « normal ».
 
 > ### FAITE — le 2026-09-02
 >
@@ -2373,11 +2371,11 @@ n'a besoin de recopier une constante pour obtenir le préréglage « normal ».
 > **Correction, le 2026-09-03 (issue #25).** Ce que T86 avait livré n'était que la copie
 > JavaScript, sans le C, sans le Python, sans la mesure de qualité attachée, et sans garde
 > mécanique — la fiche se croyait close, elle ne l'était qu'à moitié : `wasm/gammonnet.mjs`
-> restait la SEULE écriture, et blunderDB/gammonGo continuaient de recopier les trois nombres à
-> la main. `gn_search_level` (`src/gn_search.c`) est désormais la source qui fait foi,
+> restait la SEULE écriture, et les trois nombres continuaient d'être recopiés à la main hors
+> du moteur. `gn_search_level` (`src/gn_search.c`) est désormais la source qui fait foi,
 > `data/search_levels.json` son export (sur le modèle de `data/met_kazaross_xg2.json`, issue
 > #24), et `Evaluator.level()` porte enfin `pruneEquityLoss`/son IC, vérifiés contre le C par
-> `wasm/api_invariants.mjs`. Voir issue #25 pour ce qui reste côté blunderDB/gammonGo.
+> `wasm/api_invariants.mjs`. Voir issue #25 pour ce qui reste à reprendre.
 
 ## T91 — Le noyau écrit à la main devient l'artefact WebAssembly
 
@@ -2406,8 +2404,8 @@ compilateur devine.
   charge de la machine relevée. **Seuil d'abandon : ×1,5.**
 - Le bit à bit du noyau contre le chemin de référence est vérifié **avant** tout chronométrage,
   et la parité `wasm-parity` ne se dégrade pas.
-- La taille des deux `.wasm` est publiée : un consommateur qui épingle une somme de contrôle
-  doit savoir qu'il la reprend.
+- La taille des deux `.wasm` est publiée : qui épingle une somme de contrôle doit savoir qu'il
+  la reprend.
 
 > ### FAITE — le 2026-09-03
 >
@@ -2438,14 +2436,14 @@ compilateur devine.
 > **aucun des deux ne perd**. Le **regroupement** des 21 lancers n'est pas touché et n'a jamais
 > été en cause : un lot de 16 se remplit à 96,5 % *parce qu'il est groupé*.
 >
-> **`-fassociative-math` : ce qu'il achetait avait cessé d'exister, et il restait un
-> consommateur.** T21 l'avait adopté parce que `forward_raw` accumule dans une seule variable ;
-> depuis T35 une décision ne passe plus par là. Mais `gnw_evaluate_batch` — le point d'entrée
-> qu'`analyze()` appelle — bouclait encore sur le chemin scalaire, et retirer le drapeau seul
+> **`-fassociative-math` : ce qu'il achetait avait cessé d'exister, et un seul chemin le
+> réclamait encore.** T21 l'avait adopté parce que `forward_raw` accumule dans une seule
+> variable ; depuis T35 une décision ne passe plus par là. Mais `gnw_evaluate_batch` — le point
+> d'entrée du chemin par lot — bouclait encore sur le chemin scalaire, et retirer le drapeau seul
 > l'effondrait de 8 776 à **2 354 éval/s**. Le remède n'est pas d'arbitrer entre les deux
 > chiffres : c'est de faire entrer ce point d'entrée par la même porte que la recherche →
-> **41 580 éval/s**, soit **×4,74 sur le chemin d'`analyze()`**. Le drapeau reste défini,
-> documenté et mesurable (`make bench-width-wasm-fp`) ; il n'a plus de consommateur.
+> **41 580 éval/s**, soit **×4,74 sur le chemin par lot**. Le drapeau reste défini, documenté et
+> mesurable (`make bench-width-wasm-fp`) ; plus rien ne le réclame.
 >
 > **La parité tombe à ZÉRO, et le coupable n'était pas le noyau.** `make wasm-parity` passe de
 > **6,407e-07 à 0,000e+00** en SIMD (le scalaire y était déjà), avec un **contrôle** reconstruit
@@ -2458,10 +2456,10 @@ compilateur devine.
 > **Et l'artefact rétrécit** : `gammonnet-simd.wasm` de 109 240 à **100 992 o** (−7,6 %),
 > `gammonnet.wasm` de 97 734 à **97 157 o** (−0,6 %) — l'auto-vectorisation sous réassociation
 > déroulait la boucle chaude, le noyau écrit à la main ne la déroule pas. **Les deux sommes de
-> contrôle changent** : un consommateur qui les épingle reprend les deux.
+> contrôle changent** : qui les épingle reprend les deux.
 >
-> **Ce que gammonGo reprend** : une montée d'épingle, et **rien dans son code appelant** — API,
-> exports et protocole de worker sont identiques. En revanche **tout repère figé produit par
+> **Ce qu'une montée d'épingle impose** : rien dans le code appelant — API, exports et protocole
+> de worker sont identiques. En revanche **tout repère figé produit par
 > l'ancien module doit être régénéré** : les réponses bougent de ≤ 6,4e-07, dans le sens de
 > l'accord avec le natif. Et les mesures d'ordonnancement de **T87 sont à relire, pas à
 > refaire** : les 2,5 % d'oisiveté portent sur un mural quatre fois plus court, donc la
@@ -2476,7 +2474,7 @@ compilateur devine.
 
 ## T50 — Publier l'artefact
 
-**Objectif** — qu'un consommateur puisse utiliser une version figée.
+**Objectif** — qu'un appelant puisse utiliser une version figée.
 
 **Périmètre** — Poids versionnés (`<réseau>_<version>_<date>.bin`), `.wasm` correspondant, somme
 de contrôle, notes de version portant la **mesure de force** de cette version. API JavaScript et
