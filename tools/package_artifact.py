@@ -395,8 +395,8 @@ SIMD128 (2 lignes × 4 vecteurs), une **largeur de lot ramenée de 32 à 16** po
 cette cible seule, et le **retrait de `-fassociative-math`**. Ce dernier point
 est contre-intuitif et vaut d'être dit : le drapeau achetait ×3,9 sur l'ancien
 chemin scalaire de T21, et **coûtait un facteur 2,8** sur le chemin par lot que la
-recherche emprunte depuis. Il reste défini et mesurable, il n'a plus de
-consommateur. **Le natif n'est pas touché** : les intrinsèques y exigeraient
+recherche emprunte depuis. Il reste défini et mesurable, plus rien ne le
+demande. **Le natif n'est pas touché** : les intrinsèques y exigeraient
 `-march=native`, donc un binaire qui ne démarre plus sans AVX2.
 
 **Les deux sommes de contrôle des `.wasm` changent**, et qui les épingle reprend
@@ -709,8 +709,8 @@ def main() -> int:
         "prune_fp16": f"strehl-prune-32_{args.version}_{date}.bin16",
         # La forme canonique "normal" (issue #25) : `gn_search_level`
         # (src/gn_search.c) est l'unique source de ce nombre, lue ici plutôt
-        # que retapée -- c'est justement le manifeste que gammonGo/client.ts
-        # et l'artefact QUICKSTART.md lisent au lieu de recopier `12`.
+        # que retapée -- ce manifeste est justement ce qu'on lit, ici comme
+        # dans le QUICKSTART.md de l'artefact, au lieu de recopier `12`.
         "prune_k": search_level("normal").prune_k,
         "wasm": "gammonnet-simd.mjs",
         "wasm_scalar": "gammonnet.mjs",

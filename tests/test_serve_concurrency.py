@@ -1,9 +1,9 @@
 """#20 — two concurrent clients hammering `/v1/eval` must never corrupt each
 other's response.
 
-Found during gammonGo#1021's recette: two `go test` runs in flight against the
-same `gammonnet serve` produced a structurally malformed/mixed HTTP response —
-not merely a wrong number. Suspect (per the issue): `ThreadingServer` dispatches
+Found with two test runs in flight against the same `gammonnet serve`: they
+produced a structurally malformed/mixed HTTP response — not merely a wrong
+number. Suspect: `ThreadingServer` dispatches
 each request onto its own thread, but the native inference library's forward
 pass writes into scratch buffers OWNED BY THE MODEL (`NNModel.buf_a`/`buf_b` in
 `vendor/backgammon-ai-engine/c_inference/nn_eval.c`, allocated once at load

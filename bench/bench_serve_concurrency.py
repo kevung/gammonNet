@@ -7,8 +7,8 @@ Serializing every request behind one lock trades concurrency for
 correctness (#20: without it, concurrent requests corrupted each other's
 response 85% of the time -- see `tests/test_serve_concurrency.py`). This
 bench answers the question that trade leaves open: does the serialized
-server still serve gammonGo's expected concurrent load without becoming a
-perceptible bottleneck? `CLAUDE.md` rule 3: a throughput or latency number
+server still carry an interactive load -- the 1, 2, 8 and 16 concurrent
+clients swept below -- without becoming a perceptible bottleneck? `CLAUDE.md` rule 3: a throughput or latency number
 is measured here, never deduced from the 86 us/eval figure alone.
 
 Usage:

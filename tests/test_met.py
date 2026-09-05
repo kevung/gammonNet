@@ -154,8 +154,8 @@ def reference_met():
     en mémoire que `src/gn_met_table.h` — un test qui comparerait la table C à
     elle-même ne prouverait rien. Ce que ce test vérifie, c'est qu'une
     régénération future n'a pas silencieusement décalé un indice entre les
-    deux fichiers dérivés. blunderDB et gammonGo lisent ce même export au
-    lieu de retranscrire la table à la main.
+    deux fichiers dérivés. C'est aussi cet export qu'on lit au lieu de
+    retranscrire la table à la main.
     """
     path = ROOT / "data" / "met_kazaross_xg2.json"
     if not path.is_file():
@@ -166,10 +166,10 @@ def reference_met():
 def test_the_export_checksum_pin_is_current():
     """`data/met_kazaross_xg2.sha256` must name the export's actual digest.
 
-    blunderDB embeds a byte-identical copy of `data/met_kazaross_xg2.json`
-    and verifies it against this pin instead of reparsing gammonNet's
-    repository; a stale pin here would let that check pass against a copy
-    that has quietly drifted from what this repository actually generates.
+    An embedded, byte-identical copy of `data/met_kazaross_xg2.json` is
+    meant to be verified against this pin rather than reparsed field by
+    field; a stale pin here would let that check pass against a copy that
+    has quietly drifted from what this repository actually generates.
     """
     export = ROOT / "data" / "met_kazaross_xg2.json"
     pin = ROOT / "data" / "met_kazaross_xg2.sha256"

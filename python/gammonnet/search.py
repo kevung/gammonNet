@@ -252,8 +252,8 @@ class SearchLevel:
     """Une forme canonique de recherche, nommée, coût de qualité attaché.
 
     Verticale 5 (issue #25) : `ply = 2`, `filter = (0,1,3)` et `prune_k = 12`
-    étaient recopiés à la main jusqu'à cinq fois à travers ce dépôt, blunderDB
-    et gammonGo. `gn_search_level` (`src/gn_search.c`, la table `LEVELS`) est
+    étaient recopiés à la main jusqu'à cinq fois à travers ce dépôt et ses
+    cibles. `gn_search_level` (`src/gn_search.c`, la table `LEVELS`) est
     désormais l'unique endroit qui les définit ; cette classe et
     `search_level()` en sont la lecture Python — rien n'est réinventé ici.
 

@@ -70,7 +70,7 @@ def test_the_kernel_is_bit_for_bit_at_every_width(built, width, kernel):
 
 
 def test_a_width_that_is_not_a_whole_number_of_vectors_fails_the_build():
-    """T90, sur son premier consommateur réel.
+    """T90, sur son premier site d'appel réel.
 
     Une largeur de 12 n'est pas un multiple des 8 voies d'un vecteur AVX. Le
     noyau n'a pas de queue scalaire — c'est ce qui garantit UN seul chemin

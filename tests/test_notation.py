@@ -1,10 +1,10 @@
 """T86 — la notation de coup : une seule écriture, et c'est celle du C.
 
 **Ce que ce fichier protège.** La notation n'existait qu'en Python, dans
-`tools/serve.py`. Le module WebAssembly n'en avait aucune, et un consommateur
-en a donc écrit une TROISIÈME, par différence de plateaux — dont l'auteur
-documente lui-même qu'une position ambiguë peut lui faire afficher un
-appariement que la recherche n'a pas choisi.
+`tools/serve.py`. Le module WebAssembly n'en avait aucune, et une TROISIÈME
+écriture est donc apparue à côté du moteur, par différence de plateaux — sur
+une position ambiguë, elle peut afficher un appariement que la recherche n'a
+pas choisi.
 
 Le remède retenu n'a pas été d'en ajouter une quatrième : elle est descendue
 en C (`src/gn_notation.c`), et les deux surfaces publiées de gammonNet

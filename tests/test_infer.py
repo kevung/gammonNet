@@ -185,7 +185,7 @@ def test_nested_event_inequalities_hold_everywhere(network):
     exactement `1.0f`, et un `P(perte-gammon)` de 1,0 satisfait bien
     l'inégalité — le clamp n'avait rien à corriger. Voir
     `test_exclusive_outcomes_are_never_negative` pour l'autre face du problème,
-    celle qui compte pour un consommateur travaillant en double.
+    celle qui compte pour un appelant travaillant en double.
     """
     for position in CORPUS:
         e = network.evaluate(position)
@@ -215,7 +215,7 @@ def test_exclusive_outcomes_are_never_negative(network):
     Trouvé par ce test, sur une position réelle du corpus : `P(gain)` = 1,5e-10
     et `P(perte-gammon)` = 1,0. En float32 — l'arithmétique du moteur —
     `1.0f - P(gain)` vaut exactement `1.0f`, l'inégalité tient, rien n'est
-    écrêté, et c'est juste. Mais un consommateur qui dénesterait en float64
+    écrêté, et c'est juste. Mais un appelant qui dénesterait en float64
     obtiendrait `P(perte simple) = -1,5e-10`. Une probabilité négative sur le
     chemin de la table d'équité de match : minuscule, silencieuse, et
     exactement le mode de défaillance que `CLAUDE.md` refuse.
