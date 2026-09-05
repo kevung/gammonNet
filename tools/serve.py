@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """`gammonNet serve` — an HTTP wrapper around the evaluator (#18).
 
-This is the `blunderdb serve` shape applied here: a generic engine process
-that speaks HTTP, so any consumer (gammonGo today, Desktop/blunderDB per
-kevung/blunderDB#119 tomorrow) can point at it instead of embedding this
-repository. The wrapper lives here, per the issue's own framing — not in the
-consumer.
+A third target, beside the native library and the WebAssembly module: a
+generic evaluator process that speaks HTTP, so a caller can point at it over
+the network instead of embedding this repository. That is the right shape
+whenever the caller's language is not C and a network hop is small against the
+cost of a search. The wrapper lives here rather than beside the caller,
+because a wrapper written beside the caller is a second copy of "how to call
+this engine".
 
 ## Why Python, not a new C binary
 
@@ -14,8 +16,8 @@ measurement. An HTTP server is neither, strictly — but `python/gammonnet`
 already IS a complete, tested surface over every C entry point this server
 needs (rules, inference, search, the cube model, the match equity table,
 rollouts, XGID). Writing this in C would mean re-deriving that surface a
-second time against the raw header, with nothing gained: no consumer of this
-process cares what language answers an HTTP request, and a second copy of
+second time against the raw header, with nothing gained: nothing on the other
+end of a socket cares what language answers an HTTP request, and a second copy of
 "how to call gn_cube_decide" is a second thing to keep in agreement with the
 first. `tools/gnubg_server.py` is the precedent already in this repository —
 a thin Python protocol wrapper standing in front of an engine, over
@@ -131,9 +133,9 @@ def verify_pinned(path: Path, expected_sha256: str, label: str) -> None:
 # always 1, the far point is always 24). No second convention to invent.
 #
 # ELLE N'EST PLUS ÉCRITE ICI (T86). Ce fut la seule notation de gammonNet, et
-# le module WebAssembly n'en ayant aucune, un consommateur en a écrit une
-# TROISIÈME par différence de plateaux — dont l'auteur documente qu'elle peut
-# afficher un appariement que la recherche n'a pas choisi. Le remède n'était
+# le module WebAssembly n'en ayant aucune, une TROISIÈME écriture est apparue
+# à côté du moteur, par différence de plateaux — laquelle peut afficher un
+# appariement que la recherche n'a pas choisi. Le remède n'était
 # pas d'en ajouter une quatrième : elle est descendue en C
 # (`src/gn_notation.c`, port exact de ce qui était ici), les deux surfaces
 # publiées l'appellent, et ce module ne fait plus que déléguer.
@@ -159,9 +161,10 @@ def _probs_json(evaluation: Evaluation) -> dict:
 
 class ApiError(Exception):
     """Carries the HTTP status a handler wants — never 200 with a disguised
-    error body. gammonGo's client treats any non-200 as a transport failure
-    and degrades gracefully; a 200 with an error payload it doesn't parse
-    would instead be silently misread as a real result."""
+    error body. A caller can only degrade gracefully on a status it can see:
+    a non-200 is a transport failure it already knows how to handle, whereas
+    a 200 carrying an error payload it does not parse is silently misread as
+    a real result."""
 
     def __init__(self, status: int, message: str):
         super().__init__(message)

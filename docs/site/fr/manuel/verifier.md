@@ -55,8 +55,8 @@ bien le coup que rend `bestPlay`, que chaque candidat porte cinq probabilités e
 celles-ci décrivent **le même joueur que l'équité posée à côté d'elles**, et que, filtre de coups
 éteint, les N meilleurs coups ne dépendent pas de N.
 
-Le contrôle de référentiel est le plus récent, et il a fallu deux erreurs de lecture chez le même
-consommateur pour l'écrire. Il ne peut pas se faire par une vérification d'imbrication : une
+Le contrôle de référentiel est le plus récent, et il a fallu deux erreurs de lecture de même
+nature pour l'écrire. Il ne peut pas se faire par une vérification d'imbrication : une
 distribution retournée reste parfaitement imbriquée. Ce qui mord, c'est l'identité — l'équité
 cubeless money **est** une fonction des cinq probabilités, donc à 0-ply, recalculer l'une depuis
 les autres doit reproduire l'autre, au signe près. Sous une inversion, la reconstruction sort avec

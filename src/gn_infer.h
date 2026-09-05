@@ -146,10 +146,10 @@ int gn_evaluate_batch(const GnNetwork *net,
  * scalar door instead of forwarding a mostly empty batch — which is only
  * allowed BECAUSE the two agree bit for bit.
  *
- * T91 added it for `gnw_evaluate_batch`, the WebAssembly export that gammonGo's
- * `analyze()` calls with hundreds of vectors at a time and that used to loop
- * the scalar path — the loop whose single accumulator was the whole reason the
- * artifact carried `-fassociative-math`.
+ * T91 added it for `gnw_evaluate_batch`, the WebAssembly export that takes
+ * hundreds of vectors in one boundary crossing and that used to loop the scalar
+ * path — the loop whose single accumulator was the whole reason the artifact
+ * carried `-fassociative-math`.
  */
 int gn_evaluate_features_batch(const GnNetwork *net, const float *features,
                                int count, float (*probs)[GN_NUM_OUTPUTS]);
@@ -203,7 +203,7 @@ int gn_probs_are_nested(const float probs[GN_NUM_OUTPUTS]);
  * Turn the nested probabilities into the six MUTUALLY EXCLUSIVE outcomes:
  * winning a single game, a gammon, a backgammon, and losing the same three.
  *
- * Every consumer that converts an evaluation into an equity needs this
+ * Every caller that converts an evaluation into an equity needs this
  * decomposition, and every one of them would otherwise write the same four
  * subtractions. Writing them once, here, is not a convenience -- it is where a
  * real trap is disarmed.

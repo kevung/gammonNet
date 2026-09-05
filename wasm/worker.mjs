@@ -16,12 +16,11 @@
  * (`_gnw_best_play`, `_gnw_rank_plays`, `_gnw_cube_decide`) — le manque
  * était ici, et pas dans `EXPORTED_FUNCTIONS`.
  *
- * Le prix de ce manque a été payé chez le consommateur : gammonGo a écrit
- * DEUX ordonnanceurs de workers pour contourner ce fichier, et son propre
- * `eval-worker.ts` dit pourquoi en toutes lettres — *« pool.mjs's own
- * worker.mjs does NOT expose them (it only relays raw evaluateBatch
- * chunks) »*. Un moteur qui ne relaie pas ses décisions se fait réécrire à
- * côté ; c'est ce que l'ADR-0003 appelle la condition des autres fiches.
+ * Le prix de ce manque se paie hors du moteur, et il s'est payé : faute de
+ * pouvoir atteindre ces trois décisions par message, il ne reste qu'à
+ * ordonnancer soi-même des lots bruts et à réécrire à côté ce que le module
+ * sait déjà faire. Un moteur qui ne relaie pas ses décisions se fait réécrire
+ * à côté ; c'est ce que l'ADR-0003 appelle la condition des autres fiches.
  *
  * Le protocole reste petit, et il reste UN SEUL endroit où la règle de
  * référentiel peut se tromper : les points d'entrée ajoutés ne calculent
@@ -56,8 +55,8 @@
  *      AVANT l'étape qui coûte, et une première réponse tout de suite.
  *   4. LE WORKER SURVIT À L'ANNULATION. C'est le point pratique : le seul
  *      arrêt dur du navigateur reste `Worker.terminate()`, et il emporte les
- *      1,06 Mo de poids avec lui. gammonGo respawne aujourd'hui un worker
- *      par geste ; avec la file et les générations, un geste dépassé coûte
+ *      1,06 Mo de poids avec lui. Sans file ni générations, annuler impose
+ *      un worker neuf par geste ; avec elles, un geste dépassé coûte
  *      l'attente de la décision en cours, pas un rechargement des poids.
  *
  * SPDX-License-Identifier: MIT

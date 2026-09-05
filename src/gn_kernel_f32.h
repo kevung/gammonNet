@@ -105,7 +105,7 @@ typedef float gnv;
  * The width must be a whole number of vectors, so that there is ONE compiled
  * path and no epilogue -- the property `forward_batch` rests on for its
  * bit-exactness across chunk sizes. This is T90's assertion, on its first real
- * consumer: at a width that is not a multiple of the lane count the build stops
+ * call site: at a width that is not a multiple of the lane count the build stops
  * here instead of growing a tail loop nobody measured.
  */
 GN_STATIC_ASSERT_MULTIPLE_OF(GN_EVAL_BATCH, GN_VEC_LANES);

@@ -178,13 +178,15 @@ int gnw_evaluate_features(const float *features, float *out)
 /*
  * Evaluate `count` feature vectors laid out back to back.
  *
- * The bench path, and gammonGo's `analyze()` path. One boundary crossing for
+ * The bench path, and any caller analysing a whole match at once. One
+ * boundary crossing for
  * many evaluations: at 0-ply speeds the JS/WASM call overhead would otherwise
  * be a large share of what we are trying to measure, and we would be timing
  * the boundary rather than the network.
  *
  * T91: it goes through the BATCH kernel, not a loop over the scalar door.
- * The loop was the last consumer of `-fassociative-math` in this artifact --
+ * The loop was the last thing in this artifact that needed
+ * `-fassociative-math` --
  * `nn_forward_prob5` accumulates in one variable, so the only way to speed it
  * up was to let the compiler reassociate that sum, which cost the module its
  * bit-exact parity with the native engine. The batch kernel is faster AND bit
@@ -380,7 +382,7 @@ int gnw_enable_cache(int log2_entries)
  * et rien en aval ne pouvait s'en apercevoir, une distribution imbriquée
  * retournée restant parfaitement imbriquée. Sur l'ouverture 3-1, un appelant
  * lisait « 44,56 % de victoires » sous une équité de +0,166 ; c'est arrivé,
- * deux fois, chez le même consommateur.
+ * deux fois.
  *
  * `handle_eval` de `tools/serve.py` a retourné la distribution le 2026-08-29
  * pour `/v1/eval`. Les deux surfaces publiées de gammonNet disent donc
@@ -678,18 +680,18 @@ int gnw_gemm_int8_raw(const int8_t *weights, int rows, int cols,
  * `gn_position_id`, `gn_position_from_id`, `gn_xgid` et
  * `gn_position_from_xgid` sont dans le module depuis toujours — la recherche
  * s'en sert à chaque appel — mais aucun n'était atteignable depuis
- * JavaScript. Un consommateur qui devait fabriquer un identifiant à partir de
- * SON plateau n'avait donc qu'une option : réécrire le codec.
+ * JavaScript. Un appelant qui devait fabriquer un identifiant à partir de SON
+ * plateau n'avait donc qu'une option : réécrire le codec.
  *
- * gammonGo l'a fait (`src/lib/gammonnet/position-id.ts`), et son en-tête dit
- * exactement comment : l'algorithme a été DÉDUIT, puis validé
- * empiriquement — reproduction de l'identifiant d'ouverture, puis accord à
- * 5,85e-9 sur l'équité que ce module rend. C'est du bon travail, et c'est la
- * seule des trois écritures de ce codec qui ne descende pas d'une référence :
- * les deux autres (le C ici, le Python de `python/gammonnet/codec.py`) sont
- * croisées contre gnubg-nn sur 10 000 positions. Une déduction validée par
- * son propre consommateur n'est pas une vérification, c'est un accord avec
- * soi-même.
+ * C'est arrivé, et la méthode est la seule possible dans ce sens-là :
+ * l'algorithme se DÉDUIT, puis se valide empiriquement contre ce module —
+ * reproduction de l'identifiant d'ouverture, puis accord à 5,85e-9 sur
+ * l'équité rendue. C'est du bon travail, et ce n'en est pas moins un accord
+ * avec soi-même : une déduction confirmée par le module qu'elle imite ne
+ * vérifie rien. Les deux écritures qui vivent ici — le C, et le Python de
+ * `python/gammonnet/codec.py` — sont croisées contre gnubg-nn sur 10 000
+ * positions. C'est toute la différence, et c'est pourquoi ces enveloppes
+ * existent.
  *
  * LE PLATEAU TRAVERSE LA FRONTIÈRE EN 29 ENTIERS, dans la convention de
  * `gn_rules.h` et sans en inventer une seconde :
@@ -777,9 +779,9 @@ int gnw_position_encode(const int *board, char *out_id)
  * L'identifiant ne porte PAS le joueur au trait : deux positions qui ne
  * diffèrent que par lui partagent leur identifiant, chacune vue de son propre
  * joueur. C'est pourquoi `turn` est un paramètre et non une déduction — et
- * c'est le piège que le consommateur a documenté dans son propre codec :
- * l'identifiant que rend `bestPlay` décrit la position D'APRÈS le coup, donc
- * l'autre camp est au trait.
+ * c'est le piège que toute écriture externe de ce codec finit par
+ * documenter : l'identifiant que rend `bestPlay` décrit la position D'APRÈS
+ * le coup, donc l'autre camp est au trait.
  *
  * `out_board` reçoit 29 entiers. Rend 0, ou -1.
  */
@@ -869,9 +871,9 @@ int gnw_xgid_decode(const char *xgid, int *out_board, int *out_fields)
  * `BRIEF.md` §6 en fait la sentinelle la moins chère du projet : *« si le
  * compte de pips d'une position traduite n'est pas celui qu'on attendait,
  * tout ce qui suit est dénué de sens. Utilisez-le chaque fois qu'une position
- * traverse une frontière de format. »* Un consommateur qui convertit son
- * propre plateau vers ces 29 entiers traverse exactement une telle frontière ;
- * lui refuser la sentinelle serait lui demander de faire confiance.
+ * traverse une frontière de format. »* Un appelant qui convertit son propre
+ * plateau vers ces 29 entiers traverse exactement une telle frontière ; lui
+ * refuser la sentinelle serait lui demander de faire confiance.
  *
  * Rend le compte, ou -1 si le plateau est invalide.
  */

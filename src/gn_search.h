@@ -335,16 +335,16 @@ unsigned long gn_search_cube_valuations(void);
  * `prune_k`), named, with the quality it costs attached to the same struct as
  * the numbers themselves. Verticale 5 (issue #25): before this, `ply = 2`,
  * `filter = (0,1,3)` and `prune_k = 12` were retyped by hand four to five
- * times across this repo, blunderDB and gammonGo, and the ONE thing that
- * never travelled with any of those copies was what the setting costs --
- * which is exactly how a downstream consumer once shipped a `prune_k = 3`
- * "fast" mode with no measurement behind it at all.
+ * times across this repo and its targets, and the ONE thing that never
+ * travelled with any of those copies was what the setting costs -- which is
+ * exactly how a `prune_k = 3` "fast" mode once shipped with no measurement
+ * behind it at all.
  *
  * `prune_equity_loss` and its 95% CI are MEASURED
  * (docs/mesures/2026-08-26-T3A-regroupement.md, 450 decisions -- 300
  * contact, 150 race -- at 2-ply filter (0,1,3), against the SAME search
  * unpruned): `k = 12` loses +0.00023 [-0.00000, +0.00067] equity per
- * decision; the `k = 3` a downstream consumer once reached for on its own
+ * decision; the `k = 3` that "fast" mode reached for
  * loses +0.00389 [+0.00232, +0.00585] -- seventeen times as much, for half
  * the additional speedup (x8.4 against x3.6-3.9, same table). Where pruning
  * is off (`prune_k == 0`) there is nothing to lose and the three fields are

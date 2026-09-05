@@ -31,11 +31,11 @@ d'aucun corpus et n'ont pas bougé.
 | `src/gn_met.h` / `.c` | Le tableau de bord : `gn_met_pre`, `gn_met_post`, `gn_met_after`, et **`gn_match_winning_chance`** |
 | `python/gammonnet/met.py` | `MatchState`, la liaison ctypes |
 | `tests/test_met.py` | 15 tests |
-| `tests/data/met_reference.json` | Les 649 valeurs de blunderDB, comme repère |
+| `data/met_kazaross_xg2.json` | L'export canonique des 650 valeurs, et son empreinte |
 
 **La conversion appelle `gn_probs_exclusive`, elle ne la refait pas.** T10 avait trouvé que
 dénester naïvement les cinq probabilités produit `P(perte simple) = −1,5e-10` sur une position
-réelle du corpus. Cette fonction est **exactement le consommateur** qui aurait porté cette
+réelle du corpus. Cette fonction est **exactement l'appelant** qui aurait porté cette
 probabilité négative dans une équité de match.
 
 ## Les critères
@@ -44,13 +44,14 @@ probabilité négative dans une équité de match.
 |---|---|
 | Antisymétrie `MET[i][j] + MET[j][i] = 1` sur toute la table | **exacte** — `max\|Δ\| = 0` sur les 625 entrées |
 | Point de prise près du money ~25 % | **25,20 %**, mesuré *dans la table* par dichotomie |
-| Valeurs coïncidant avec une implémentation de référence | **max\|Δ\| < 1e-6** contre blunderDB, sur 649 entrées |
+| Valeurs coïncidant avec une implémentation de référence | **max\|Δ\| < 1e-6** contre une transcription indépendante, sur 649 entrées |
 | `THIRD-PARTY.md` porte l'attribution | ✅ à **Neil Kazaross** |
 
 ### Le contrôle croisé, en deux temps
 
-**D'abord contre blunderDB** — et ce n'était pas suffisant. Les 625 entrées coïncident, **mais
-c'est de là qu'elles venaient** : cela vérifie la transcription, pas la table.
+**D'abord contre une transcription indépendante** — et ce n'était pas suffisant. Les 625
+entrées coïncident, **mais c'est de là qu'elles venaient** : cela vérifie la transcription, pas
+la table.
 
 **Puis contre GNU Backgammon lui-même**, ce qui change la nature du contrôle. GNU Backgammon
 1.08.003 est installé sur cette machine et se pilote sans interface
@@ -77,12 +78,13 @@ pas été établi ici […] c'est une affirmation à vérifier en T32. »*
 
 ### Une troncature héritée, corrigée
 
-Le XML porte **25** entrées post-Crawford ; la transcription de blunderDB s'arrête à **24**. La
+Le XML porte **25** entrées post-Crawford ; la transcription témoin s'arrête à **24**. La
 vingt-cinquième vaut `0,001230` — le poursuivant à 25-away, quasi désespéré mais atteignable dans
 un match de 25 points.
 
-La source de `tools/extract_met.py` est donc passée au XML, blunderDB restant le second témoin. La
-troncature était sans conséquence pratique, **et c'est exactement pour cela qu'elle serait passée
+La source de `tools/extract_met.py` est donc passée au XML — et depuis, c'est la seule qu'il
+lit : un témoin plus court que la source ne peut pas en tenir lieu. La troncature était sans
+conséquence pratique, **et c'est exactement pour cela qu'elle serait passée
 inaperçue**.
 
 Ce qui éprouve la table, ce sont ses **propriétés**, et elles sont indépendantes de sa source :
@@ -194,5 +196,5 @@ réseau.
 
 ```bash
 pytest tests/test_met.py -v
-python tools/extract_met.py     # régénère src/gn_met_table.h depuis blunderDB
+python tools/extract_met.py     # régénère src/gn_met_table.h depuis Kazaross-XG2.xml
 ```

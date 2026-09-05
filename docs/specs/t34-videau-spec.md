@@ -187,9 +187,9 @@ document impose de plus : le drapeau `jacoby`, et l'accès aux équités de bran
 
 > **Ceci est une obligation de forme, pas seulement une note de performance.** L'ADR-0003 range
 > la vectorisation sur candidats du côté **conceptuel** — son gain survit au changement de
-> langage — et impose donc qu'elle soit décidée, mesurée et écrite ici, puis reprise par le
-> portage Go de blunderDB et par le module WebAssembly. Ce paragraphe est ce que les
-> consommateurs reprennent.
+> langage — et impose donc qu'elle soit décidée, mesurée et écrite ici, puis reprise par
+> chaque cible. Ce paragraphe est la forme elle-même, et toute autre écriture de ce modèle la
+> reproduit.
 
 `gn_cube_value_batch(probs[], n, owner, state, x, out[])` value `n` distributions qui partagent
 **un seul** état de videau. Ce n'est **pas** une révision du modèle : `out[j]` est, au bit près,

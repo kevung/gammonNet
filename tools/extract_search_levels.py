@@ -2,24 +2,24 @@
 """Génère l'export canonique `data/search_levels.json` (issue #25).
 
 `ply = 2`, `filter = (0,1,3)` et `prune_k = 12` étaient recopiés à la main
-jusqu'à cinq fois à travers ce dépôt, blunderDB et gammonGo, et le coût en
-qualité de ce réglage ne voyageait avec AUCUNE de ces copies -- ce qui a un
-jour laissé gammonGo introduire un `prune_k = 3` "rapide" sans mesure amont.
+jusqu'à cinq fois à travers ce dépôt et ses cibles, et le coût en qualité de ce
+réglage ne voyageait avec AUCUNE de ces copies -- ce qui a un jour laissé un
+`prune_k = 3` "rapide" s'installer sans mesure amont.
 
 ## Une seule source, un seul export
 
 `gn_search_level` (`src/gn_search.c`, la table `LEVELS`) est la source qui
-fait foi -- ADR-0003 : une forme partagée entre blunderDB et gammonGo se
-décide et se mesure ici, ses consommateurs suivent. Ce script ne fait que la
+fait foi -- ADR-0003 : une forme partagée entre les cibles se décide et se
+mesure ici. Ce script ne fait que la
 lire par le lien Python (`gammonnet.search.search_level`, qui appelle
 `gn_search_level` par `ctypes`, rien n'est réinventé) et l'écrire en JSON :
 
-- `data/search_levels.json` -- l'export que blunderDB et gammonGo lisent au
-  lieu de retranscrire les nombres à la main, sur le modèle de
+- `data/search_levels.json` -- l'export canonique, à lire au lieu de
+  retranscrire les nombres à la main, sur le modèle de
   `data/met_kazaross_xg2.json` (issue #24) ;
 - `data/search_levels.sha256` -- l'empreinte SHA-256 de l'export, sur le
-  même modèle : un consommateur qui embarque une copie peut vérifier qu'elle
-  n'a pas divergé sans reparser chaque champ.
+  même modèle : un appelant qui embarque une copie peut vérifier qu'elle n'a
+  pas divergé sans reparser chaque champ.
 
     python tools/extract_search_levels.py
 """

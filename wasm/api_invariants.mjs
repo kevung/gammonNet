@@ -121,7 +121,7 @@ check("0-ply : l'équité se recalcule depuis les cinq probabilités", identity,
 
 /* Et la lecture nue, celle qu'une interface affiche : faire le point de 5 à
  * l'ouverture 3-1 laisse celui qui joue AU-DESSUS de la moitié. C'est le
- * nombre que deux consommateurs ont lu à l'envers. */
+ * nombre qui a été lu à l'envers, deux fois. */
 check("le meilleur coup d'ouverture donne >50 % au joueur qui le joue",
       zeroPly[0].probs[0] > 0.5, `P(gain) = ${zeroPly[0].probs[0].toFixed(4)}`);
 
@@ -259,8 +259,8 @@ check("l'efficacité fournie est celle qui sert",
  * JOUEUR AU TRAIT. Le `resultId` que rend `bestPlay` décrit la position
  * d'APRÈS le coup, donc l'autre camp est au trait ; le décoder avec le `turn`
  * de l'aller rend le plateau du mauvais côté — sans erreur, sans signe, et
- * avec des comptes de pions parfaitement plausibles. Le consommateur qui a
- * écrit ce codec de son côté a documenté ce piège pour l'avoir rencontré. */
+ * avec des comptes de pions parfaitement plausibles. Le piège a été rencontré
+ * en pratique par une écriture indépendante de ce codec, pas supposé ici. */
 const opening = evaluator.positionFromId(POSITION, 0);
 check("le codec fait l'aller-retour", evaluator.positionId(opening) === POSITION,
       evaluator.positionId(opening));

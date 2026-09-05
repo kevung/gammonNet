@@ -1,23 +1,23 @@
 ---
 status: accepted
 date: 2026-09-02
-portée: gammonNet et ses artefacts (natif, `gammonnet serve`, WebAssembly) ; lie ses consommateurs blunderDB et gammonGo
+portée: gammonNet et ses trois cibles — le natif, `gammonnet serve`, le module WebAssembly — et ses deux runtimes, C et Python
 ---
 
 # Les optimisations communes vivent ici, et le critère de rangement se mesure
 
-gammonNet a aujourd'hui **deux implémentations** de la même Configuration : le C de ce dépôt,
-et le portage Go de blunderDB, prouvé conforme au bit près (`verify/reference.bin`,
-max|Δ| = 5,960e-08). Il a **trois** cibles d'exécution : le natif, le service
-`gammonnet serve`, et le module WebAssembly que gammonGo livre au navigateur.
+gammonNet a **trois cibles d'exécution** — le natif, le service `gammonnet serve`, le module
+WebAssembly livré au navigateur — et **deux runtimes**, le C et le Python de
+`python/gammonnet`. Une même Configuration doit y rendre la même décision.
 
-Le 2026-09-02, blunderDB a mené une campagne d'optimisation sur son portage : une décision
-2-ply `(0,1,3)` `k=12` y est passée de **5,5 s à 0,277 s**, sans qu'aucune équité ne bouge
-d'un bit. La question s'est posée immédiatement : qu'est-ce qui, de ce travail, doit
-redescendre ici, et qu'est-ce qui n'a de sens que dans un langage ?
+Le 2026-09-02, une campagne d'optimisation menée sur un **portage Go indépendant** de cette
+même Configuration a été rapportée : une décision 2-ply `(0,1,3)` `k=12` y passe de **5,5 s à
+0,277 s**, sans qu'aucune équité ne bouge d'un bit. La question s'est posée immédiatement :
+qu'est-ce qui, dans un tel résultat, décrit l'ALGORITHME — et vaut donc pour toutes nos
+cibles — et qu'est-ce qui ne décrit qu'un langage ?
 
 **Décision : toute optimisation dont le gain survit à un changement de langage est
-conceptuelle, et se décide, se mesure et s'écrit d'abord ici. Les consommateurs suivent.**
+conceptuelle, et se décide, se mesure et s'écrit d'abord ici. Les cibles suivent.**
 
 ## Le critère, et pourquoi il est opératoire
 
@@ -25,10 +25,10 @@ conceptuelle, et se décide, se mesure et s'écrit d'abord ici. Les consommateur
 Sinon elle est **d'implémentation**, et personne ne peut la factoriser.
 
 Ce critère n'est pas une intuition : il se mesure, et la mesure a déjà tranché les six
-postes du chantier Go. Chacun a été chronométré ici, en C, sur le même matériel
+postes de ce chantier. Chacun a été **re-chronométré ici**, en C, sur le même matériel
 (`docs/mesures/2026-09-02-optimisation-mesures-d-entree.md`) :
 
-| Poste livré dans le portage Go | Gain en Go | Gain mesuré **en C** | Verdict |
+| Poste rapporté par le portage Go | Gain rapporté | Gain mesuré **en C** | Verdict |
 |---|---|---|---|
 | Tri typé stable au lieu d'un tri réflexif | 7 432 → 83 allocations/décision | **0,16 %** | implémentation |
 | Tampons possédés plutôt qu'alloués par appel | −15 % à 0-ply | **0,007 %** | implémentation |
@@ -39,26 +39,26 @@ postes du chantier Go. Chacun a été chronométré ici, en C, sur le même mat�
 | **Valuer le videau par lot sur les candidats** | non tenté | poste à **20-25 %** au score | **conceptuelle** |
 | **Ordonnancer par nombre de tâches, non par tri** | oisiveté 15 % → 3-5 % | **0 % au navigateur, +6,1 % en Python** | **conceptuelle**, avec une condition |
 
-Le résultat est net et il aurait été impossible à deviner : **cinq des six postes du
-chantier Go ne valent rien ici**. Ce sont des artefacts du langage — un tri réflexif, un
+Le résultat est net et il aurait été impossible à deviner : **cinq des six postes ne valent
+rien ici**. Ce sont des artefacts du langage — un tri réflexif, un
 ramasse-miettes, une copie de tranche. Les deux qui redescendent sont précisément ceux qui
 touchent la **forme de l'algorithme**, pas son écriture.
 
-La sparsité de la couche 1 mérite d'être lue deux fois : elle rend 6 % en Go et 16 % en C,
-parce que la compaction coûte ~3,3 cycles par flottant en Go. Le portage avait posé
-l'hypothèse ; la mesure la confirme. C'est le cas d'école du critère — même idée, gain qui
+La sparsité de la couche 1 mérite d'être lue deux fois : elle rend 6 % là-bas et 16 % en C,
+parce que la compaction y coûte ~3,3 cycles par flottant. La mesure d'origine posait
+l'hypothèse ; la nôtre la confirme. C'est le cas d'école du critère — même idée, gain qui
 ne survit pas au changement de langage, donc chaque implémentation décide pour elle.
 
 **L'ordonnancement est un second cas d'école, et il tranche dans l'autre sens : c'est la
 RÈGLE qui voyage, pas le gain.** T87 l'a mesuré dans un navigateur, sur un match complet
-(`docs/mesures/2026-09-02-T87-ordonnancement.md`). La règle du portage Go est exacte —
+(`docs/mesures/2026-09-02-T87-ordonnancement.md`). La règle rapportée est exacte —
 l'oisiveté d'un pool est celle de son nombre de tâches, et le tri n'y peut presque rien —
 mais le chemin qui coûte 2,7 s par décision présente **déjà** 139 tâches pour 8 workers, et
 son oisiveté vaut **2,5 à 2,6 %**. Un ordonnancement omniscient y gagnerait 2,6 %, le tri
 autorisé par la fiche 1,2 % : le poste est sous le seuil d'abandon **par construction**.
 
-Et la règle a une frontière que le portage Go ne pouvait pas voir, parce que ses tâches ne
-traversent pas de `postMessage` : **le nombre de tâches paie quand une tâche coûte cher à
+Et la règle a une frontière que la mesure d'origine ne pouvait pas voir, parce que ses tâches
+ne traversent pas de `postMessage` : **le nombre de tâches paie quand une tâche coûte cher à
 CALCULER et rien à TRANSMETTRE.** Sur le chemin des lots de caractéristiques, où chaque
 tâche fait voyager 250 Ko clonés par le fil principal, multiplier les tâches fait tomber
 l'oisiveté de 17,6 % à 7,2 % **et allonge le travail de 50 %**.
@@ -78,17 +78,16 @@ puisqu'elle ne déplace aucun résultat.
 ## Ce que cela oblige
 
 1. **Une optimisation conceptuelle s'écrit ici d'abord**, avec sa mesure et sa preuve
-   d'exactitude, puis les consommateurs la reprennent. blunderDB s'impose déjà cette règle
-   pour son `cube.go` (« *the file is a port, so any change here lands in gammonNet's
-   `gn_cube.c` and its spec §2 first* ») ; cette décision l'étend à toute optimisation
-   conceptuelle, et à gammonGo.
+   d'exactitude ; les cibles la reprennent ensuite. La règle mord d'abord ici : une forme
+   partagée — le videau, les niveaux canoniques, le codec — se décide dans le C et non dans
+   l'enveloppe qui l'expose.
 2. **Une fiche dit laquelle des deux couches elle touche**, et pour la couche conceptuelle,
-   **ce que chaque consommateur devra reprendre** — le portage Go, le module WebAssembly, le
-   service. Une fiche qui améliore le C sans le dire laisse les implémentations diverger,
-   ce qui est exactement ce que cette décision empêche.
-3. **Une optimisation d'implémentation reste chez celui qui la porte**, sans remords et sans
-   remontée. L'assembleur AVX2 de blunderDB n'a rien à faire ici ; les intrinsèques SIMD128
-   du navigateur n'ont rien à faire là-bas.
+   **ce que chaque cible devra reprendre** — le natif, le module WebAssembly, le service.
+   Une fiche qui améliore le C sans le dire laisse les cibles diverger, ce qui est
+   exactement ce que cette décision empêche.
+3. **Une optimisation d'implémentation reste là où elle est écrite**, sans remords et sans
+   remontée. Un assembleur AVX2 n'a rien à faire dans une forme partagée ; les intrinsèques
+   SIMD128 du navigateur n'ont rien à faire ailleurs que dans la cible qui les compile.
 4. **Les mesures, elles, remontent toujours** — y compris celles qui réfutent. Trois
    prémisses de ce dépôt sont tombées ce jour-là : précalculer les `metAfter` du videau vaut
    1 % et non ce qu'on espérait (`level_solve` pèse 83 % du poste, et chaque bissection est
@@ -100,9 +99,9 @@ puisqu'elle ne déplace aucun résultat.
 
 ## La condition que cette décision révèle
 
-Elle ne tient pas toute seule. **L'artefact WebAssembly sous-exporte**, et gammonGo réécrit
-donc du moteur en TypeScript : son propre ordonnanceur de workers, le codec Position ID
-gnubg (deviné puis validé empiriquement à 5,85e-9), la notation de coup par différence de
+Elle ne tient pas toute seule. **L'artefact WebAssembly sous-exporte**, et du moteur se
+réécrit donc en TypeScript à côté de lui : un ordonnanceur de workers, le codec Position ID
+gnubg (déduit puis validé empiriquement à 5,85e-9), la notation de coup par différence de
 plateaux, et la sémantique du videau rétro-conçue depuis un défaut.
 
 La cause n'est pas ce qu'on croit. `_gnw_rank_plays`, `_gnw_best_play` et
@@ -140,9 +139,9 @@ laisse vivre.
 > glibc est stable en pratique, celui d'Emscripten ne l'est pas. **Le classement divergeait
 > donc dans l'artefact servi au navigateur, et nulle part ailleurs** — 89 des 433 décisions
 > à meilleur coup ex æquo du corpus T12 y annonçaient un autre coup que le natif, à équité
-> égale au bit près. La règle de départage retenue est celle du portage Go (à équité égale,
-> l'ordre d'arrivée est conservé), précisément parce que l'objet de cette décision est
-> l'accord et non la seule détermination.
+> égale au bit près. La règle de départage retenue est celle qu'un tri stable donne déjà (à
+> équité égale, l'ordre d'arrivée est conservé), précisément parce que l'objet de cette
+> décision est l'accord entre cibles et non la seule détermination dans l'une.
 >
 > Ce que cet épisode ajoute à la décision ci-dessus : **un défaut d'exactitude peut vivre
 > sous le seuil que les tests regardent ET n'apparaître que sur une cible**. Le harnais qui
@@ -157,7 +156,7 @@ le défaut de déterminisme ci-dessus montre qu'elles peuvent diverger **sous le
 tests regardent**.
 
 Cette décision ne dit rien de *qui* écrit. Elle dit où la chose est décidée, mesurée et
-consignée, et dans quel ordre les trois consommateurs la reçoivent.
+consignée, et dans quel ordre les trois cibles la reçoivent.
 
 ## Le premier poste conceptuel a été livré, et il tient
 
@@ -165,7 +164,7 @@ consignée, et dans quel ordre les trois consommateurs la reçoivent.
 > `docs/specs/t34-videau-spec.md` §7.1.
 >
 > Le tableau ci-dessus rangeait « valuer le videau par lot sur les candidats » comme le seul
-> poste **conceptuel** que le portage Go n'avait pas tenté, à 20-25 % au score. La mesure le
+> poste **conceptuel** que la campagne d'origine n'avait pas tenté, à 20-25 % au score. La mesure le
 > confirme et le livre : au score, le videau passe de **103,6 ms à 42,7 ms** par décision
 > (×2,43 par valuation), sa part de **19,35 % à 9,05 %**, soit **11,4 % sur la décision
 > entière** ; **en money, rien**, comme prévu. Le résultat est bit à bit — 12 600 classements
@@ -174,8 +173,8 @@ consignée, et dans quel ordre les trois consommateurs la reçoivent.
 > Deux choses que cet épisode ajoute à la décision.
 >
 > **Le critère a bien tenu.** Le gain est de la latence de division recouverte par des voies
-> indépendantes : il ne doit rien à C, et il se transportera tel quel en Go et dans le
-> navigateur. C'est la définition même de « conceptuelle », et c'est la première fois qu'elle
+> indépendantes : il ne doit rien à C, et il se transportera tel quel dans le navigateur
+> comme dans tout autre langage. C'est la définition même de « conceptuelle », et c'est la première fois qu'elle
 > est vérifiée après coup plutôt que prédite.
 >
 > **Mais la mesure d'entrée qui avait rangé ce poste était un produit, pas un chronométrage**,

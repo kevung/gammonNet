@@ -5,9 +5,8 @@ il appelle celle de `src/gn_notation.c`.
 
 Pourquoi ce détour existe. La notation vivait dans `tools/serve.py`
 (`format_play`), et le module WebAssembly n'en avait aucune — d'où une
-troisième écriture, par différence de plateaux, chez un consommateur, dont
-l'auteur documente lui-même qu'elle peut afficher un appariement que la
-recherche n'a pas choisi (T86). Le remède n'était pas d'en ajouter une
+troisième écriture, par différence de plateaux, apparue à côté du moteur, et
+qui peut afficher un appariement que la recherche n'a pas choisi (T86). Le remède n'était pas d'en ajouter une
 quatrième : le C l'a maintenant, les deux surfaces publiées l'appellent, et
 `tests/test_notation.py` tient l'égalité avec ce que le serveur rendait.
 

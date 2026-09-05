@@ -17,10 +17,10 @@ pratique, celui d'Emscripten (musl, smoothsort) ne l'est pas — mesuré sur des
 éléments de 72 octets, 13 / 64 / 297 / 1 184 ex æquo permutés à n = 32 / 128 /
 512 / 2 048. La cible qui divergeait est celle qui tourne dans le navigateur.
 
-La règle tenue ici est celle du portage Go (`sortByEquity`, blunderDB
-`engine/gammonnet/search.go`) : **à équité égale, l'ordre d'arrivée est
-conservé**, et pour le premier tri c'est l'ordre de génération de
-`gn_legal_plays`.
+La règle tenue ici est celle qu'un tri stable donne déjà : **à équité égale,
+l'ordre d'arrivée est conservé**, et pour le premier tri c'est l'ordre de
+génération de `gn_legal_plays`. L'objet est l'accord entre cibles, pas la
+seule détermination dans l'une.
 """
 
 from __future__ import annotations

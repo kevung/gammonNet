@@ -235,27 +235,28 @@ grand que l'écart entre largeurs. 32 est conservé parce qu'il est au milieu et
 conteste, **pas** parce qu'il aurait gagné. C'est la même honnêteté que le §8 du relevé d'entrée,
 et pour la même raison : un seul relevé par largeur sur une machine en dérive ne conclut rien.
 
-## 5. Ce que le portage Go et le module WebAssembly reprennent
+## 5. La forme, pour toute autre écriture de ce modèle
 
-**Le module WebAssembly l'a déjà** : c'est le même C, il suffit de reconstruire.
+**Le module WebAssembly l'a déjà** : c'est le même C, il suffit de reconstruire. **Le natif
+aussi.** Ce qui suit est donc la forme telle qu'elle doit être reproduite partout où ce modèle
+serait réécrit, énoncée en `docs/specs/t34-videau-spec.md` §7.1 — et c'est une obligation de
+forme, pas une recette de performance :
 
-**Le portage Go de blunderDB** (`engine/gammonnet/cube.go`) reprend la **forme**, énoncée en
-`docs/specs/t34-videau-spec.md` §7.1 :
-
-1. Couper `buildLevels` en deux — les **ancres** d'un niveau (par candidat) et la **résolution**
-   des points de rupture (par niveau). La coupe est le tout de la fiche : c'est la seconde moitié
-   qui se met en lot.
-2. Une fonction `cubeValueBatch(probs [][]float32, owner, state, x) []float64` menant les
-   soixante pas de toutes les voies en pas cadencé, appelée depuis l'équivalent Go de
-   `value_sweep` — c'est-à-dire la boucle de fratrie, la seule qui ait des candidats en main.
+1. Couper la construction des niveaux en deux — les **ancres** d'un niveau (par candidat) et la
+   **résolution** des points de rupture (par niveau). La coupe est le tout de la fiche : c'est
+   la seconde moitié qui se met en lot.
+2. Une valuation par lot — `n` distributions, un seul état de videau, `n` valeurs en retour —
+   menant les soixante pas de toutes les voies en pas cadencé, appelée depuis la boucle de
+   fratrie, la seule qui ait des candidats en main.
 3. **Les deux dispositifs d'exactitude, non négociables** : largeur de voie fixe (la queue tourne
    moins de voies) et nombre d'itérations fixe (soixante, toujours — jamais « jusqu'à
    convergence des voies », qui ferait dépendre une voie de ses voisines).
-4. **Ne PAS hoister les consultations `metAfter`.** Elles sont identiques dans toutes les voies et
-   c'est précisément le piège : le portage Go a déjà mesuré ce gain à 1 % et annulé le travail.
+4. **Ne PAS hoister les consultations `metAfter`.** Elles sont identiques dans toutes les voies
+   et c'est précisément le piège : ce gain a été mesuré à 1 %, et le travail annulé sur cette
+   mesure.
 5. Le money reste scalaire.
 6. Le test à écrire avant le code : l'égalité **par candidat, au bit près**, contre la valuation
    une par une, plus l'invariance au découpage — `tests/test_cube_batch.py` en donne la forme.
 
-**Ce que le portage Go NE reprend pas** : la largeur 32. C'est un paramètre de coût, il se mesure
-chez lui, et le §4 ci-dessus dit que même ici la mesure ne le tranche pas.
+**Ce qui NE se reprend pas** : la largeur 32. C'est un paramètre de coût, il se mesure dans le
+runtime qui l'exécute, et le §4 ci-dessus dit que même ici la mesure ne le tranche pas.

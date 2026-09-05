@@ -151,10 +151,10 @@ commit, which also verifies on every release that the export chain still works.
 
 ## HTTP server (`serve`)
 
-A standalone process that speaks HTTP instead of exposing a library — the `blunderdb serve` shape
-applied here: one generic evaluator, any consumer (gammonGo today, Desktop/blunderDB tomorrow —
-[kevung/blunderDB#119](https://github.com/kevung/blunderDB/issues/119)) points at it over the
-network instead of embedding this repository. It loads the **same pinned float16 artifact the
+A standalone process that speaks HTTP instead of exposing a library — a third target, beside the
+native library and the WebAssembly module. A caller points at it over the network instead of
+embedding this repository, which is the right shape whenever the caller's language is not C and
+the cost of a network hop is small against the cost of a search. It loads the **same pinned float16 artifact the
 WebAssembly target ships**, verifies its SHA-256 before opening a socket, and refuses to start on
 a mismatch — never a server answering on the wrong weights ([#18](https://github.com/kevung/gammonNet/issues/18)).
 
@@ -174,8 +174,7 @@ position, bad parameters) — never a 200 with an error disguised as a result:
 | `POST /v1/rollout` | `{xgid, trials, max_depth, seed}` | `{trials, equity, std_err, win_prob}` |
 
 `ply` in the response is the depth **actually applied**, never the one requested — a caller must
-read it back rather than assume its request was honoured (the same discipline gammonGo's own
-client already applies to `evald`). `/v1/eval` needs an XGID that carries a roll (the two dice
+read it back rather than assume its request was honoured. `/v1/eval` needs an XGID that carries a roll (the two dice
 digits in its 4th field); `/v1/cube` does not — the decider's away scores and the cube value are
 explicit request fields, not read from the XGID's own score/cube fields, so the same call works
 for money (either away score `0`) and match play. `/v1/rollout` ignores any dice the XGID carries:
@@ -263,8 +262,8 @@ measured from what was estimated. Working documents: [`CLAUDE.md`](CLAUDE.md) (r
 ## Credits
 
 - Network and rules engine — [Alexander Strehl](https://github.com/alexstrehl/backgammon-ai-engine), MIT.
-- Kazaross-XG2 match equity table — Neil Kazaross; transcription cross-checked with
-  [blunderDB](https://github.com/kevung/blunderDB), MIT.
+- Kazaross-XG2 match equity table — Neil Kazaross; read from `Kazaross-XG2.xml`, the rendering
+  GNU Backgammon ships and loads by default.
 - GNU Backgammon — measurement oracle and match equity reference. Not a source of code or weights.
 
 ## Licence

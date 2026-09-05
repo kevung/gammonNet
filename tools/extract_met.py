@@ -4,22 +4,19 @@
 La table Kazaross-XG2 est l'**œuvre de Neil Kazaross**. Cet outil recopie ses
 nombres — il n'en invente aucun.
 
-## Deux sources, et pourquoi la première est préférée
+## Une source, et le témoin qui l'a confirmée
 
-1. **`Kazaross-XG2.xml`**, livré avec GNU Backgammon. C'est le **rendu faisant
-   autorité** : c'est ce fichier que GNU Backgammon charge par défaut, et donc
-   la table contre laquelle toute comparaison future se fera.
-2. **blunderDB** (MIT, Copyright (c) 2024 Facteur Pat), `pkg/blunderdb/engine/met.go`
-   — la transcription que `BRIEF.md` §3.3 cite comme précédent MIT pour
-   embarquer cette table.
+**`Kazaross-XG2.xml`**, livré avec GNU Backgammon, est le **rendu faisant
+autorité** : c'est ce fichier que GNU Backgammon charge par défaut, et donc la
+table contre laquelle toute comparaison future se fera. C'est la seule source
+que cet outil lit.
 
-Les deux ont été confrontées : **les 625 entrées pré-Crawford coïncident
-exactement**. blunderDB transcrivait auparavant seulement **24** entrées
-post-Crawford là où le XML en porte **25** — la dernière valant 0,001230 ; ce
-dépôt sert désormais l'entrée manquante à blunderDB via l'export ci-dessous
-(issue #24), close cette lacune.
-
-Le XML est donc préféré, blunderDB restant le second témoin.
+Une transcription indépendante de la même table l'a confirmée : **les 625
+entrées pré-Crawford coïncident exactement**. Mais elle ne portait que **24**
+entrées post-Crawford là où le XML en porte **25** — la dernière valant
+0,001230. Un témoin plus court que la source ne peut pas en tenir lieu ; c'est
+pourquoi il n'y a plus qu'un chemin de lecture ici, et c'est aussi ce qui a
+motivé l'export canonique ci-dessous (issue #24).
 
 **Sur la licence.** Lire ce fichier de données n'est pas dériver du code de GNU
 Backgammon. `BRIEF.md` §3.3 est explicite : la table est l'œuvre de Kazaross,
@@ -29,23 +26,22 @@ son auteur.
 ## Une seule transcription faisant foi, trois fichiers qui en découlent (#24)
 
 `gammonNet` est la source de vérité pour cette table (ADR-0003 : une donnée
-partagée entre blunderDB et gammonGo se décide et se mesure ici, ses
-consommateurs suivent). Un seul appel à `from_gnubg_xml`/`fetch_source`
-produit trois fichiers, tous dérivés des mêmes `pre`/`post` en mémoire — ils ne
+partagée entre les cibles se décide et se mesure ici). Un seul appel à
+`from_gnubg_xml` produit trois fichiers, tous dérivés des mêmes `pre`/`post` en mémoire — ils ne
 peuvent donc pas diverger entre eux au sein de cette régénération :
 
 - `src/gn_met_table.h` — la table, compilée dans la bibliothèque native et le
   module WebAssembly, précision `double`, horizon complet (625 entrées
   pré-Crawford, 25 post-Crawford) ;
-- `data/met_kazaross_xg2.json` — **l'export que blunderDB et gammonGo lisent**
-  au lieu de retranscrire la table à la main : les mêmes valeurs, en JSON,
+- `data/met_kazaross_xg2.json` — **l'export canonique**, à lire au lieu de
+  retranscrire la table à la main : les mêmes valeurs, en JSON,
   avec la provenance et l'attribution. C'est aussi le repère de contrôle
   qu'utilise `tests/test_met.py` — un test qui comparerait la table C à
   elle-même ne prouverait rien, celui-ci vérifie qu'une régénération future
   n'a pas silencieusement décalé un indice ;
 - `data/met_kazaross_xg2.sha256` — l'empreinte SHA-256 de l'export ci-dessus,
-  sur le modèle de `models/release_pin.json` : un consommateur qui embarque
-  une copie de l'export peut vérifier qu'elle n'a pas divergé sans avoir à la
+  sur le modèle de `models/release_pin.json` : un appelant qui embarque une
+  copie de l'export peut vérifier qu'elle n'a pas divergé sans avoir à la
   reparser champ par champ. La table pèse ~5,2 Ko de doubles bruts (650
   entrées) — assez petite pour être embarquée directement partout, sans
   infrastructure de téléchargement à la `release_pin.json` (celle-ci existe
@@ -56,7 +52,7 @@ respecterait pas décrirait deux jeux différents selon le côté d'où on la li
 il vaut mieux s'en apercevoir ici que six mois plus tard sur une décision de
 videau.
 
-    python tools/extract_met.py [--source <chemin vers met.go>]
+    python tools/extract_met.py [--xml <chemin vers Kazaross-XG2.xml>]
 """
 
 from __future__ import annotations
@@ -64,15 +60,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-BLUNDERDB = "https://github.com/kevung/blunderDB.git"
-MET_PATH = "pkg/blunderdb/engine/met.go"
 
 # Les emplacements usuels du XML livré par GNU Backgammon.
 XML_CANDIDATES = (
@@ -97,10 +88,11 @@ HEADER = '''/*
  * deriving from GNU Backgammon's code; the table is Kazaross's work, and the
  * attribution goes to him.
  *
- * They were cross-checked against `blunderDB` (MIT, Copyright (c) 2024 Facteur
- * Pat), the MIT precedent `BRIEF.md` cites: the 625 pre-Crawford entries agree
- * exactly. blunderDB's transcription stops at 24 post-Crawford entries where
- * the XML carries 25, which is why the XML is preferred.
+ * They were cross-checked against an independent transcription of the same
+ * table: the 625 pre-Crawford entries agree exactly. That transcription is a
+ * WITNESS, not a source -- nothing here derives from it -- and it stops at 24
+ * post-Crawford entries where the XML carries 25, which is why the XML is
+ * preferred.
  *
  * PRE-CRAWFORD. `GN_MET_PRE[i][j]` is the match winning chance of the player
  * who needs `i + 1` points, against an opponent who needs `j + 1`.
@@ -116,26 +108,6 @@ HEADER = '''/*
 
 #define GN_MET_SIZE 25
 '''
-
-
-def go_array(source: str, name: str) -> str:
-    """Le littéral de tableau Go nommé `name`, accolades équilibrées."""
-    body = source[source.index(f"var {name} = "):]
-    body = body[body.index("{"):]
-    depth = 0
-    for index, char in enumerate(body):
-        if char == "{":
-            depth += 1
-        elif char == "}":
-            depth -= 1
-            if depth == 0:
-                return body[: index + 1]
-    raise ValueError(f"accolades non équilibrées pour {name}")
-
-
-def numbers(text: str) -> list[float]:
-    return [float(x) for x in re.sub(r"[{}]", "", text).replace("\n", " ").split(",")
-            if x.strip()]
 
 
 def from_gnubg_xml(path: Path):
@@ -168,44 +140,30 @@ def find_gnubg_xml(explicit: Path | None) -> Path | None:
     return None
 
 
-def fetch_source() -> str:
-    """Clone superficiel, le temps de lire un fichier."""
-    with tempfile.TemporaryDirectory() as directory:
-        subprocess.run(
-            ["git", "clone", "-q", "--depth", "1", BLUNDERDB, directory],
-            check=True,
-        )
-        return (Path(directory) / MET_PATH).read_text()
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--xml", type=Path, default=None,
                         help="Kazaross-XG2.xml ; sinon cherché aux emplacements usuels")
-    parser.add_argument("--source", type=Path, default=None,
-                        help="met.go local ; sinon blunderDB est cloné")
-    parser.add_argument("--from-blunderdb", action="store_true",
-                        help="forcer la transcription plutôt que le XML")
     args = parser.parse_args()
 
-    xml = None if args.from_blunderdb else find_gnubg_xml(args.xml)
-    if xml is not None:
-        pre, post = from_gnubg_xml(xml)
-        origin = f"{xml} (GNU Backgammon, rendu faisant autorité)"
-    else:
-        source = args.source.read_text() if args.source else fetch_source()
-        pre = [numbers(row) for row in
-               re.findall(r"\{([^{}]*)\}", go_array(source, "kazarossXG2PreCrawford"))]
-        post = numbers(go_array(source, "kazarossXG2PostCrawford"))
-        origin = "blunderDB, pkg/blunderdb/engine/met.go"
+    # Une seule source. Le rendu faisant autorité, ou rien : reconstruire la
+    # table depuis une transcription tierce, c'est accepter qu'elle soit plus
+    # courte que la source sans que rien ne le dise.
+    xml = find_gnubg_xml(args.xml)
+    if xml is None:
+        print("Kazaross-XG2.xml introuvable — donnez-le avec --xml. Cherché : "
+              + ", ".join(XML_CANDIDATES), file=sys.stderr)
+        return 1
+    pre, post = from_gnubg_xml(xml)
+    origin = f"{xml} (GNU Backgammon, rendu faisant autorité)"
     print(f"source : {origin}")
 
     if len(pre) != 25 or any(len(row) != 25 for row in pre):
         print(f"table pré-Crawford malformée : {[len(r) for r in pre]}", file=sys.stderr)
         return 1
-    # L'horizon complet (#24) est 25 entrées post-Crawford, pas 24 : une
-    # source qui n'en porte que 24 (l'ancienne transcription blunderDB) pose
-    # la question plutôt que de l'éviter en silence.
+    # L'horizon complet (#24) est 25 entrées post-Crawford, pas 24 : un rendu
+    # qui n'en porterait que 24 pose la question plutôt que de l'éviter en
+    # silence.
     if len(post) < 25:
         print(f"table post-Crawford malformée : {len(post)} entrées, 25 attendues",
               file=sys.stderr)
@@ -235,10 +193,10 @@ def main() -> int:
     header.write_text("\n".join(lines) + "\n")
     print(f"écrit : {header.relative_to(ROOT)}")
 
-    # L'export canonique (#24) : ce que blunderDB et gammonGo lisent au lieu
-    # de retranscrire la table. `_comment` porte l'attribution jusque dans le
-    # fichier lui-même, pour un consommateur qui ne lirait que ce JSON sans
-    # jamais ouvrir ce dépôt.
+    # L'export canonique (#24) : une seule écriture de la table, à lire au
+    # lieu de la retranscrire. `_comment` porte l'attribution jusque dans le
+    # fichier lui-même, pour un appelant qui ne lirait que ce JSON sans jamais
+    # ouvrir ce dépôt.
     export = ROOT / "data" / "met_kazaross_xg2.json"
     export.parent.mkdir(parents=True, exist_ok=True)
     payload = {

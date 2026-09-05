@@ -144,11 +144,10 @@ retombe sur l'insertion faute de tampon.
 (`docs/mesures/t34-efficacite.json`) mesure **0,688 centré / 0,566 possédé / 0,687 adverse** :
 le seul défaut du dépôt servait l'efficacité du videau **possédé** à un videau **centré**.
 
-Ce n'est pas resté sans conséquence. gammonGo, qui vendorise ce fichier, a **redécouvert 0,688
-par bissection** contre un cas d'or, et son commentaire conclut que le défaut du build
-WebAssembly « n'est pas quelque chose à croire sans le lire une seconde fois »
-(`frontend/gammongo/src/lib/gammonnet/client.ts`). Un consommateur a payé en rétro-ingénierie
-ce qu'un défaut inventé lui coûtait.
+Ce n'est pas resté sans conséquence. La valeur 0,688 a dû être **redécouverte par bissection**
+contre un cas d'or, du côté de l'appelant, faute de pouvoir la lire ici — et la conclusion
+tirée là-bas était qu'un défaut du build WebAssembly « n'est pas quelque chose à croire sans le
+lire une seconde fois ». C'est la rétro-ingénierie que coûte un défaut inventé.
 
 Le remède retenu n'est pas 0,566 → 0,688 mais **pas de défaut du tout**, comme en C : le
 paramètre est exigé, et son absence lève une erreur qui nomme la constante à passer. Le prix de
@@ -172,15 +171,13 @@ make tie-census PLY=0 TIE_DUMP=1 > classement.txt  # le classement lui-même
 make wasm-api                                    # dont l'invariant d'ordre des ex æquo
 ```
 
-## Ce que les consommateurs reprennent
+## Ce que ce correctif change pour qui épingle l'artefact
 
-- **blunderDB** : rien à faire. Son portage Go trie déjà stablement (`sortByEquity`) et c'est sa
-  règle qui a été reprise ici ; le correctif **rapproche** les deux implémentations. Son gold
-  natif n'a pas à être rejoué : aucun classement natif ne bouge (§5), et son propre commentaire
-  — qui tolérait l'égalité *parce que* le C utilisait un `qsort` instable — peut être resserré
-  quand quelqu'un y passera.
-- **gammonGo** : le correctif ne l'atteindra qu'à la prochaine montée d'épingle, le fichier
-  étant vendorisé tel quel dans `frontend/gammongo/static/gammonnet/v1.2.1/api/`. À cette
-  montée, deux choses changent pour lui : le classement des ex æquo devient celui du natif, et
-  `cubeDecision` **exige** l'efficacité — qu'il passe déjà explicitement partout, donc sans
-  rupture.
+- **Aucun repère natif n'est à rejouer** : aucun classement natif ne bouge (§5). Le `qsort` de
+  la glibc était stable en pratique ; c'est la cible WebAssembly, et elle seule, qui
+  divergeait.
+- **Une copie vendorisée ne reçoit le correctif qu'à la montée d'épingle suivante.** À cette
+  montée, deux choses changent : le classement des ex æquo devient celui du natif, et
+  `cubeDecision` **exige** désormais l'efficacité au lieu d'en inventer une.
+- **Passer l'efficacité explicitement était déjà la bonne pratique** ; l'exiger ne casse donc
+  que le code qui s'en remettait au défaut — c'est-à-dire précisément celui qui était faux.

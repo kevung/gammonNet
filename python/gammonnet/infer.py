@@ -156,7 +156,7 @@ class Evaluation:
         `1.0f - P(gain)` vaut exactement `1.0f` en float32, si bien qu'un
         `P(perte-gammon)` de 1,0 satisfait l'inégalité sans écrêtage — et c'est
         correct. La marge que le float64 fait réapparaître n'existe pas dans le
-        calcul qui a produit ces nombres. Pour un consommateur qui dénesterait
+        calcul qui a produit ces nombres. Pour un appelant qui dénesterait
         en double, c'est `exclusive` qui règle le problème, pas ce test.
         """
         one = _f32(1.0)

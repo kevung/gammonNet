@@ -44,7 +44,7 @@
 /*
  * `_Static_assert` is C11 and this project compiles at `-std=c11` on every
  * target (native gcc/clang, Emscripten). The fallback is there so that a
- * consumer copying this header into an older dialect gets a diagnostic rather
+ * caller copying this header into an older dialect gets a diagnostic rather
  * than a silent no-check.
  */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L

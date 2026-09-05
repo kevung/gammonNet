@@ -216,7 +216,7 @@ son branchement dans `forward_batch` derrière `GN_KERNEL_INTRINSICS`, l'interru
 > Et `-fassociative-math` **sort de l'artefact**, ce que cette fiche n'osait pas trancher
 > parce qu'elle voyait deux chiffres contradictoires. Ils portaient sur deux unités de
 > compilation : le drapeau n'existait que pour `nn_forward_prob5`, dont l'accumulateur
-> unique interdit toute vectorisation. Son dernier consommateur, `gnw_evaluate_batch`,
+> unique interdit toute vectorisation. Son dernier site d'appel, `gnw_evaluate_batch`,
 > passe désormais par le noyau par lot — **×4,74** — et le drapeau n'a plus d'emploi.
 >
 > Ce que cet épisode ajoute à la lecture ci-dessus : **ce qui faisait tomber le bit à bit
