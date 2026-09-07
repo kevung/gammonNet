@@ -194,13 +194,31 @@ intuition.
 |---|---|---|
 | une décision comparée à **0-ply** | 4,95 ms | 50 s·cœur — **négligeable** |
 | une décision comparée à **2-ply** | 739 ms | 2,05 h·cœur |
-| l'**arbitrage escaladé** de T70 | — | 15,8 h·cœur (mesuré en T70) |
+| l'**arbitrage escaladé** | ≈ 46 s·cœur | ≈ 128 h·cœur |
+
+> **Correction du 2026-09-07, en cours de campagne.** Ce budget d'arbitrage avait d'abord été
+> écrit « 15,8 h·cœur pour 10 000 décisions », en reprenant un chiffre de T70. C'était une
+> **mauvaise lecture de ce chiffre** : les 15,82 h·cœur de T70 sont le coût de *noter un moteur
+> sur un registre déjà arbitré*, pas celui de l'arbitrage. L'arbitrage lui-même n'avait jamais
+> été chiffré dans une fiche.
+>
+> Il l'est maintenant, sur les quarante premières décisions de ce corpus : passe 1 (gnubg 3-ply)
+> **0,5 s** pour 23 décisions sur 40, passe 2 (rollout tronqué) **96,5 s** pour 16, passe 3
+> (rollout complet) **297 s** pour une — soit **≈ 46 s·cœur en moyenne**, quatre-vingts fois le
+> chiffre repris à tort.
+>
+> Et la différence n'est pas un accident de mesure, elle est **structurelle** : le corpus de T70
+> recense *nos* désaccords avec GNU Backgammon, que la passe 1 — GNU Backgammon lui-même —
+> tranche souvent d'emblée. Ici les deux plaideurs sont étrangers à l'arbitre, leurs désaccords
+> sont plus serrés, et **40 % des décisions descendent au rollout** au lieu d'être réglées en une
+> demi-seconde. C'est un fait sur le corpus, pas un défaut de l'instrument.
 
 Donc, avec 26 processus :
 
-- **T93 est une affaire d'heures**, pas de jours : un corpus de 8 000 décisions à 0-ply et un de
-  6 000 à 2-ply, arbitrages compris, tiennent dans une demi-journée de machine. La fiche T70
-  demandait « des heures et non des jours » de son instrument ; celui-ci hérite de la propriété.
+- **T93 est une affaire d'heures**, pas de jours — mais de sept heures et non d'une : les
+  14 025 décisions des deux corpus demandent ≈ 180 h·cœur d'arbitrage, soit ≈ 7 h sur
+  26 processus. La fiche T70 demandait « des heures et non des jours » de son instrument ; c'est
+  tenu, de justesse, et sur le chiffre corrigé ci-dessus plutôt que sur celui repris à tort.
 - **T94 se scinde en deux.** Un tête-à-tête à **0-ply** coûte ~0,27 s par partie : 100 000
   parties tiennent en 7,5 h·cœur, soit une vingtaine de minutes. Un tête-à-tête à **2-ply**
   coûte ~40 s par partie : 100 000 parties demandent ~1 100 h·cœur, soit **environ deux jours

@@ -2585,7 +2585,12 @@ tronqué. Le décalage est écrit à un seul endroit du dépôt (`SageEngine.REA
 **327 ms** (leur `3ply`, eux ×1,26). Leur 3-ply coûte 5,9 s, leur rollout tronqué 1,17 s.
 
 **Le budget qui en sort** : T93 est une affaire d'heures ; T94 se scinde en un 0-ply de
-vingt minutes et un 2-ply de plusieurs jours — *extrapolations, pas mesures*.
+vingt minutes et un 2-ply de plusieurs jours — *extrapolations, pas mesures*. **L'une d'elles a
+déjà été démentie** : le budget d'arbitrage, repris de T70 à 15,8 h·cœur pour 10 000 décisions,
+reposait sur une mauvaise lecture — ce chiffre est le coût de *noter un moteur sur un registre
+déjà arbitré*. L'arbitrage lui-même vaut **≈ 46 s·cœur par décision** sur ce corpus, parce que
+40 % des décisions y descendent au rollout au lieu d'être tranchées par la passe 1. La fiche de
+mesure porte la correction.
 
 **Le piège que la première mesure a révélé, et qui n'était pas prévu.** Un tête-à-tête de
 80 parties a rendu **+0,5375 ppg** en notre faveur. Cause : leur défaut classe les coups à

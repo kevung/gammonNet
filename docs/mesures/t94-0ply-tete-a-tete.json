@@ -1,0 +1,40 @@
+{
+  "engines": [
+    "gammonnet-0ply",
+    "sage-0ply"
+  ],
+  "pairs": 250000,
+  "seed": 20260907,
+  "bootstrap": 10000,
+  "seconds": 6540.984473165008,
+  "games": 1000000,
+  "antisymmetry_residual": 0.0,
+  "results": [
+    {
+      "a": "gammonnet-0ply",
+      "b": "sage-0ply",
+      "pairs": 250000,
+      "games": 500000,
+      "ppg": 0.032208,
+      "ci": [
+        0.02876,
+        0.035618
+      ],
+      "win_rate": 0.513736,
+      "stalled": 0
+    },
+    {
+      "a": "sage-0ply",
+      "b": "gammonnet-0ply",
+      "pairs": 250000,
+      "games": 500000,
+      "ppg": -0.032208,
+      "ci": [
+        -0.03554,
+        -0.028786
+      ],
+      "win_rate": 0.486264,
+      "stalled": 0
+    }
+  ]
+}
