@@ -1,0 +1,186 @@
+{
+  "positions": 200000,
+  "seed": 20260907,
+  "with_bar": 82700,
+  "with_off": 30864,
+  "black_to_act": 99993,
+  "failures": 4,
+  "by_kind": {
+    "coup-en-trop": 4
+  },
+  "in_bearoff": 4,
+  "first_failures": [
+    {
+      "kind": "coup-en-trop",
+      "position": "Position(W to act, bar=(0, 0), off=(14, 0), [0:-1,1:1,4:-1,5:-1,16:-1,20:-1,21:-3,22:-5,23:-2])",
+      "position_id": "PLCOAEEACBACAAAAAAAA",
+      "dice": [
+        2,
+        1
+      ],
+      "only_ours": [],
+      "only_theirs": [
+        [
+          0,
+          -1,
+          0,
+          0,
+          0,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          -1,
+          -3,
+          -5,
+          -2,
+          0
+        ]
+      ],
+      "n_ours": 1,
+      "n_theirs": 2,
+      "bearoff": true
+    },
+    {
+      "kind": "coup-en-trop",
+      "position": "Position(B to act, bar=(0, 0), off=(0, 14), [0:4,2:4,4:1,5:2,14:2,15:1,22:-1,23:1])",
+      "position_id": "MPNDAABGCAACAAAAAAAA",
+      "dice": [
+        3,
+        1
+      ],
+      "only_ours": [],
+      "only_theirs": [
+        [
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -2,
+          -1,
+          0,
+          -4,
+          0,
+          -4,
+          0
+        ]
+      ],
+      "n_ours": 1,
+      "n_theirs": 2,
+      "bearoff": true
+    },
+    {
+      "kind": "coup-en-trop",
+      "position": "Position(W to act, bar=(0, 0), off=(14, 0), [0:-1,1:1,5:-3,9:-1,10:-1,15:-2,20:-1,21:-1,22:-3,23:-2])",
+      "position_id": "LLICEBOBCAACAAAAAAAA",
+      "dice": [
+        1,
+        3
+      ],
+      "only_ours": [],
+      "only_theirs": [
+        [
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          -3,
+          0,
+          0,
+          0,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          -2,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -1,
+          -3,
+          -2,
+          0
+        ]
+      ],
+      "n_ours": 1,
+      "n_theirs": 2,
+      "bearoff": true
+    },
+    {
+      "kind": "coup-en-trop",
+      "position": "Position(B to act, bar=(0, 0), off=(0, 14), [0:4,1:3,3:1,5:1,6:1,9:1,18:2,21:1,22:-1,23:1])",
+      "position_id": "OPKEAIGACEACAAAAAAAA",
+      "dice": [
+        3,
+        1
+      ],
+      "only_ours": [],
+      "only_theirs": [
+        [
+          0,
+          -1,
+          0,
+          -1,
+          0,
+          0,
+          -2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          -1,
+          -1,
+          0,
+          -1,
+          0,
+          -3,
+          -4,
+          0
+        ]
+      ],
+      "n_ours": 1,
+      "n_theirs": 2,
+      "bearoff": true
+    }
+  ]
+}

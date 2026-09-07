@@ -21,6 +21,8 @@ Phase 7 — Dépasser                 T70 T71 T72 T73              ← CHOISIE l
                                    T78 T79 T80 T81 T82 T83      (la fin de partie, apprise)
 Phase 8 — Vitesse pour l'appelant  T84 T85 T86 T87 T88 T89 T90  ← OUVERTE le 2026-09-02
                                    T91                          (l'artefact navigateur)
+Phase 9 — Se situer                T92 T93 T94 T95              ← OUVERTE le 2026-09-07
+                                                                (T95 conditionnelle)
 ```
 
 **Chemin critique** :
@@ -2468,6 +2470,215 @@ compilateur devine.
 > de la règle « le découpage paie quand une tâche coûte cher à calculer et rien à transmettre »
 > s'est déplacée contre le découpage** — le défaut `tasksPerWorker = 1` est plus justifié
 > qu'avant.
+
+---
+---
+
+# Phase 9 — Se situer face au moteur libre le plus fort publié *(ouverte le 2026-09-07)*
+
+> **Le fait qui ouvre la phase.** Il existe désormais un moteur de backgammon dont les poids,
+> le moteur d'inférence et la base de fin de partie sont publiés sous **MPL-2.0**, installable
+> par `pip`, qui tourne sur processeur sans GPU, et dont l'auteur publie une étude le plaçant
+> **devant eXtreme Gammon à niveaux appariés** (PR 0,21 contre 0,32 en argent au niveau de
+> rollout tronqué). Vérifié le 2026-09-07 : la licence couvre explicitement les poids et
+> autorise l'usage commercial ; le paquet est une roue `manylinux` de 8,9 Mio dont la seule
+> dépendance est `numpy`.
+>
+> **Ce que ça change.** T76 existe parce qu'eXtreme Gammon n'a ni API ni ligne de commande :
+> la voie directe y est impraticable et l'on doit passer par un calage tiers. Ici la voie
+> directe existe. Ce dépôt peut, pour la première fois, mettre un moteur revendiqué au niveau
+> de la référence commerciale dans **son propre round-robin**, avec ses propres dés, sur ses
+> propres corpus.
+
+## La règle de la phase
+
+> **Elle mesure ; elle n'importe pas.**
+
+Les frontières de `CLAUDE.md` ne bougent pas d'un pouce, et la licence permissive de l'autre
+moteur ne les déplace pas :
+
+| | |
+|---|---|
+| **Permis** | l'exécuter comme **oracle de mesure** — même fondement que pour GNU Backgammon, en plus confortable : MPL-2.0 ne restreint pas l'exécution |
+| **Permis** | lire son code, décrire ses idées, reproduire son protocole de banc |
+| **Interdit** | copier son code, ou embarquer l'un de ses fichiers dans l'artefact — le copyleft de fichier de MPL-2.0 suivrait le `.wasm` |
+| **Interdit** | s'en servir comme professeur d'entraînement — exclusion du §14 du plan de recherche, qui vise **tout** moteur externe et que cette phase ne rouvre pas |
+
+**Et le but n'est pas de lui ressembler.** Reprendre un découpage en dix-neuf réseaux parce qu'il
+en a dix-neuf serait exactement l'erreur que T77 a déjà écartée par la mesure. Ce que cette phase
+cherche n'est pas une architecture à recopier : c'est **l'endroit et la cause** d'un écart, s'il
+existe — et la suite se décide sur cette carte, pas sur la sienne.
+
+## Pourquoi les chiffres publiés de part et d'autre ne se comparent pas
+
+C'est le piège d'entrée, et il est sérieux. On lit « 0,21 » là-bas et « 0,273 » ici (T3E), et on
+conclut. Quatre raisons de ne pas le faire, dont **une seule suffirait** :
+
+1. **Les niveaux ne portent pas le même nom.** Vérifié dans leur propre source
+   (`gnubg.py` : `eval_level_str = f"{n_plies + 1}-ply"`, avec le commentaire *« Display label
+   uses our XG convention (1-ply = raw NN) »*). Leur `3ply` est **notre 2-ply**. Et leur chiffre
+   phare, `3T`, n'est pas une profondeur du tout : c'est un **rollout tronqué**.
+2. **Les corpus diffèrent.** 600 décisions de contact ici ; 16 889 positions issues de 500
+   parties du moteur jugé contre lui-même là-bas.
+3. **Les arbitres diffèrent.** GNU Backgammon 3-ply sur tous les coups légaux ici ; une escalade
+   conduite par **leurs propres rollouts** là-bas — biais que leur étude reconnaît et corrige par
+   un miroir, ce qui ne le supprime pas.
+4. **Le filtre de décision diffère** — l'exclusion des coups « non obvious » n'est pas la même,
+   et elle déplace un PR de plusieurs dixièmes.
+
+D'où la forme de la phase : **rien n'est comparé qui n'ait été recalculé ici, sur un seul corpus,
+avec un seul arbitre.**
+
+## T92 — Le pont, et ce qu'une décision coûte de chaque côté
+
+> **L'étage 0 — celui qui dimensionne les deux autres.** Il ne produit aucun verdict de force et
+> ne doit pas en produire : il répond à « la position que nous croyons envoyer est-elle celle
+> qu'il reçoit », puis à « combien coûte une décision ».
+
+**Objectif** — un pont vérifié, et le coût d'un point de comparaison, mesuré.
+
+**Périmètre**
+- `python/gammonnet/sage_board.py` : la conversion de position, dans les deux sens, avec la
+  sentinelle du compte de pips à chaque passage (`BRIEF.md` §6).
+- Un moteur derrière le `Engine` Protocol de `python/gammonnet/arena.py`, qui rend une de **nos**
+  `Play` — et **refuse** quand le coup rendu n'en est pas une, plutôt que de l'approximer.
+- `bench/probe_sage_bridge.py` : le contrôle du pont par **identité des ensembles de coups
+  légaux**, pas seulement par compte de pips.
+- `bench/cost_per_decision_sage.py` : le coût par décision, à chaque niveau des deux côtés,
+  **apparié sur la profondeur réelle et non sur l'étiquette**, machine au repos.
+
+**Exclut** — toute lecture de force, tout accord sur le meilleur coup, tout PR. Ils appartiennent
+à T93 et n'ont aucun sens avant que le pont tienne.
+
+**Critères d'acceptation**
+- Le pont est vérifié sur **≥ 100 000 positions tirées de parties jouées** — barre et sorties
+  comprises, les deux camps au trait — par identité des ensembles de positions atteignables.
+  Le compte de pips seul ne suffit pas : il ne voit pas une erreur de génération de coups.
+- Toute divergence est **publiée avec son taux**, sa forme et un identifiant de position
+  rejouable, et **arbitrée par un troisième générateur** (GNU Backgammon) : deux
+  implémentations contre une, jamais notre parole contre la leur.
+- La correspondance des étiquettes de niveau est établie **deux fois** : par lecture de leur
+  source, et par la mesure (le coût d'un niveau trahit sa profondeur).
+- Le coût par décision est mesuré **machine au repos**, et le banc **refuse de rendre un temps**
+  au-dessus d'une charge donnée (règle 3, et la mémoire du projet : sous charge, tout chiffre de
+  temps est faux d'un facteur variable sans en avoir l'air).
+- Le **coût machine d'un point de comparaison** en heures·cœur en est dérivé, pour T93 et T94.
+  S'il est en semaines, ce sont ces deux fiches qui changent de forme, pas la mesure qu'on
+  arrondit.
+
+## T93 — Le corpus neutre, et l'écart décomposé
+
+> **L'étage 1 — le chiffre qui répond.** Et il ne répond pas par un scalaire : un « nous perdons
+> de 0,001 » ne dit ni où ni pourquoi, donc ne dit pas quoi faire.
+
+**Objectif** — savoir **où** et **pourquoi** les deux moteurs diffèrent, avec un intervalle.
+
+**Périmètre**
+- **Un corpus qu'aucun des deux n'a engendré seul.** Le registre de T70 ne convient pas : il est
+  conditionné sur *nos* désaccords avec GNU Backgammon, ce qui n'est équitable ni pour eux ni
+  pour nous. Les positions viennent de parties jouées **alternativement** par les deux moteurs,
+  stratifiées par classe, avec leur poids dans les décisions réelles.
+- **Un registre construit sur l'union des deux choix.** C'est la correction de forme que T70 ne
+  pouvait pas porter : en achetant d'avance le coup de chacun, le taux « hors registre » est nul
+  **par construction** — là où l'incumbent int8 en laissait 2,47 % et le candidat T71 jusqu'à
+  8,39 %, écartés faute de pouvoir les arbitrer.
+- **L'arbitrage escaladé de T70**, inchangé : GNU Backgammon 3-ply quand l'écart est net,
+  rollout tronqué à variance réduite sinon, rollout complet à IC 95 % < 0,005 pour ce qui reste.
+- **Deux lectures appariées, publiées ensemble** : à **profondeur réelle égale**, et à **temps de
+  décision égal** — la seconde est le terrain où le travail de la phase 8 compte, et c'est celui
+  que paie l'utilisateur d'un navigateur.
+- **Le videau scoré à part** : une erreur de videau vaut plus du double d'une erreur de coup
+  (DS-08), et les mélanger cacherait celui des deux qui décide.
+
+**Exclut** — tout verdict de force globale en points par partie : c'est T94, et il ne dépend
+d'aucun arbitre.
+
+**Critères d'acceptation**
+- Le corpus est **versionné, stratifié, son manifeste publié**, à la forme de
+  `docs/corpus/t70/`.
+- Le taux hors registre est **vérifié nul**, pas supposé nul.
+- Le **contrôle de non-biais de T70 est rejoué** : sur le domaine des bases exactes, l'arbitre
+  retrouve la valeur exacte dans son intervalle. Un arbitre non vérifié n'arbitre rien.
+- Le biais de la passe 1 est encadré comme en T70 : un échantillon réaudité en passe 2, l'écart
+  chiffré et publié **avec** le résultat, jamais à côté.
+- **L'écart est décomposé, et la décomposition est le livrable** :
+  - par **profondeur** — 0-ply, 1-ply, 2-ply. Un écart présent à 0-ply désigne le réseau ; un
+    écart qui n'apparaît qu'avec la profondeur désigne la recherche et ses filtres ; un écart
+    0-ply qui **disparaît** en profondeur ne compte pas (leçon de T36 et de Whittington) ;
+  - par **classe de position**, dans notre stratification et dans **leur** taxonomie de plan de
+    jeu, qui n'est pas la même — la comparaison des deux découpages est elle-même un résultat,
+    et c'est la seule chose de leur architecture que cette fiche regarde ;
+  - **coup contre videau**, séparément.
+- **Aucun écart n'est affirmé si les deux lectures appariées ne s'accordent pas sur le signe.**
+- La lecture secondaire est consignée : le taux de désaccord sur le meilleur coup, et l'équité
+  perdue **au désaccord** — un moteur qui diverge souvent pour rien n'est pas un moteur qui perd.
+
+**Porte de sortie** — si nous sommes devant ou à parité à profondeur appariée, la phase se ferme
+sur ce résultat, T76 gagne un témoin direct là où elle n'avait qu'un calage tiers, et T95 ne
+s'ouvre pas.
+
+**Dépendances** — T92 rendue (le pont, et le budget).
+
+## T94 — Le tête-à-tête à dés dupliqués
+
+> **L'étage 2 — la mesure qui ne dépend d'aucun arbitre.** Ce que personne n'a jamais pu faire
+> contre la référence commerciale, faute d'API, et qui devient faisable ici.
+
+**Objectif** — un verdict de force en points par partie, sans arbitre.
+
+**Périmètre** — Le protocole de T35, inchangé : dés communs, paires dupliquées, sièges
+échangés, bootstrap sur les paires. Money **et** match, videau compris. Les deux moteurs à leur
+configuration servie, puis à profondeur appariée.
+
+**Critères d'acceptation**
+- L'antisymétrie du harnais est vérifiée avant la campagne (un moteur contre lui-même totalise
+  exactement zéro), comme T04 l'exige.
+- Le volume est **dimensionné par T92**, et l'IC publié avec le résultat. En dessous d'environ
+  1 M de parties par paire, les écarts entre bons moteurs ne sortent pas du bruit
+  (`BRIEF.md` §9) : si le budget ne permet pas de trancher, **c'est cela qui est publié**, pas un
+  chiffre présenté comme un verdict.
+- Tout coup rendu par l'autre moteur qui n'est pas une de nos plays légales est **refusé,
+  compté et publié** — jamais joué. T92 en a trouvé la forme ; il n'est pas question de la
+  découvrir en campagne.
+- La campagne est détachée de la session (`setsid nohup`), reprenable, et son avancement
+  lisible dans un fichier.
+
+**Dépendances** — T92 (le budget, et le refus des coups illégaux). Indépendante de T93 : les
+deux peuvent tourner en parallèle, et se contredire, ce qui serait le résultat le plus
+intéressant des deux.
+
+## T95 — Faire mieux là où l'écart est, et nulle part ailleurs
+
+> **Conditionnelle.** Elle ne s'ouvre que si T93 rend un écart en notre défaveur dont les deux
+> lectures appariées s'accordent sur le signe. Elle est écrite d'avance pour une seule raison :
+> pour que la réponse soit **choisie par la mesure**, et non par ce qui aura semblé impressionnant
+> dans l'architecture d'en face.
+
+**Objectif** — convertir la décomposition de T93 en **une** ligne de travail, et la mesurer.
+
+**Périmètre** — Le tableau ci-dessous, et rien d'autre. Chaque ligne renvoie à une fiche qui
+existe déjà : cette phase n'invente pas de chantier, elle en **désigne** un.
+
+| Ce que T93 montre | Ce que cela veut dire | La fiche qui s'ouvre |
+|---|---|---|
+| écart présent dès le **0-ply** | le réseau, pas la recherche | **T71**, dont la courbe volume→force ne s'aplatit pas (−15,5 % par doublement) — c'est une question de volume, et le budget se chiffre |
+| écart **absent** au 0-ply, présent au 2-ply | la recherche, ses filtres, ses nœuds internes | **T74** (élagage aux nœuds internes, Star2 en expérience) |
+| écart concentré sur le **videau** | le modèle de videau, pas l'évaluation | **T75**, désignée par DS-08 comme le gain le moins cher du programme |
+| écart concentré sur **une classe** qui pèse | la carte d'erreur de T77 doit être refaite sur le corpus neutre | **T77 rouverte**, et son seuil DS-12 réappliqué — deux fois plus d'erreur **et** un poids réel |
+| écart concentré en **fin de partie** | le trou connu, déjà comblé et jamais branché | **T83** (brancher T78 et T80) |
+| écart seulement à **temps égal** | ce n'est pas la qualité, c'est la vitesse | **T72** (réduction par distillation), et le verdict en attente de **T73** |
+
+**Critères d'acceptation**
+- **Une seule ligne est engagée à la fois**, et son seuil d'abandon est écrit avant que le code
+  existe. L'avertissement de Whittington vaut ici comme ailleurs : son « gain de routage » était
+  un gain de calendrier d'apprentissage, parce que deux choses avaient changé.
+- Le gain est jugé par **l'instrument de T93**, sur le même corpus et aux mêmes graines.
+- **La survie sous recherche est vérifiée** (protocole T36) : un avantage 0-ply qui s'annule au
+  2-ply ne compte pas.
+
+**Ce que cette fiche n'autorise pas** — recopier une architecture parce qu'elle est en face.
+Le découpage par classe a été **mesuré neutre deux fois** (T77 ici, Whittington ailleurs) ; il ne
+se rouvre que par la ligne du tableau qui le nomme, sur des données neuves.
 
 ---
 

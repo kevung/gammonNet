@@ -87,6 +87,7 @@ reprise.
 | Brique | Licence | Rôle |
 |---|---|---|
 | GNU Backgammon (`gnubg-nn`) | GPL-3 | **Oracle de mesure uniquement.** Jamais une source de code ni de poids. Sa sortie n'est pas couverte par sa licence — cf. [GPL FAQ](https://www.gnu.org/licenses/gpl-faq.html#WhatCaseIsOutputGPL) |
+| `bgsage` (Open Sage) | MPL-2.0 — **code, poids et base de fin de partie**, vérifiée le 2026-09-07 par lecture du dépôt et de son README (« everything in the repository, including the trained model weights in `models/` … you are free to use them in a commercial product ») | **Oracle de mesure uniquement, phase 9.** Installé par `pip` dans l'environnement de mesure, jamais dans un artefact. Rien n'en est copié ; aucun de ses fichiers n'est redistribué ; il n'est pas non plus employé comme professeur d'entraînement. Exécuter un programme n'est pas le distribuer — MPL-2.0 ne restreint pas l'exécution, et son copyleft porte sur les fichiers modifiés qu'on **distribue** |
 | PyTorch, NumPy | BSD-3-Clause | Entraînement et mesure |
 | Emscripten | MIT / NCSA | Compilation WebAssembly |
 

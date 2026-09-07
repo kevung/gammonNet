@@ -36,7 +36,7 @@ Un module WebAssembly servi à un navigateur **est une distribution**. Donc :
 | Poids GNU Backgammon, ou tout dérivé de ceux-ci | GPL-3 |
 | Code GNU Backgammon copié dans le pipeline | Œuvre dérivée |
 | Tout réseau sous clause non commerciale, ou un fine-tuning d'un tel réseau | Hors du périmètre de licence de ce dépôt |
-| Copier du code bgsage | MPL-2.0 vérifiée (et non AGPL-3 comme d'abord noté) — copyleft de fichier ; lecture et réimplémentation d'idées permises, voir `BRIEF.md` §3.5 |
+| Copier du code bgsage, ou embarquer l'un de ses fichiers — **poids et base de fin de partie compris** | MPL-2.0 vérifiée (et non AGPL-3 comme d'abord noté) — copyleft de fichier. Lire, réimplémenter des idées, et **l'exécuter comme oracle de mesure** restent permis : exécuter n'est pas distribuer. Voir `BRIEF.md` §3.5 et la phase 9 |
 
 | Autorisé | Fondement |
 |---|---|
@@ -136,6 +136,7 @@ mesurable.
 | **5** | Publication de l'artefact | T50 | Force mesurée, notice et attribution en place |
 | **7** | Dépasser — programme du plan de recherche (`docs/recherche/`, §14–§15) | T70–T83 | **Choisie le 2026-08-27** — l'avantage 2-ply par décision sort de zéro (T71, arbitré par T70) et la vitesse gagnée est mesurée (T72–T73) |
 | **8** | Vitesse pour l'appelant, là où il paie : le navigateur | T84–T91 | **Ouverte le 2026-09-02, ses huit fiches closes le 2026-09-03** — une décision 2-ply `(0,1,3)` `k=12` passe de 1,4980 s à 0,3343 s dans Chromium (×4,48) et de 1,1547 s à 0,6860 s dans Firefox (×1,68), le classement des ex æquo devient déterministe entre cibles, et l'artefact WebAssembly redevient bit à bit avec le natif |
+| **9** | Se situer face au moteur libre le plus fort publié | T92–T95 | **Ouverte le 2026-09-07** — un moteur sous MPL-2.0, poids compris, s'exécute en local : la comparaison directe qu'eXtreme Gammon interdit devient possible. Elle **mesure, elle n'importe pas** : ni code, ni poids, ni corpus, ni professeur d'entraînement. T95 est conditionnelle à un écart mesuré |
 
 **Chemin critique** : `T00 → T01 → T02 → T10 → T20 → T21 → T30 → T32 → T35 → T50`.
 **T02 (le codec de position) est le goulot** — une erreur y est silencieuse et contamine toutes

@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "depth": 0,
+  "pair": {
+    "ours": "ply0",
+    "theirs": "1ply"
+  },
+  "ours_spec": {
+    "ply": 0,
+    "filter": [],
+    "prune_k": 0
+  },
+  "seed": 20260907,
+  "width": 6,
+  "model": "cubeless_prob5_512_512_256_128.bin",
+  "natural": {
+    "over": 0.0,
+    "bearoff_noncontact": 0.0,
+    "bearoff_contact": 0.0563,
+    "race": 0.0,
+    "race_contact": 0.06555,
+    "backgame": 0.02525,
+    "prime_vs_prime": 0.04745,
+    "blitz": 0.11895,
+    "holding": 0.1109,
+    "crashed": 0.03575,
+    "contact": 0.53985
+  },
+  "quota": {
+    "bearoff_contact": 442,
+    "race_contact": 515,
+    "backgame": 314,
+    "prime_vs_prime": 373,
+    "blitz": 934,
+    "holding": 871,
+    "crashed": 314,
+    "contact": 4238
+  },
+  "decisions": 8086,
+  "compared": 31636,
+  "agreed": 23550,
+  "examined": 112008,
+  "disagreement_rate": 0.25559489189530915,
+  "illegal_skipped": 2,
+  "by_class": {
+    "contact": 4238,
+    "holding": 884,
+    "blitz": 936,
+    "backgame": 338,
+    "bearoff_contact": 442,
+    "race_contact": 520,
+    "crashed": 338,
+    "prime_vs_prime": 390
+  },
+  "by_game_plan": {
+    "attacking": 2175,
+    "priming": 1224,
+    "anchoring": 2629,
+    "racing": 2058
+  },
+  "driven_by_us": 4061,
+  "seconds": 71.95042950898642,
+  "sha256": "da9b78b8452c82ed4a4eca66af4848e77fafa70a584136d3d6780200f4ab6e35"
+}

@@ -25,15 +25,29 @@ from gammonnet.arena import (  # noqa: E402
     FirstPlayEngine,
     OracleEngine,
     RandomEngine,
+    SageEngine,
+    SearchEngine,
     round_robin,
 )
 
+#: Les moteurs que ce banc sait aligner. **Les noms portent la profondeur
+#: RÉELLE**, jamais l'étiquette d'origine : le moteur tiers de la phase 9
+#: numérote ses niveaux depuis l'évaluation statique (son `1ply` est notre
+#: 0-ply, T92), et une ligne de matrice qui reprendrait son étiquette
+#: laisserait croire à un affrontement apparié qui n'en serait pas un.
 AVAILABLE = {
     "random": lambda: RandomEngine(name="random"),
     "first-play": lambda: FirstPlayEngine(name="first-play"),
     "gnubg-0ply": lambda: OracleEngine(ply=0),
     "gnubg-1ply": lambda: OracleEngine(ply=1),
     "gnubg-2ply": lambda: OracleEngine(ply=2),
+    "gammonnet-0ply": lambda: SearchEngine(ply=0),
+    "gammonnet-2ply": lambda: SearchEngine(ply=2, filter=(0, 1, 3), prune_k=12),
+    "sage-0ply": lambda: SageEngine(level="1ply"),
+    "sage-1ply": lambda: SageEngine(level="2ply"),
+    "sage-2ply": lambda: SageEngine(level="3ply"),
+    "sage-3ply": lambda: SageEngine(level="4ply"),
+    "sage-trunc1": lambda: SageEngine(level="truncated1"),
 }
 
 
@@ -83,8 +97,10 @@ def main() -> int:
             worst = max(worst, abs(matrix.ppg(a, b) + matrix.ppg(b, a)))
     print(f"Résidu d'antisymétrie maximal : {worst:.3e}")
 
-    print("\nCe tableau ne dit rien de la force de gammonNet, qui n'évalue encore rien")
-    print("(T10). Il établit que l'instrument est droit.")
+    print("\nCe tableau se lit avec son volume et son IC, jamais seul. En dessous")
+    print("d'environ 1 M de parties par paire, deux bons moteurs ne se séparent pas")
+    print("du bruit (BRIEF.md §9) — un écart non significatif est un résultat, pas")
+    print("un échec de la mesure.")
     return 0
 
 
