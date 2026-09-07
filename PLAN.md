@@ -2652,6 +2652,42 @@ s'ouvre pas.
 
 **Dépendances** — T92 rendue (le pont, et le budget).
 
+**Résultat — rendu le 2026-09-07**, fiche
+[`docs/mesures/2026-09-07-T93-ecart-decompose.md`](docs/mesures/2026-09-07-T93-ecart-decompose.md).
+
+**Nous sommes devant aux deux profondeurs**, écart apparié sur 2 000 décisions disputées
+chacune, hors registre nul et vérifié :
+
+| profondeur réelle | notre perte | leur perte | écart apparié |
+|---|---|---|---|
+| 0-ply | 0,00510 | 0,01192 | **−0,00682** [−0,00789 ; −0,00575] |
+| 2-ply | 0,00467 | 0,00699 | **−0,00232** [−0,00323 ; −0,00137] |
+
+**Le fait central n'est pas le signe, c'est l'érosion** : notre avance tombe à **34 %** de sa
+valeur entre le 0-ply et le 2-ply, et les deux intervalles ne se recouvrent pas. Deux plies leur
+rendent les deux tiers de notre avantage statique — *« their base networks are more tuned for
+deep search than ours »*, la phrase que l'auteur du réseau que nous employons écrivait sur GNU
+Backgammon, et cette fois nous sommes du mauvais côté. **C'est la justification que T71 n'avait
+pas** : jusqu'ici elle se défendait par une courbe volume→force, elle se défend désormais par un
+déficit mesuré face à un moteur réel.
+
+**Une classe change de signe, et une seule.** `holding` passe de −0,00505 au 0-ply à **+0,00225**
+[−0,00077 ; +0,00525] au 2-ply — leur avantage n'y est pas établi, mais le nôtre a disparu. Dans
+leur propre taxonomie, `anchoring` tombe à −0,00045. C'est la même famille de positions, et c'est
+là que leur modèle porte une stratégie de paire dédiée. **Leur spécialisation se voit exactement
+où ils l'ont mise.** Ce n'est pas une autorisation d'en copier une : le seuil DS-12 de T77 n'est
+pas franchi, et le routage catégoriel est mesuré neutre deux fois.
+
+**Les deux contrôles tiennent.** L'arbitre : passe 1 (gnubg 3-ply) et passes 2-3 (rollouts)
+s'accordent sur le signe aux deux profondeurs — et au 2-ply notre avance est **trois fois plus
+grande sur les rollouts**, donc le biais d'arbitre, s'il joue, joue contre nous. Le générateur :
+au 2-ply, les positions issues de parties que nous menions et celles issues des leurs donnent le
+même écart au cent-millième.
+
+**Ce que la fiche ne dit pas** : rien sur le videau, rien sur le match, rien au-delà du 2-ply —
+et l'érosion mesurée **interdit** d'extrapoler vers les profondeurs supérieures, où leur étude
+publiée se situe.
+
 ## T94 — Le tête-à-tête à dés dupliqués
 
 > **L'étage 2 — la mesure qui ne dépend d'aucun arbitre.** Ce que personne n'a jamais pu faire
@@ -2679,6 +2715,28 @@ configuration servie, puis à profondeur appariée.
 **Dépendances** — T92 (le budget, et le refus des coups illégaux). Indépendante de T93 : les
 deux peuvent tourner en parallèle, et se contredire, ce qui serait le résultat le plus
 intéressant des deux.
+
+**Résultat partiel — rendu le 2026-09-07**, fiche
+[`docs/mesures/2026-09-07-T94-tete-a-tete-0ply.md`](docs/mesures/2026-09-07-T94-tete-a-tete-0ply.md).
+
+**Le 0-ply est rendu, au volume que `BRIEF.md` §9 exige** : 500 000 paires, **1 000 000 de
+parties**, résidu d'antisymétrie **exactement nul**, zéro partie abandonnée.
+**+0,0322 ppg** [+0,0288 ; +0,0356] en notre faveur, 51,37 % de victoires. **Ce chiffre ne dépend
+d'aucun arbitre** — c'est sa raison d'être à côté de T93, et les deux instruments s'accordent.
+
+Le repère d'échelle : le même réseau bat GNU Backgammon 0-ply de +0,0400 ppg (T11). La
+soustraction des deux rangerait les trois moteurs, mais elle suppose une transitivité que ce
+dépôt n'a pas vérifiée et que `BRIEF.md` §5 dit fausse entre moteurs de styles différents. Elle
+n'est pas publiée comme un classement.
+
+**Le 2-ply tourne** sur la seconde machine, à 24 000 parties — un volume dont l'intervalle
+attendu (~±0,016 ppg) écarterait un écart grossier mais ne tranchera pas un écart fin. C'est
+**T93 qui porte cette profondeur**, avec un instrument apparié cent fois plus sensible ; cette
+fiche le dira ainsi plutôt que de publier un chiffre nu.
+
+**Ce qui reste fermé** : le match et le videau. Le pilote de campagne cubeful de T35 ne sait
+aligner que GNU Backgammon, et brancher un troisième moteur y demande de porter sa décision de
+videau — un travail qui n'a pas été fait, et qui n'est pas caché derrière un « à venir ».
 
 ## T95 — Faire mieux là où l'écart est, et nulle part ailleurs
 
@@ -2712,6 +2770,26 @@ existe déjà : cette phase n'invente pas de chantier, elle en **désigne** un.
 **Ce que cette fiche n'autorise pas** — recopier une architecture parce qu'elle est en face.
 Le découpage par classe a été **mesuré neutre deux fois** (T77 ici, Whittington ailleurs) ; il ne
 se rouvre que par la ligne du tableau qui le nomme, sur des données neuves.
+
+**Statut au 2026-09-07 : la fiche NE S'OUVRE PAS, et c'est sa porte de sortie qui le dit.** T93 a
+rendu un écart **en notre faveur** aux deux profondeurs, avec les deux contrôles tenus, et T94 le
+confirme sans arbitre sur un million de parties. La condition d'ouverture — « un écart en notre
+défaveur dont les deux lectures s'accordent sur le signe » — n'est pas remplie. Ouvrir quand même
+serait engager du travail sur une raison qui n'est pas la bonne, exactement ce que la fermeture
+de la phase 4 avait refusé.
+
+**Mais une ligne du tableau se trouve renforcée sans que la fiche s'ouvre.** L'écart mesuré ne se
+lit pas seulement par son signe : il **fond de 66 % entre le 0-ply et le 2-ply** (−0,00682 →
+−0,00232, intervalles disjoints). Nous gagnons donc moins qu'il n'y paraît par la qualité de la
+recherche, et davantage par celle de l'évaluation statique — ce qui est le profil inverse de
+celui qu'on veut, puisque c'est sous recherche que l'artefact est servi.
+
+La ligne « écart présent dès le 0-ply → **T71** » du tableau ci-dessus était écrite pour un
+déficit ; elle vaut aussi pour un **avantage qui s'érode**, et pour la même raison. T71 —
+distiller notre propre 2-ply, entraîner le réseau à être bon *sous* recherche — se défendait
+jusqu'ici par une courbe volume→force qui ne s'aplatit pas. Elle se défend désormais par une
+seconde mesure, indépendante et venue d'un moteur réel. **C'est le seul changement que la
+phase 9 apporte au plan de travail.**
 
 ---
 
