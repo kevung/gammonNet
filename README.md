@@ -253,6 +253,7 @@ agreement with the native engine.
 | 5 — Publication | T50 · T51 | ✅ |
 | 7 — Going further | T70 → T77 | in progress |
 | 8 — Speed where the caller pays | T84 → T91 | ✅ |
+| 9 — Measuring against the strongest published free engine | T92 → T95 | in progress |
 
 Every task carries a report in [`docs/mesures/`](docs/mesures/), which distinguishes what was
 measured from what was estimated. Working documents: [`CLAUDE.md`](CLAUDE.md) (rules),

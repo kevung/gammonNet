@@ -45,6 +45,7 @@ import argparse
 import collections
 import hashlib
 import json
+import os
 import random
 import sys
 import time
@@ -68,6 +69,27 @@ from tools.build_corpus_t70 import (  # noqa: E402
 )
 
 CORPUS_VERSION = 1
+
+#: Où chaque processus dit où il en est. Vingt-six processus qui travaillent en
+#: silence pendant une demi-heure ne se distinguent pas de vingt-six processus
+#: qui patinent — c'est le trou que le propriétaire du projet a nommé, et
+#: `tools/build_corpus_t70.py` porte le même relevé pour la même raison.
+PROGRESS = Path(os.environ.get("T93_CORPUS_PROGRESS", "/tmp/t93-corpus-progress.log"))
+PROGRESS_EVERY = 25
+
+
+def _report(worker: int, kept: int, compared: int, examined: int,
+            budget: int, started: float) -> None:
+    """Un relevé, en ajout, sans jamais faire échouer la récolte pour si peu."""
+    try:
+        with open(PROGRESS, "a") as fh:
+            fh.write(json.dumps({
+                "worker": worker, "kept": kept, "compared": compared,
+                "examined": examined, "budget": budget,
+                "seconds": round(time.perf_counter() - started, 1),
+            }) + "\n")
+    except OSError:
+        pass
 
 #: La profondeur RÉELLE, et ce qu'elle vaut de chaque côté. Leur étiquette est
 #: décalée d'un cran (T92) : leur `1ply` est notre 0-ply. Cette table est le seul
@@ -155,6 +177,8 @@ def harvest(payload):
 
     for position, d1, d2, driven_by_us in mixed_positions(rng, network, driver, count):
         examined += 1
+        if examined % PROGRESS_EVERY == 0:
+            _report(seed, len(kept), compared, examined, count, started)
         klass = classify(position)
         if quota and taken[klass] >= quota.get(klass, 0):
             continue
@@ -187,6 +211,7 @@ def harvest(payload):
             "theirs": ids.index(codec.position_id(yours.result)),
         })
 
+    _report(seed, len(kept), compared, examined, count, started)
     return {
         "kept": kept,
         "examined": examined,

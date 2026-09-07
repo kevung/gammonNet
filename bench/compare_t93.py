@@ -163,6 +163,41 @@ def main() -> int:
                   f"écart {part['delta']['mean']:+.5f} "
                   f"[{part['delta']['ci'][0]:+.5f} ; {part['delta']['ci'][1]:+.5f}]")
 
+    # LE CONTRÔLE LE PLUS IMPORTANT DE CE BANC, et il n'était pas prévu par T70.
+    #
+    # La passe 1 de l'arbitre est GNU Backgammon à 3-ply. Notre moteur est
+    # mesuré équivalent à gnubg (T35) ; celui d'en face vient d'une autre
+    # lignée. Un arbitre qui partage notre goût nous avantagerait donc
+    # systématiquement — et T70 a mesuré que ce biais n'est pas petit : 44,1 %
+    # de ses verdicts changent de coup quand on les rejoue en passe 2.
+    #
+    # Les passes 2 et 3 sont des rollouts : elles ne partagent le goût de
+    # personne. Si l'écart garde le même SIGNE sur ce sous-ensemble, la
+    # conclusion survit au choix de l'arbitre. Sinon, elle n'est qu'une
+    # préférence de gnubg, et c'est cela qu'il faut publier.
+    if "pass_used" in rows[0]:
+        print("\n  contrôle de l'arbitre — par la passe qui a tranché")
+        for label, keep in (("passe 1 (gnubg 3-ply)", lambda r: r["pass_used"] <= 1),
+                            ("passes 2-3 (rollouts)", lambda r: r["pass_used"] >= 2)):
+            group = [r for r in rows if keep(r)]
+            if len(group) < 30:
+                print(f"    {label:24s} n={len(group)} — trop peu pour conclure")
+                continue
+            part = summarise(group, max(2000, args.bootstrap // 5), args.seed)
+            report.setdefault("by_pass", {})[label] = part
+            print(f"    {label:24s} n={part['decisions']:5d}  "
+                  f"écart {part['delta']['mean']:+.5f} "
+                  f"[{part['delta']['ci'][0]:+.5f} ; {part['delta']['ci'][1]:+.5f}]")
+        by_pass = report.get("by_pass", {})
+        if len(by_pass) == 2:
+            signs = {k: (v["delta"]["mean"] > 0) for k, v in by_pass.items()}
+            if len(set(signs.values())) == 2:
+                print("    ⚠ les deux passes ne s'accordent pas sur le signe : l'écart "
+                      "global est une préférence d'arbitre, pas un verdict.")
+            else:
+                print("    les deux passes s'accordent sur le signe — la conclusion "
+                      "survit au choix de l'arbitre.")
+
     if "driven_by_us" in rows[0]:
         print("\n  contrôle du générateur — qui menait la partie d'où vient la position")
         for flag, name in ((True, "nous"), (False, "eux")):

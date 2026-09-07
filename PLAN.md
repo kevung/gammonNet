@@ -2566,6 +2566,34 @@ avec un seul arbitre.**
   S'il est en semaines, ce sont ces deux fiches qui changent de forme, pas la mesure qu'on
   arrondit.
 
+**Résultat — rendu le 2026-09-07**, fiche
+[`docs/mesures/2026-09-07-T92-pont-et-cout.md`](docs/mesures/2026-09-07-T92-pont-et-cout.md).
+
+**Le pont tient** sur 200 000 positions tirées de parties jouées (41,4 % avec un pion sur la
+barre, 15,4 % avec au moins un pion sorti, 50,0 % avec BLACK au trait) : zéro échec
+d'aller-retour, et **4 ensembles de coups légaux différents**, soit 0,002 %. Les quatre sont de
+la même forme — un coup à un seul dé proposé en fin de partie alors que les deux dés sont
+jouables — et **GNU Backgammon, consulté sur les quatre, tranche avec nous**. Deux
+implémentations contre une.
+
+**Les étiquettes de niveau sont décalées d'un cran**, vérifié dans leur propre source : leur
+`3ply` est notre 2-ply, et leur chiffre phare `3T` n'est pas une profondeur mais un rollout
+tronqué. Le décalage est écrit à un seul endroit du dépôt (`SageEngine.REAL_PLY`).
+
+**Le coût par décision, machine au repos, un fil** : 0-ply **1,42 ms** contre **3,53 ms** (nous
+×2,5 plus rapides) ; 2-ply **412 ms** (`normal`, filtre `(0,1,3)`, élagage `k=12`) contre
+**327 ms** (leur `3ply`, eux ×1,26). Leur 3-ply coûte 5,9 s, leur rollout tronqué 1,17 s.
+
+**Le budget qui en sort** : T93 est une affaire d'heures ; T94 se scinde en un 0-ply de
+vingt minutes et un 2-ply de plusieurs jours — *extrapolations, pas mesures*.
+
+**Le piège que la première mesure a révélé, et qui n'était pas prévu.** Un tête-à-tête de
+80 parties a rendu **+0,5375 ppg** en notre faveur. Cause : leur défaut classe les coups à
+l'équité **cubeful**, donc sous Jacoby au videau centré — le gammon ne compte plus — quand notre
+arène est cubeless et le compte. Même réglage remis droit : **+0,0233 ppg** [−0,0800 ; +0,1233]
+sur 600 parties. Le premier chiffre était plausible, reproductible et faux, et il aurait figé
+deux corpus si l'arbitrage était passé avant.
+
 ## T93 — Le corpus neutre, et l'écart décomposé
 
 > **L'étage 1 — le chiffre qui répond.** Et il ne répond pas par un scalaire : un « nous perdons
