@@ -60,6 +60,9 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=20260803)
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--bootstrap", type=int, default=10_000)
+    parser.add_argument("--out", type=Path, default=None,
+                        help="écrire la matrice en JSON — une campagne détachée "
+                             "ne doit pas laisser son résultat dans un journal texte")
     args = parser.parse_args()
 
     names = [n.strip() for n in args.engines.split(",") if n.strip()]
@@ -96,6 +99,26 @@ def main() -> int:
         for b in matrix.names:
             worst = max(worst, abs(matrix.ppg(a, b) + matrix.ppg(b, a)))
     print(f"Résidu d'antisymétrie maximal : {worst:.3e}")
+
+    if args.out:
+        import json
+
+        args.out.write_text(json.dumps({
+            "engines": list(matrix.names),
+            "pairs": args.pairs,
+            "seed": args.seed,
+            "bootstrap": args.bootstrap,
+            "seconds": elapsed,
+            "games": games,
+            "antisymmetry_residual": worst,
+            "results": [
+                {"a": r.a, "b": r.b, "pairs": r.pairs, "games": r.games,
+                 "ppg": r.ppg, "ci": list(r.ci), "win_rate": r.win_rate,
+                 "stalled": r.stalled}
+                for r in matrix.results.values()
+            ],
+        }, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"\n\u2192 {args.out}")
 
     print("\nCe tableau se lit avec son volume et son IC, jamais seul. En dessous")
     print("d'environ 1 M de parties par paire, deux bons moteurs ne se séparent pas")

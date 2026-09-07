@@ -407,6 +407,17 @@ class SageEngine:
     ligne de matrice qui dirait « 3ply » laisserait croire à une comparaison
     appariée qui n'en serait pas une.
 
+    ## Le videau doit être éteint pour une comparaison cubeless
+
+    Son défaut est `cubeful=True` : il classe les coups par équité **cubeful**
+    (Janowski), et en money avec un videau centré la règle de Jacoby s'applique.
+    Dans une arène cubeless — celle de ce dépôt, où le gammon compte — il
+    optimiserait donc autre chose que ce sur quoi on le note. Mesuré : sur
+    80 parties, notre 0-ply gagnait +0,5375 ppg contre son défaut, un écart si
+    grand qu'il ne pouvait être qu'un artefact de protocole ; c'en était un.
+    `cubeful=False` est donc le défaut ici, et il est nommé dans le nom de
+    l'instrument dès qu'il ne l'est pas.
+
     ## Le coup rendu est traduit, puis vérifié
 
     On ne lui fait pas confiance pour la légalité : son coup est cherché parmi
@@ -422,6 +433,9 @@ class SageEngine:
 
     level: str = "1ply"
     threads: int = 1
+    #: Faux par défaut : voir ci-dessus. Vrai n'a de sens que dans une arène qui
+    #: joue le videau, et le nom de l'instrument le dit alors.
+    cubeful: bool = False
     name: str = field(default="")
     #: Coups illégaux proposés puis écartés, cumulés sur la vie de l'instance.
     illegal_skipped: int = 0
@@ -439,7 +453,7 @@ class SageEngine:
         if not self.name:
             depth = self.REAL_PLY[self.level]
             suffix = f"{depth}ply" if depth is not None else self.level
-            self.name = f"sage-{suffix}"
+            self.name = f"sage-{suffix}" + ("-cubeful" if self.cubeful else "")
 
     @property
     def real_ply(self) -> int | None:
@@ -461,7 +475,8 @@ class SageEngine:
             import bgsage
 
             self._analyzer = bgsage.BgBotAnalyzer(
-                eval_level=self.level, parallel_threads=self.threads
+                eval_level=self.level, parallel_threads=self.threads,
+                cubeful=self.cubeful,
             )
         return self._analyzer
 

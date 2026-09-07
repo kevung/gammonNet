@@ -37,28 +37,28 @@
     "contact": 4238
   },
   "decisions": 8086,
-  "compared": 31636,
-  "agreed": 23550,
+  "compared": 40437,
+  "agreed": 32351,
   "examined": 112008,
-  "disagreement_rate": 0.25559489189530915,
-  "illegal_skipped": 2,
+  "disagreement_rate": 0.19996537824269853,
+  "illegal_skipped": 0,
   "by_class": {
     "contact": 4238,
     "holding": 884,
     "blitz": 936,
-    "backgame": 338,
     "bearoff_contact": 442,
     "race_contact": 520,
+    "prime_vs_prime": 390,
     "crashed": 338,
-    "prime_vs_prime": 390
+    "backgame": 338
   },
   "by_game_plan": {
-    "attacking": 2175,
-    "priming": 1224,
-    "anchoring": 2629,
-    "racing": 2058
+    "attacking": 2234,
+    "priming": 1356,
+    "racing": 1990,
+    "anchoring": 2506
   },
-  "driven_by_us": 4061,
-  "seconds": 71.95042950898642,
-  "sha256": "da9b78b8452c82ed4a4eca66af4848e77fafa70a584136d3d6780200f4ab6e35"
+  "driven_by_us": 4065,
+  "seconds": 17.568352910981048,
+  "sha256": "e24a485f91238c829b0b34306dce191dda1ed98499871d84c65b52f3740491dd"
 }

@@ -153,6 +153,38 @@ le module WebAssembly, lui, en distribue huit.
 
 ---
 
+## 4 bis. Le piège de protocole que la première mesure a révélé
+
+Le premier tête-à-tête lancé — 80 parties, notre 0-ply contre le sien — a rendu **+0,5375 ppg
+en notre faveur**. Un écart pareil entre deux moteurs sérieux n'existe pas : c'était un artefact
+de protocole, et il valait la peine d'être cherché avant, pas après.
+
+**La cause.** Son défaut est `cubeful=True` : il classe les coups par équité **cubeful**
+(Janowski), et en money avec un videau centré la règle de Jacoby s'applique — le gammon ne
+compte plus. L'arène de ce dépôt est **cubeless**, et le gammon y compte. Il optimisait donc
+sincèrement autre chose que ce sur quoi on le notait.
+
+**Le même réglage remis droit** (`cubeful=False`, les deux moteurs sur l'équité cubeless) :
+
+| | ppg | IC 95 % | parties |
+|---|---|---|---|
+| son défaut `cubeful=True` | +0,5375 | [+0,2250 ; +0,8375] | 80 |
+| **`cubeful=False`** | **+0,0233** | **[−0,0800 ; +0,1233]** | 600 |
+
+Le second chiffre est indiscernable de zéro, et c'est l'ordre de grandeur qu'on attend. Le
+premier était **plausible, reproductible et faux** — exactement le mode de défaillance que la
+règle 2 de `CLAUDE.md` nomme, appliqué cette fois à l'adversaire plutôt qu'à nous.
+
+Deux corpus de T93 avaient déjà été construits avec le mauvais réglage ; ils ont été **jetés et
+refaits** avant tout arbitrage. `SageEngine.cubeful` vaut `False` par défaut depuis, et le nom
+de l'instrument porte `-cubeful` dès qu'il ne l'est pas — un réglage qui change ce qu'un moteur
+optimise ne doit pas pouvoir se cacher dans une ligne de matrice.
+
+**Ce que cela dit aussi de leur moteur** : le modèle chargé par défaut est bien `stage9`,
+dix-neuf réseaux de 400 neurones cachés (plus un de 100), `strategy_type='backgame_pair'`.
+C'est la configuration de production, pas une variante allégée. La comparaison porte donc sur
+ce que leur étude mesure.
+
 ## 5. Le budget que cette fiche dégage
 
 C'est l'objet de la fiche : dimensionner T93 et T94 sur un chiffre mesuré plutôt que sur une
