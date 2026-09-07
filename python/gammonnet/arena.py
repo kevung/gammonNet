@@ -325,30 +325,49 @@ class SearchEngine:
     #: `filter[d]` candidates survive at depth d; empty means no filtering.
     filter: tuple[int, ...] = ()
     model: str = "models/cubeless_prob5_512_512_256_128.bin"
+    #: LE RÉSEAU D'ÉLAGAGE FAIT PARTIE DE L'IDENTITÉ DU JOUEUR, comme le filtre.
+    #: Sans lui, ce moteur n'est pas celui que l'artefact sert : le niveau
+    #: canonique `normal` porte `k = 12`, et T3A a mesuré ce que l'élagage
+    #: change. Un tête-à-tête joué sans lui mesurerait un moteur que personne
+    #: ne reçoit.
+    prune_model: str = ""
+    prune_k: int = 0
     name: str = field(default="")
     _network: object = field(default=None, repr=False, compare=False)
+    _prune: object = field(default=None, repr=False, compare=False)
 
     def __post_init__(self):
         if not self.name:
             suffix = "-f" + "/".join(str(k) for k in self.filter) if self.filter else ""
+            suffix += f"-k{self.prune_k}" if self.prune_k else ""
             self.name = f"gammonnet-{self.ply}ply{suffix}"
+
+    @staticmethod
+    def _resolve(model: str):
+        from pathlib import Path
+
+        from .infer import Network
+
+        path = Path(model)
+        if not path.is_absolute():
+            path = Path(__file__).resolve().parent.parent.parent / model
+        return Network.load(path)
 
     def _load(self):
         if self._network is None:
-            from pathlib import Path
-
-            from .infer import Network
-
-            path = Path(self.model)
-            if not path.is_absolute():
-                path = Path(__file__).resolve().parent.parent.parent / self.model
-            self._network = Network.load(path)
+            self._network = self._resolve(self.model)
         return self._network
+
+    def _load_prune(self):
+        if self.prune_k and self._prune is None:
+            self._prune = self._resolve(self.prune_model or "models/prune_32.bin")
+        return self._prune
 
     def choose(self, position: Position, d1: int, d2: int, rng: random.Random) -> Play | None:
         from .search import SearchConfig, best_play
 
-        config = SearchConfig(ply=self.ply, filter=tuple(self.filter))
+        config = SearchConfig(ply=self.ply, filter=tuple(self.filter),
+                              prune_net=self._load_prune(), prune_k=self.prune_k)
         candidate = best_play(self._load(), position, d1, d2, config)
         return candidate.play if candidate is not None else None
 
@@ -371,6 +390,120 @@ class OracleEngine:
 
             self._oracle = Oracle(ply=self.ply)
         return self._oracle.best_play(position, d1, d2)
+
+
+@dataclass
+class SageEngine:
+    """Un moteur tiers, exécuté comme **instrument** — phase 9 de `PLAN.md`.
+
+    Il est appelé, jamais copié : rien de lui n'entre dans un artefact que ce
+    dépôt distribue, et il n'est pas non plus un professeur d'entraînement.
+
+    ## L'étiquette de niveau ne dit pas la profondeur
+
+    Ce moteur numérote ses niveaux à partir de l'évaluation statique — son
+    `1ply` est **notre 0-ply**, son `3ply` notre 2-ply. `real_ply` porte la
+    profondeur réelle, et c'est elle que le nom de l'instrument affiche : une
+    ligne de matrice qui dirait « 3ply » laisserait croire à une comparaison
+    appariée qui n'en serait pas une.
+
+    ## Le videau doit être éteint pour une comparaison cubeless
+
+    Son défaut est `cubeful=True` : il classe les coups par équité **cubeful**
+    (Janowski), et en money avec un videau centré la règle de Jacoby s'applique.
+    Dans une arène cubeless — celle de ce dépôt, où le gammon compte — il
+    optimiserait donc autre chose que ce sur quoi on le note. Mesuré : sur
+    80 parties, notre 0-ply gagnait +0,5375 ppg contre son défaut, un écart si
+    grand qu'il ne pouvait être qu'un artefact de protocole ; c'en était un.
+    `cubeful=False` est donc le défaut ici, et il est nommé dans le nom de
+    l'instrument dès qu'il ne l'est pas.
+
+    ## Le coup rendu est traduit, puis vérifié
+
+    On ne lui fait pas confiance pour la légalité : son coup est cherché parmi
+    **nos** plays légales, par la position qu'il atteint. T92 a mesuré que son
+    générateur propose parfois un coup de plus que le nôtre et que celui de GNU
+    Backgammon — 4 fois sur 200 000, toujours en fin de partie, toujours un coup
+    à un seul dé quand les deux sont jouables. Quand cela arrive, on descend sa
+    propre liste ordonnée jusqu'au premier coup qui **est** légal, et on le
+    compte dans `illegal_skipped`. Substituer sa préférence suivante est ce qui
+    respecte le mieux son classement ; jouer un coup illégal ne serait pas une
+    mesure de sa force, et l'écarter en silence serait pire.
+    """
+
+    level: str = "1ply"
+    threads: int = 1
+    #: Faux par défaut : voir ci-dessus. Vrai n'a de sens que dans une arène qui
+    #: joue le videau, et le nom de l'instrument le dit alors.
+    cubeful: bool = False
+    name: str = field(default="")
+    #: Coups illégaux proposés puis écartés, cumulés sur la vie de l'instance.
+    illegal_skipped: int = 0
+    _analyzer: object = field(default=None, repr=False, compare=False)
+
+    #: Profondeur réelle de chaque étiquette. `None` : ce n'est pas une profondeur.
+    REAL_PLY = {"1ply": 0, "2ply": 1, "3ply": 2, "4ply": 3,
+                "truncated1": None, "truncated2": None, "truncated3": None,
+                "rollout": None}
+
+    def __post_init__(self):
+        if self.level not in self.REAL_PLY:
+            known = ", ".join(self.REAL_PLY)
+            raise ValueError(f"niveau inconnu : {self.level!r}. Connus : {known}")
+        if not self.name:
+            depth = self.REAL_PLY[self.level]
+            suffix = f"{depth}ply" if depth is not None else self.level
+            self.name = f"sage-{suffix}" + ("-cubeful" if self.cubeful else "")
+
+    @property
+    def real_ply(self) -> int | None:
+        return self.REAL_PLY[self.level]
+
+    def __getstate__(self):
+        """L'analyseur ne traverse jamais un `fork` ni un `pickle`.
+
+        C'est un objet natif : il ne se sérialise pas, et s'il le faisait il
+        voyagerait comme un entier dénué de sens. Chaque processus charge le
+        sien à son premier appel, comme `SearchEngine` le fait pour le réseau.
+        """
+        state = dict(self.__dict__)
+        state["_analyzer"] = None
+        return state
+
+    def _load(self):
+        if self._analyzer is None:
+            import bgsage
+
+            self._analyzer = bgsage.BgBotAnalyzer(
+                eval_level=self.level, parallel_threads=self.threads,
+                cubeful=self.cubeful,
+            )
+        return self._analyzer
+
+    def choose(self, position: Position, d1: int, d2: int, rng: random.Random) -> Play | None:
+        from .sage_board import to_sage
+
+        legal = position.legal_plays(d1, d2)
+        if not legal:
+            # Il rend ici le plateau inchangé plutôt qu'une liste vide, malgré
+            # son propre docstring. On ne le lui demande donc pas.
+            return None
+
+        mover = position.turn
+        by_board = {tuple(to_sage(play.result, on_roll=mover)): play for play in legal}
+        result = self._load().checker_play(to_sage(position), d1, d2)
+
+        for rank, move in enumerate(result.moves):
+            play = by_board.get(tuple(move.board))
+            if play is not None:
+                self.illegal_skipped += rank
+                return play
+
+        raise ValueError(
+            f"aucun des {len(result.moves)} coups rendus n'est une play légale de "
+            f"{position!r} avec ({d1}, {d2}) — le pont est faux, ou le moteur tiers "
+            "a changé de convention. Refusé, jamais approximé."
+        )
 
 
 # ── Deterministic randomness ─────────────────────────────────────────

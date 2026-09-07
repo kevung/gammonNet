@@ -44,6 +44,35 @@ The 1-ply figure — 0.499 against 0.50 published, two independent chains and tw
 arbiters — is the strongest validation of the search this repository has produced.
 ([T3E](docs/mesures/2026-08-27-T3E-performance-rating.md))
 
+### Against Backgammon Sage (Open Sage), measured here
+
+The strongest published free engine — MPL-2.0 including its weights, `stage9`: nineteen networks
+with a backgame-aware pair strategy — runs locally, which the commercial reference does not. So
+it can be measured directly rather than through a third-party calibration.
+
+Its level labels are offset by one (its `1ply` is raw network evaluation, our 0-ply), so every
+comparison below is matched on **real depth**, never on the label.
+
+| Protocol | Volume | Result |
+|---|---|---|
+| Head-to-head, duplicate dice, 0-ply, cubeless money | 500 000 pairs — **1 000 000 games** | **+0.0322 ppg** [+0.0288 ; +0.0356] |
+| Paired equity loss per disputed decision, 0-ply | 2 000 decisions | **−0.00682** [−0.00789 ; −0.00575] |
+| Paired equity loss per disputed decision, 2-ply | 2 000 decisions | **−0.00232** [−0.00323 ; −0.00137] |
+
+Ahead at both depths, and the head-to-head figure depends on **no arbiter at all**. But the
+finding that matters is the third line against the second: **the advantage falls to 34 % of its
+value between 0-ply and 2-ply**, on non-overlapping intervals. Two plies of search hand back two
+thirds of our static edge — their networks make better use of search than ours does.
+
+One position class flips sign: `holding` goes from −0.00505 at 0-ply to +0.00225 at 2-ply
+(interval still contains zero). That is the family their model specialises in, and their
+specialisation shows exactly where they put it — and nowhere else.
+([T93](docs/mesures/2026-09-07-T93-ecart-decompose.md),
+[T94](docs/mesures/2026-09-07-T94-tete-a-tete-0ply.md))
+
+Nothing of theirs is copied, embedded or used as a training teacher: it is executed as a
+measurement instrument, exactly as GNU Backgammon is.
+
 ### On a real match
 
 A 7-point match played by humans, analysed decision by decision against GNU Backgammon: **139
@@ -241,7 +270,9 @@ project-specific model — stays closed: it was conditional on the model proving
 did not. Phase 7 is under way: going past parity with GNU Backgammon rather than matching it.
 Phase 8 is closed: it made a 2-ply decision in the browser 4.5× cheaper in Chromium, made move
 ranking deterministic across targets, and brought the WebAssembly artefact back to bit-for-bit
-agreement with the native engine.
+agreement with the native engine. Phase 9 measured this engine against the strongest published
+free one and found it ahead at both depths — and found that the edge erodes with search, which is
+the one thing it changed in the plan of work.
 
 | | Tasks | State |
 |---|---|---|
@@ -253,6 +284,7 @@ agreement with the native engine.
 | 5 — Publication | T50 · T51 | ✅ |
 | 7 — Going further | T70 → T77 | in progress |
 | 8 — Speed where the caller pays | T84 → T91 | ✅ |
+| 9 — Measuring against the strongest published free engine | T92 · T93 · T94 · T95 | ✅ (T95 not opened) |
 
 Every task carries a report in [`docs/mesures/`](docs/mesures/), which distinguishes what was
 measured from what was estimated. Working documents: [`CLAUDE.md`](CLAUDE.md) (rules),

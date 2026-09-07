@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "depth": 0,
+  "pair": {
+    "ours": "ply0",
+    "theirs": "1ply"
+  },
+  "ours_spec": {
+    "ply": 0,
+    "filter": [],
+    "prune_k": 0
+  },
+  "seed": 20260907,
+  "width": 6,
+  "model": "cubeless_prob5_512_512_256_128.bin",
+  "natural": {
+    "over": 0.0,
+    "bearoff_noncontact": 0.0,
+    "bearoff_contact": 0.0563,
+    "race": 0.0,
+    "race_contact": 0.06555,
+    "backgame": 0.02525,
+    "prime_vs_prime": 0.04745,
+    "blitz": 0.11895,
+    "holding": 0.1109,
+    "crashed": 0.03575,
+    "contact": 0.53985
+  },
+  "quota": {
+    "bearoff_contact": 442,
+    "race_contact": 515,
+    "backgame": 314,
+    "prime_vs_prime": 373,
+    "blitz": 934,
+    "holding": 871,
+    "crashed": 314,
+    "contact": 4238
+  },
+  "decisions": 2000,
+  "compared": 40437,
+  "agreed": 32351,
+  "examined": 112008,
+  "disagreement_rate": 0.19996537824269853,
+  "illegal_skipped": 0,
+  "by_game_plan": {
+    "attacking": 2234,
+    "priming": 1356,
+    "racing": 1990,
+    "anchoring": 2506
+  },
+  "driven_by_us": 4065,
+  "seconds": 17.568352910981048,
+  "reduced_from": "/home/kunger/dev/gammonNet-t92/docs/corpus/t93/depth-0",
+  "reduced_seed": 20260907,
+  "candidates_per_decision": 2,
+  "by_class": {
+    "contact": 1043,
+    "bearoff_contact": 105,
+    "blitz": 255,
+    "holding": 212,
+    "race_contact": 112,
+    "backgame": 84,
+    "prime_vs_prime": 95,
+    "crashed": 94
+  },
+  "class_share_drift": {
+    "backgame": 0.0001993569131832837,
+    "bearoff_contact": -0.002162379421221869,
+    "blitz": 0.011744372990353705,
+    "contact": -0.002615755627009664,
+    "crashed": 0.005199356913183281,
+    "holding": -0.003324758842443737,
+    "prime_vs_prime": -0.0007315112540192889,
+    "race_contact": -0.008308681672025718
+  },
+  "worst_class_share_drift": 0.011744372990353705,
+  "sha256": "be213310904468611178f2bcf193f561db523c78f91bb953e5818db186e6fc07"
+}
