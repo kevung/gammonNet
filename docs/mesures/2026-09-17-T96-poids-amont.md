@@ -154,8 +154,27 @@ gain est celui de l'évaluation statique, mesuré au 0-ply, en money et cubeless
 sous recherche n'est pas mesuré ici — et T93 a rappelé que l'avantage statique ne survit pas
 toujours à la profondeur.
 
-Ce que ce changement **coûte** : +6,3 % de MACs, soit ~+6 % sur une décision — **une hypothèse**,
-à chronométrer avant d'être écrite ailleurs (règle n°3, et la leçon de T3A démentie quatre fois).
+## Ce que ça coûte, chronométré
+
+`make bench-decision`, 20 décisions 2-ply filtre `(0,1,3)`, **mochy au repos** (charge retombée à
+6 avant la mesure, campagnes arrêtées pour l'occasion) :
+
+| réseau | s/décision | évaluations par décision |
+|---|---|---|
+| incumbent | **1,6933** puis **1,6892** (deux passes) | 33 799 |
+| candidat | **1,8434** | 33 633 |
+
+**+9,0 %**, là où le compte de MACs annonçait **+6,3 %**. Une fois de plus, le compte
+d'opérations ne prédit pas le temps — la leçon de T3A, cette fois dans l'autre sens. La mesure
+est prise avec l'incumbent rejoué **juste après** le candidat, pour que la dérive de la machine
+ne puisse pas passer pour un écart de réseau.
+
+Le nombre d'évaluations, lui, ne bouge pas (−0,5 %) : le candidat visite les mêmes nœuds, il
+coûte plus cher à chacun.
+
+**Reste à chronométrer : le navigateur**, qui est l'endroit où l'appelant paie. Le rapport ne
+transporte pas la pénalité native : l'artefact WebAssembly a son noyau écrit à la main (T91), et
+rien ne dit qu'un dernier étage de 256 au lieu de 128 s'y paie au même prix.
 
 ## Reproduire
 
