@@ -105,6 +105,13 @@ class Table:
         post = [filler if cell is None else cell for cell in self.post]
         return pre, post
 
+    @staticmethod
+    def key(away_a: int, away_b: int) -> str:
+        """La clé d'erreur d'une cellule. Les deux orientations la partagent :
+        `PRE[b][a]` vaut `1 − PRE[a][b]`, donc la même incertitude."""
+        low, high = min(away_a, away_b), max(away_a, away_b)
+        return f"pre-{low}-{high}"
+
     def pre_at(self, away_a: int, away_b: int) -> float:
         """`PRE[a][b]`, en se servant de l'antisymétrie pour la moitié basse."""
         value = self.pre[away_a - 1][away_b - 1]
@@ -117,31 +124,40 @@ class Table:
 
 
 def value_after(table: Table, away_white: int, away_black: int,
-                points: int, post_crawford_now: bool) -> float:
+                points: int, post_crawford_now: bool):
     """Ce que vaut, pour WHITE, une partie qui rapporte `points` à un camp.
+
+    Rend `(valeur, cellule consultée)`. **La seconde moitié n'est pas un
+    ornement** : la valeur d'une cellule est une moyenne de valeurs d'autres
+    cellules, qui portent elles-mêmes une erreur. Une erreur-type qui ne
+    compterait que les parties de la cellule courante serait une borne
+    inférieure — et c'est exactement ce que la confrontation directe/miroir a
+    montré, en trouvant 3,3 % de cellules au-delà de 3 σ là où 0,3 % étaient
+    attendus.
 
     `points` est signé : positif si WHITE marque. `post_crawford_now` dit si la
     partie qui vient de finir était la partie de Crawford — auquel cas la suite
-    du match est d'après-Crawford.
+    du match est d'après-Crawford. La cellule rendue est `None` quand la partie
+    termine le match : une fin de match ne porte aucune incertitude.
     """
     if points > 0:
         if points >= away_white:
-            return 1.0
+            return 1.0, None
         left = away_white - points
         if post_crawford_now or away_black == 1:
             # WHITE poursuit, le meneur est à 1-away, Crawford est derrière.
-            return table.post[left - 1]
-        return table.pre_at(left, away_black)
+            return table.post[left - 1], f"post-{left}"
+        return table.pre_at(left, away_black), table.key(left, away_black)
 
     if points < 0:
         gained = -points
         if gained >= away_black:
-            return 0.0
+            return 0.0, None
         left = away_black - gained
         if post_crawford_now or away_white == 1:
             # BLACK poursuit : `post` donne SA chance, WHITE a le complément.
-            return 1.0 - table.post[left - 1]
-        return table.pre_at(away_white, left)
+            return 1.0 - table.post[left - 1], f"post-{left}"
+        return table.pre_at(away_white, left), table.key(away_white, left)
 
     raise ValueError("une partie ne rapporte jamais zéro point")
 
@@ -153,15 +169,30 @@ def measure_cell(pool, table: Table, away_white: int, away_black: int,
                  derive_seed(seed, key, index)) for index in range(games)]
     values = []
     stalled = 0
+    visits: dict[str, int] = {}
     for points, was_stalled in pool.imap_unordered(_play_one, payloads,
                                                    chunksize=64):
         stalled += int(was_stalled)
-        values.append(value_after(table, away_white, away_black, points,
-                                  post_crawford_now=crawford))
+        value, cell = value_after(table, away_white, away_black, points,
+                                  post_crawford_now=crawford)
+        values.append(value)
+        if cell is not None:
+            visits[cell] = visits.get(cell, 0) + 1
 
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / max(len(values) - 1, 1)
-    return mean, math.sqrt(variance / len(values)), stalled
+    sampling = variance / len(values)
+
+    # L'incertitude héritée : chaque cellule consultée pèse la fraction des
+    # parties qui y tombent, et apporte son erreur-type au carré. Sans ce
+    # terme, l'erreur-type ne compte que le dernier étage du calcul.
+    inherited = 0.0
+    for cell, count in visits.items():
+        weight = count / len(values)
+        error = table.error.get(cell, 0.0)
+        inherited += (weight * error) ** 2
+
+    return mean, math.sqrt(sampling + inherited), stalled
 
 
 def cells_in_order(max_away: int, mirror: bool = False):
