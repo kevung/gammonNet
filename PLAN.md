@@ -2887,6 +2887,14 @@ n'est injectée** — ce qui retire d'emblée l'objection « la table de départ
   `Kazaross-XG2`, tout le reste identique, dés dupliqués : c'est le seul énoncé qui autorise à
   changer la table de l'artefact. Une table plus proche d'une autre table n'est pas une table
   meilleure.
+
+  > **L'obstacle, nommé d'avance.** La table active est un état **global du processus**, et les
+  > dés dupliqués exigent les deux joueurs dans le **même** processus. Les deux ne peuvent pas
+  > tenir ensemble tels quels. La sortie est bon marché et ne touche pas à l'architecture C :
+  > la table devient un attribut du **joueur**, qui l'installe avant chacune de ses décisions —
+  > 5 200 octets de `memcpy` contre une recherche 2-ply, soit rien. Ce qu'il ne faut **pas**
+  > faire est l'inverse : mesurer les deux tables dans deux processus séparés, ce qui perdrait
+  > les dés communs et ferait passer l'écart sous le bruit.
 - **La profondeur de jeu qui a produit la table est dite**, et sa sensibilité mesurée : quelques
   cellules recalculées à une profondeur supérieure disent si la table est celle d'un joueur de
   ce niveau ou celle du jeu.
