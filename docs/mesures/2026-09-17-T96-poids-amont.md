@@ -35,6 +35,26 @@
 l'architecture du réseau de record — c'est son rôle, et il devra être mis à jour si le réseau
 change de nom.
 
+## Le verdict sans arbitre : le tête-à-tête à dés dupliqués
+
+Les deux réseaux l'un contre l'autre, **0-ply des deux côtés**, cubeless money, dés communs,
+paires rejouées sièges échangés, bootstrap sur les paires. Ce chiffre ne dépend d'**aucun
+arbitre** et d'aucun registre : c'est ce qui s'est passé sur le damier.
+
+| | volume | résultat |
+|---|---|---|
+| **candidat contre incumbent** | 500 000 paires — **1 000 000 de parties** | **+0,0092 ppg** [+0,0070 ; +0,0114] |
+
+**Résidu d'antisymétrie exactement 0.** 2 000 000 de parties (les deux sens) en 8 874 s.
+Relevé : [`t96-tete-a-tete-0ply.json`](t96-tete-a-tete-0ply.json).
+
+L'intervalle est entièrement positif, au volume que `BRIEF.md` §9 exige pour séparer deux bons
+moteurs. **Le candidat est le plus fort, et ce n'est pas l'affaire du registre.**
+
+L'échelle, pour situer : le même réseau incumbent bat GNU Backgammon 0-ply de **+0,0400 ppg**
+(T11) et le moteur libre le plus fort de **+0,0322 ppg** (T94). Le gain d'ici vaut donc **environ
+un quart de l'écart qui nous sépare de gnubg** — réel, mesuré, et modeste.
+
 ## La note sur le registre arbitré de T70
 
 10 000 décisions, money, 2-ply filtre `(0,1,3)`, arbitre de T70. **Les deux réseaux mesurés sur
@@ -108,6 +128,24 @@ plus `cubeless_prob5_512_512_256_128.pt`, et les trois seuls échecs de la suite
 nouvelle épingle sont les tests d'environnement qui vérifient sa présence (1 836 tests passés
 par ailleurs). Un dépôt épinglé à `7184e2f` servant les anciens poids aurait une provenance
 qu'il ne saurait plus produire.
+
+## Le verdict
+
+**Les deux instruments disent la même chose, et ils ne partagent rien.** Le registre arbitré dit
+−22 % de perte par décision disputée, sur intervalles disjoints ; le tête-à-tête sans arbitre dit
++0,0092 ppg sur un million de parties, intervalle entièrement positif. L'un dépend d'un arbitre
+et d'un corpus figé, l'autre d'aucun des deux.
+
+**Les poids `cubeless_prob5_512_512_256_256` deviennent le réseau de record**, et avec eux
+l'épingle `7184e2f` — les deux ne peuvent pas bouger séparément.
+
+Ce que ce changement **n'est pas** : une amélioration de la recherche, du videau, ou du match. Le
+gain est celui de l'évaluation statique, mesuré au 0-ply, en money et cubeless. Ce qu'il devient
+sous recherche n'est pas mesuré ici — et T93 a rappelé que l'avantage statique ne survit pas
+toujours à la profondeur.
+
+Ce que ce changement **coûte** : +6,3 % de MACs, soit ~+6 % sur une décision — **une hypothèse**,
+à chronométrer avant d'être écrite ailleurs (règle n°3, et la leçon de T3A démentie quatre fois).
 
 ## Reproduire
 
