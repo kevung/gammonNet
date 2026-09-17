@@ -164,14 +164,21 @@ def measure_cell(pool, table: Table, away_white: int, away_black: int,
     return mean, math.sqrt(variance / len(values)), stalled
 
 
-def cells_in_order(max_away: int):
-    """Les cellules, dans l'ordre où leurs dépendances sont prêtes."""
+def cells_in_order(max_away: int, mirror: bool = False):
+    """Les cellules, dans l'ordre où leurs dépendances sont prêtes.
+
+    `mirror` mesure la **moitié basse** (`a >= b`) et déduit la haute, au lieu
+    de l'inverse. Les deux passes remplissent la même table ; ce qui change est
+    laquelle des deux orientations est mesurée et laquelle est déduite. Les
+    confronter est la seule façon de vérifier l'antisymétrie sans l'imposer —
+    une passe unique la retrouverait par construction.
+    """
     for n in range(1, max_away + 1):
         yield ("post", n, 1)
     for total in range(2, 2 * max_away + 1):
         for a in range(1, max_away + 1):
             b = total - a
-            if 1 <= b <= max_away and a <= b:
+            if 1 <= b <= max_away and (a >= b if mirror else a <= b):
                 yield ("pre", a, b)
 
 
@@ -196,6 +203,9 @@ def main() -> int:
     parser.add_argument("--table-out", type=Path, default=None,
                         help="fichier GNMET1 à écrire")
     parser.add_argument("--name", default="gammonnet-t97")
+    parser.add_argument("--mirror", action="store_true",
+                        help="mesurer la moitié basse et déduire la haute — "
+                             "le contrôle d'antisymétrie")
     parser.add_argument("--pilot", type=int, default=0,
                         help="ne calculer que les N premières cellules")
     parser.add_argument("--check-dependencies", type=int, default=0,
@@ -204,7 +214,7 @@ def main() -> int:
     args = parser.parse_args()
 
     table = Table()
-    todo = list(cells_in_order(args.max_away))
+    todo = list(cells_in_order(args.max_away, mirror=args.mirror))
     if args.pilot:
         todo = todo[:args.pilot]
 
@@ -282,6 +292,7 @@ def main() -> int:
         "prune_k": args.prune_k,
         "model": args.model,
         "max_away": args.max_away,
+        "mirror": args.mirror,
         "cells": len(todo),
         "games": games_played,
         "seconds": elapsed,
