@@ -62,13 +62,17 @@ evaluation, our 0-ply), so every comparison is matched on **real depth**, never 
 | Protocol | Volume | Result |
 |---|---|---|
 | Head-to-head, duplicate dice, 0-ply, cubeless money | 500 000 pairs — **1 000 000 games** | **+0.0322 ppg** [+0.0288 ; +0.0356] |
+| Head-to-head, duplicate dice, 2-ply, cubeless money | 6 000 pairs — 12 000 games | +0.0063 ppg [−0.0135 ; +0.0262] |
 | Paired equity loss per disputed decision, 0-ply | 2 000 decisions | **−0.00682** [−0.00789 ; −0.00575] |
 | Paired equity loss per disputed decision, 2-ply | 2 000 decisions | **−0.00232** [−0.00323 ; −0.00137] |
 
-Ahead at both depths, and the head-to-head figure depends on **no arbiter at all**. But the
-finding that matters is the third line against the second: **the advantage falls to 34 % of its
-value between 0-ply and 2-ply**, on non-overlapping intervals. Two plies of search hand back two
-thirds of our static edge — their networks make better use of search than ours does. One position
+Ahead at both depths — by the paired instrument; the 2-ply head-to-head contains zero at its
+volume and settles nothing on its own. The head-to-head figures depend on **no arbiter at all**.
+But the finding that matters is the fourth line against the third: **the advantage falls to 34 %
+of its value between 0-ply and 2-ply**, on non-overlapping intervals — and the arbiter-free
+head-to-head falls to 20 % over the same step, which is the same story told by an instrument that
+shares none of its assumptions. Two plies of search hand back two thirds of our static edge:
+their networks make better use of search than ours does. One position
 class flips sign: `holding` goes from −0.00505 at 0-ply to +0.00225 at 2-ply (interval still
 contains zero), and that is the family their model specialises in.
 ([T93](docs/mesures/2026-09-07-T93-ecart-decompose.md),

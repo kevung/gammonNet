@@ -65,13 +65,39 @@ l'équité **cubeless**, ce qui n'est pas le défaut du leur — T92 §4 bis rac
 
 ---
 
+## Le 2-ply, collecté le 2026-09-17
+
+La campagne annoncée ci-dessous a terminé le 2026-09-07 à 21 h 27, et son relevé est resté dix
+jours sur melbaa avant d'être rapatrié. Même harnais, même graine, profondeur réelle 2 des deux
+côtés — notre `(0,1,3)` élagué `k=12` contre leur `2ply`.
+
+| | ppg | IC 95 % | victoires | parties |
+|---|---|---|---|---|
+| **gammonNet 2-ply contre le leur** | **+0,0063** | **[−0,0135 ; +0,0262]** | 50,06 % | 12 000 |
+
+Résidu d'antisymétrie **exactement 0**, zéro partie abandonnée, 24 000 parties en 29 383 s.
+Relevé brut : [`t94-2ply-tete-a-tete.json`](t94-2ply-tete-a-tete.json).
+
+**Zéro est dans l'intervalle.** Le volume était choisi en connaissance de cause : ±0,020 ppg
+écarte un écart grossier et ne tranche pas un écart fin. Ce chiffre **ne montre pas** que les
+deux moteurs sont équivalents au 2-ply — il montre qu'à 12 000 parties on ne les sépare pas.
+
+Ce qu'il apporte malgré tout, et ce n'est pas rien : **il est cohérent avec T93 sans partager son
+arbitre.** Le point d'estimation passe de +0,0322 à +0,0063, soit 20 % de sa valeur, là où
+l'instrument apparié de T93 mesure une chute à 34 % sur un intervalle disjoint. Deux instruments
+indépendants — l'un avec arbitre et apparié, l'autre sans arbitre et par partie — pointent dans
+le même sens et avec le même ordre de grandeur. **L'avance qui fond avec la profondeur n'est donc
+pas un artefact de l'arbitre de T93.**
+
+Pour trancher le signe au 2-ply par le tête-à-tête seul, il faudrait ~10⁶ parties par paire
+(`BRIEF.md` §9), soit de l'ordre de deux semaines-machine à 1 partie/s — c'est exactement le
+calcul qui a fait écrire T93 avec un instrument apparié.
+
+---
+
 ## Ce qui reste ouvert
 
-- **Le 2-ply.** Le même tête-à-tête à la profondeur servie coûte ~20 s par partie et par moteur
-  confondus : atteindre l'IC de cette fiche y demanderait des semaines. Une campagne de
-  24 000 parties tourne, dont l'intervalle attendu est de l'ordre de ±0,016 ppg — assez pour
-  écarter un écart grossier, pas pour trancher un écart fin. C'est T93 qui porte cette
-  profondeur, avec un instrument apparié cent fois plus sensible.
+- ~~**Le 2-ply.**~~ Rendu ci-dessus le 2026-09-17.
 - **Le match, et le videau.** Le pilote de campagne cubeful de T35 ne sait aujourd'hui aligner
   que GNU Backgammon ; brancher un troisième moteur y demande de porter sa décision de videau,
   ce que cette fiche n'a pas fait.
