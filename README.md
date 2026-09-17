@@ -3,8 +3,14 @@
 A backgammon position evaluator for the browser and for native code — a neural network, an
 expectiminimax search, a match equity table and exact bearoff tables.
 
-**Measured equivalent to GNU Backgammon at 2-ply.** Not asserted: measured, on 50 000 duplicate
-pairs, in both money and match play, and reproduced independently on a second machine.
+**It is built on [Alexander Strehl's `backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine)
+(MIT): the network weights and the rules engine come from there, trained by self-play.** Written
+here: the position codec, the 0→4-ply search and its move filters, the match equity inside the
+search, the pruning network, the WebAssembly port and the Web Worker pool — and every measurement
+on this page.
+
+**Measured equivalent to GNU Backgammon at 2-ply** — on 50 000 duplicate pairs, in money and in
+match play, reproduced on a second machine.
 
 📖 **[Documentation](https://kevung.github.io/gammonNet/)** — user manual, scientific manual and
 developer manual, in [English](https://kevung.github.io/gammonNet/en/) and
@@ -17,6 +23,8 @@ developer manual, in [English](https://kevung.github.io/gammonNet/en/) and
 
 ## Strength, as measured
 
+### Against GNU Backgammon
+
 Full configuration — network, 2-ply filtered search, match equity, bearoff tables, cube — against
 GNU Backgammon at the same settings, common dice, bootstrap over duplicate pairs.
 
@@ -25,16 +33,16 @@ GNU Backgammon at the same settings, common dice, bootstrap over duplicate pairs
 | money, cubeful | 50 000 pairs | **−0.0119 ppg** | [−0.0310 ; +0.0074] |
 | match, MWC | 50 000 pairs | **50.42 %** | [50.16 ; 50.69] |
 
-**Equivalent, confirmed. Superior: not established** — and eXtreme Gammon has never been measured
-here. In money the interval contains zero; in match the edge is +0.42 points of MWC, separated
-from equality but by a hair. ([T35](docs/mesures/2026-08-26-T35-verdict.md))
+Equivalent, confirmed. **Superior is not established**: in money the interval contains zero, in
+match the +0.42 points of MWC clear equality by a hair. eXtreme Gammon has never been measured
+here. ([T35](docs/mesures/2026-08-26-T35-verdict.md))
 
 ### Performance rating
 
-600 contact decisions, arbiter GNU Backgammon at 3-ply over every legal move. The published
-reference figures for this model are reproduced at all three depths, each inside its interval.
+600 contact decisions, arbiter GNU Backgammon at 3-ply over every legal move. The figures
+published for this model are reproduced at all three depths, each inside its interval.
 
-| Configuration | PR | 95 % CI | Reference |
+| Configuration | PR | 95 % CI | Published |
 |---|---|---|---|
 | 0-ply | **1.088** | [0.802 ; 1.412] | 1.06 ✅ |
 | 1-ply | **0.499** | [0.330 ; 0.705] | 0.50 ✅ |
@@ -44,14 +52,12 @@ The 1-ply figure — 0.499 against 0.50 published, two independent chains and tw
 arbiters — is the strongest validation of the search this repository has produced.
 ([T3E](docs/mesures/2026-08-27-T3E-performance-rating.md))
 
-### Against Backgammon Sage (Open Sage), measured here
+### Against Backgammon Sage (Open Sage)
 
 The strongest published free engine — MPL-2.0 including its weights, `stage9`: nineteen networks
-with a backgame-aware pair strategy — runs locally, which the commercial reference does not. So
-it can be measured directly rather than through a third-party calibration.
-
-Its level labels are offset by one (its `1ply` is raw network evaluation, our 0-ply), so every
-comparison below is matched on **real depth**, never on the label.
+with a backgame-aware pair strategy — runs locally, so it can be measured directly rather than
+through a third-party calibration. Its level labels are offset by one (its `1ply` is raw network
+evaluation, our 0-ply), so every comparison is matched on **real depth**, never on the label.
 
 | Protocol | Volume | Result |
 |---|---|---|
@@ -62,11 +68,9 @@ comparison below is matched on **real depth**, never on the label.
 Ahead at both depths, and the head-to-head figure depends on **no arbiter at all**. But the
 finding that matters is the third line against the second: **the advantage falls to 34 % of its
 value between 0-ply and 2-ply**, on non-overlapping intervals. Two plies of search hand back two
-thirds of our static edge — their networks make better use of search than ours does.
-
-One position class flips sign: `holding` goes from −0.00505 at 0-ply to +0.00225 at 2-ply
-(interval still contains zero). That is the family their model specialises in, and their
-specialisation shows exactly where they put it — and nowhere else.
+thirds of our static edge — their networks make better use of search than ours does. One position
+class flips sign: `holding` goes from −0.00505 at 0-ply to +0.00225 at 2-ply (interval still
+contains zero), and that is the family their model specialises in.
 ([T93](docs/mesures/2026-09-07-T93-ecart-decompose.md),
 [T94](docs/mesures/2026-09-07-T94-tete-a-tete-0ply.md))
 
@@ -82,20 +86,27 @@ diverge where several moves are worth the same, never where a game is decided.
 
 ## Cost in the browser
 
-Opening position, Chromium, one worker. The pruning network sorts the moves so the big network
-scores only a handful of them.
+One 2-ply `(0,1,3)` decision from the opening position, default `k=12` pruning, one worker, median
+of 3 passes, desktop Ryzen 7 PRO 6850U.
 
-| Configuration | Evaluations | Cost per decision |
+| Browser | Previous kernel | Shipped kernel |
 |---|---|---|
-| 0-ply | 16 | **6 ms** |
-| 1-ply | 7 475 | 2 289 ms |
-| 2-ply `(0,1,3)`, no pruning | 38 721 | 9 813 ms |
-| **2-ply `(0,1,3)`, pruning `k=12`** | 15 142 | **2 689 ms** |
+| Chromium 152 | 1.498 s | **0.334 s** — ×4.48 |
+| Firefox 154 | 1.155 s | **0.686 s** — ×1.68 |
 
-Pruning is ×3.65 on a 2-ply decision for an equity loss inside the noise, so it is the default.
-With 8 Web Workers throughput reaches 26 667 eval/s (×6.2), and a full 7-point match is analysed
-in **74 s**. WebAssembly matches the native engine exactly in scalar builds (max\|Δ\| = 0) and to
-6.4e-7 with SIMD.
+The same file costs twice as much in Firefox as in Chromium, which is why a speed verdict needs
+both. ([T91](docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md))
+
+Pruning itself is ×3.65 on a 2-ply decision for an equity loss inside the noise, so it is the
+default; a 0-ply decision costs ~6 ms
+([T21b](docs/mesures/2026-08-27-T21b-navigateur-elagage.md)). A full 7-point match — 139
+decisions — took **50 s on 8 Web Workers** against 212 s on one, and 8 is the useful number of
+workers: 16 buys 4 to 6 % of wall time for twice the memory
+([T87](docs/mesures/2026-09-02-T87-ordonnancement.md)). Both of those predate the kernel above and
+have not been re-measured since.
+
+The WebAssembly artefact is **bit-for-bit with the native engine** — max\|Δ\| = 0 on 2 000
+positions, in the scalar *and* the SIMD build.
 
 ## Using a release
 
@@ -108,7 +119,7 @@ means to verify it, and the raw evidence behind every published figure.
 | `strehl-prune-32_…​.bin` / `.bin16` | the pruning network |
 | `gammonnet-simd.mjs` / `.wasm` | the WebAssembly engine (prefer the SIMD build) |
 | `api/gammonnet.mjs` | the JavaScript API — `Evaluator` |
-| `api/pool.mjs`, `api/worker.mjs` | the Web Worker pool — a full 7-point match in **50 s** at 8 workers, 212 s at one |
+| `api/pool.mjs`, `api/worker.mjs` | the Web Worker pool |
 | `verify/` | check for yourself that this artifact returns the right numbers |
 | `evidence/` | the raw measurements behind each figure in the release notes |
 | `manifest.json` | the file names for this release — read it instead of hard-coding them |
@@ -130,22 +141,20 @@ evaluator.loadPrune(prune, files.prune_k);   // ×3.65, strongly recommended
 const level = Evaluator.level("normal");   // ply, move filters, pruning width
 
 // The 5 best moves, each with win / gammon / backgammon probabilities and equity.
-// Perspective (v1.1.0): `probs` is the MOVER's, the same side as the `equity`
-// beside it — and the same side as `/v1/eval` over HTTP and as `cubeDecision`.
-// gammonNet has one convention now. `probs` is `[win, win_g, win_bg, lose_g,
-// lose_bg]`, nested. Before v1.1.0 it was the resulting position's (so the
-// opponent's) and a `forMover` field carried the mirror; `forMover` is gone
-// rather than left beside an already-mirrored `probs`.
+// `probs` is `[win, win_g, win_bg, lose_g, lose_bg]`, nested, and since v1.1.0 it
+// is the MOVER's — the same side as the `equity` beside it. The pre-v1.1.0
+// `forMover` field is gone rather than left beside an already-mirrored `probs`.
 const moves = evaluator.rankPlays("4HPwATDgc/ABMA", 0, 3, 1, { ...level, max: 5 });
 
 // Cube decision: no-double, double-take and double-pass equities, and the verdict.
 const cube = evaluator.cubeDecision("4HPwATDgc/ABMA", 0, { ...level, owner: 0 });
 ```
 
-Three analysis levels are exposed — `instant` (0-ply, ~6 ms), `normal` (2-ply filtered with
-pruning, ~2.7 s) and `thorough` (the same without pruning, ~9.8 s) — along with every underlying
-parameter: depth, move filters, pruning width, evaluation cache, cubeful or cubeless valuation,
-match score, cube ownership and cube efficiency. See the
+Three levels are exposed — `instant` (0-ply), `normal` (2-ply filtered `(0,1,3)` with `k=12`
+pruning, the table above) and `thorough` (the same without pruning; its only timing, ~9.8 s,
+predates the current kernel and stands as an upper bound) — along with every parameter: depth,
+move filters, pruning width, evaluation cache, cubeful or cubeless valuation, match score, cube
+ownership and cube efficiency. See the
 [settings reference](https://kevung.github.io/gammonNet/en/manuel/settings.html).
 
 Verify before you trust it — the archive carries a 2 000-position benchmark and the check that
@@ -158,12 +167,11 @@ node verify/api_invariants.mjs   # the API answers what it promises
 
 **Known limits.** The exact bearoff table is *not* shipped: the one the engine consults weighs
 1.2 GiB. The endgame therefore falls back on the network, which costs 0.00028 equity per bearoff
-decision on average — and up to 0.0919 in the worst case observed. The
+decision on average — and up to 0.0919 in the worst case observed. A replacement has been measured
+but is **not wired in yet**: a 528 KiB network distilled from the exact table plays the same 8 000
+decisions with a worst case of 0.0014, below GNU Backgammon's own 0.0023
+([T78](docs/mesures/2026-08-28-T78-distillation-bearoff.md)). The
 [limits page](https://kevung.github.io/gammonNet/en/manuel/limits.html) lists every one of them.
-
-A replacement has been measured but is **not wired in yet**: a 528 KiB network distilled from the
-exact table plays the same 8 000 decisions with a worst case of 0.0014, below GNU Backgammon's own
-0.0023 — see [T78](docs/mesures/2026-08-28-T78-distillation-bearoff.md).
 
 ## Building from source
 
@@ -174,18 +182,17 @@ make wasm      # WebAssembly module
 make test
 ```
 
-Python ≥ 3.10 and a C compiler; Emscripten for the browser target. Note that `models/*.bin` is not
-in the repository — the weights are rebuilt from Alexander Strehl's vendored sources at a pinned
-commit, which also verifies on every release that the export chain still works.
+Python ≥ 3.10 and a C compiler; Emscripten for the browser target. `models/*.bin` is not in the
+repository: the weights are rebuilt from Strehl's vendored sources at a pinned commit, which also
+verifies on every release that the export chain still works.
 
 ## HTTP server (`serve`)
 
-A standalone process that speaks HTTP instead of exposing a library — a third target, beside the
-native library and the WebAssembly module. A caller points at it over the network instead of
-embedding this repository, which is the right shape whenever the caller's language is not C and
-the cost of a network hop is small against the cost of a search. It loads the **same pinned float16 artifact the
-WebAssembly target ships**, verifies its SHA-256 before opening a socket, and refuses to start on
-a mismatch — never a server answering on the wrong weights ([#18](https://github.com/kevung/gammonNet/issues/18)).
+A third target beside the native library and the WebAssembly module: a process that speaks HTTP
+instead of exposing a library, for a caller whose language is not C and for whom a network hop is
+cheap against the cost of a search. It loads the **same pinned float16 artifact the WebAssembly
+target ships**, verifies its SHA-256 before opening a socket, and refuses to start on a mismatch
+([#18](https://github.com/kevung/gammonNet/issues/18)).
 
 ```bash
 python tools/fetch_release.py           # downloads the pinned network + pruning weights
@@ -193,8 +200,8 @@ python tools/serve.py --port 8080       # 0-ply by default, 4-ply at most, --max
 curl -s localhost:8080/healthz
 ```
 
-Three endpoints, JSON in, JSON out, a non-200 status on any error (invalid XGID, illegal
-position, bad parameters) — never a 200 with an error disguised as a result:
+Three endpoints, JSON in, JSON out, a non-200 status on any error (invalid XGID, illegal position,
+bad parameters) — never a 200 with an error disguised as a result:
 
 | Route | Request | Response |
 |---|---|---|
@@ -202,44 +209,38 @@ position, bad parameters) — never a 200 with an error disguised as a result:
 | `POST /v1/cube` | `{xgid, kind: "double"\|"take", decider_away, opponent_away, cube, decider_on_roll}` | `{should_double, too_good, no_double, double_take, double_pass, should_take, take, pass, probs}` |
 | `POST /v1/rollout` | `{xgid, trials, max_depth, seed}` | `{trials, equity, std_err, win_prob}` |
 
-`ply` in the response is the depth **actually applied**, never the one requested — a caller must
-read it back rather than assume its request was honoured. `/v1/eval` needs an XGID that carries a roll (the two dice
-digits in its 4th field); `/v1/cube` does not — the decider's away scores and the cube value are
-explicit request fields, not read from the XGID's own score/cube fields, so the same call works
-for money (either away score `0`) and match play. `/v1/rollout` ignores any dice the XGID carries:
-a rollout answers for the position *before* a roll, and `max_depth: 0` plays every trial to
-completion — the only case `win_prob` is an observed frequency rather than the honest `0.0` a
-truncated rollout reports (`gn_rollout.h`: a truncated trial ends on an evaluation, not an
-outcome).
+The contract, in the places it is easy to get wrong:
 
-`probs` — `{win, win_g, win_bg, lose_g, lose_bg}` — carries the network's five nested
-probabilities alongside the equity, per `gn_infer.h`'s own insistence that the distribution is the
-real output. **Everywhere gammonNet hands out a distribution next to an equity, both describe the
-same player** — the mover on `/v1/eval` and on the WASM `rankPlays`, the decider on `/v1/cube` and
-on `cubeDecision`. So `2·win + win_g + win_bg − lose_g − lose_bg − 1` reproduces that equity
-exactly; a client can check it, and `tests/test_serve.py` and `verify/api_invariants.mjs` both do.
-(Underneath, `GnCandidate.probs` holds the *resulting* position's distribution, hence the
-opponent's; the two published surfaces mirror it. A mirrored nested distribution is still perfectly
-nested, so nothing but that identity catches the confusion — which is how the inversion survived a
-monotonicity test on both sides.)
+- `ply` in the response is the depth **actually applied**, never the one requested — read it back
+  rather than assume the request was honoured.
+- `/v1/eval` needs an XGID carrying a roll (the two dice digits in its 4th field); `/v1/cube` does
+  not, since away scores and cube value are explicit request fields, so the same call serves money
+  (either away score `0`) and match play. Crawford is assumed false: a documented limitation, not a
+  silent guess.
+- `/v1/rollout` ignores any dice the XGID carries — a rollout answers for the position *before* a
+  roll. `max_depth: 0` plays every trial to completion, the only case where `win_prob` is an
+  observed frequency rather than the honest `0.0` a truncated trial reports: it ends on an
+  evaluation, not an outcome.
+- **A distribution and the equity beside it always describe the same player** — the mover on
+  `/v1/eval` and `rankPlays`, the decider on `/v1/cube` and `cubeDecision`. So
+  `2·win + win_g + win_bg − lose_g − lose_bg − 1` reproduces that equity exactly, and
+  `tests/test_serve.py` and `verify/api_invariants.mjs` both check it. (Underneath,
+  `GnCandidate.probs` holds the *resulting* position's distribution — the opponent's — which both
+  published surfaces mirror.) `/v1/cube`'s four cube equities are the one thing that does not
+  follow the deciding player: they are always the **doubler's**, `take` / `pass` their negation.
+- The two surfaces differ on **depth**, deliberately: past 0-ply the probabilities come from the
+  shallow ranking pass while the equity comes from the deep search. `/v1/eval` therefore omits
+  `probs` for candidates once `ply >= 1`; `rankPlays` keeps them, because an analysis UI displays
+  them.
 
-The two surfaces still differ on **depth**, and deliberately: past 0-ply the five numbers come from
-the shallow ranking pass while the equity comes from the deep search (`gn_search.h`, `GnCandidate`).
-`/v1/eval` therefore omits `probs` for any candidate once `ply >= 1`; the WASM `rankPlays` keeps
-them, because an analysis UI displays them, and says so in its own doc comment. Same side, not the
-same depth. `/v1/cube`'s `probs` is always the **decider's own** distribution
-(`decider_on_roll: false` mirrors it), while the four cube equities are always the **doubler's**;
-`take`/`pass` (kind `"take"`) are their exact negation. Crawford is not part of this contract and is
-assumed false — a documented limitation, not a silent guess.
-
-Measured, not assumed: 100 sequential `/v1/eval` requests over loopback HTTP, 0-ply, this
-machine — **2.4 ms/request**. A single 2-ply decision with the default `k=12` pruning network —
-**≈ 15 s**, which is why `--max-ply` exists and why a production deployment should set it with the
-caller's own latency budget in mind, not this repository's.
+Measured, not assumed: 100 sequential `/v1/eval` requests over loopback HTTP, 0-ply — **2.4 ms per
+request**. A 2-ply request costs **≈ 15 s**, because `/v1/eval` applies **no move filter**: its
+2-ply is the unfiltered search, not the filtered `(0,1,3)` the browser preset uses. That is why
+`--max-ply` exists, and why a deployment should set it against the caller's own latency budget.
 
 Containerised (`Dockerfile`): the image fetches the pinned weights at *build* time and bakes them
-in — no network access needed at run time, and the SHA-256 gate still runs on every start as the
-final check that the image's own bytes were not altered afterwards.
+in — no network access at run time, and the SHA-256 gate still runs on every start as the final
+check that the image's own bytes were not altered afterwards.
 
 ```bash
 docker build -t gammonnet-serve .
@@ -247,10 +248,6 @@ docker run --rm -p 8080:8080 gammonnet-serve
 ```
 
 ## What is reused, what is written here
-
-The network weights come from
-[`alexstrehl/backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine) (MIT),
-trained by self-play.
 
 | Component | Origin | Status |
 |---|---|---|
@@ -260,31 +257,28 @@ trained by self-play.
 | Expectiminimax search 0→4 ply, move filters | idea documented in the GNU Backgammon manual; no code taken | written here |
 | Match equity inside the search | GNU Backgammon architecture: cubeless network, conversion after | written here |
 | Pruning network, distilled from the big one | — | written here |
-| WebAssembly port, Web Worker pool | — | written here |
-| ×9 forward-pass throughput, bit-exact | — | written here |
+| WebAssembly port, Web Worker pool, SIMD kernels | — | written here |
 
 ## Project status
 
 Phases 0 through 5 are complete, and v1.3.0 is the artefact they produce. Phase 4 — a
-project-specific model — stays closed: it was conditional on the model proving insufficient, and it
-did not. Phase 7 is under way: going past parity with GNU Backgammon rather than matching it.
-Phase 8 is closed: it made a 2-ply decision in the browser 4.5× cheaper in Chromium, made move
-ranking deterministic across targets, and brought the WebAssembly artefact back to bit-for-bit
-agreement with the native engine. Phase 9 measured this engine against the strongest published
-free one and found it ahead at both depths — and found that the edge erodes with search, which is
-the one thing it changed in the plan of work.
+project-specific model — stays closed: it was conditional on the existing model proving
+insufficient, and it did not. Phase 8 delivered the browser speed above. Phase 9 found this engine
+ahead of the strongest published free one at both depths, and found the edge eroding with search —
+the one thing it changed in the plan of work. Phase 7 is under way: going past parity with GNU
+Backgammon rather than matching it.
 
 | | Tasks | State |
 |---|---|---|
-| 0 — Foundations & instrument | T00 · T01 · T02 · T03 · T04 · T05 | ✅ |
+| 0 — Foundations & instrument | T00 → T05 | ✅ |
 | 1 — Reproduce published figures | T10 · T11 · T12 | ✅ |
-| 2 — Browser | T20 · T21 · T22 · T23 | ✅ |
+| 2 — Browser | T20 → T23 | ✅ |
 | 3 — Depth & exactness | T30 → T3E | ✅ |
 | 4 — Project-specific model | — | closed |
 | 5 — Publication | T50 · T51 | ✅ |
-| 7 — Going further | T70 → T77 | in progress |
+| 7 — Going further | T70 → T83 | in progress |
 | 8 — Speed where the caller pays | T84 → T91 | ✅ |
-| 9 — Measuring against the strongest published free engine | T92 · T93 · T94 · T95 | ✅ (T95 not opened) |
+| 9 — Against the strongest published free engine | T92 → T95 | ✅ (T95 not opened) |
 
 Every task carries a report in [`docs/mesures/`](docs/mesures/), which distinguishes what was
 measured from what was estimated. Working documents: [`CLAUDE.md`](CLAUDE.md) (rules),
