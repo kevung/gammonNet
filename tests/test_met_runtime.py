@@ -165,6 +165,61 @@ def test_a_refused_table_leaves_the_previous_one_in_place(tmp_path):
 # ── La preuve que le moteur la consulte vraiment ─────────────────────
 
 
+def test_two_players_in_one_process_hold_different_tables(tmp_path):
+    """Ce que `met_table` sur le joueur rend possible, et pourquoi il existe.
+
+    Les dés dupliqués veulent les deux joueurs dans le même processus ; la
+    table active est globale à ce processus. Un joueur qui porte sa table et
+    l'installe avant chacune de ses décisions lève la contradiction — et sans
+    ce test, rien ne dirait que les deux tables ne se marchent pas dessus.
+    """
+    from gammonnet.cubeful import GammonNetCubePlayer
+
+    plate = tmp_path / "plate.met"
+    met.write_table(plate, *flat_table(0.3), "témoin-plat")
+    met.reset_table()
+
+    kazaross = GammonNetCubePlayer(met_table="")
+    autre = GammonNetCubePlayer(met_table=str(plate))
+
+    met.use_table(autre.met_table)
+    assert met.table_name() == "témoin-plat"
+
+    met.use_table(kazaross.met_table)
+    assert met.table_name() == "kazaross-xg2"
+
+    met.use_table(autre.met_table)
+    assert met.pre_crawford(4, 9) == 0.3
+
+
+def test_reinstalling_the_same_table_is_free_but_a_change_is_not():
+    """`use_table` ne réinstalle pas ce qui sert déjà — mais un changement fait
+    par ailleurs doit invalider ce raccourci, sinon il sert une table périmée."""
+    met.use_table("")
+    met.set_table(*flat_table(0.6), "posée-à-la-main")
+    assert met.table_name() == "posée-à-la-main"
+
+    met.use_table("")  # doit repasser à la compilée, malgré le cache
+    assert met.table_name() == "kazaross-xg2"
+
+
+def test_a_direct_load_also_invalidates_the_shortcut(tmp_path):
+    """Même piège que le test précédent, par l'autre porte.
+
+    `load_table` change la table sans passer par `use_table` ; si le raccourci
+    croyait encore servir la compilée, `use_table("")` ne ferait rien.
+    """
+    plate = tmp_path / "plate.met"
+    met.write_table(plate, *flat_table(0.2), "témoin-plat")
+
+    met.use_table("")
+    met.load_table(plate)
+    assert met.table_name() == "témoin-plat"
+
+    met.use_table("")
+    assert met.table_name() == "kazaross-xg2"
+
+
 def test_the_conversion_follows_the_installed_table():
     """Le seul test qui prouve que le remplacement atteint le moteur.
 

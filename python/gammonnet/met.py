@@ -154,6 +154,8 @@ def table_name() -> str:
 
 def load_table(path) -> str:
     """Installer la table du fichier `GNMET1`. Rend son nom."""
+    global _ACTIVE_KEY
+    _ACTIVE_KEY = _UNKNOWN
     status = _LIB.gn_met_load(str(path).encode())
     if status != 0:
         _refuse(status, path)
@@ -162,6 +164,8 @@ def load_table(path) -> str:
 
 def set_table(pre, post, name: str) -> None:
     """Installer une table tenue en mémoire — `pre[a-1][b-1]`, `post[n-1]`."""
+    global _ACTIVE_KEY
+    _ACTIVE_KEY = _UNKNOWN
     flat = [value for row in pre for value in row]
     if len(flat) != MAX_AWAY * MAX_AWAY or len(post) != MAX_AWAY:
         raise ValueError(f"table de {len(flat)} et {len(post)} valeurs : "
@@ -175,7 +179,47 @@ def set_table(pre, post, name: str) -> None:
 
 def reset_table() -> None:
     """Revenir à la table compilée."""
+    global _ACTIVE_KEY
+    _ACTIVE_KEY = _UNKNOWN
     _LIB.gn_met_reset()
+
+
+#: Ce que `use_table` croit servir : un chemin, `None` pour la table compilée,
+#: ou `_UNKNOWN` quand quelqu'un d'autre a changé la table. **Les trois états
+#: sont distincts, et c'est le point** : confondre « la compilée » et « je ne
+#: sais pas » ferait sauter le raccourci au mauvais moment, et `use_table("")`
+#: laisserait en place une table posée à la main.
+_UNKNOWN = object()
+_ACTIVE_KEY = _UNKNOWN
+_CACHE: dict[str, tuple[list, list, str]] = {}
+
+
+def use_table(path) -> None:
+    """S'assurer que la table de `path` est celle qui sert. `""` → la compilée.
+
+    **Ce que cette fonction rend possible.** La table active est un état global
+    du processus, et une campagne à dés dupliqués veut les deux joueurs dans le
+    **même** processus. Un joueur qui porte sa table et l'installe avant chacune
+    de ses décisions lève la contradiction : l'installation est un `memcpy` de
+    5 200 octets, soit rien du tout devant une recherche.
+
+    Le contenu du fichier est mis en cache — le relire à chaque décision
+    coûterait plus cher que la décision.
+    """
+    global _ACTIVE_KEY
+    key = str(path) if path else None
+    if key == _ACTIVE_KEY:
+        return
+    if key is None:
+        reset_table()
+        _ACTIVE_KEY = None
+        return
+    if key not in _CACHE:
+        load_table(key)
+        _CACHE[key] = (*active_table(), table_name())
+    pre, post, name = _CACHE[key]
+    set_table(pre, post, name)
+    _ACTIVE_KEY = key
 
 
 def write_table(path, pre, post, name: str) -> None:

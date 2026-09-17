@@ -61,6 +61,7 @@ from .arena import MAX_TURNS, derive_seed, game_value, opening_roll, pair_key
 from .cube import CubeAction, CubeInputs, CubeOwner, decide, verdict
 from .cube import value as cube_value
 from .gnubg_engine import GnubgEngine, classify_gnubg_verdict, gnubg_state
+from . import met
 from .met import MatchState
 from .rules import BLACK, WHITE, Play, Position
 
@@ -138,6 +139,13 @@ class GammonNetCubePlayer:
     database: str | None = DATABASE
     efficiency: tuple[float, float, float] | None = None
     jacoby: bool = True
+    #: La table d'équité de match que CE joueur consulte. Vide = la table
+    #: compilée. Elle est installée avant chacune de ses décisions plutôt
+    #: qu'une fois pour toutes : la table active est globale au processus, et
+    #: une campagne à dés dupliqués veut les deux joueurs dans le MÊME
+    #: processus. Voir `met.use_table`.
+    met_table: str = ""
+
     name: str = field(default="")
     _network: object = field(default=None, repr=False, compare=False)
     _exact: object = field(default=None, repr=False, compare=False)
@@ -201,6 +209,7 @@ class GammonNetCubePlayer:
     def choose(self, position, d1, d2, rng, match=None):
         from .search import SearchConfig, best_play
 
+        met.use_table(self.met_table)
         network = self._load()
         if match is None:
             config = SearchConfig(ply=self.ply, filter=self.filter,
@@ -225,6 +234,7 @@ class GammonNetCubePlayer:
         return position_probs(self._load(), position, config)
 
     def wants_double(self, position, cube, owner, match=None):
+        met.use_table(self.met_table)
         self._load()
         if match is None and self._exact is not None and self._exact.contains(position):
             exact = self._exact.equities(position)
@@ -236,6 +246,7 @@ class GammonNetCubePlayer:
         return decision.action in _DOUBLES
 
     def accepts_double(self, position, cube, owner, match=None):
+        met.use_table(self.met_table)
         self._load()
         x_taken = self.efficiency[int(CubeOwner.OPPONENT)]
         if match is None and self._exact is not None and self._exact.contains(position):
