@@ -23,6 +23,8 @@ Phase 8 — Vitesse pour l'appelant  T84 T85 T86 T87 T88 T89 T90  ← OUVERTE le
                                    T91                          (l'artefact navigateur)
 Phase 9 — Se situer                T92 T93 T94 T95              ← OUVERTE le 2026-09-07
                                                                 (T95 conditionnelle)
+Phase 10 — Ne plus rien devoir     T96 T97                      ← OUVERTE le 2026-09-17
+                                                                (les poids amont, la MET calculée)
 ```
 
 **Chemin critique** :
