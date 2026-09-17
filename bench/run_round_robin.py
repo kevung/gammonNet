@@ -35,6 +35,12 @@ from gammonnet.arena import (  # noqa: E402
 #: numérote ses niveaux depuis l'évaluation statique (son `1ply` est notre
 #: 0-ply, T92), et une ligne de matrice qui reprendrait son étiquette
 #: laisserait croire à un affrontement apparié qui n'en serait pas un.
+#: Les poids candidats de T96. **Un réseau est ses poids** (`BRIEF.md` §8), d'où
+#: le nom de ligne : dans six mois, une ligne qui dirait « le nouveau » ne dirait
+#: plus rien. Les deux lignes ci-dessous ne diffèrent que par ce fichier — c'est
+#: la condition pour que le tête-à-tête mesure le réseau et rien d'autre.
+CANDIDATE = "models/cubeless_prob5_512_512_256_256.bin"
+
 AVAILABLE = {
     "random": lambda: RandomEngine(name="random"),
     "first-play": lambda: FirstPlayEngine(name="first-play"),
@@ -43,6 +49,11 @@ AVAILABLE = {
     "gnubg-2ply": lambda: OracleEngine(ply=2),
     "gammonnet-0ply": lambda: SearchEngine(ply=0),
     "gammonnet-2ply": lambda: SearchEngine(ply=2, filter=(0, 1, 3), prune_k=12),
+    "prob5-256-0ply": lambda: SearchEngine(
+        ply=0, model=CANDIDATE, name="prob5-512-512-256-256-0ply"),
+    "prob5-256-2ply": lambda: SearchEngine(
+        ply=2, filter=(0, 1, 3), prune_k=12, model=CANDIDATE,
+        name="prob5-512-512-256-256-2ply-f0/1/3-k12"),
     "sage-0ply": lambda: SageEngine(level="1ply"),
     "sage-1ply": lambda: SageEngine(level="2ply"),
     "sage-2ply": lambda: SageEngine(level="3ply"),
