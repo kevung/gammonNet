@@ -203,6 +203,13 @@ def main() -> int:
     parser.add_argument("--table-out", type=Path, default=None,
                         help="fichier GNMET1 à écrire")
     parser.add_argument("--name", default="gammonnet-t97")
+    parser.add_argument("--from-table", type=Path, default=None,
+                        help="repartir d'une table déjà calculée : ses cellules "
+                             "servent de dépendances, seules celles de --cells "
+                             "sont rejouées")
+    parser.add_argument("--cells", default="",
+                        help="les cellules à (re)calculer, « post-3,pre-3-12 » — "
+                             "l'arbitrage d'une cellule signalée")
     parser.add_argument("--mirror", action="store_true",
                         help="mesurer la moitié basse et déduire la haute — "
                              "le contrôle d'antisymétrie")
@@ -214,7 +221,30 @@ def main() -> int:
     args = parser.parse_args()
 
     table = Table()
-    todo = list(cells_in_order(args.max_away, mirror=args.mirror))
+    if args.from_table:
+        seed_report = json.loads(args.from_table.read_text())
+        table.pre = seed_report["pre"]
+        table.post = seed_report["post"]
+        table.error = dict(seed_report.get("stderr", {}))
+        print(f"table de départ : « {seed_report['name']} », "
+              f"{seed_report['games']} parties — ses cellules servent de "
+              f"dépendances et ne sont pas rejouées")
+
+    if args.cells:
+        todo = []
+        for token in args.cells.split(","):
+            parts = token.strip().split("-")
+            if parts[0] == "post":
+                todo.append(("post", int(parts[1]), 1))
+            else:
+                todo.append(("pre", int(parts[1]), int(parts[2])))
+        if not args.from_table:
+            print("REFUS : --cells sans --from-table — une cellule isolée n'a "
+                  "pas ses dépendances, et les lire non calculées donnerait un "
+                  "nombre plausible et faux", file=sys.stderr)
+            return 2
+    else:
+        todo = list(cells_in_order(args.max_away, mirror=args.mirror))
     if args.pilot:
         todo = todo[:args.pilot]
 
