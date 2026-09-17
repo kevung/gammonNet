@@ -64,16 +64,26 @@ la même machine, le même jour, au même réglage.**
 |---|---|---|---|
 | **sans élagage** | incumbent | **0,00313** [0,00298 ; 0,00327] | 0 (0,00 %) |
 | **sans élagage** | **candidat** | **0,00245** [0,00233 ; 0,00257] | 136 (1,36 %) |
-| élagué `k=12` | candidat | 0,00266 [0,00253 ; 0,00279] | 215 (2,15 %) |
+| élagué `k=12` | incumbent | 0,00329 [0,00315 ; 0,00344] | 125 (1,25 %) |
+| élagué `k=12` | **candidat** | **0,00266** [0,00253 ; 0,00279] | 215 (2,15 %) |
 
-**Intervalles disjoints : −22 % de perte d'équité par décision.**
+**Intervalles disjoints aux deux réglages : −22 % sans élagage, −19 % avec.** Le verdict ne
+dépend donc pas du réglage, ce qui était la seule façon de s'assurer qu'il ne dépendait pas du
+réseau d'élagage.
+
+Au passage, et ce n'était pas la question : l'élagage `k=12` coûte à l'incumbent **+0,00016** par
+décision (0,00313 → 0,00329) et fait passer 1,25 % de ses décisions hors du registre. C'est
+cohérent avec la mesure de T3D (+0,00023 [−0,00000 ; +0,00067]) qui avait fait de `k=12` le
+défaut.
 
 ### Le piège de protocole, et comment il a été évité
 
 Le premier passage a noté le candidat **avec** élagage `k=12` et l'a comparé à l'étalon 0,00313 —
 qui a été mesuré **sans**. Deux réglages, donc deux moteurs, donc une comparaison sans valeur.
 Le coût le dit : 9,67 h·cœur sur smith pour la note non élaguée contre 4,03 h·cœur sur mochy pour
-l'élaguée, et le rapport des machines (1,55×, mesuré en T70) referme exactement l'écart.
+l'élaguée, et le rapport des machines (1,55×, mesuré en T70) referme exactement l'écart. La
+réparation n'a pas été d'écarter la ligne fautive mais d'en produire la jumelle : l'incumbent a
+été noté à `k=12` à son tour, et les deux réglages portent désormais leur paire.
 
 **L'étalon a d'ailleurs été reproduit au chiffre près sur une autre machine** — 0,00313, même
 intervalle, zéro hors registre — ce qui valide la chaîne des deux côtés avant qu'on lise le
@@ -102,7 +112,7 @@ pas le verdict, c'est sa robustesse.
 
 Le candidat gagne partout sauf sur `prime_vs_prime`, où les deux sont indiscernables :
 
-| classe | incumbent (élagué) | candidat (sans élagage) |
+| classe | incumbent (`k=12`) | candidat (sans élagage) |
 |---|---|---|
 | contact | 0,00272 | **0,00251** |
 | blitz | 0,00243 | **0,00224** |
