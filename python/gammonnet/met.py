@@ -12,6 +12,7 @@ gagne souvent le match, alors qu'en money il vaut deux points comme un autre.
 from __future__ import annotations
 
 import ctypes
+import struct
 from dataclasses import dataclass
 
 from .infer import NUM_OUTPUTS, Evaluation, _ProbArray
@@ -105,3 +106,102 @@ def post_crawford(away_trailer: int) -> float:
     if value < 0.0:
         raise ValueError(f"hors table : poursuivant à {away_trailer}-away")
     return value
+
+
+# ── Changer de table ─────────────────────────────────────────────────
+#
+# La table compilée est celle de Kazaross ; elle sert par défaut et rien n'a
+# besoin d'être appelé pour l'obtenir. T97 en **calcule** une, et doit consulter
+# les cellules qu'elle a déjà produites pendant qu'elle produit les suivantes —
+# d'où ces fonctions, et d'où `table_name()` : une mesure lancée contre une
+# table que personne ne sait nommer après coup n'est pas une mesure.
+
+_MAGIC = b"GNMET1\x00\x00"
+_NAME_MAX = 64
+
+_LIB.gn_met_load.argtypes = [ctypes.c_char_p]
+_LIB.gn_met_load.restype = ctypes.c_int
+
+_LIB.gn_met_set.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int,
+                            ctypes.POINTER(ctypes.c_double), ctypes.c_int,
+                            ctypes.c_char_p]
+_LIB.gn_met_set.restype = ctypes.c_int
+
+_LIB.gn_met_reset.argtypes = []
+_LIB.gn_met_reset.restype = None
+
+_LIB.gn_met_name.argtypes = []
+_LIB.gn_met_name.restype = ctypes.c_char_p
+
+#: Ce que le C refuse — le message porte la raison, jamais le code de retour.
+_REFUSALS = {
+    -1: "fichier introuvable ou illisible",
+    -2: "dimensions différentes de celles que ce build sait lire",
+    -3: "une valeur hors de [0, 1] : ce n'est pas une chance de gain",
+    -4: "fichier tronqué",
+    -5: "ce n'est pas un fichier GNMET1",
+}
+
+
+def _refuse(status: int, what) -> None:
+    raise ValueError(f"{what} refusé — {_REFUSALS.get(status, f'code {status}')}")
+
+
+def table_name() -> str:
+    """Le nom de la table active. Jamais vide."""
+    return _LIB.gn_met_name().decode()
+
+
+def load_table(path) -> str:
+    """Installer la table du fichier `GNMET1`. Rend son nom."""
+    status = _LIB.gn_met_load(str(path).encode())
+    if status != 0:
+        _refuse(status, path)
+    return table_name()
+
+
+def set_table(pre, post, name: str) -> None:
+    """Installer une table tenue en mémoire — `pre[a-1][b-1]`, `post[n-1]`."""
+    flat = [value for row in pre for value in row]
+    if len(flat) != MAX_AWAY * MAX_AWAY or len(post) != MAX_AWAY:
+        raise ValueError(f"table de {len(flat)} et {len(post)} valeurs : "
+                         f"{MAX_AWAY * MAX_AWAY} et {MAX_AWAY} attendues")
+    c_pre = (ctypes.c_double * len(flat))(*flat)
+    c_post = (ctypes.c_double * len(post))(*post)
+    status = _LIB.gn_met_set(c_pre, MAX_AWAY, c_post, MAX_AWAY, name.encode())
+    if status != 0:
+        _refuse(status, name)
+
+
+def reset_table() -> None:
+    """Revenir à la table compilée."""
+    _LIB.gn_met_reset()
+
+
+def write_table(path, pre, post, name: str) -> None:
+    """Écrire un fichier `GNMET1`. Le lecteur est en C ; l'écrivain est ici."""
+    flat = [value for row in pre for value in row]
+    if len(flat) != MAX_AWAY * MAX_AWAY or len(post) != MAX_AWAY:
+        raise ValueError("table de dimensions inattendues")
+
+    encoded = name.encode()[:_NAME_MAX - 1]
+    with open(path, "wb") as handle:
+        handle.write(_MAGIC)
+        handle.write(struct.pack("<ii", MAX_AWAY, MAX_AWAY))
+        handle.write(encoded + b"\x00" * (_NAME_MAX - len(encoded)))
+        handle.write(struct.pack(f"<{len(flat)}d", *flat))
+        handle.write(struct.pack(f"<{len(post)}d", *post))
+
+
+def active_table() -> tuple[list[list[float]], list[float]]:
+    """La table active, relue **par les accesseurs du C**.
+
+    Relire par `gn_met_pre` plutôt que par le tampon Python est délibéré : c'est
+    ce que le moteur consultera réellement. Une table qu'on croit installée et
+    qui ne l'est pas est exactement le mode de défaillance silencieux que la
+    règle n°2 vise.
+    """
+    pre = [[pre_crawford(a, b) for b in range(1, MAX_AWAY + 1)]
+           for a in range(1, MAX_AWAY + 1)]
+    post = [post_crawford(n) for n in range(1, MAX_AWAY + 1)]
+    return pre, post

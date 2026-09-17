@@ -72,12 +72,52 @@ int gn_match_state_is_valid(const GnMatchState *state);
 GnMatchState gn_match_state_swap(GnMatchState state);
 
 /*
+ * WHICH TABLE IS ACTIVE, AND HOW IT IS REPLACED.
+ *
+ * The compiled-in table is Kazaross-XG2 (`gn_met_table.h`). It is the default
+ * and nothing has to be called to get it. Two callers need to replace it:
+ *
+ *   - T97, which COMPUTES a table from this engine's own play and has to
+ *     consult the cells it has already produced while it produces the rest;
+ *   - any artefact that ships a table of this project's own making.
+ *
+ * A mutable global is a way for a measurement to run against a table nobody
+ * can name afterwards. That is why the name travels with the values and
+ * `gn_met_name` exists: every bench that loads a table prints what it loaded.
+ *
+ * `gn_met_load` reads the `GNMET1` file `gn_met_write` produces. It REFUSES a
+ * file whose sizes differ, whose values leave [0, 1], or that is truncated --
+ * a match equity table half-read is a table of plausible wrong numbers.
+ *
+ * Returns 0 on success, negative on refusal. Not thread-safe: replace the
+ * table before the workers start, never while they run.
+ */
+int gn_met_load(const char *path);
+
+/*
+ * Install a table held in memory. `pre` is `size * size` row-major, `post` is
+ * `size` long, both indexed from away-1. Same refusals as `gn_met_load`.
+ */
+int gn_met_set(const double *pre, int pre_size,
+               const double *post, int post_size, const char *name);
+
+/* Back to the compiled-in table. */
+void gn_met_reset(void);
+
+/* The name of the active table. Never NULL. */
+const char *gn_met_name(void);
+
+/*
  * Pre-Crawford table lookup: the match winning chance of a player who needs
  * `away_a` points against an opponent who needs `away_b`.
  *
- * Antisymmetric by construction: `pre(a, b) + pre(b, a) == 1`. Returns -1 for
- * an out-of-range request rather than clamping, because a clamped match equity
- * is a wrong number that looks right.
+ * Antisymmetric for the compiled-in table: `pre(a, b) + pre(b, a) == 1`. A
+ * table installed at runtime is antisymmetric only to the precision it was
+ * computed with -- T97 verifies that on its output rather than imposing it,
+ * since a table that imposes an identity cannot demonstrate it.
+ *
+ * Returns -1 for an out-of-range request rather than clamping, because a
+ * clamped match equity is a wrong number that looks right.
  */
 double gn_met_pre(int away_a, int away_b);
 

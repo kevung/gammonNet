@@ -6,9 +6,127 @@
 
 #include "gn_met.h"
 
+#include <stdint.h>
+#include <stdio.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "gn_met_table.h"
+
+/* ── The active table ─────────────────────────────────────────────────
+ *
+ * Pointers, not a copy: the default costs nothing and stays `const`. A table
+ * installed at runtime lands in the two buffers below and the pointers move.
+ */
+
+#define GN_MET_NAME_MAX 64
+#define GN_MET_MAGIC    "GNMET1\0\0"
+
+static const double *g_pre = &GN_MET_PRE[0][0];
+static const double *g_post = GN_MET_POST;
+static char g_name[GN_MET_NAME_MAX] = "kazaross-xg2";
+
+static double g_loaded_pre[GN_MET_SIZE * GN_MET_SIZE];
+static double g_loaded_post[GN_MET_POST_SIZE];
+
+/* A match winning chance outside [0, 1] is not a rounding accident. NaN
+ * compares false against everything, which is why the test has this shape
+ * rather than the two rejections spelled out. */
+static int is_a_chance(double value)
+{
+    return (value >= 0.0 && value <= 1.0);
+}
+
+int gn_met_set(const double *pre, int pre_size,
+               const double *post, int post_size, const char *name)
+{
+    if (pre == NULL || post == NULL) {
+        return -1;
+    }
+    if (pre_size != GN_MET_SIZE || post_size != GN_MET_POST_SIZE) {
+        return -2;
+    }
+    for (int i = 0; i < pre_size * pre_size; i++) {
+        if (!is_a_chance(pre[i])) {
+            return -3;
+        }
+    }
+    for (int i = 0; i < post_size; i++) {
+        if (!is_a_chance(post[i])) {
+            return -3;
+        }
+    }
+
+    memcpy(g_loaded_pre, pre, sizeof(double) * (size_t)(pre_size * pre_size));
+    memcpy(g_loaded_post, post, sizeof(double) * (size_t)post_size);
+    g_pre = g_loaded_pre;
+    g_post = g_loaded_post;
+
+    snprintf(g_name, sizeof(g_name), "%s", name != NULL ? name : "unnamed");
+    return 0;
+}
+
+int gn_met_load(const char *path)
+{
+    if (path == NULL) {
+        return -1;
+    }
+
+    FILE *file = fopen(path, "rb");
+    if (file == NULL) {
+        return -1;
+    }
+
+    char magic[8];
+    int32_t sizes[2];
+    char name[GN_MET_NAME_MAX];
+    double pre[GN_MET_SIZE * GN_MET_SIZE];
+    double post[GN_MET_POST_SIZE];
+    int status = -4;
+
+    if (fread(magic, 1, sizeof(magic), file) != sizeof(magic) ||
+        memcmp(magic, GN_MET_MAGIC, sizeof(magic)) != 0) {
+        status = -5;
+        goto done;
+    }
+    if (fread(sizes, sizeof(int32_t), 2, file) != 2) {
+        goto done;
+    }
+    if (sizes[0] != GN_MET_SIZE || sizes[1] != GN_MET_POST_SIZE) {
+        status = -2;
+        goto done;
+    }
+    if (fread(name, 1, sizeof(name), file) != sizeof(name)) {
+        goto done;
+    }
+    name[sizeof(name) - 1] = '\0';
+
+    const size_t pre_count = (size_t)(sizes[0] * sizes[0]);
+    if (fread(pre, sizeof(double), pre_count, file) != pre_count) {
+        goto done;
+    }
+    if (fread(post, sizeof(double), (size_t)sizes[1], file) != (size_t)sizes[1]) {
+        goto done;
+    }
+
+    status = gn_met_set(pre, sizes[0], post, sizes[1], name);
+
+done:
+    fclose(file);
+    return status;
+}
+
+void gn_met_reset(void)
+{
+    g_pre = &GN_MET_PRE[0][0];
+    g_post = GN_MET_POST;
+    snprintf(g_name, sizeof(g_name), "%s", "kazaross-xg2");
+}
+
+const char *gn_met_name(void)
+{
+    return g_name;
+}
 
 int gn_match_state_is_valid(const GnMatchState *state)
 {
@@ -44,7 +162,7 @@ double gn_met_pre(int away_a, int away_b)
         away_a > GN_MET_MAX_AWAY || away_b > GN_MET_MAX_AWAY) {
         return -1.0;
     }
-    return GN_MET_PRE[away_a - 1][away_b - 1];
+    return g_pre[(away_a - 1) * GN_MET_SIZE + (away_b - 1)];
 }
 
 double gn_met_post(int away_trailer)
@@ -52,7 +170,7 @@ double gn_met_post(int away_trailer)
     if (away_trailer < 1 || away_trailer > GN_MET_POST_SIZE) {
         return -1.0;
     }
-    return GN_MET_POST[away_trailer - 1];
+    return g_post[away_trailer - 1];
 }
 
 double gn_met_after(const GnMatchState *state, int points, int on_roll_wins)
