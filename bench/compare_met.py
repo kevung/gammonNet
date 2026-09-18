@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -46,23 +47,45 @@ SIGMA_THRESHOLD = 3.0
 ABSOLUTE_THRESHOLD = 0.005
 
 
+def Table_key(away_a: int, away_b: int) -> str:
+    """La clé d'erreur d'une cellule : les deux orientations la partagent."""
+    low, high = min(away_a, away_b), max(away_a, away_b)
+    return f"pre-{low}-{high}"
+
+
 def load_computed(path: Path):
     report = json.loads(path.read_text())
     return report, report["pre"], report["post"], report.get("stderr", {})
 
 
-def identities(pre, post, tolerance: float) -> list[str]:
-    """Ce qui doit tenir sur toute table d'équité de match digne du nom."""
+def identities(pre, post, stderr, sigmas: float = 3.0) -> list[str]:
+    """Ce qui doit tenir sur toute table d'équité de match digne du nom.
+
+    **La tolérance est statistique, pas fixe.** Une table mesurée ne vérifie
+    aucune identité exactement ; elle la vérifie à son erreur-type près. Une
+    tolérance en dur signalerait les cellules les mieux mesurées — l'inverse de
+    ce qu'on veut — et laisserait passer les autres.
+    """
     problems = []
 
-    if abs(pre[0][0] - 0.5) > tolerance:
-        problems.append(f"MET(1,1) = {pre[0][0]:.5f}, 0,5 attendu")
+    def error(key: str) -> float:
+        return stderr.get(key, 0.0)
+
+    def combined(key_a: str, key_b: str) -> float:
+        return math.sqrt(error(key_a) ** 2 + error(key_b) ** 2)
+
+    e11 = error("pre-1-1")
+    if abs(pre[0][0] - 0.5) > sigmas * e11:
+        problems.append(f"MET(1,1) = {pre[0][0]:.5f} ± {e11:.5f}, 0,5 attendu "
+                        f"({abs(pre[0][0] - 0.5) / e11:.1f} σ)")
 
     # Plus on est loin du but, moins on vaut — à adversaire fixé.
     for b in range(len(pre)):
         for a in range(len(pre) - 1):
             if pre[a][b] is None or pre[a + 1][b] is None:
                 continue
+            tolerance = sigmas * combined(Table_key(a + 1, b + 1),
+                                          Table_key(a + 2, b + 1))
             if pre[a + 1][b] > pre[a][b] + tolerance:
                 problems.append(
                     f"monotonie en a : MET({a + 2},{b + 1}) = {pre[a + 1][b]:.5f} "
@@ -73,6 +96,8 @@ def identities(pre, post, tolerance: float) -> list[str]:
         for b in range(len(pre) - 1):
             if pre[a][b] is None or pre[a][b + 1] is None:
                 continue
+            tolerance = sigmas * combined(Table_key(a + 1, b + 1),
+                                          Table_key(a + 1, b + 2))
             if pre[a][b + 1] < pre[a][b] - tolerance:
                 problems.append(
                     f"monotonie en b : MET({a + 1},{b + 2}) = {pre[a][b + 1]:.5f} "
@@ -81,6 +106,7 @@ def identities(pre, post, tolerance: float) -> list[str]:
     for n in range(len(post) - 1):
         if post[n] is None or post[n + 1] is None:
             continue
+        tolerance = sigmas * combined(f"post-{n + 1}", f"post-{n + 2}")
         if post[n + 1] > post[n] + tolerance:
             problems.append(
                 f"monotonie après-Crawford : POST({n + 2}) = {post[n + 1]:.5f} "
@@ -102,8 +128,11 @@ def main() -> int:
     limit = args.max_away or report["max_away"]
 
     print(f"T97 — « {report['name']} » contre Kazaross-XG2")
-    print(f"  {report['games']} parties, {report['cells']} cellules, "
-          f"profondeur {report['ply']} (videau {report['cube_ply']})")
+    print(f"  {report['games']} parties, profondeur {report['ply']} "
+          f"(videau {report['cube_ply']})")
+    if report.get("stderr_scale", 1.0) > 1.0:
+        print(f"  erreurs-types portant le facteur d'échelle "
+              f"×{report['stderr_scale']:.3f} de la réunion des campagnes")
     print(f"  seuil : écart > {SIGMA_THRESHOLD}σ ET > {ABSOLUTE_THRESHOLD} "
           f"en valeur absolue\n")
 
@@ -146,7 +175,7 @@ def main() -> int:
               f"({abs(delta) / error:.1f}σ)" if error else
               f"    {label:14s} nous {ours:.5f}   Kazaross {theirs:.5f}")
 
-    problems = identities(pre, post, tolerance=0.002)
+    problems = identities(pre, post, stderr)
     print(f"\n  identités violées : {len(problems)}")
     for problem in problems[:20]:
         print(f"    {problem}")

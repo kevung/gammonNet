@@ -137,12 +137,27 @@ def main() -> int:
                 chi2_cells += len(values) - 1
 
     reduced = chi2_total / chi2_cells if chi2_cells else float("nan")
-    print(f"\n  χ² réduit entre campagnes : {reduced:.3f} "
+    spread = math.sqrt(2.0 / chi2_cells) if chi2_cells else float("nan")
+    print(f"\n  χ² réduit entre campagnes : {reduced:.3f} ± {spread:.3f} "
           f"sur {chi2_cells} degrés de liberté")
-    if reduced > 1.3:
-        print("  ⚠ les campagnes s'écartent plus que leur erreur-type ne "
-              "l'autorise — soit les erreurs-types sont sous-estimées, soit "
-              "les campagnes ne mesurent pas la même chose")
+
+    # Le facteur d'échelle. La propagation implémentée dans `compute_met.py`
+    # somme les variances des cellules consultées comme si elles étaient
+    # indépendantes ; elles ne le sont pas — deux dépendances partagent leurs
+    # propres dépendances, et la covariance positive qu'on néglige manque au
+    # total. Plutôt que de propager une matrice de covariance à travers
+    # cinquante étages, on mesure ce qui manque : la dispersion entre campagnes
+    # indépendantes EST l'incertitude, et le rapport à ce qu'on avait annoncé
+    # est le facteur qui manque. C'est la pratique des facteurs d'échelle, et
+    # elle est dite plutôt que cachée.
+    scale = math.sqrt(reduced) if reduced > 1.0 else 1.0
+    if scale > 1.0:
+        print(f"  facteur d'échelle appliqué aux erreurs-types : "
+              f"×{scale:.3f}")
+        print("    la propagation néglige la covariance entre dépendances ; "
+              "la dispersion entre campagnes la mesure")
+        for key in stderr:
+            stderr[key] *= scale
     if missing:
         print(f"  {missing} cellules manquent partout")
 
@@ -160,6 +175,7 @@ def main() -> int:
         "games": sum(r["games"] for r in reports),
         "reduced_chi2": reduced,
         "chi2_dof": chi2_cells,
+        "stderr_scale": scale,
         "max_away": MAX_AWAY,
         **{key: reports[0].get(key) for key in SHARED},
         "mirror": reports[0].get("mirror", False),
