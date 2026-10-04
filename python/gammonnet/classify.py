@@ -207,3 +207,19 @@ def classify(position: Position, player: int | None = None) -> str:
         return "holding"
 
     return "contact"
+
+
+def in_race_zone(position: Position) -> bool:
+    """Contact-free, and outside the domain of the exact two-sided bearoff.
+
+    This is the zone a dedicated race evaluator would answer for: no checker can
+    meet another, yet at least one side is not borne in (or has more checkers
+    than the table holds), so neither the table nor the distilled bearoff
+    network applies. It is not the `race` class above: that one is read from
+    the mover's side only, so a position where the mover is borne in while the
+    opponent is not is a `bearoff_noncontact` there and belongs here.
+    """
+    from . import bearoff_net
+
+    return (not position.is_over() and not has_contact(position)
+            and not bearoff_net.contains(position))
