@@ -702,10 +702,10 @@ static int value_sweep(GnCandidate *out, int n, const GnSearchConfig *config,
 
     /*
      * Gather, value together, scatter -- the same three sweeps as
-     * `shallow_fill` just above, and for the same reason: the expensive thing
-     * is far cheaper per item when several items are in flight at once. Here
-     * it is not the weights that are read once but the division latency of
-     * one candidate's bisection that is filled by another's.
+     * `shallow_fill` just above. The cube batch once overlapped one
+     * candidate's bisection with another's; with the breakpoints in closed
+     * form (spec §9) it overlaps nothing, and is kept for its bit-for-bit
+     * contract with the scalar and its single refusal.
      *
      * Terminal plays never reach the model (they are computed), so they are
      * settled in the gather sweep exactly as the scalar path settles them.

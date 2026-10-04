@@ -137,26 +137,21 @@ double gn_cube_value(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
  * The same valuation, for `n` distributions that share one cube state -- the
  * batched form of T85, and the reason it exists is not tidiness.
  *
- * WHAT IS SLOW, AND WHY A BATCH FIXES IT
+ * WHAT WAS SLOW, AND WHAT THE BATCH KEEPS
  *
- * At a score the value of one node is the §9 recursion, and the recursion
- * spends nearly all of itself in `level_solve`: sixty bisection steps per
- * breakpoint, two breakpoints per level, three levels on a typical chain --
- * about 360 steps. Each step is a division whose result decides the next
- * step's input, so the whole thing is ONE serial dependency chain of
- * divisions. Measured: 2 711 ns per valuation inside the search
- * (docs/mesures/2026-09-02-T85-videau-par-lot.md §1), which is latency, not
- * work -- the arithmetic itself would fit in a fraction of that.
- *
- * The bisections of two different candidates are INDEPENDENT. Run `n` of them
- * in lockstep and the divisions of one lane fill the latency of another's:
- * same figure as `gn_evaluate_batch` on the network, same two devices of
- * exactness -- a FIXED lane width and a FIXED iteration count, so a lane's
- * sequence never depends on how many neighbours it travelled with.
+ * At a score the value of one node is the §9 recursion. It used to spend
+ * nearly all of itself in a sixty-step bisection per breakpoint, one serial
+ * chain of divisions (2 711 ns per valuation inside the search,
+ * docs/mesures/2026-09-02-T85-videau-par-lot.md §1), and the batch ran those
+ * bisections in lockstep so that one lane's latency filled another's. The
+ * breakpoints are now solved in closed form (spec §9), so there is no chain
+ * left to overlap: each lane calls the scalar. The entry point stays, with
+ * the same device of exactness -- a FIXED lane width, so a lane's arithmetic
+ * never depends on how many neighbours it travelled with.
  *
  * BIT FOR BIT, PER CANDIDATE. `out[j]` is exactly what `gn_cube_value` would
- * have returned for `probs[j]` alone: the arithmetic is not rearranged, only
- * its order of execution is. `tests/test_cube_batch.py` holds that equality
+ * have returned for `probs[j]` alone: each lane runs the scalar's arithmetic
+ * on the scalar's values. `tests/test_cube_batch.py` holds that equality
  * the way `tests/test_batch.py` holds the network's.
  *
  * `probs` is an array of `n` pointers to distributions -- the search's

@@ -56,7 +56,7 @@ static void live_points(double W, double L, double *tp_live, double *cp_live)
  * piece of every live curve in this file is one of these, so the pieces are
  * named by their endpoints -- the spec's own notation -- rather than by an
  * expanded slope a sign slip could hide in. A degenerate segment (x1 <= x0,
- * which a bisected breakpoint can produce at the extremes) returns its own
+ * which a breakpoint resolved at the extremes can produce) returns its own
  * endpoint rather than dividing by zero. */
 static double segment(double p, double x0, double y0, double x1, double y1)
 {
@@ -216,7 +216,7 @@ double gn_cube_equity(const GnCubeInputs *inputs, GnCubeOwner owner,
  * recursion. The chain terminates on its own: once `k` covers both away
  * scores, no further cube turn can change anything -- the cube is dead and
  * `M(p; k) = M_dead(p; k)` exactly. Level `k`'s breakpoints are then resolved
- * by bisection against the level-`2k` curves coming out of the recursion:
+ * by inverting the level-`2k` curves coming out of the recursion:
  *
  *   TP(k) solves  M_own(p; 2k)  = pass(k)   -- I take a double and own at 2k
  *   CP(k) solves  M_opp(p; 2k)  = cash(k)   -- the opponent takes mine at 2k
@@ -224,7 +224,7 @@ double gn_cube_equity(const GnCubeInputs *inputs, GnCubeOwner owner,
  * Two invariants carried over from v1, both learned the hard way there:
  *
  *   - The dead curve is recomputed at whatever `p` a call asks about, never
- *     cached at the position's own `p` -- the bisections below probe many `p`
+ *     cached at the position's own `p` -- the inversions below read many `p`
  *     that are not the position's, and a cached MWC is silently wrong at
  *     every one of them.
  *   - A pass concedes `k` DRY points (§9: "jamais pondérés gammon") -- the
@@ -308,30 +308,63 @@ static double level_dead(const GnMatchLevel *lv, double p)
  * Monotone non-decreasing in `p` for each state -- lose_avg <= pass <= cash
  * <= win_avg holds by construction (conceding k dry points beats losing an
  * average of k, 2k, 3k; collecting k is worse than winning that average), so
- * every piece rises. That is the property every bisection below stands on.
+ * every piece rises. That is the property `level_solve` stands on.
  */
-static double level_live(const GnMatchLevel *lv, double p, GnCubeOwner owner)
+
+/* One piece of a level curve, named by its endpoints like `segment`'s. */
+typedef struct {
+    double x0, y0, x1, y1;
+} GnLevelSegment;
+
+/* The pieces of the fully-live curve, in ascending `p`: the ONE list both
+ * `level_live` (which piece holds `p`) and `level_solve` (which piece holds
+ * the target) read, so the two cannot disagree about the curve's shape.
+ * Returns how many were written (1 on a dead level, 2 or 3 otherwise). */
+static int level_segments(const GnMatchLevel *lv, GnCubeOwner owner,
+                          GnLevelSegment segs[3])
 {
-    if (lv->dead)
-        return level_dead(lv, p);
+    if (lv->dead) {
+        segs[0] = (GnLevelSegment){ 0.0, lv->lose_avg, 1.0, lv->win_avg };
+        return 1;
+    }
 
     switch (owner) {
     case GN_CUBE_OWNED:
-        return (p <= lv->cp) ? segment(p, 0.0, lv->lose_avg, lv->cp, lv->cash)
-                             : segment(p, lv->cp, lv->cash, 1.0, lv->win_avg);
+        segs[0] = (GnLevelSegment){ 0.0, lv->lose_avg, lv->cp, lv->cash };
+        segs[1] = (GnLevelSegment){ lv->cp, lv->cash, 1.0, lv->win_avg };
+        return 2;
 
     case GN_CUBE_OPPONENT:
-        return (p <= lv->tp) ? segment(p, 0.0, lv->lose_avg, lv->tp, lv->pass)
-                             : segment(p, lv->tp, lv->pass, 1.0, lv->win_avg);
+        segs[0] = (GnLevelSegment){ 0.0, lv->lose_avg, lv->tp, lv->pass };
+        segs[1] = (GnLevelSegment){ lv->tp, lv->pass, 1.0, lv->win_avg };
+        return 2;
 
     case GN_CUBE_CENTRED:
     default:
-        if (p <= lv->tp)
-            return segment(p, 0.0, lv->lose_avg, lv->tp, lv->pass);
-        if (p <= lv->cp)
-            return segment(p, lv->tp, lv->pass, lv->cp, lv->cash);
-        return segment(p, lv->cp, lv->cash, 1.0, lv->win_avg);
+        segs[0] = (GnLevelSegment){ 0.0, lv->lose_avg, lv->tp, lv->pass };
+        segs[1] = (GnLevelSegment){ lv->tp, lv->pass, lv->cp, lv->cash };
+        segs[2] = (GnLevelSegment){ lv->cp, lv->cash, 1.0, lv->win_avg };
+        return 3;
     }
+}
+
+static double level_live(const GnMatchLevel *lv, double p, GnCubeOwner owner)
+{
+    GnLevelSegment segs[3];
+    int n, i;
+
+    /* The dead line evaluates as `level_dead` does, not through `segment`:
+     * the two forms round differently, and the dead cube is `level_dead`. */
+    if (lv->dead)
+        return level_dead(lv, p);
+
+    /* A breakpoint belongs to the piece on its left (`p <= x1`). */
+    n = level_segments(lv, owner, segs);
+    for (i = 0; i < n - 1; i++) {
+        if (p <= segs[i].x1)
+            break;
+    }
+    return segment(p, segs[i].x0, segs[i].y0, segs[i].x1, segs[i].y1);
 }
 
 /* `M(x) = (1-x)*M_dead + x*M_live` -- §9's interpolation, money's §3 verbatim. */
@@ -342,28 +375,47 @@ static double level_blend(const GnMatchLevel *lv, double p, GnCubeOwner owner,
            efficiency * level_live(lv, p, owner);
 }
 
-/* The `p` where a monotone level curve crosses `target` -- the §9 bisection
- * ("les fonctions sont piecewise-linéaires monotones"). `blend < 0` bisects
- * the fully-live curve (breakpoint resolution inside the recursion);
- * otherwise the curve blended at that efficiency (the reported take point). */
+/*
+ * The `p` where a monotone level curve reaches `target`, in closed form (§9:
+ * "les fonctions sont piecewise-linéaires monotones"). The curve's pieces are
+ * known in advance, so the inversion is: find the piece whose endpoint values
+ * bracket the target, and solve that one straight line.
+ *
+ * `blend < 0` inverts the fully-live curve (breakpoint resolution inside the
+ * recursion); otherwise the curve blended at that efficiency (the reported
+ * take point). Blending the endpoints is exact: `M_dead` is affine on the
+ * whole of [0, 1], so the blended curve is affine on the SAME pieces.
+ *
+ * The answer is `inf{ p : f(p) >= target }`, clamped to [0, 1]: a target at
+ * or under f(0) answers 0, one above f(1) answers 1, and a flat piece answers
+ * its left bound. A degenerate piece (x1 <= x0) covers no `p` and is skipped.
+ */
 static double level_solve(const GnMatchLevel *lv, GnCubeOwner owner,
                           double blend, double target)
 {
-    double low = 0.0, high = 1.0;
+    GnLevelSegment segs[3];
+    const int n = level_segments(lv, owner, segs);
     int i;
 
-    for (i = 0; i < 60; i++) {
-        const double mid = 0.5 * (low + high);
-        const double value = (blend < 0.0)
-            ? level_live(lv, mid, owner)
-            : level_blend(lv, mid, owner, blend);
-        if (value < target) {
-            low = mid;
-        } else {
-            high = mid;
+    for (i = 0; i < n; i++) {
+        const GnLevelSegment s = segs[i];
+        double v0 = s.y0, v1 = s.y1;
+
+        if (s.x1 - s.x0 <= 0.0)
+            continue;
+        if (blend >= 0.0) {
+            v0 = (1.0 - blend) * level_dead(lv, s.x0) + blend * s.y0;
+            v1 = (1.0 - blend) * level_dead(lv, s.x1) + blend * s.y1;
+        }
+        if (target <= v0)
+            return s.x0;
+        if (target <= v1) {
+            if (v1 - v0 <= 0.0)
+                return s.x0;
+            return s.x0 + (s.x1 - s.x0) * ((target - v0) / (v1 - v0));
         }
     }
-    return 0.5 * (low + high);
+    return 1.0;
 }
 
 /*
@@ -378,7 +430,7 @@ static double level_solve(const GnMatchLevel *lv, GnCubeOwner owner,
  * ever moves).
  *
  * Breakpoints are then resolved backwards, deepest first, so each level's
- * bisection targets a fully-built `2k` level. This iterative form IS §9's
+ * inversion targets a fully-built `2k` level. This iterative form IS §9's
  * memoised recursion: each (state, k) is computed once, from the base case
  * down.
  */
@@ -442,7 +494,7 @@ static int build_level_anchors(const GnMatchState *state,
     return count;
 }
 
-/* The breakpoints, deepest first, so each level's bisection targets a
+/* The breakpoints, deepest first, so each level's inversion targets a
  * fully-built `2k` level. Verbatim what `build_levels` always did after its
  * anchor loop. */
 static void resolve_levels(GnMatchLevel *levels, int count)
@@ -525,29 +577,19 @@ double gn_cube_value(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
 /* ── T85: the same valuation, `n` candidates at a time ───────────────── */
 
 /*
- * WHY THIS IS HERE AND NOT A LOOP AT THE CALL SITE
+ * WHAT THE BATCH STILL BUYS
  *
- * `level_solve` is one serial chain: sixty steps, each a division whose
- * result chooses the next step's input. Nothing in a processor can overlap
- * that with itself. It CAN overlap it with another candidate's, because the
- * bisections of two candidates share nothing -- and the search always has a
- * whole sibling loop of candidates in hand when it values one of them
- * (`value_sweep`, gn_search.c).
+ * The breakpoints were once a sixty-step bisection, a serial chain the batch
+ * overlapped across lanes. `level_solve` is now a closed form -- a handful of
+ * comparisons and one division -- so there is no chain left to overlap, and
+ * each lane simply calls the scalar. What the batch keeps is its contract:
+ * `out[j]` is, bit for bit, what `gn_cube_value` returns for that item alone,
+ * because every lane runs the scalar's arithmetic on the scalar's values.
  *
- * So the batch runs the sixty steps for every lane in lockstep: iteration by
- * iteration across the lanes, rather than lane by lane across the iterations.
- * The arithmetic per lane is the same arithmetic, in the same order, on the
- * same values -- only the interleaving changes, which is why the result is
- * bit for bit the scalar's.
- *
- * TWO DEVICES OF EXACTNESS, THE SAME TWO AS `forward_batch`
- *
- *   - A FIXED lane width. A chunk is filled to at most GN_CUBE_BATCH and the
- *     tail chunk simply runs fewer lanes; no lane's arithmetic depends on how
- *     many neighbours it has.
- *   - A FIXED iteration count. Sixty steps, always, exactly as the scalar --
- *     never "until the lanes have converged", which would make one lane's
- *     answer depend on another's.
+ * A FIXED lane width remains the device of exactness, the same as
+ * `forward_batch`'s: a chunk is filled to at most GN_CUBE_BATCH and the tail
+ * chunk simply runs fewer lanes; no lane's arithmetic depends on how many
+ * neighbours it has.
  *
  * WHAT IS DELIBERATELY *NOT* DONE HERE
  *
@@ -561,50 +603,27 @@ double gn_cube_value(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
  */
 
 /*
- * One breakpoint, resolved for every lane at once.
+ * One breakpoint, resolved for every lane.
  *
  * `owner == GN_CUBE_OWNED` resolves `tp` against the level above's owned
  * curve and this level's `pass`; `GN_CUBE_OPPONENT` resolves `cp` against its
  * opponent curve and this level's `cash`. That is `resolve_levels`, split by
- * breakpoint instead of by candidate.
- *
- * The update is written as two selects rather than an if/else on purpose: the
- * comparison is unpredictable by construction (a bisection is a coin flip at
- * every step), so a branch here costs a misprediction per lane per iteration
- * -- and a select over a value the lane already holds is the identical
- * assignment.
+ * breakpoint instead of by candidate -- the same call on the same values.
  */
 static void solve_lanes(GnMatchLevel (*levels)[GN_CUBE_MAX_LEVELS], int lanes,
                         int level, GnCubeOwner owner)
 {
-    double low[GN_CUBE_BATCH], high[GN_CUBE_BATCH], target[GN_CUBE_BATCH];
-    int j, it;
+    int j;
 
     for (j = 0; j < lanes; j++) {
-        low[j] = 0.0;
-        high[j] = 1.0;
-        target[j] = (owner == GN_CUBE_OWNED) ? levels[j][level].pass
-                                             : levels[j][level].cash;
-    }
-
-    for (it = 0; it < 60; it++) {
-        for (j = 0; j < lanes; j++) {
-            const double mid = 0.5 * (low[j] + high[j]);
-            const double value = level_live(&levels[j][level + 1], mid, owner);
-            const int below = (value < target[j]);
-
-            low[j] = below ? mid : low[j];
-            high[j] = below ? high[j] : mid;
-        }
-    }
-
-    for (j = 0; j < lanes; j++) {
-        const double p = 0.5 * (low[j] + high[j]);
-
         if (owner == GN_CUBE_OWNED)
-            levels[j][level].tp = p;
+            levels[j][level].tp = level_solve(&levels[j][level + 1],
+                                              GN_CUBE_OWNED, -1.0,
+                                              levels[j][level].pass);
         else
-            levels[j][level].cp = p;
+            levels[j][level].cp = level_solve(&levels[j][level + 1],
+                                              GN_CUBE_OPPONENT, -1.0,
+                                              levels[j][level].cash);
     }
 }
 
@@ -804,9 +823,9 @@ int gn_cube_decide(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
         out->equity_no_double = e_nd;
         out->equity_double = e_double;
         /* The opponent's take point at the doubled stake, on the curve the
-         * decision actually used -- blended at this efficiency, bisected
-         * because no closed form survives the score (v1's reasoning, which
-         * the recursion does not change). */
+         * decision actually used -- blended at this efficiency, and inverted
+         * on that level's pieces: no closed form survives the score as a
+         * single formula, but each piece is a straight line. */
         out->take_point = level_solve(&levels[1], GN_CUBE_OPPONENT, efficiency,
                                       e_dp);
 

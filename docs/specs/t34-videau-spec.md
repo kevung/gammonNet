@@ -201,7 +201,13 @@ ce que `gn_cube_value(probs[j], …)` aurait rendu seul. Les §2, §3 et §9 son
 | étape | dépend de | mise en lot |
 |---|---|---|
 | les **ancres** d'un niveau (`lose_avg`, `win_avg`, `pass`, `cash`) | de ce candidat seul | non — chaque voie les calcule pour elle |
-| les **points de rupture** (`tp`, `cp`), par bissection contre le niveau `2k` | du niveau au-dessus | **oui** |
+| les **points de rupture** (`tp`, `cp`), par inversion du niveau `2k` (§9) | du niveau au-dessus | **oui** |
+
+> **Révision du 2026-10-04.** Les points de rupture sont désormais résolus en forme close (§9) :
+> il n'y a plus de chaîne sérielle à recouvrir, et chaque voie appelle simplement le scalaire.
+> Le lot garde son contrat (bit à bit avec le scalaire, largeur de voie fixe, refus unique) ;
+> l'invariant 2 ci-dessous (« soixante pas, toujours ») est sans objet. Le raisonnement qui suit
+> décrit la version bissectée, pour l'histoire de la mesure T85.
 
 `build_levels` est donc coupé en `build_level_anchors` + `resolve_levels`, et c'est la seconde
 moitié qui passe en lot. La raison est une propriété du matériel, pas du modèle : une bissection
@@ -314,8 +320,9 @@ constantes (même simplification que la v1, énoncée) :
 - **Mort partout** si `k` couvre les deux scores (cas de base).
 - **Je possède (`k`)** : linéaire de `(0, MWClose_avg(k))` à `(CP, M_pass(k))`, puis
   `max(M_pass(k), M_dead(p;k))` (trop bon). `CP` résout `M_adverse(CP; 2k) = M_pass(k)` — la
-  fonction adverse au niveau `2k` venant de la récursion, la résolution par bissection (les
-  fonctions sont piecewise-linéaires monotones).
+  fonction adverse au niveau `2k` venant de la récursion, la résolution **en forme close**
+  (voir ci-dessous : les fonctions sont piecewise-linéaires monotones, et leurs morceaux sont
+  connus d'avance).
 - **Adversaire possède** et **centré** : miroir et combinaison, comme au §2, avec les bornes
   résolues contre les fonctions récursives au niveau `2k`.
 - **Interpolation** : `M(x) = (1−x)·M_dead + x·M_live` — le `x` money transporté, même réserve
@@ -324,6 +331,36 @@ constantes (même simplification que la v1, énoncée) :
   1-away déclenche le cas de base (tout gain finit le match), le double systématique du mené
   émerge de la récursion comme en v1.
 - Mémoïser les fonctions par `(état, k)` ; le coût est négligeable.
+
+### L'inversion d'un niveau, en forme close *(révisé le 2026-10-04)*
+
+Chaque point de rupture (`TP(k)`, `CP(k)`) et le point de prise rapporté inversent une courbe
+de niveau : trouver le `p` où elle atteint une cible. La courbe est piecewise-linéaire et
+monotone, et ses morceaux sont **connus d'avance** — ce sont ceux entre lesquels la courbe vive
+choisit : `(0, MWClose_avg) → (TP, M_pass) → (CP, M_cash) → (1, MWCwin_avg)` au centre, deux
+morceaux quand un joueur possède, un seul sur un niveau mort. L'inversion est donc :
+
+1. parcourir ces morceaux `(x0, y0) → (x1, y1)` par `p` croissant, en sautant les morceaux
+   dégénérés (`x1 ≤ x0`, qui ne couvrent aucun `p`) ;
+2. sur la courbe mélangée (`M(x) = (1−x)·M_dead + x·M_live`, le point de prise), mélanger les
+   **extrémités** — exact, parce que `M_dead` est affine sur tout `[0, 1]` : la courbe mélangée
+   est affine sur les mêmes morceaux ;
+3. dans le premier morceau dont les valeurs d'extrémité `v0 ≤ cible ≤ v1` encadrent la cible,
+   rendre `x0 + (x1 − x0)·(cible − v0)/(v1 − v0)`.
+
+**Conventions** : la réponse est `inf{ p : f(p) ≥ cible }`, écrêtée à `[0, 1]` — une cible
+sous `f(0)` rend 0, une cible au-dessus de `f(1)` rend 1, un morceau plat rend sa borne gauche.
+La liste des morceaux est extraite une seule fois (`level_segments`) et lue par l'évaluation
+(`level_live`) comme par l'inversion (`level_solve`) : les deux ne peuvent pas diverger sur la
+forme de la courbe.
+
+Cette forme remplace une bissection à soixante pas, qui convergeait vers la même borne
+inférieure. **Elle n'est pas bit-identique** : mesuré sur 2 320 décisions de videau (money et
+score, tous possesseurs, Jacoby, Crawford), aucun refus ni aucune action ne change, les équités
+bougent d'au plus 2,2·10⁻¹⁶ (un ulp) et le point de prise de 1,7·10⁻¹⁴ — l'écart d'une
+bissection qui n'atteint jamais 1 quand la cible dépasse `f(1)`, où la forme close rend 1
+exactement. Sur 126 décisions de recherche 2-ply avec le videau, aucun coup ni aucun ordre ne
+change, équités à 2,2·10⁻¹⁶ près.
 
 ### Les ancres de validation
 
