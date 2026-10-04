@@ -57,4 +57,5 @@ Position ID
 | `gn_search_equity` | l'équité **avant le jet** — ce dont une décision de videau a besoin |
 | `gn_search_probs` | la distribution avant le jet |
 | `gn_cube_decide` | la décision de videau |
+| `gn_cube_decide_ex` | la même, avec beaver et raccoon en money (champ `beaver` distinct) |
 | `gn_rollout` | l'arbitre |

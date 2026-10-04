@@ -47,12 +47,25 @@ class _CCubeInputs(ctypes.Structure):
     ]
 
 
+class _CCubeBeaver(ctypes.Structure):
+    _fields_ = [
+        ("enabled", ctypes.c_int),
+        ("action", ctypes.c_int),
+        ("equity_double", ctypes.c_double),
+        ("equity_take", ctypes.c_double),
+        ("equity_beaver", ctypes.c_double),
+        ("beaver", ctypes.c_int),
+        ("raccoon", ctypes.c_int),
+    ]
+
+
 class _CCubeDecision(ctypes.Structure):
     _fields_ = [
         ("action", ctypes.c_int),
         ("equity_no_double", ctypes.c_double),
         ("equity_double", ctypes.c_double),
         ("take_point", ctypes.c_double),
+        ("beaver", _CCubeBeaver),
     ]
 
 
@@ -86,6 +99,17 @@ _LIB.gn_cube_decide.argtypes = [
     ctypes.POINTER(_CCubeDecision),
 ]
 _LIB.gn_cube_decide.restype = ctypes.c_int
+
+_LIB.gn_cube_decide_ex.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.c_int,
+    ctypes.POINTER(_CMatchState),
+    ctypes.c_double,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.POINTER(_CCubeDecision),
+]
+_LIB.gn_cube_decide_ex.restype = ctypes.c_int
 
 _LIB.gn_cube_value.argtypes = [
     ctypes.POINTER(ctypes.c_float),
@@ -147,6 +171,24 @@ class CubeInputs:
 
 
 @dataclass(frozen=True)
+class BeaverDecision:
+    """La décision quand l'adversaire peut beaver et le doubleur raccooner —
+    `docs/specs/t34-videau-spec.md` §4bis, money seulement.
+
+    Équités par unité du videau courant, du côté du doubleur. `action` est le
+    verdict avec beaver ; `DOUBLE_TAKE` y couvre « pris » comme « beavé », que
+    `beaver` distingue. `raccoon` répond à un beaver, qu'il ait été juste ou non.
+    """
+
+    action: CubeAction
+    equity_double: float
+    equity_take: float
+    equity_beaver: float
+    beaver: bool
+    raccoon: bool
+
+
+@dataclass(frozen=True)
 class CubeDecision:
     """Le verdict, et les équités des branches qui l'expliquent.
 
@@ -159,6 +201,7 @@ class CubeDecision:
     equity_no_double: float
     equity_double: float
     take_point: float
+    beaver: BeaverDecision | None = None
 
 
 def decide(
@@ -167,6 +210,7 @@ def decide(
     efficiency: float,
     state: MatchState | None = None,
     jacoby: bool = True,
+    beaver: bool = False,
 ) -> CubeDecision:
     """La décision de videau, money ou match selon `state`.
 
@@ -175,22 +219,43 @@ def decide(
     en match ». Sans effet quand `state` est fourni : la table d'équité de
     match prend déjà les gammons en compte au score, ce que Jacoby ne fait
     qu'approcher en money.
+
+    `beaver` : la règle du beaver et du raccoon (§4bis). Elle remplit le champ
+    `beaver` en money et laisse les autres tels quels ; sans effet en match,
+    où le champ reste `None`.
     """
     buffer = _ProbArray(*evaluation.as_tuple())
     c_state = ctypes.byref(state._to_c()) if state is not None else None
     out = _CCubeDecision()
 
-    result = _LIB.gn_cube_decide(
-        buffer, int(owner), c_state, efficiency, int(jacoby), ctypes.byref(out)
+    result = _LIB.gn_cube_decide_ex(
+        buffer,
+        int(owner),
+        c_state,
+        efficiency,
+        int(jacoby),
+        int(beaver),
+        ctypes.byref(out),
     )
     if result != 0:
         raise ValueError(f"décision refusée : état de match non évaluable ({state})")
 
+    rule = None
+    if out.beaver.enabled:
+        rule = BeaverDecision(
+            action=CubeAction(out.beaver.action),
+            equity_double=out.beaver.equity_double,
+            equity_take=out.beaver.equity_take,
+            equity_beaver=out.beaver.equity_beaver,
+            beaver=bool(out.beaver.beaver),
+            raccoon=bool(out.beaver.raccoon),
+        )
     return CubeDecision(
         action=CubeAction(out.action),
         equity_no_double=out.equity_no_double,
         equity_double=out.equity_double,
         take_point=out.take_point,
+        beaver=rule,
     )
 
 

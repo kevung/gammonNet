@@ -199,6 +199,45 @@ GnCubeAction gn_cube_verdict(double e_nd, double e_dt, double e_dp);
 GnCubeOwner gn_cube_mirror(GnCubeOwner owner);
 
 
+/*
+ * The same decision when the opponent may BEAVER and the doubler may then
+ * RACCOON -- a money-only session rule, spec §4bis.
+ *
+ * Beaver: the taker of a double immediately redoubles while keeping the cube,
+ * so the game is played for 4c with the opponent owning it. Raccoon: the
+ * original doubler answers a beaver by redoubling to 8c, keeping the cube in
+ * turn. Neither can be declined. One raccoon, no further round.
+ *
+ * Kept apart from the plain fields on purpose: those stay the no-beaver
+ * answer, bit for bit, whatever the flag says, so a caller that does not play
+ * beavers reads exactly what it read before. Every equity below is per unit of
+ * the current cube, from the doubler's side, on the plain fields' scale.
+ */
+typedef struct {
+    /* 1 when computed: money (`state == NULL`) with the flag set. Otherwise
+     * every other field is zero. */
+    int enabled;
+    /* The verdict with beavers on the table. GN_DOUBLE_TAKE covers both
+     * "taken" and "beavered": what tells them apart is `beaver`. */
+    GnCubeAction action;
+    /* min(pass, take, beaver): what doubling is worth once the opponent picks
+     * the answer that is best for him. */
+    double equity_double;
+    /* Double, taken: 2 · E(opponent owns). Equal to the plain decision's take
+     * branch; repeated so the three answers sit side by side. */
+    double equity_take;
+    /* Double, beavered: 4 · E(opponent owns), or 8 · E(I own) when the
+     * raccoon pays -- the doubler answers the beaver at his best. */
+    double equity_beaver;
+    /* The opponent's best answer to a double is a beaver: strictly better
+     * for him than both taking and passing. A tie is a plain take. */
+    int beaver;
+    /* Should the doubler, once beavered, raccoon: 8 · E(I own) strictly above
+     * 4 · E(opponent owns). Answered whether or not beavering was right, so
+     * an actual beaver can be judged too. */
+    int raccoon;
+} GnCubeBeaver;
+
 typedef struct {
     GnCubeAction action;
     /* Equity of doubling and of not doubling, on the same scale, so the caller
@@ -208,6 +247,8 @@ typedef struct {
     double equity_double;
     /* The opponent's take point at this state, for reporting. */
     double take_point;
+    /* The beaver/raccoon answer; `enabled == 0` unless asked for. */
+    GnCubeBeaver beaver;
 } GnCubeDecision;
 
 /*
@@ -235,6 +276,16 @@ typedef struct {
 int gn_cube_decide(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
                    const GnMatchState *state, double efficiency, int jacoby,
                    GnCubeDecision *out);
+
+/*
+ * `gn_cube_decide` with the beaver rule: `beaver` non-zero fills
+ * `out->beaver` in a money game (spec §4bis). The plain fields are those of
+ * `gn_cube_decide`, computed by the same code. In a match (`state != NULL`)
+ * the flag is without effect: beavers are a money-session rule.
+ */
+int gn_cube_decide_ex(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
+                      const GnMatchState *state, double efficiency, int jacoby,
+                      int beaver, GnCubeDecision *out);
 
 #ifdef __cplusplus
 }

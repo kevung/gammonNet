@@ -144,6 +144,37 @@ juste de 0,001 et une juste de 0,5 ne sont pas la même décision.
 est calculée avec `W` et `L` ramenés à 1 (les gammons ne comptent pas avant le premier double).
 Défaut : actif en money, sans objet en match.
 
+## 4bis. Beaver et raccoon (money)
+
+Règle de session, **money seulement**, sous un drapeau (`gn_cube_decide_ex`, `beaver`). Éteint,
+rien ne change ; allumé, le résultat va dans un champ **distinct** (`GnCubeDecision.beaver`) et
+les champs du §4 restent ceux du §4, bit à bit.
+
+- **Beaver** : l'adversaire qui prend redouble aussitôt en gardant le videau — partie à `4c`,
+  videau chez l'adversaire.
+- **Raccoon** : le doubleur beavé redouble aussitôt en gardant le videau — partie à `8c`, videau
+  chez le doubleur. Ni l'un ni l'autre ne se refuse ; un seul raccoon, pas de tour suivant.
+
+Le modèle ne change pas : chaque branche est un multiple entier des deux courbes du §2–§3.
+
+```
+E_dt = 2c · E(x; adversaire possède)                 # pris
+E_bv = max(4c · E(x; adversaire possède),            # beavé, pas de raccoon
+           8c · E(x; je possède))                    # beavé, raccoon
+raccoon  ⇔ 8 · E(je possède) > 4 · E(adversaire possède)
+beaver   ⇔ E_bv < E_dt  et  E_bv < E_dp              # égalité : simple prise
+E_double = min(E_dp, E_dt, E_bv)
+```
+
+Le verdict est la table du §4 appliquée à `(E_nd, min(E_dt, E_bv), E_dp)` ; `DOUBLE_TAKE` y
+couvre « pris » comme « beavé », que le drapeau `beaver` distingue. Jacoby ne touche que `E_nd`,
+comme au §4. `raccoon` est rendu même quand beaver est une erreur, pour juger un beaver joué.
+
+**Ancrages (gammonless)** — à `x = 0`, `e = 2p − 1` dans tous les états : beaver ⇔ `p < 1/2`,
+raccoon ⇔ `p > 1/2` (donc jamais les deux), passe ⇔ `p > 3/4`. À `x = 1` : raccoon ⇔ `p > 0,2`,
+beaver ⇔ `p < 1/3` — entre `0,2` et `1/3`, beaver **puis** raccoon. Avec `W = 2, L = 1` à
+`x = 0` (`e = 3p − 1`) : beaver ⇔ `p < 1/3`, raccoon ⇔ `p > 1/3`.
+
 ## 5. La décision en match
 
 Même mécanique, sur l'échelle **MWC**, via `gn_met` :

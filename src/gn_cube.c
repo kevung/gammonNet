@@ -759,16 +759,70 @@ GnCubeAction gn_cube_verdict(double e_nd, double e_dt, double e_dp)
     return GN_NO_DOUBLE;
 }
 
+/*
+ * Spec §4bis: the opponent's three answers to a double, and the doubler's
+ * answer to a beaver. Every branch is a whole-cube multiple of the SAME two
+ * Janowski curves the plain decision uses -- a beaver and a raccoon change the
+ * stake and who holds the cube, never the model -- so nothing here can move
+ * the plain fields.
+ */
+static void decide_beaver(const GnCubeInputs *in, GnCubeOwner owner,
+                          double efficiency, double e_nd, GnCubeBeaver *out)
+{
+    const double e_theirs = janowski_equity(in->win, in->win_points,
+                                            in->lose_points, GN_CUBE_OPPONENT,
+                                            efficiency);
+    const double e_mine = janowski_equity(in->win, in->win_points,
+                                          in->lose_points, GN_CUBE_OWNED,
+                                          efficiency);
+    const double e_dp = 1.0;
+    const double e_dt = 2.0 * e_theirs;
+    const double e_beavered = 4.0 * e_theirs;
+    const double e_raccooned = 8.0 * e_mine;
+    double e_bv, e_answer;
+
+    out->enabled = 1;
+    out->raccoon = e_raccooned > e_beavered;
+    e_bv = out->raccoon ? e_raccooned : e_beavered;
+    out->beaver = e_bv < e_dt && e_bv < e_dp;
+
+    /* The opponent takes or beavers, whichever hurts the doubler more; the
+     * verdict table then weighs that against passing exactly as it weighs a
+     * plain take. */
+    e_answer = (e_bv < e_dt) ? e_bv : e_dt;
+    out->equity_take = e_dt;
+    out->equity_beaver = e_bv;
+    out->equity_double = (e_answer < e_dp) ? e_answer : e_dp;
+    out->action = (owner == GN_CUBE_OPPONENT)
+        ? GN_NO_DOUBLE
+        : gn_cube_verdict(e_nd, e_answer, e_dp);
+    if (owner == GN_CUBE_OPPONENT) {
+        /* No double to answer: the hypothetical replies would describe a
+         * move the player on roll cannot make. */
+        out->beaver = 0;
+        out->raccoon = 0;
+    }
+}
+
 int gn_cube_decide(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
                    const GnMatchState *state, double efficiency, int jacoby,
                    GnCubeDecision *out)
 {
+    return gn_cube_decide_ex(probs, owner, state, efficiency, jacoby, 0, out);
+}
+
+int gn_cube_decide_ex(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
+                      const GnMatchState *state, double efficiency, int jacoby,
+                      int beaver, GnCubeDecision *out)
+{
+    static const GnCubeBeaver no_beaver = {0};
     GnCubeInputs inputs;
 
     if (!probs || !out)
         return -1;
     if (gn_cube_inputs(probs, &inputs) != 0)
         return -1;
+    out->beaver = no_beaver;
 
     if (state == NULL) {
         /* Money. Jacoby (spec §4): only the "don't double" branch is affected,
@@ -803,6 +857,8 @@ int gn_cube_decide(const float probs[GN_NUM_OUTPUTS], GnCubeOwner owner,
         out->action = (owner == GN_CUBE_OPPONENT)
             ? GN_NO_DOUBLE
             : gn_cube_verdict(e_nd, e_dt, e_dp);
+        if (beaver)
+            decide_beaver(&inputs, owner, efficiency, e_nd, &out->beaver);
         return 0;
     }
 
