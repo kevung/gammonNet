@@ -140,6 +140,9 @@ def test_export_matches_gn_search_level_exactly(reference_export):
         level = search_level(name)
         assert entry["ply"] == level.ply, name
         assert tuple(entry["filter"]) == level.filter[: level.ply + 1], name
+        assert tuple(entry["filter_extra"]) == level.filter_extra[: level.ply + 1], name
+        assert tuple(entry["filter_threshold"]) == pytest.approx(
+            level.filter_threshold[: level.ply + 1]), name
         assert entry["prune_k"] == level.prune_k, name
         assert entry["prune_equity_loss"] == pytest.approx(level.prune_equity_loss), name
         assert entry["prune_equity_loss_ci"][0] == pytest.approx(

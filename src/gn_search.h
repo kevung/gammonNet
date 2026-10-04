@@ -90,15 +90,39 @@ typedef struct {
     int ply;
 
     /*
-     * Move filter: how many candidates survive to be searched deeper, per ply.
-     * `filter[d]` applies at depth d, 0 meaning no filtering.
+     * Move filter: which candidates survive to be searched deeper, per ply.
+     * Index d applies at depth d. A TRIPLET per depth -- (accept, extra,
+     * threshold) -- in the shape of the reference engines' move filters:
+     *
+     *   - `filter[d]` (accept): the best `accept` candidates of the shallow
+     *     ranking are always searched deeper;
+     *   - `filter_extra[d]` (extra): up to `extra` more are searched deeper,
+     *     in ranking order, as long as their shallow equity is within
+     *     `filter_threshold[d]` of the BEST candidate's -- the first one that
+     *     is not stops the walk (the ranking is sorted, so none after it is);
+     *   - `accept == 0 && extra == 0` means no filtering at all: every
+     *     candidate is searched deeper.
+     *
+     * So at most `accept + extra` candidates are deepened, at least
+     * `min(accept, n)`, and the threshold decides the band in between. With
+     * `extra == 0` the threshold is never read and the filter is the plain
+     * count it was before the triplet existed -- bit for bit, which a test
+     * holds rather than this comment. A zero-initialised config (what
+     * `gn_search_config` returns) is therefore unchanged.
+     *
+     * The threshold is in the search's own scale at that node: cubeless money
+     * equity, or match equity under `use_match` (cubeful under `use_cube`) --
+     * the scale the shallow ranking sorts on, never a rescaled one.
      *
      * This is T31's mechanism and what makes 2-ply practicable: the candidates
      * are ranked by a shallow search and only the best few are re-searched
      * deeply. It trades quality for speed, so the trade must be MEASURED, never
      * assumed -- a filter that "changes nothing" has not been measured.
+     * `gn_search_set_filter` sets one depth's triplet.
      */
     int filter[GN_MAX_PLY + 1];
+    int filter_extra[GN_MAX_PLY + 1];
+    double filter_threshold[GN_MAX_PLY + 1];
 
     /* Non-zero to value nodes through the match equity table rather than as
      * cubeless money. See the note above. */
@@ -164,9 +188,10 @@ typedef struct {
      * network is the exact failure `CLAUDE.md` rule 2 is about. A caller that
      * needs every legal play scored by the big network must turn pruning off.
      *
-     * `prune_k` is raised to `filter[depth]` where that is larger: pruning
-     * below the filter would silently search fewer candidates than the caller
-     * asked for, and no test would see it.
+     * `prune_k` is raised to `filter[depth] + filter_extra[depth]` (the most
+     * the move filter can deepen) where that is larger: pruning below the
+     * filter would silently search fewer candidates than the caller asked
+     * for, and no test would see it.
      */
     const GnNetwork *prune_net;
     int prune_k;
@@ -176,6 +201,14 @@ typedef struct {
  * lets through to the big one; `k <= 0` or `net == NULL` turns it off. */
 void gn_search_use_prune(GnSearchConfig *config, const GnNetwork *prune_net,
                          int k);
+
+/* Set the move filter at `depth` to the triplet (accept, extra, threshold) --
+ * see `GnSearchConfig::filter`. Returns 0, or -1 (config untouched) for a NULL
+ * config, a depth outside [0, GN_MAX_PLY], a negative count, or a negative or
+ * non-finite threshold: a filter that cannot be what the caller meant is
+ * refused, never clamped into something else. */
+int gn_search_set_filter(GnSearchConfig *config, int depth, int accept,
+                         int extra, double threshold);
 
 /* Add cubeful leaf valuation to a config (money or match, per `use_match`).
  * `owner` is the cube as the ROOT player sees it. `efficiency` is MEASURED
@@ -359,6 +392,8 @@ typedef struct {
      * no match/cube shaping, that stays the caller's, always. */
     int ply;
     int filter[GN_MAX_PLY + 1];
+    int filter_extra[GN_MAX_PLY + 1];
+    double filter_threshold[GN_MAX_PLY + 1];
     int prune_k;
 
     /* T3A, see above. Zero (not NaN) when prune_k == 0: a caller that adds
