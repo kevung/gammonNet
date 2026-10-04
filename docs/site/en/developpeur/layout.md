@@ -44,5 +44,5 @@ Position ID
              ├─ shallow pass                (big network, batched)
              │    └─ evaluate_cheap: exact table, then cache, then network
              ├─ value_sweep                 (probabilities → equity, money or match)
-             └─ deep pass                   (recursion over the best filter[d])
+             └─ deep pass                   (recursion over what the move filter keeps)
 ```

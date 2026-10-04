@@ -8,8 +8,11 @@ lesquelles une mesure ne voudrait rien dire :
    compte d'avant le triplet, bit pour bit, quel que soit le seuil écrit. C'est
    ce qui garantit que le réglage par défaut n'a pas bougé.
 2. **Les gardiens d'or.** Des équités figées en hexadécimal, produites par la
-   recherche AVANT l'introduction du triplet, aux niveaux canoniques : le code
-   actuel doit les rendre au bit près.
+   recherche AVANT l'introduction du triplet, aux formes par compte qu'avaient
+   alors les niveaux canoniques : le code actuel doit les rendre au bit près
+   quand on lui redonne ces formes (mode de compatibilité, `extra = 0`). Le
+   niveau `normal` porte désormais un triplet ; ce qu'il rend sur les mêmes
+   positions est figé à part, et ce qui y diffère du compte est dit.
 3. **La sémantique exacte.** À 1-ply, un candidat approfondi a une équité qui
    n'est plus celle de 0-ply ; le nombre de candidats approfondis doit être
    exactement `accepte` plus ceux des `extra` suivants qui restent à moins du
@@ -101,10 +104,18 @@ def test_extra_zero_never_reads_the_threshold(nets):
                 assert ranking(net, position, dice, tripled) == plain
 
 
+#: The count-filter shapes the canonical levels had when GOLD was produced:
+#: (filter, prune_k). Spelled out here rather than read from `search_level`,
+#: so that retuning a level cannot silently re-target this gold.
+COUNT_SHAPES = {
+    'thorough': ((0, 1, 3), 0),
+    'normal': ((0, 1, 3), 12),
+}
+
 #: Produced by the search BEFORE the triplet existed (count-only filter), at
-#: the canonical "thorough" and "normal" shapes: (position id, turn, dice,
-#: level) -> best play id and the bits of the first three equities. If one of
-#: these moves, the default move filter changed what the engine plays.
+#: the COUNT_SHAPES above: (position id, turn, dice, shape) -> best play id
+#: and the bits of the first three equities. If one of these moves, the count
+#: filter -- the triplet's `extra = 0` case -- changed what the engine plays.
 GOLD = [
     ('ABJLVzOAowlqOg', 1, (3, 1), 'thorough',
      'EKMFajoAgqXTbA', ['162903e76461c43f', 'cd0f8b9c6135c03f', '8745ca107d66bf3f']),
@@ -151,16 +162,60 @@ GOLD = [
 
 @needs_models
 @pytest.mark.parametrize("entry", GOLD, ids=lambda e: f"{e[0]}-{e[2]}-{e[3]}")
-def test_canonical_levels_reproduce_the_count_filter_gold(nets, entry):
+def test_count_filter_reproduces_the_pre_triplet_gold(nets, entry):
     net, prune = nets
-    position_id, turn, dice, level_name, best, equities_hex = entry
-    level = search_level(level_name)
-    config = level.to_config()
-    if level.prune_k:
-        config = SearchConfig(ply=config.ply, filter=config.filter,
-                              filter_extra=config.filter_extra,
-                              filter_threshold=config.filter_threshold,
-                              prune_net=prune, prune_k=level.prune_k)
+    position_id, turn, dice, shape, best, equities_hex = entry
+    count, prune_k = COUNT_SHAPES[shape]
+    config = SearchConfig(ply=2, filter=count, filter_extra=(0, 0, 0),
+                          filter_threshold=(0.0, 0.0, 0.0),
+                          prune_net=prune if prune_k else None, prune_k=prune_k)
+    ranked = search_plays(net, codec.position_from_id(position_id, turn),
+                          *dice, config)
+    assert codec.position_id(ranked[0].play.result) == best
+    got = [struct.pack("<d", c.equity).hex() for c in ranked[: len(equities_hex)]]
+    assert got == equities_hex
+
+
+#: The canonical "normal" level WITH its triplet (accept 1, extra 2,
+#: threshold 0.04 at the root), on GOLD's positions: (position id, turn, dice)
+#: -> best play id and the bits of the first three equities. Frozen when the
+#: triplet became the default. Against the count gold above, the best play and
+#: its equity are the same on all ten; on three positions (GQsQ42HXuQ8AAA 2-2,
+#: JmfwCSDC5+AFCA 4-4, sGfhCQI5HuEAMg 2-1) the 2nd/3rd candidates lie outside
+#: the 0.04 band, are no longer deepened, and keep their shallow equity.
+NORMAL_TRIPLET_GOLD = [
+    ('ABJLVzOAowlqOg', 1, (3, 1), 'EKMFajoAgqXTbA',
+     ['9132f0f411e8c33f', '9481a70b92dfbe3f', '08ed25e44317bc3f']),
+    ('d18AAgz9ExgBYA', 0, (6, 5), '/RMYgQJ3XwACDA', ['0aed25300d67e2bf']),
+    ('GQsQ42HXuQ8AAA', 0, (2, 2), '58cHAICMBYjxMA',
+     ['52069e6c308cf93f', '9032f0af0939f93f', '000000c030fdf73f']),
+    ('ShdFigO/BwAAAA', 0, (5, 3), 'vwEAAJQuihQHAA', ['000000d4faffff3f']),
+    ('++4AAEBvB4dAAA', 0, (6, 4), 'vV0yAAH77gAAAA',
+     ['756b7ee43e43f0bf', 'a9aaaa7e1144f0bf', '98d05ed4a44ef0bf']),
+    ('JmfwCSDC5+AFCA', 1, (4, 4), 'Zp7EAwgmZ/ABUA',
+     ['ed25b43fa4cbe23f', '00000080fadcdf3f', '000000c0c7ebda3f']),
+    ('sGfhCQI5HuEAMg', 1, (2, 1), 'Mx3hADKwZ+EJQA',
+     ['aaaaaab279ceccbf', '000000003b53ddbf', '0000000065eadfbf']),
+    ('1xIEGxjzexUAAA', 1, (6, 6), '53cAAOBagmADAw', ['59a40c10fae2fb3f']),
+    ('3hDygQTtgSKMMA', 0, (5, 1), '7UEDjDDeEPKBBA',
+     ['6ecd0fa7ed03d0bf', '3e2c5242b24dd2bf', 'c0d3ad292859d4bf']),
+    ('76cWAABbf4EgAA', 0, (4, 3), 'W38hAQDvpxYAAA',
+     ['a1bd84b2e905e8bf', '77ba35171728e8bf', 'b6e68731d0a7e8bf']),
+]
+
+
+@needs_models
+@pytest.mark.parametrize("entry", NORMAL_TRIPLET_GOLD,
+                         ids=lambda e: f"{e[0]}-{e[2]}")
+def test_normal_level_reproduces_its_triplet_gold(nets, entry):
+    net, prune = nets
+    position_id, turn, dice, best, equities_hex = entry
+    level = search_level("normal")
+    base = level.to_config()
+    config = SearchConfig(ply=base.ply, filter=base.filter,
+                          filter_extra=base.filter_extra,
+                          filter_threshold=base.filter_threshold,
+                          prune_net=prune, prune_k=level.prune_k)
     ranked = search_plays(net, codec.position_from_id(position_id, turn),
                           *dice, config)
     assert codec.position_id(ranked[0].play.result) == best

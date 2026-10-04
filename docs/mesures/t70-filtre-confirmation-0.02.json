@@ -1,0 +1,74 @@
+{
+  "bounded": 473,
+  "by_class": {
+    "backgame": {
+      "loss": 0.006944122640804622,
+      "n": 386
+    },
+    "bearoff_contact": {
+      "loss": 0.00281653574903304,
+      "n": 513
+    },
+    "blitz": {
+      "loss": 0.0037521512770403074,
+      "n": 1122
+    },
+    "contact": {
+      "loss": 0.0040594745752033515,
+      "n": 4484
+    },
+    "crashed": {
+      "loss": 0.003188933535069371,
+      "n": 371
+    },
+    "holding": {
+      "loss": 0.00327581274006265,
+      "n": 1037
+    },
+    "prime_vs_prime": {
+      "loss": 0.004182571712772967,
+      "n": 405
+    },
+    "race_contact": {
+      "loss": 0.0035541876049894274,
+      "n": 596
+    }
+  },
+  "ci95": [
+    0.0037027158451837733,
+    0.004064191733149957
+  ],
+  "context": "money",
+  "core_hours": 5.378497667639491,
+  "decisions": 9000,
+  "evals": 93604150,
+  "filter": [
+    0,
+    1,
+    1
+  ],
+  "filter_extra": [
+    0,
+    0,
+    2
+  ],
+  "filter_threshold": [
+    0.0,
+    0.0,
+    0.02
+  ],
+  "label": "t0.02",
+  "loss": 0.0038798116523116617,
+  "model": "cubeless_prob5_512_512_256_128.bin",
+  "outside": 86,
+  "outside_rate": 0.009555555555555555,
+  "ply": 2,
+  "prune_evals": 274926124,
+  "prune_k": 12,
+  "registry": "confirmation-money.jsonl",
+  "scored": 8914,
+  "search_seconds": 19021.50549402996,
+  "seconds": 1383.0422573930118,
+  "unresolved": 164,
+  "workers": 14
+}

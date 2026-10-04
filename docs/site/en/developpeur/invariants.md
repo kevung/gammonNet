@@ -57,6 +57,12 @@ which they do not. The failure would be silent.
 - An unpairable GNU Backgammon move **stops** the measurement instead of being guessed — and that
   refusal is what revealed that the two generators sometimes keep different intermediates of the
   same compound move.
+- The filter is honoured: `prune_k` is raised to `filter[depth] + filter_extra[depth]` (the most
+  the triplet filter can search deeper) when it is smaller; otherwise fewer candidates would be
+  searched than the caller asked for, and the ranking would look normal.
+- The move filter is a triplet (accept, extra, threshold) per depth; with `extra = 0` the
+  threshold is never read and the filter is the plain count it replaced, bit for bit
+  (`docs/specs/filtre-de-coups-spec.md`).
 
 ## 6. Never parse GNU Backgammon's move notation
 

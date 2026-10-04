@@ -269,8 +269,9 @@ const prune = new Uint8Array(
   await (await fetch("./" + files.prune_fp16)).arrayBuffer());
 evaluator.loadPrune(prune, files.prune_k);
 
-// Position de départ, jet 3-1 -- la forme canonique "normal" (ply=2,
-// filtre (0,1,3)), lue plutôt que retapée : `Evaluator.level` porte sa
+// Position de départ, jet 3-1 -- la forme canonique "normal" (ply=2, filtre
+// en triplet : le meilleur, plus jusqu'à 2 autres à moins de 0,04), lue
+// plutôt que retapée : `Evaluator.level` porte sa
 // mesure de qualité avec elle (issue #25).
 const best = evaluator.bestPlay("4HPwATDgc/ABMA", 0, 3, 1, Evaluator.level("normal"));
 console.log(best.equity, best.resultId, best.evaluations);

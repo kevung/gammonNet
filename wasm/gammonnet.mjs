@@ -159,7 +159,7 @@ export class Evaluator {
    * `2·gain + gammon − gammonPerdu … = equity` ne tient donc qu'à 0-ply.
    */
   rankPlays(positionId, turn, d1, d2, {
-    ply = 0, filterTop = 0, filterInner = 0,
+    ply = 0, filterTop = 0, filterInner = 0, filterExtra = 0, filterThreshold = 0,
     useMatch = false, awayOnRoll = 0, awayOpponent = 0,
     cube = 1, crawford = false, max = 10,
     cubeOwner = null, efficiency = null,
@@ -181,8 +181,9 @@ export class Evaluator {
         "gnw_rank_plays", "number",
         ["string", "number", "number", "number", "number", "number", "number",
          "number", "number", "number", "number", "number", "number", "number",
-         "number", "number", "number", "number"],
+         "number", "number", "number", "number", "number", "number"],
         [positionId, turn, d1, d2, ply, filterTop, filterInner,
+         filterExtra, filterThreshold,
          useMatch ? 1 : 0, awayOnRoll, awayOpponent, cube, crawford ? 1 : 0,
          cubeOwner === null ? -1 : cubeOwner, x,
          max, outPtr, idPtr, notationPtr]);
@@ -234,7 +235,7 @@ export class Evaluator {
   cubeDecision(positionId, turn, {
     owner = 0, useMatch = false, awayOnRoll = 0, awayOpponent = 0,
     cube = 1, crawford = false, efficiency = null, jacoby = true,
-    ply = 0, filterTop = 0, filterInner = 0,
+    ply = 0, filterTop = 0, filterInner = 0, filterExtra = 0, filterThreshold = 0,
   } = {}) {
     const m = this.#module;
     const x = requireEfficiency(efficiency, owner, "cubeDecision");
@@ -243,10 +244,11 @@ export class Evaluator {
       const status = m.ccall(
         "gnw_cube_decide", "number",
         ["string", "number", "number", "number", "number", "number", "number",
-         "number", "number", "number", "number", "number", "number", "number"],
+         "number", "number", "number", "number", "number", "number", "number",
+         "number", "number"],
         [positionId, turn, owner, useMatch ? 1 : 0, awayOnRoll, awayOpponent,
          cube, crawford ? 1 : 0, x, jacoby ? 1 : 0,
-         ply, filterTop, filterInner, outPtr]);
+         ply, filterTop, filterInner, filterExtra, filterThreshold, outPtr]);
       if (status !== 0) {
         throw new Error("décision de videau refusée : position illisible, ou " +
                         "score hors de la table d'équité de match");
@@ -318,7 +320,8 @@ export class Evaluator {
    * RECOPIÉS depuis `gn_search_level` (`src/gn_search.c`), la source qui fait
    * foi — comme `MEASURED_EFFICIENCY` ci-dessus, parce qu'un module chargé
    * dans un navigateur ne peut pas lire un fichier du dépôt. `ply`,
-   * `filterTop`, `filterInner` et `pruneK` le sont depuis toujours (T91) ; ce
+   * `filterTop`, `filterInner` et `pruneK` le sont depuis toujours (T91),
+   * `filterExtra` et `filterThreshold` depuis le filtre en triplet ; ce
    * qui change ici est seulement l'ajout du coût, jamais les formes
    * elles-mêmes. `wasm/api_invariants.mjs` vérifie que cette copie n'a pas
    * dérivé du C, à chaque `make wasm-api`.
@@ -334,24 +337,32 @@ export class Evaluator {
       // 0-ply : le réseau seul. ~6 ms par décision dans un navigateur.
       // Aucun élagage : rien à perdre.
       instant: {
-        ply: 0, filterTop: 0, filterInner: 0, pruneK: 0,
+        ply: 0, filterTop: 0, filterInner: 0, filterExtra: 0, filterThreshold: 0,
+        pruneK: 0,
         pruneEquityLoss: 0, pruneEquityLossCi: [0, 0],
       },
-      // Le défaut. 2-ply filtré, élagage k=12 : ×3,65 pour une perte d'équité
-      // dans le bruit. Mesuré en v1.3.0 sur un Ryzen 7 PRO 6850U : 0,33 s par
-      // décision dans Chromium 152, 0,69 s dans Firefox 154 (T91). Le même
-      // fichier vaut un facteur 2,7 entre les deux moteurs — ne transportez ce
-      // chiffre ni vers un autre navigateur, ni vers une autre machine.
+      // Le défaut. 2-ply, élagage k=12 : ×3,65 pour une perte d'équité dans le
+      // bruit (T3A, filtre (0,1,3)). À la racine, le filtre en triplet : le
+      // meilleur, plus jusqu'à 2 autres à moins de 0,04 de lui — +0,00007
+      // [+0,00002 ; +0,00012] d'équité par décision contre (0,1,3), ×1,10
+      // d'évaluations en moins, mesuré en natif et en money seulement
+      // (docs/mesures/2026-10-04-filtre-triplet-t70.md). Les temps de T91
+      // (0,33 s par décision dans Chromium 152, 0,69 s dans Firefox 154, Ryzen
+      // 7 PRO 6850U, v1.3.0) ont été mesurés avec (0,1,3) et n'ont pas été
+      // rejoués avec ce triplet.
       normal: {
-        ply: 2, filterTop: 3, filterInner: 1, pruneK: 12,
+        ply: 2, filterTop: 1, filterInner: 1, filterExtra: 2, filterThreshold: 0.04,
+        pruneK: 12,
         pruneEquityLoss: 0.00023, pruneEquityLossCi: [-0.00000, 0.00067],
       },
-      // Le même sans élagage, pour trancher une décision précise et non pour
-      // parcourir un match. Son seul relevé — ~9,8 s par décision — date d'avant
+      // Sans élagage et au filtre par compte (0,1,3), pour trancher une
+      // décision précise et non pour parcourir un match. Il garde le compte :
+      // le triplet n'a été mesuré qu'élagué à k=12. Son seul relevé — ~9,8 s par décision — date d'avant
       // le noyau SIMD128 de T91 et n'a pas été rejoué ; il vaut donc une borne
       // haute, pas une mesure. Aucun élagage : rien à perdre.
       thorough: {
-        ply: 2, filterTop: 3, filterInner: 1, pruneK: 0,
+        ply: 2, filterTop: 3, filterInner: 1, filterExtra: 0, filterThreshold: 0,
+        pruneK: 0,
         pruneEquityLoss: 0, pruneEquityLossCi: [0, 0],
       },
     };
@@ -451,11 +462,13 @@ export class Evaluator {
    * @param {string} positionId  identifiant de position (codec T02)
    * @param {number} turn        0 pour Blanc, 1 pour Noir
    * @param {number} d1, d2      les dés
-   * @param {object} options     ply, filterTop, filterInner, match
+   * @param {object} options     ply, filterTop, filterInner, filterExtra,
+   *                             filterThreshold, match
    * @returns {{equity: number, resultId: string, evaluations: number}}
    */
   bestPlay(positionId, turn, d1, d2, {
-    ply = 0, filterTop = 0, filterInner = 0, match = null,
+    ply = 0, filterTop = 0, filterInner = 0, filterExtra = 0, filterThreshold = 0,
+    match = null,
   } = {}) {
     const m = this.#module;
     // 16 octets pour l'identifiant (14 caractères plus le NUL), 4 pour le
@@ -469,8 +482,9 @@ export class Evaluator {
         "gnw_best_play", "number",
         ["string", "number", "number", "number", "number", "number", "number",
          "number", "number", "number", "number", "number", "number", "number",
-         "number"],
+         "number", "number", "number"],
         [positionId, turn, d1, d2, ply, filterTop, filterInner,
+         filterExtra, filterThreshold,
          match ? 1 : 0,
          match ? match.awayOnRoll : 0,
          match ? match.awayOpponent : 0,

@@ -136,7 +136,7 @@
 
     log(`build ${build} · ${navigator.hardwareConcurrency} cœurs annoncés · mode ${mode}`);
     log(`match : ${decisions.length} décisions · repère : ${refCount} positions`);
-    log(`niveau normal : ply ${level.ply}, filtre (${level.filterTop},${level.filterInner}), k=${pruneK}\n`);
+    log(`niveau normal : ply ${level.ply}, filtre (${level.filterTop},${level.filterInner}) + ${level.filterExtra} à ${level.filterThreshold}, k=${pruneK}\n`);
 
 
     async function runDecide(workers) {

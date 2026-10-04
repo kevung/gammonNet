@@ -45,7 +45,7 @@ Position ID
              ├─ passe superficielle         (grand réseau, par lots)
              │    └─ evaluate_cheap : table exacte, puis cache, puis réseau
              ├─ value_sweep                 (probabilités → équité, money ou match)
-             └─ passe profonde              (récursion sur les filter[d] meilleurs)
+             └─ passe profonde              (récursion sur ce que garde le filtre)
 ```
 
 ## Les points d'entrée

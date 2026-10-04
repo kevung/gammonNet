@@ -128,11 +128,13 @@ def gammonnet_job(args):
     state = None if me is None else MatchState(away_on_roll=me, away_opponent=opp,
                                                cube=1, crawford=crawford)
     conv = normalised(state)
-    # La forme canonique "normal" (issue #25) : ply=2, filtre (0,1,3), k=12 --
+    # La forme canonique "normal" (issue #25), filtre en triplet compris --
     # une seule source, `gn_search_level` (src/gn_search.c), lue ici plutôt
     # que retapée.
     level = search_level("normal")
-    kw = dict(ply=level.ply, filter=level.filter, prune_net=prune, prune_k=level.prune_k)
+    kw = dict(ply=level.ply, filter=level.filter, filter_extra=level.filter_extra,
+              filter_threshold=level.filter_threshold, prune_net=prune,
+              prune_k=level.prune_k)
     if state is not None:
         kw.update(use_match=True, match=state)
     if cubeful:
@@ -226,7 +228,9 @@ def main() -> int:
         args.out.write_text(json.dumps({
             "probe": "opening rolls at score: gammonNet vs gnubg 1.08.003",
             "setting": {"ply": level.ply, "prune_k": level.prune_k,
-                        "filter": list(level.filter[:3]), "cube_x": CUBE_X,
+                        "filter": list(level.filter[:3]),
+                        "filter_extra": list(level.filter_extra[:3]),
+                        "filter_threshold": list(level.filter_threshold[:3]), "cube_x": CUBE_X,
                         "gnubg": "2-ply, movefilter wide open, prune on", "match_length": MATCH_LENGTH},
             "summaries": summaries, "rows": rows}, indent=1))
         print(f"\n  écrit : {args.out}")

@@ -62,9 +62,12 @@ dise.
 - Un coup de GNU Backgammon inappariable **arrête** la mesure au lieu d'être deviné — et c'est ce
   refus qui a révélé que les deux générateurs gardent parfois des intermédiaires différents du même
   coup composé.
-- Le filtre est respecté : `prune_k` est relevé à `filter[depth]` quand il est plus petit, sinon on
-  chercherait moins de candidats que l'appelant n'en a demandé, et le classement aurait l'air
-  normal.
+- Le filtre est respecté : `prune_k` est relevé à `filter[depth] + filter_extra[depth]` (le plus
+  que le filtre en triplet puisse approfondir) quand il est plus petit, sinon on chercherait moins
+  de candidats que l'appelant n'en a demandé, et le classement aurait l'air normal.
+- Le filtre de coups est un triplet (accepte, extra, seuil) par profondeur ; avec `extra = 0` le
+  seuil n'est jamais lu et le filtre est le simple compte d'avant, au bit près
+  (`docs/specs/filtre-de-coups-spec.md`).
 
 ## 6. Ne jamais analyser la notation de coup de GNU Backgammon
 
