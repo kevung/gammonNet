@@ -203,11 +203,11 @@ ce que `gn_cube_value(probs[j], …)` aurait rendu seul. Les §2, §3 et §9 son
 | les **ancres** d'un niveau (`lose_avg`, `win_avg`, `pass`, `cash`) | de ce candidat seul | non — chaque voie les calcule pour elle |
 | les **points de rupture** (`tp`, `cp`), par inversion du niveau `2k` (§9) | du niveau au-dessus | **oui** |
 
-> **Révision du 2026-10-04.** Les points de rupture sont désormais résolus en forme close (§9) :
-> il n'y a plus de chaîne sérielle à recouvrir, et chaque voie appelle simplement le scalaire.
-> Le lot garde son contrat (bit à bit avec le scalaire, largeur de voie fixe, refus unique) ;
-> l'invariant 2 ci-dessous (« soixante pas, toujours ») est sans objet. Le raisonnement qui suit
-> décrit la version bissectée, pour l'histoire de la mesure T85.
+> **Les points de rupture sont résolus en forme close (§9).** Il n'y a pas de chaîne sérielle à
+> recouvrir : chaque voie appelle le scalaire. Le lot tient son contrat — bit à bit avec le
+> scalaire, largeur de voie fixe, refus unique — et l'invariant 2 ci-dessous (« soixante pas,
+> toujours ») est sans objet. Le raisonnement qui suit est celui de la mesure T85, faite sur une
+> inversion par bissection.
 
 `build_levels` est donc coupé en `build_level_anchors` + `resolve_levels`, et c'est la seconde
 moitié qui passe en lot. La raison est une propriété du matériel, pas du modèle : une bissection
@@ -332,7 +332,7 @@ constantes (même simplification que la v1, énoncée) :
   émerge de la récursion comme en v1.
 - Mémoïser les fonctions par `(état, k)` ; le coût est négligeable.
 
-### L'inversion d'un niveau, en forme close *(révisé le 2026-10-04)*
+### L'inversion d'un niveau, en forme close
 
 Chaque point de rupture (`TP(k)`, `CP(k)`) et le point de prise rapporté inversent une courbe
 de niveau : trouver le `p` où elle atteint une cible. La courbe est piecewise-linéaire et
@@ -350,6 +350,9 @@ morceaux quand un joueur possède, un seul sur un niveau mort. L'inversion est d
 
 **Conventions** : la réponse est `inf{ p : f(p) ≥ cible }`, écrêtée à `[0, 1]` — une cible
 sous `f(0)` rend 0, une cible au-dessus de `f(1)` rend 1, un morceau plat rend sa borne gauche.
+**Une cible ou une courbe NaN rend NaN** : toute comparaison avec NaN est fausse, et le parcours
+rendrait sinon 1 — un point de prise plausible pour une entrée non évaluable. Propagé, le NaN
+reste visible dans toute valeur qui en dépend.
 La liste des morceaux est extraite une seule fois (`level_segments`) et lue par l'évaluation
 (`level_live`) comme par l'inversion (`level_solve`) : les deux ne peuvent pas diverger sur la
 forme de la courbe.

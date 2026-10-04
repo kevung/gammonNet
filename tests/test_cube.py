@@ -11,6 +11,10 @@ qu'on en attendait avant de le lancer.
 
 from __future__ import annotations
 
+import math
+import subprocess
+from pathlib import Path
+
 import pytest
 
 from gammonnet.cube import CubeAction, CubeInputs, CubeOwner, decide
@@ -586,3 +590,79 @@ def test_match_beyond_the_table_is_refused():
     state = MatchState(away_on_roll=26, away_opponent=5, cube=1)
     with pytest.raises(ValueError):
         decide(gammonless(0.5), CubeOwner.CENTRED, X, state=state)
+
+
+# ── §9 : l'inversion d'un niveau, en forme close ─────────────────────
+
+
+def test_take_point_reaches_one_exactly_above_the_curve():
+    """Au-delà de f(1), l'inversion rend 1 EXACTEMENT.
+
+    À 1-away/5-away, cube 1, encaisser le videau gagne le match : la cible
+    vaut f(1) et la dépasse au dernier ulp. La bissection rendait ici
+    0.9999999999999998 ; la forme close rend la borne.
+    """
+    evaluation = Evaluation(win=0.019999999552965164,
+                            win_gammon=0.003000000026077032,
+                            win_backgammon=0.00019999999494757503,
+                            lose_gammon=0.15000000596046448,
+                            lose_backgammon=0.019999999552965164)
+    for owner, x in ((CubeOwner.CENTRED, 0.688), (CubeOwner.OWNED, 0.566)):
+        result = decide(evaluation, owner, x, MatchState(1, 5, cube=1))
+        assert result.take_point == 1.0
+
+
+_ROOT = Path(__file__).resolve().parent.parent
+
+
+@pytest.fixture(scope="module")
+def level_solve_probe() -> dict[str, float]:
+    """`level_solve` sur des niveaux construits à la main.
+
+    La fonction est statique et `gn_cube_decide` ne peut pas produire une
+    cible sous f(0) (encaisser `c` vaut au moins perdre `2c` en moyenne) ni
+    une cible NaN (`gn_probs_exclusive` ramène une probabilité NaN à 0) :
+    seule une unité qui inclut `gn_cube.c` atteint ces conventions.
+    """
+    built = subprocess.run(["make", "--no-print-directory", "build"],
+                           cwd=_ROOT, capture_output=True, text=True)
+    assert built.returncode == 0, built.stderr[-2000:]
+    objects = sorted(str(p) for p in (_ROOT / "build").glob("*.o")
+                     if p.name != "gn_cube.o")
+    binary = _ROOT / "build" / "level_solve_probe"
+    done = subprocess.run(
+        ["gcc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror", "-Isrc",
+         "-Ivendor/backgammon-ai-engine/c_engine",
+         "-Ivendor/backgammon-ai-engine/c_inference",
+         "-o", str(binary), "tests/level_solve_probe.c", *objects, "-lm"],
+        cwd=_ROOT, capture_output=True, text=True,
+    )
+    assert done.returncode == 0, done.stderr[-2000:]
+    ran = subprocess.run([str(binary)], capture_output=True, text=True)
+    assert ran.returncode == 0, ran.stderr
+    return {name: float(value)
+            for name, value in (line.split() for line in ran.stdout.splitlines())}
+
+
+def test_inversion_clamps_to_the_unit_interval(level_solve_probe):
+    """inf{ p : f(p) >= cible }, écrêté à [0, 1] — courbe vive et mélangée."""
+    probe = level_solve_probe
+    assert probe["below_f0_live"] == 0.0
+    assert probe["at_f0_live"] == 0.0
+    assert probe["above_f1_live"] == 1.0
+    assert probe["at_f1_live"] == 1.0
+    assert probe["below_f0_blend"] == 0.0
+    assert probe["above_f1_blend"] == 1.0
+
+
+def test_inversion_lands_on_breakpoints_and_flat_pieces(level_solve_probe):
+    """Une cible égale à un point de rupture rend ce point ; un morceau plat
+    rend sa borne gauche."""
+    assert level_solve_probe["at_pass"] == 0.25
+    assert level_solve_probe["flat_left_bound"] == 0.25
+
+
+def test_inversion_propagates_nan(level_solve_probe):
+    """Une cible ou une courbe NaN rend NaN, jamais une borne plausible."""
+    for name in ("nan_target", "nan_target_blend", "nan_curve", "nan_curve_blend"):
+        assert math.isnan(level_solve_probe[name]), name

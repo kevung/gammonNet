@@ -28,6 +28,7 @@
 
 #include "gn_cube.h"
 
+#include <math.h>
 #include <stddef.h>
 
 /* ── Money: the Janowski model, per unit of cube ─────────────────────── */
@@ -341,6 +342,14 @@ static int level_segments(const GnMatchLevel *lv, GnCubeOwner owner,
 
     case GN_CUBE_CENTRED:
     default:
+        /* Ascending order assumes tp <= cp. It holds because owning the cube
+         * is worth at least as much as the opponent owning it at the same
+         * stake (M_own >= M_opp pointwise at level 2k), so the owned curve
+         * reaches `pass` no later than the opponent curve reaches `cash`
+         * (pass <= cash): tp = M_own^-1(pass) <= M_opp^-1(cash) = cp. Were it
+         * ever violated, the middle piece is degenerate -- `segment` returns
+         * its endpoint and `level_solve` skips it -- rather than read
+         * backwards. */
         segs[0] = (GnLevelSegment){ 0.0, lv->lose_avg, lv->tp, lv->pass };
         segs[1] = (GnLevelSegment){ lv->tp, lv->pass, lv->cp, lv->cash };
         segs[2] = (GnLevelSegment){ lv->cp, lv->cash, 1.0, lv->win_avg };
@@ -389,6 +398,11 @@ static double level_blend(const GnMatchLevel *lv, double p, GnCubeOwner owner,
  * The answer is `inf{ p : f(p) >= target }`, clamped to [0, 1]: a target at
  * or under f(0) answers 0, one above f(1) answers 1, and a flat piece answers
  * its left bound. A degenerate piece (x1 <= x0) covers no `p` and is skipped.
+ *
+ * A NaN -- in the target or in the curve -- answers NaN. Every comparison
+ * with it is false, so the walk would otherwise fall through to 1.0: a
+ * plausible take point standing for an unevaluable input. Propagated, the
+ * NaN stays visible in every value built on it.
  */
 static double level_solve(const GnMatchLevel *lv, GnCubeOwner owner,
                           double blend, double target)
@@ -397,6 +411,8 @@ static double level_solve(const GnMatchLevel *lv, GnCubeOwner owner,
     const int n = level_segments(lv, owner, segs);
     int i;
 
+    if (isnan(target))
+        return target;
     for (i = 0; i < n; i++) {
         const GnLevelSegment s = segs[i];
         double v0 = s.y0, v1 = s.y1;
@@ -407,6 +423,8 @@ static double level_solve(const GnMatchLevel *lv, GnCubeOwner owner,
             v0 = (1.0 - blend) * level_dead(lv, s.x0) + blend * s.y0;
             v1 = (1.0 - blend) * level_dead(lv, s.x1) + blend * s.y1;
         }
+        if (isnan(v0) || isnan(v1))
+            return NAN;
         if (target <= v0)
             return s.x0;
         if (target <= v1) {
