@@ -8,12 +8,25 @@ donne les deux — jamais l'un sans l'autre.
 | Préréglage | Interne | Coût natif / décision | Coût navigateur / décision | Un match de 7 points *(≈130 décisions)* |
 |---|---|---|---|---|
 | **Instantané** | 0-ply | 0,0013 s | 0,006 s | ~1 s |
-| **Normal** | 2-ply `(0,1,3)`, élagage `k=12` | **0,306 s** | **2,7 s** | **74 s** *(8 workers)* |
+| **Normal** | 2-ply, filtre en triplet à la racine, élagage `k=12` | **0,306 s**\* | **2,7 s**\* | **74 s**\* *(8 workers)* |
 | **Approfondi** | 2-ply `(0,1,3)`, sans élagage | 2,01 s | 9,8 s | ~4 min *(8 workers)* |
 | **Rollout** | 0-ply, 1 296 essais | 30,5 s / position | non mesuré | — |
 
 Les coûts navigateur sont mesurés sur **Firefox 154, build SIMD**, sur une machine de bureau au
 repos. Ils dépendent de l'appareil ; la page de mesure est fournie pour les refaire chez vous.
+
+\* Ces temps ont été mesurés avec le filtre par compte `(0,1,3)`, avant le triplet ; ils n'ont
+pas été rejoués avec lui.
+
+## Le filtre de coups du préréglage Normal
+
+À la racine, Normal approfondit **le meilleur coup, plus jusqu'à 2 autres dont l'équité
+superficielle reste à moins de 0,04 de lui** — le triplet (accepte 1, extra 2, seuil 0,04) ;
+au niveau intérieur, le meilleur seul. Contre le compte `(0,1,3)`, mesuré en money sur 8 913
+décisions appariées à 2-ply : **+0,00007** d'équité perdue par décision [IC 95 % +0,00002 ;
++0,00012], pour **×1,10** d'évaluations en moins. Le seuil n'a pas été mesuré au score. Approfondi
+garde le compte `(0,1,3)`. Le détail est dans la fiche de mesure
+`docs/mesures/2026-10-04-filtre-triplet-t70.md`.
 
 ## Ce que l'élagage coûte, et pourquoi `k = 12`
 

@@ -43,22 +43,30 @@ def test_instant_est_le_reseau_seul_sans_elagage():
     assert level.prune_equity_loss == 0.0
 
 
-def test_normal_est_2ply_filtre_013_elague_a_12():
-    """Le défaut publié — mesuré T3A, 2026-08-26-T3A-regroupement.md."""
+def test_normal_est_2ply_filtre_en_triplet_elague_a_12():
+    """Le défaut publié. L'élagage k=12 est mesuré T3A
+    (2026-08-26-T3A-regroupement.md, au filtre (0,1,3)) ; le triplet de racine
+    (accepte 1, extra 2, seuil 0,04) est mesuré T70 contre (0,1,3)
+    (2026-10-04-filtre-triplet-t70.md)."""
     level = search_level("normal")
     assert level.ply == 2
-    assert level.filter == (0, 1, 3, 0, 0)
+    assert level.filter == (0, 1, 1, 0, 0)
+    assert level.filter_extra == (0, 0, 2, 0, 0)
+    assert level.filter_threshold == (0.0, 0.0, 0.04, 0.0, 0.0)
     assert level.prune_k == 12
     assert level.prune_equity_loss == pytest.approx(0.00023)
     assert level.prune_equity_loss_ci_low == pytest.approx(-0.00000)
     assert level.prune_equity_loss_ci_high == pytest.approx(0.00067)
 
 
-def test_thorough_est_normal_sans_elagage():
+def test_thorough_est_le_filtre_par_compte_sans_elagage():
+    """Le triplet n'a été mesuré qu'élagué à k=12 : `thorough` garde le
+    compte (0,1,3), qui approfondit au moins autant que lui."""
     normal = search_level("normal")
     thorough = search_level("thorough")
     assert thorough.ply == normal.ply
-    assert thorough.filter == normal.filter
+    assert thorough.filter == (0, 1, 3, 0, 0)
+    assert thorough.filter_extra == (0, 0, 0, 0, 0)
     assert thorough.prune_k == 0
     assert thorough.prune_equity_loss == 0.0
 
@@ -91,6 +99,8 @@ def test_to_config_rend_une_searchconfig_utilisable():
     assert isinstance(config, SearchConfig)
     assert config.ply == level.ply
     assert config.filter == level.filter
+    assert config.filter_extra == level.filter_extra
+    assert config.filter_threshold == level.filter_threshold
     # to_config() ne charge pas de réseau d'élagage -- c'est à l'appelant de
     # brancher celui qu'il veut avec `prune_net`/`prune_k`.
     assert config.prune_net is None
@@ -140,6 +150,9 @@ def test_export_matches_gn_search_level_exactly(reference_export):
         level = search_level(name)
         assert entry["ply"] == level.ply, name
         assert tuple(entry["filter"]) == level.filter[: level.ply + 1], name
+        assert tuple(entry["filter_extra"]) == level.filter_extra[: level.ply + 1], name
+        assert tuple(entry["filter_threshold"]) == pytest.approx(
+            level.filter_threshold[: level.ply + 1]), name
         assert entry["prune_k"] == level.prune_k, name
         assert entry["prune_equity_loss"] == pytest.approx(level.prune_equity_loss), name
         assert entry["prune_equity_loss_ci"][0] == pytest.approx(

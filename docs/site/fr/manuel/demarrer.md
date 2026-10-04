@@ -125,6 +125,11 @@ small = Network.load("models/prune_32.bin")
 position = position_from_id("4HPwATDgc/ABMA", WHITE)
 
 config = SearchConfig(ply=2, filter=(0, 1, 3), prune_net=small, prune_k=12)
+# Filtre en triplet (accepte, extra, seuil) par profondeur — la forme du
+# niveau canonique « normal » : à la racine, le meilleur toujours, plus jusqu'à
+# 2 autres à moins de 0,04 de lui. search_level("normal").to_config() la rend.
+# SearchConfig(ply=2, filter=(0, 1, 1), filter_extra=(0, 0, 2),
+#              filter_threshold=(0, 0, 0.04), prune_net=small, prune_k=12)
 for candidate in search_plays(net, position, 3, 1, config)[:5]:
     print(candidate.equity, candidate.evaluation.as_tuple())
 ```

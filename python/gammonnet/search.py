@@ -36,6 +36,8 @@ class _CSearchConfig(ctypes.Structure):
     _fields_ = [
         ("ply", ctypes.c_int),
         ("filter", ctypes.c_int * (MAX_PLY + 1)),
+        ("filter_extra", ctypes.c_int * (MAX_PLY + 1)),
+        ("filter_threshold", ctypes.c_double * (MAX_PLY + 1)),
         ("use_match", ctypes.c_int),
         ("match", _CMatchState),
         ("use_cube", ctypes.c_int),
@@ -110,6 +112,8 @@ class _CSearchLevel(ctypes.Structure):
         ("name", ctypes.c_char_p),
         ("ply", ctypes.c_int),
         ("filter", ctypes.c_int * (MAX_PLY + 1)),
+        ("filter_extra", ctypes.c_int * (MAX_PLY + 1)),
+        ("filter_threshold", ctypes.c_double * (MAX_PLY + 1)),
         ("prune_k", ctypes.c_int),
         ("prune_equity_loss", ctypes.c_double),
         ("prune_equity_loss_ci_low", ctypes.c_double),
@@ -147,10 +151,15 @@ class Candidate:
 class SearchConfig:
     """Profondeur, filtrage, et éventuellement le score du match.
 
-    `filter[d]` est le nombre de candidats qui survivent à la profondeur `d` ;
-    0 signifie aucun filtrage. C'est le mécanisme de T31, et ce qu'il coûte en
-    qualité doit être **mesuré** — un filtre qui « ne change rien » n'a pas été
-    mesuré.
+    Le filtre de coups est un **triplet** par profondeur `d` — `filter[d]`
+    (accepte), `filter_extra[d]` (extra), `filter_threshold[d]` (seuil) : les
+    `accepte` meilleurs candidats du classement superficiel sont toujours
+    approfondis, puis jusqu'à `extra` de plus, dans l'ordre, tant que leur
+    équité superficielle reste à moins de `seuil` de celle du meilleur.
+    `accepte = extra = 0` signifie aucun filtrage. Avec `extra = 0` le seuil
+    n'est jamais lu et le filtre est le simple compte d'avant le triplet, bit
+    pour bit. C'est le mécanisme de T31, et ce qu'il coûte en qualité doit être
+    **mesuré** — un filtre qui « ne change rien » n'a pas été mesuré.
 
     `use_match` fait valuer chaque nœud par la table d'équité de match plutôt
     qu'en money cubeless. Le score porté par `match` est celui du joueur au
@@ -178,6 +187,8 @@ class SearchConfig:
 
     ply: int = 0
     filter: tuple[int, ...] = ()
+    filter_extra: tuple[int, ...] = ()
+    filter_threshold: tuple[float, ...] = ()
     use_match: bool = False
     match: MatchState | None = None
     use_cube: bool = False
@@ -191,6 +202,10 @@ class SearchConfig:
         c.ply = self.ply
         for depth, keep in enumerate(self.filter[: MAX_PLY + 1]):
             c.filter[depth] = keep
+        for depth, extra in enumerate(self.filter_extra[: MAX_PLY + 1]):
+            c.filter_extra[depth] = extra
+        for depth, threshold in enumerate(self.filter_threshold[: MAX_PLY + 1]):
+            c.filter_threshold[depth] = threshold
         if self.use_match:
             if self.match is None:
                 raise ValueError("use_match sans score de match")
@@ -265,6 +280,8 @@ class SearchLevel:
     name: str
     ply: int
     filter: tuple[int, ...]
+    filter_extra: tuple[int, ...]
+    filter_threshold: tuple[float, ...]
     prune_k: int
     prune_equity_loss: float
     prune_equity_loss_ci_low: float
@@ -273,7 +290,9 @@ class SearchLevel:
     def to_config(self) -> SearchConfig:
         """La `SearchConfig` correspondante — sans réseau d'élagage : c'est à
         l'appelant de charger celui qu'il veut brancher (`SearchConfig.prune_net`)."""
-        return SearchConfig(ply=self.ply, filter=self.filter)
+        return SearchConfig(ply=self.ply, filter=self.filter,
+                            filter_extra=self.filter_extra,
+                            filter_threshold=self.filter_threshold)
 
 
 def search_level(name: str) -> SearchLevel:
@@ -292,6 +311,8 @@ def search_level(name: str) -> SearchLevel:
         name=c.name.decode("utf-8"),
         ply=c.ply,
         filter=tuple(c.filter[: MAX_PLY + 1]),
+        filter_extra=tuple(c.filter_extra[: MAX_PLY + 1]),
+        filter_threshold=tuple(c.filter_threshold[: MAX_PLY + 1]),
         prune_k=c.prune_k,
         prune_equity_loss=c.prune_equity_loss,
         prune_equity_loss_ci_low=c.prune_equity_loss_ci_low,

@@ -356,6 +356,29 @@ int gnw_enable_cache(int log2_entries)
 }
 
 /*
+ * LA BANDE DU FILTRE EN TRIPLET, à la racine (`docs/specs/filtre-de-coups-spec.md`).
+ *
+ * `filter_top` est l'« accepte » du triplet ; `filter_extra` et
+ * `filter_threshold` en sont l'« extra » et le « seuil », à la même
+ * profondeur `ply`. Laissés à 0, rien n'est écrit et la recherche est le
+ * filtre par compte, au bit près. Un triplet incohérent (extra négatif, seuil
+ * négatif ou non fini) est refusé par `gn_search_set_filter` : -1, jamais
+ * rabattu.
+ */
+static int root_band(GnSearchConfig *config, int ply, int filter_extra,
+                     double filter_threshold)
+{
+    if (filter_extra == 0 && filter_threshold == 0.0) {
+        return 0;
+    }
+    if (ply < 1 || ply > GN_MAX_PLY) {
+        return -1;
+    }
+    return gn_search_set_filter(config, ply, config->filter[ply], filter_extra,
+                                filter_threshold);
+}
+
+/*
  * Les N MEILLEURS COUPS, avec tout ce qu'une analyse affiche.
  *
  * `gnw_best_play` ne rend que le premier, ce qui suffit pour jouer et pas pour
@@ -403,6 +426,7 @@ int gnw_enable_cache(int log2_entries)
 EMSCRIPTEN_KEEPALIVE
 int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
                    int ply, int filter_top, int filter_inner,
+                   int filter_extra, double filter_threshold,
                    int use_match, int away_on_roll, int away_opponent,
                    int cube, int crawford,
                    int cube_owner, double efficiency,
@@ -449,6 +473,9 @@ int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
     }
     if (filter_inner > 0 && ply >= 2) {
         config.filter[ply - 1] = filter_inner;
+    }
+    if (root_band(&config, ply, filter_extra, filter_threshold) != 0) {
+        return -1;
     }
     gn_search_use_prune(&config, g_prune, g_prune_k);
     /* La valuation CUBEFUL des feuilles, quand un videau est en jeu. Elle ne
@@ -539,7 +566,8 @@ EMSCRIPTEN_KEEPALIVE
 int gnw_cube_decide(const char *position_id, int turn, int owner,
                     int use_match, int away_on_roll, int away_opponent,
                     int cube, int crawford, double efficiency, int jacoby,
-                    int ply, int filter_top, int filter_inner, double *out)
+                    int ply, int filter_top, int filter_inner,
+                    int filter_extra, double filter_threshold, double *out)
 {
     if (g_network == NULL || position_id == NULL || out == NULL) {
         return -1;
@@ -565,6 +593,9 @@ int gnw_cube_decide(const char *position_id, int turn, int owner,
     }
     if (filter_inner > 0 && ply >= 2) {
         config.filter[ply - 1] = filter_inner;
+    }
+    if (root_band(&config, ply, filter_extra, filter_threshold) != 0) {
+        return -1;
     }
     gn_search_use_prune(&config, g_prune, g_prune_k);
 
@@ -594,6 +625,7 @@ int gnw_cube_decide(const char *position_id, int turn, int owner,
 EMSCRIPTEN_KEEPALIVE
 double gnw_best_play(const char *position_id, int turn, int d1, int d2,
                      int ply, int filter_top, int filter_inner,
+                     int filter_extra, double filter_threshold,
                      int use_match, int away_on_roll, int away_opponent,
                      int cube, int crawford,
                      char *out_id, int *out_evaluations, char *out_notation)
@@ -622,6 +654,9 @@ double gnw_best_play(const char *position_id, int turn, int d1, int d2,
     }
     if (filter_inner > 0 && ply >= 2) {
         config.filter[ply - 1] = filter_inner;
+    }
+    if (root_band(&config, ply, filter_extra, filter_threshold) != 0) {
+        return -99.0;
     }
     /* L'élagage, s'il a été chargé. `gn_search_use_prune` refuse un k nul ou
      * un réseau absent, donc l'appel est sûr dans tous les cas. */
@@ -895,9 +930,10 @@ int gnw_pip_count(const int *board, int player)
  * trusting that a copy stays accurate forever.
  *
  * `out` receives, in order: ply, filterTop (filter[ply]), filterInner
- * (filter[ply-1], 0 below ply 2), pruneK -- the same four numbers
- * `Evaluator.level()` returns. `out_quality` receives prune_equity_loss,
- * its CI low, its CI high. Returns 0 on success, -1 for an unknown name.
+ * (filter[ply-1], 0 below ply 2), pruneK, filterExtra (filter_extra[ply]) --
+ * the same five numbers `Evaluator.level()` returns. `out_quality` receives
+ * prune_equity_loss, its CI low, its CI high, then filterThreshold
+ * (filter_threshold[ply]). Returns 0 on success, -1 for an unknown name.
  */
 EMSCRIPTEN_KEEPALIVE
 int gnw_search_level(const char *name, int *out, double *out_quality)
@@ -913,8 +949,11 @@ int gnw_search_level(const char *name, int *out, double *out_quality)
     out[1] = (level->ply >= 1) ? level->filter[level->ply] : 0;
     out[2] = (level->ply >= 2) ? level->filter[level->ply - 1] : 0;
     out[3] = level->prune_k;
+    out[4] = (level->ply >= 1) ? level->filter_extra[level->ply] : 0;
     out_quality[0] = level->prune_equity_loss;
     out_quality[1] = level->prune_equity_loss_ci_low;
     out_quality[2] = level->prune_equity_loss_ci_high;
+    out_quality[3] = (level->ply >= 1) ? level->filter_threshold[level->ply]
+                                       : 0.0;
     return 0;
 }

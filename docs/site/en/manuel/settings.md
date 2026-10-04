@@ -8,11 +8,23 @@ without the other.
 | Preset | Internally | Native cost / decision | Browser cost / decision | A 7-point match *(≈130 decisions)* |
 |---|---|---|---|---|
 | **Instant** | 0-ply | 0.0013 s | 0.006 s | ~1 s |
-| **Normal** | 2-ply `(0,1,3)`, pruning `k=12` | **0.306 s** | **2.7 s** | **74 s** *(8 workers)* |
+| **Normal** | 2-ply, triplet move filter at the root, pruning `k=12` | **0.306 s**\* | **2.7 s**\* | **74 s**\* *(8 workers)* |
 | **Thorough** | 2-ply `(0,1,3)`, no pruning | 2.01 s | 9.8 s | ~4 min *(8 workers)* |
 
 Browser costs are measured on **Firefox 154, SIMD build**, on an idle desktop machine. They depend
 on the device; the measurement page ships so you can redo them.
+
+\* These times were measured with the count filter `(0,1,3)`, before the triplet; they have not
+been rerun with it.
+
+## The Normal preset's move filter
+
+At the root, Normal searches deeper **the best play, plus up to 2 more whose shallow equity stays
+within 0.04 of it** — the triplet (accept 1, extra 2, threshold 0.04); at the inner level, the best
+alone. Against the count `(0,1,3)`, measured at money over 8,913 paired 2-ply decisions:
+**+0.00007** equity lost per decision [95% CI +0.00002; +0.00012], for **×1.10** fewer
+evaluations. The threshold has not been measured at a match score. Thorough keeps the count
+`(0,1,3)`. Details: `docs/mesures/2026-10-04-filtre-triplet-t70.md`.
 
 ## What pruning costs, and why `k = 12`
 

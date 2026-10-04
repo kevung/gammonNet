@@ -47,6 +47,10 @@ def build_export() -> dict:
             # -- (0,1,3), jamais les zéros de remplissage jusqu'à GN_MAX_PLY
             # que le C garde pour dimensionner GnSearchConfig.filter.
             "filter": list(level.filter[: level.ply + 1]),
+            # Le reste du triplet de filtre (accepte, extra, seuil), aux mêmes
+            # indices ; extra = 0 rend le seuil inopérant.
+            "filter_extra": list(level.filter_extra[: level.ply + 1]),
+            "filter_threshold": list(level.filter_threshold[: level.ply + 1]),
             "prune_k": level.prune_k,
             "prune_equity_loss": level.prune_equity_loss,
             "prune_equity_loss_ci": [
@@ -59,6 +63,8 @@ def build_export() -> dict:
             "Formes canoniques de recherche (issue #25), generated from "
             "gn_search_level() (src/gn_search.c), the single canonical "
             "source -- read this instead of retyping ply/filter/prune_k. "
+            "The move filter is the triplet (filter, filter_extra, "
+            "filter_threshold) per depth: accept, extra, equity threshold. "
             "prune_equity_loss and its 95% CI are measured "
             "(docs/mesures/2026-08-26-T3A-regroupement.md, 450 decisions "
             "at 2-ply filter (0,1,3), pruned vs the same search unpruned); "

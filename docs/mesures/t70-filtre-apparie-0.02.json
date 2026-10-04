@@ -1,0 +1,69 @@
+{
+  "candidate": {
+    "context": "money",
+    "decisions": 9000,
+    "filter": [
+      0,
+      1,
+      1
+    ],
+    "filter_extra": [
+      0,
+      0,
+      2
+    ],
+    "filter_threshold": [
+      0.0,
+      0.0,
+      0.02
+    ],
+    "header": true,
+    "label": "t0.02",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "confirmation-money.jsonl"
+  },
+  "changed": 493,
+  "ci95": [
+    0.00022914101904203152,
+    0.00043001433849804247
+  ],
+  "cost": {
+    "evals": {
+      "candidate": 93604150,
+      "reference": 117091975
+    },
+    "prune_evals": {
+      "candidate": 274926124,
+      "reference": 332242513
+    },
+    "seconds": {
+      "candidate": 19021.50549402996,
+      "reference": 24764.192364984367
+    }
+  },
+  "delta": 0.00032694982878999105,
+  "margin": 0.001,
+  "non_inferior": true,
+  "outside": 87,
+  "paired": 8913,
+  "reference": {
+    "context": "money",
+    "decisions": 9000,
+    "filter": [
+      0,
+      1,
+      3
+    ],
+    "filter_extra": [],
+    "filter_threshold": [],
+    "header": true,
+    "label": "defaut",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "confirmation-money.jsonl"
+  },
+  "z": 6.5824315908550455
+}

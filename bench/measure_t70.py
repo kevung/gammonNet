@@ -83,13 +83,17 @@ PR_SCALE = 500.0
 
 
 def score_batch(payload):
-    rows, model, ply, prune_model, prune_k, context = payload
+    rows, model, ply, prune_model, prune_k, context, move_filter = payload
     from tools.build_corpus_t70 import CONTEXTS  # noqa: PLC0415
+    from gammonnet.search import (  # noqa: PLC0415
+        evaluations, prune_evaluations, reset_evaluations)
 
     network = Network.load(model)
     state = CONTEXTS[context]
     prune_net = Network.load(prune_model) if prune_model else None
-    config = SearchConfig(ply=ply, filter=FILTERS[ply],
+    accept, extra, threshold = move_filter
+    config = SearchConfig(ply=ply, filter=accept if accept else FILTERS[ply],
+                          filter_extra=extra, filter_threshold=threshold,
                           use_match=state is not None, match=state,
                           prune_net=prune_net, prune_k=prune_k)
 
@@ -98,7 +102,11 @@ def score_batch(payload):
         turn = row["turn"]
         position = codec.position_from_id(row["position_id"], turn)
         d1, d2 = row["dice"]
+        reset_evaluations()
+        began = time.perf_counter()
         ranked = search_plays(network, position, d1, d2, config)
+        cost = {"evals": evaluations(), "prune_evals": prune_evaluations(),
+                "seconds": time.perf_counter() - began}
         if not ranked:
             continue
         played = codec.position_id(ranked[0].play.result)
@@ -113,7 +121,7 @@ def score_batch(payload):
             scored.append({"index": row["index"], "class": row["class"],
                            "weight": row["weight"], "loss": None,
                            "bounded": False, "open": False,
-                           "pass_used": row["pass_used"]})
+                           "pass_used": row["pass_used"], **cost})
             continue
         # Le coup joué a-t-il été RÉSOLU, ou seulement borné comme dominé ?
         # Un coup manifestement mauvais n'a pas été prix finement (voir
@@ -124,7 +132,7 @@ def score_batch(payload):
         scored.append({"index": row["index"], "class": row["class"],
                        "weight": row["weight"], "loss": best - equities[index],
                        "bounded": state == "dominated", "open": state == "open",
-                       "pass_used": row["pass_used"]})
+                       "pass_used": row["pass_used"], **cost})
     return scored
 
 
@@ -160,6 +168,13 @@ def main() -> int:
     parser.add_argument("--ply", type=int, default=2)
     parser.add_argument("--prune-model", default="")
     parser.add_argument("--prune-k", type=int, default=0)
+    parser.add_argument("--filter", default="",
+                        help="filtre de coups, « accepte » par profondeur "
+                             "(ex. 0,1,3) ; défaut : celui de FILTERS[ply]")
+    parser.add_argument("--filter-extra", default="",
+                        help="« extra » par profondeur (ex. 0,0,4)")
+    parser.add_argument("--filter-threshold", default="",
+                        help="seuil d'équité par profondeur (ex. 0,0,0.04)")
     parser.add_argument("--workers", type=int, default=26)
     parser.add_argument("--bootstrap", type=int, default=10_000)
     parser.add_argument("--seed", type=int, default=20260827)
@@ -184,7 +199,13 @@ def main() -> int:
 
     workers = max(1, min(args.workers, len(rows)))
     chunks = [rows[i::workers] for i in range(workers)]
-    payloads = [(chunk, args.model, args.ply, args.prune_model, args.prune_k, context)
+    def parse(text, kind):
+        return tuple(kind(x) for x in text.split(",")) if text else ()
+
+    move_filter = (parse(args.filter, int), parse(args.filter_extra, int),
+                   parse(args.filter_threshold, float))
+    payloads = [(chunk, args.model, args.ply, args.prune_model, args.prune_k, context,
+                 move_filter)
                 for chunk in chunks if chunk]
 
     started = time.perf_counter()
@@ -249,6 +270,13 @@ def main() -> int:
         "unresolved": unresolved,
         "loss": mean, "ci95": [low, high],
         "seconds": elapsed, "workers": workers,
+        "filter": list(move_filter[0]) or list(FILTERS[args.ply]),
+        "filter_extra": list(move_filter[1]),
+        "filter_threshold": list(move_filter[2]),
+        "prune_k": args.prune_k,
+        "evals": sum(s["evals"] for s in scored),
+        "prune_evals": sum(s["prune_evals"] for s in scored),
+        "search_seconds": sum(s["seconds"] for s in scored),
         "core_hours": elapsed * workers / 3600,
         "by_class": {name: {"n": len(part),
                             "loss": weighted_bootstrap([s["loss"] for s in part],
@@ -270,6 +298,10 @@ def main() -> int:
                                      "model": Path(args.model).name,
                                      "ply": args.ply, "context": context,
                                      "registry": registry.name,
+                                     "filter": result["filter"],
+                                     "filter_extra": result["filter_extra"],
+                                     "filter_threshold": result["filter_threshold"],
+                                     "prune_k": args.prune_k,
                                      "decisions": len(scored)}) + "\n")
             for s in sorted(scored, key=lambda r: r["index"]):
                 handle.write(json.dumps(s, sort_keys=True) + "\n")

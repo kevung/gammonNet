@@ -12,6 +12,7 @@
 #include "gn_cube.h"
 #include "gn_evalcache.h"
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -207,6 +208,19 @@ static int mirror_owner(int owner)
     if (owner == GN_CUBE_OPPONENT)
         return GN_CUBE_OWNED;
     return GN_CUBE_CENTRED;
+}
+
+int gn_search_set_filter(GnSearchConfig *config, int depth, int accept,
+                         int extra, double threshold)
+{
+    if (config == NULL || depth < 0 || depth > GN_MAX_PLY || accept < 0 ||
+        extra < 0 || !isfinite(threshold) || threshold < 0.0) {
+        return -1;
+    }
+    config->filter[depth] = accept;
+    config->filter_extra[depth] = extra;
+    config->filter_threshold[depth] = threshold;
+    return 0;
 }
 
 void gn_search_use_prune(GnSearchConfig *config, const GnNetwork *prune_net,
@@ -766,8 +780,49 @@ static int value_sweep(GnCandidate *out, int n, const GnSearchConfig *config,
  * big one -- which is also why this function then returns at most `prune_k`
  * candidates rather than every legal play. See `GnSearchConfig::prune_net`.
  */
+/* The most candidates the move filter can deepen at `depth`: accept + extra.
+ * Zero means no filtering, i.e. no ceiling. Negative counts read as zero, as
+ * the plain count always did. */
+static int filter_widest(const GnSearchConfig *config, int depth)
+{
+    const int accept = (config->filter[depth] > 0) ? config->filter[depth] : 0;
+    const int extra =
+        (config->filter_extra[depth] > 0) ? config->filter_extra[depth] : 0;
+    return accept + extra;
+}
+
+/*
+ * How many of the `n` shallow-ranked candidates (best first) the move filter
+ * deepens at `depth` -- the triplet of `GnSearchConfig::filter`. `n` when the
+ * filter is off.
+ *
+ * With `extra == 0` this is exactly the plain count it replaced: the band
+ * loop never runs and the threshold is never read, so a config that leaves
+ * `filter_extra` at zero searches the same candidates, in the same order,
+ * bit for bit.
+ */
+static int filter_survivors(const GnSearchConfig *config, int depth,
+                            const GnCandidate *ranked, int n)
+{
+    const int accept = (config->filter[depth] > 0) ? config->filter[depth] : 0;
+    const int extra =
+        (config->filter_extra[depth] > 0) ? config->filter_extra[depth] : 0;
+    if (accept == 0 && extra == 0) {
+        return n;
+    }
+    int keep = (accept < n) ? accept : n;
+    if (extra > 0) {
+        const int limit = (accept + extra < n) ? accept + extra : n;
+        const double floor = ranked[0].equity - config->filter_threshold[depth];
+        while (keep < limit && ranked[keep].equity >= floor) {
+            keep++;
+        }
+    }
+    return keep;
+}
+
 /* How many candidates the pruning pass lets through at `depth`, or 0 when
- * pruning is off. Never below `filter[depth]`: pruning under the filter would
+ * pruning is off. Never below `filter[depth] + filter_extra[depth]`: pruning under the filter would
  * search fewer candidates than the caller asked for, and the ranking would
  * look perfectly normal while doing it. */
 static int prune_keep(const GnSearchConfig *config, int depth)
@@ -776,8 +831,11 @@ static int prune_keep(const GnSearchConfig *config, int depth)
         return 0;
     }
     int keep = config->prune_k;
-    if (depth >= 0 && depth <= GN_MAX_PLY && config->filter[depth] > keep) {
-        keep = config->filter[depth];
+    if (depth >= 0 && depth <= GN_MAX_PLY) {
+        const int widest = filter_widest(config, depth);
+        if (widest > keep) {
+            keep = widest;
+        }
     }
     return keep;
 }
@@ -876,7 +934,8 @@ static int rank_plays_finish(const GnNetwork *net,
 }
 
 /*
- * PHASE THREE -- the deep pass over the best `filter[depth]` candidates.
+ * PHASE THREE -- the deep pass over what the move filter keeps at `depth`
+ * (`filter_survivors`).
  *
  * Split out so the grouped path can reach it after doing the big network's
  * shallow pass its own way. `rank_plays_finish` is now this plus the shallow
@@ -891,10 +950,10 @@ static int rank_plays_deepen(const GnNetwork *net, const GnSearchConfig *config,
     }
 
     int searched = written;
-    const int filter = config->filter[depth];
-    if (filter > 0 && filter < searched) {
-        tie_census_cut(out, searched, filter);
-        searched = filter;
+    const int keep = filter_survivors(config, depth, out, written);
+    if (keep < searched) {
+        tie_census_cut(out, searched, keep);
+        searched = keep;
     }
 
     for (int i = 0; i < searched; i++) {
@@ -1351,7 +1410,8 @@ double gn_search_equity(const GnNetwork *net, const GnPosition *pos,
  * GnSearchConfig's own convention: `filter[d]` applies at depth d, so the
  * published "(0,1,3)" reads as `{0, 1, 3, 0, 0}` here, matching what
  * gn_wasm.c's `gnw_rank_plays` builds when `filter_top = 3, filter_inner = 1`
- * at `ply = 2`.
+ * at `ply = 2`. The root's triplet travels to the WASM entry points as
+ * `filter_top` (accept), `filter_extra` and `filter_threshold`.
  *
  * `prune_equity_loss` and its CI are docs/mesures/2026-08-26-T3A-regroupement.md
  * (450 decisions, 2-ply, filter (0,1,3), pruned search vs the SAME search
@@ -1372,19 +1432,26 @@ static const GnSearchLevel LEVELS[] = {
         .prune_equity_loss_ci_high = 0.0,
     },
     {
-        /* The default. 2-ply filtered, pruned at k=12: x3.6-3.9 for an
-         * equity loss inside the noise (T3A). */
+        /* The default. 2-ply, pruned at k=12: x3.6-3.9 for an equity loss
+         * inside the noise (T3A, measured at the count filter (0,1,3)). The
+         * root filter is the triplet "the best, plus up to 2 more within 0.04
+         * of it": against (0,1,3), +0.00007 [+0.00002, +0.00012] equity lost
+         * per decision for x1.10 fewer evaluations
+         * (docs/mesures/2026-10-04-filtre-triplet-t70.md, money only). */
         .name = "normal",
         .ply = 2,
-        .filter = {0, 1, 3, 0, 0},
+        .filter = {0, 1, 1, 0, 0},
+        .filter_extra = {0, 0, 2, 0, 0},
+        .filter_threshold = {0.0, 0.0, 0.04, 0.0, 0.0},
         .prune_k = 12,
         .prune_equity_loss = 0.00023,
         .prune_equity_loss_ci_low = -0.00000,
         .prune_equity_loss_ci_high = 0.00067,
     },
     {
-        /* The same, unpruned -- for settling one decision precisely, not for
-         * walking a whole match. */
+        /* Unpruned, with the plain count filter (0,1,3) -- for settling one
+         * decision precisely, not for walking a whole match. It keeps the
+         * count: the triplet was measured pruned at k=12 only. */
         .name = "thorough",
         .ply = 2,
         .filter = {0, 1, 3, 0, 0},
