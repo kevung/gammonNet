@@ -120,7 +120,8 @@ pas.
 | Copier du code GNU Backgammon dans le pipeline | Œuvre dérivée |
 | Initialiser les poids depuis ceux de GNU Backgammon | Dérivé direct d'une œuvre GPL |
 | Utiliser ou fine-tuner un réseau sous clause non commerciale | Hors du périmètre de licence de ce dépôt |
-| Copier du code bgsage dans l'artefact | **MPL-2.0** (LICENSE du dépôt, vérifié le 2026-08-27 — et non AGPL-3 comme d'abord noté) : copyleft de fichier, qui imposerait ses obligations à l'artefact distribué. Lire, réimplémenter les idées et se comparer à son benchmark restent permis |
+| Copier du code bgsage dans l'artefact, ou y embarquer l'un de ses fichiers | **MPL-2.0** (LICENSE du dépôt, vérifié le 2026-08-27 — et non AGPL-3 comme d'abord noté ; **la licence couvre aussi les poids et la base de fin de partie**, revérifié le 2026-09-07) : copyleft de fichier, qui imposerait ses obligations à l'artefact distribué |
+| S'en servir comme professeur d'entraînement | Exclusion du §14 du plan de recherche, qui vise **tout** moteur externe. Ce n'est pas une contrainte de licence, c'est une décision de périmètre — et elle se rouvrirait par une fiche, pas par commodité |
 
 | Autorisé | Fondement |
 |---|---|
@@ -130,6 +131,7 @@ pas.
 | Utiliser les tables de fin de partie | Calcul exact reproductible |
 | Utiliser la table Kazaross-XG2, avec attribution | Œuvre de N. Kazaross ; lire `Kazaross-XG2.xml` n'est pas dériver du code de GNU Backgammon |
 | Utiliser et redistribuer les poids Strehl | MIT, poids inclus dans le dépôt |
+| **Exécuter bgsage comme oracle de mesure** | Exécuter n'est pas distribuer : MPL-2.0 ne restreint pas l'exécution, et son copyleft porte sur les fichiers modifiés qu'on distribue. Même fondement que pour GNU Backgammon, en plus confortable. C'est ce qui rend la phase 9 possible |
 
 ## 4. La recette d'entraînement de référence
 

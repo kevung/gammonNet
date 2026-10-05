@@ -19,6 +19,7 @@ Ce qui est vérifié ici :
 
 from __future__ import annotations
 
+import os
 import random
 import struct
 import sys
@@ -34,8 +35,17 @@ torch = pytest.importorskip("torch", reason="PyTorch absent — lancer `make ven
 
 ROOT = Path(__file__).resolve().parent.parent
 REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
-MODEL_PT = REFERENCE / "best_models" / "cubeless_prob5_512_512_256_128.pt"
-MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+# The network of record, and the two variables that aim this file at a
+# candidate instead. A weight update has to clear the same parity criterion the
+# incumbent cleared, on the same corpus: checking it by hand on the side would
+# measure something slightly different, which is how a criterion quietly turns
+# into a habit.
+MODEL_PT = Path(os.environ.get(
+    "GN_MODEL_PT",
+    REFERENCE / "best_models" / "cubeless_prob5_512_512_256_128.pt"))
+MODEL_BIN = Path(os.environ.get(
+    "GN_MODEL_BIN",
+    ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"))
 
 SEED = 20260803
 CORPUS_SIZE = 2_000

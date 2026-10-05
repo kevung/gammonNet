@@ -1,0 +1,40 @@
+{
+  "engines": [
+    "gammonnet-0ply",
+    "prob5-512-512-256-256-0ply"
+  ],
+  "pairs": 500000,
+  "seed": 20260917,
+  "bootstrap": 10000,
+  "seconds": 8874.447527714976,
+  "games": 2000000,
+  "antisymmetry_residual": 0.0,
+  "results": [
+    {
+      "a": "gammonnet-0ply",
+      "b": "prob5-512-512-256-256-0ply",
+      "pairs": 500000,
+      "games": 1000000,
+      "ppg": -0.00918,
+      "ci": [
+        -0.011397,
+        -0.006966
+      ],
+      "win_rate": 0.496468,
+      "stalled": 0
+    },
+    {
+      "a": "prob5-512-512-256-256-0ply",
+      "b": "gammonnet-0ply",
+      "pairs": 500000,
+      "games": 1000000,
+      "ppg": 0.00918,
+      "ci": [
+        0.006997,
+        0.011409
+      ],
+      "win_rate": 0.503532,
+      "stalled": 0
+    }
+  ]
+}
