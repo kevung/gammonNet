@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "gn_encoding.h"
 #include "gn_bearoff.h"
@@ -955,5 +956,88 @@ int gnw_search_level(const char *name, int *out, double *out_quality)
     out_quality[2] = level->prune_equity_loss_ci_high;
     out_quality[3] = (level->ply >= 1) ? level->filter_threshold[level->ply]
                                        : 0.0;
+    return 0;
+}
+
+/* ── La politique sans état (docs/specs/politique-spec.md) ─────────────
+ *
+ * Une décision entre, une action sort : `gn_policy_decide`, à travers la
+ * frontière JavaScript. Le plateau en 29 entiers (la convention du codec
+ * ci-dessus), le reste de la décision en 11 entiers, dans cet ordre :
+ *
+ *     [0] pending (0 coup, 1 avant de lancer, 2 double reçu, 3 abandon offert)
+ *     [1] d1   [2] d2   [3] cube   [4] propriétaire (GnCubeOwner, vu du trait)
+ *     [5] jacoby   [6] use_match   [7] away_on_roll   [8] away_opponent
+ *     [9] crawford   [10] resign_value
+ *
+ * `out_ints` reçoit 41 entiers : [0] l'action (GnActionKind), [1] la valeur
+ * d'abandon, [2] searched, [3] le nombre de sous-coups, [4..11] les couples
+ * (from, to), [12..40] le plateau résultant (zéro hors coup). `out_equities`
+ * reçoit les deux nombres comparés, du côté du décideur. `out_notation`, s'il
+ * n'est pas NULL, le nom du coup.
+ *
+ * Le niveau est un NOM ; un niveau qui élague exige le réseau d'élagage chargé
+ * par `gnw_load_prune` — son `k` à lui est ignoré, c'est celui du niveau qui
+ * vaut. Rend 0, ou -1 : refusé, jamais approximé.
+ */
+
+#include "gn_policy.h"
+
+#define GNW_POLICY_FIELDS 11
+#define GNW_POLICY_OUT_INTS 41
+
+EMSCRIPTEN_KEEPALIVE
+int gnw_policy_decide(const int *board, const int *fields, const char *level,
+                      int *out_ints, double *out_equities, char *out_notation)
+{
+    if (g_network == NULL || fields == NULL || out_ints == NULL
+        || out_equities == NULL) {
+        return -1;
+    }
+    GnDecision decision;
+    memset(&decision, 0, sizeof(decision));
+    if (gnw_board_to_position(board, &decision.position) != 0) {
+        return -1;
+    }
+    decision.pending = (GnPending)fields[0];
+    decision.d1 = fields[1];
+    decision.d2 = fields[2];
+    decision.cube = fields[3];
+    decision.cube_owner = fields[4];
+    decision.jacoby = fields[5];
+    decision.use_match = fields[6];
+    decision.away_on_roll = fields[7];
+    decision.away_opponent = fields[8];
+    decision.crawford = fields[9];
+    decision.resign_value = fields[10];
+
+    GnAction action;
+    const int rc = gn_policy_decide(g_network, g_prune, level, &decision, &action);
+    memset(out_ints, 0, sizeof(int) * GNW_POLICY_OUT_INTS);
+    out_equities[0] = 0.0;
+    out_equities[1] = 0.0;
+    if (out_notation != NULL) {
+        out_notation[0] = '\0';
+    }
+    if (rc != 0) {
+        return -1;
+    }
+    out_ints[0] = (int)action.kind;
+    out_ints[1] = action.resign_value;
+    out_ints[2] = action.searched;
+    if (action.kind == GN_ACTION_MOVE) {
+        out_ints[3] = action.play.num_moves;
+        for (int i = 0; i < action.play.num_moves; i++) {
+            out_ints[4 + 2 * i] = action.play.moves[i].from;
+            out_ints[5 + 2 * i] = action.play.moves[i].to;
+        }
+        gnw_position_to_board(&action.play.result, out_ints + 12);
+        if (out_notation != NULL) {
+            gn_play_notation(&action.play, (int)decision.position.turn,
+                             out_notation);
+        }
+    }
+    out_equities[0] = action.equity_a;
+    out_equities[1] = action.equity_b;
     return 0;
 }

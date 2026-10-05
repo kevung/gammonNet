@@ -121,8 +121,8 @@ Dans l'ordre :
      définition.
 
 `equity_a` = ne pas doubler, `equity_b` = doubler (`min(prise, passe)`), du point de vue du
-joueur au trait, par unité du videau courant en money, `2·MWC − 1` en match — les champs de
-`GnCubeDecision`. Nuls quand rien n'a été calculé.
+joueur au trait, par unité du videau courant en money, en MWC en match — les champs de
+`GnCubeDecision` tels quels. Nuls quand rien n'a été calculé.
 
 ### 5.3 Double reçu → prendre ou passer — **la fonction qui manquait**
 
@@ -146,7 +146,10 @@ preneur** :
 Refusé (−1) : un double que les règles interdisent — videau chez le preneur
 (`cube_owner == GN_CUBE_OPPONENT`, vu du doubleur), ou partie de Crawford.
 
-`equity_a` = prendre, `equity_b` = passer, du point de vue du preneur.
+`equity_a` = prendre, `equity_b` = passer, du point de vue du preneur : points par videau
+courant en money, MWC du preneur en match (`(1 − e)/2` des nombres du doubleur, sur l'échelle
+`2·MWC − 1` de `gn_cube_value`). Le verdict, lui, est la comparaison de T35 sur les nombres du
+doubleur, telle quelle.
 
 ### 5.4 Abandon proposé → accepter ou refuser
 
@@ -164,7 +167,7 @@ ignoré à dessein, comme le demande l'issue : sa valeur d'option est la seule c
 abandon accepté abandonne, et elle n'a pas de signe garanti.
 
 `equity_a` = accepter, `equity_b` = continuer, du point de vue du décideur (points par
-videau en money ; MWC en match, et non `2·MWC − 1` : c'est le nombre que `gn_met_after` rend).
+videau en money ; MWC en match).
 
 ### 5.5 Abandon du joueur → seulement la défaite certaine, pour sa valeur certaine
 
@@ -208,7 +211,7 @@ simplement pas lue, et l'on joue. `H` est une constante nommée ; l'élargir est
 | `play` | `GN_ACTION_MOVE` : le coup ; ailleurs, zéro |
 | `resign_value` | `GN_ACTION_RESIGN` : 1, 2 ou 3 ; ailleurs 0 |
 | `searched` | 1 si une recherche ou une évaluation a tourné, 0 pour les raccourcis |
-| `equity_a`, `equity_b` | les deux nombres comparés, §5 ; 0 quand rien n'a été calculé |
+| `equity_a`, `equity_b` | les deux nombres comparés, §5, du côté du décideur ; 0 quand rien n'a été calculé. **Une échelle par mode** pour les décisions de videau et d'abandon : points par videau courant en money, MWC en match. Le coup (§5.1) garde l'échelle de la recherche |
 
 Retour : 0, ou −1 pour une entrée refusée — position invalide ou terminée, dés hors 1..6, niveau
 inconnu, élagage exigé et absent, état de match hors table (`gn_match_state_is_valid`),
