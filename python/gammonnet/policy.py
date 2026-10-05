@@ -212,6 +212,15 @@ class Shape:
     prune_k: int = 0
 
 
+def search_level_shape(name: str) -> Shape:
+    """La forme d'un niveau canonique, lue dans `gn_search_level`."""
+    from .search import search_level
+
+    lv = search_level(name)
+    return Shape(ply=lv.ply, filter=lv.filter, filter_extra=lv.filter_extra,
+                 filter_threshold=lv.filter_threshold, prune_k=lv.prune_k)
+
+
 @dataclass
 class PolicyPlayer:
     """La politique, branchée sur la boucle cubeful (`cubeful.CubefulPlayer`).
@@ -311,7 +320,7 @@ def pack_record(level: str, decision: Decision, action: Action | None) -> bytes:
     head = _INPUT.pack(*_position_fields(decision.position), LEVELS.index(level),
                        *_decision_fields(decision))
     if action is None:
-        return head + bytes(80)
+        return head + struct.pack("<i", -1) + bytes(76)
     moves = [0] * 8
     result = bytes(_POSITION.size)
     num = 0

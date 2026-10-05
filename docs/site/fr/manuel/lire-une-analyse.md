@@ -110,3 +110,22 @@ evaluator.rankPlays(id, 0, d1, d2, {
 
 Mesuré sur une même position : **−0,167** avec le videau en main, **−0,449** avec le videau contre
 soi.
+
+## Faire jouer un match : la politique
+
+Pour **jouer** plutôt qu'analyser, une seule fonction suffit : une décision entre, une action sort.
+La partie, les dés et le score restent chez vous ; rien n'est gardé d'un appel à l'autre.
+
+```javascript
+const board = evaluator.positionFromId("4HPwATDgc/ABMA", 0);
+evaluator.policy(board, { pending: "move", d1: 3, d2: 1, level: "normal" });   // le coup
+evaluator.policy(board, { pending: "cube", level: "normal",
+                          useMatch: true, awayOnRoll: 3, awayOpponent: 5 });  // roll, double ou resign
+evaluator.policy(board, { pending: "take", level: "normal" });   // l'adversaire du trait répond
+evaluator.policy(board, { pending: "resign", resignValue: 2 });  // une offre d'abandon
+```
+
+Tout est vu **du joueur au trait** ; qui décide se déduit de `pending`. Le niveau est un nom
+(`instant`, `normal`, `thorough`) ; `normal` exige `loadPrune`. L'abandon n'est proposé que sur
+une défaite **certaine**, lue exactement en course, jamais sur un jugement d'équité. La
+spécification complète est `docs/specs/politique-spec.md`.

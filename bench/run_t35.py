@@ -68,7 +68,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
-from gammonnet.arena import derive_seed  # noqa: E402
+from gammonnet.arena import derive_seed, pair_key  # noqa: E402
 from gammonnet.cubeful import (  # noqa: E402
     CUBE_CAP,
     GammonNetCubePlayer,
@@ -130,11 +130,12 @@ def sampled_score(seed: int, index: int, length: int) -> tuple[int, int, bool]:
 
 _A = None
 _B = None
+_KEY = None
 
 
-def _install(a, b, evalcache_log2):
-    global _A, _B
-    _A, _B = a, b
+def _install(a, b, evalcache_log2, dice_key=None):
+    global _A, _B, _KEY
+    _A, _B, _KEY = a, b, dice_key
     if evalcache_log2:
         # ×3,41 mesuré sur une paire identique (2026-08-09), résultats
         # vérifiés bit à bit : le cache rejoue les mêmes évaluations, il n'en
@@ -148,11 +149,11 @@ def _install(a, b, evalcache_log2):
 def _play(payload):
     mode, seed, index, length = payload
     if mode == "money":
-        net, stats = play_cubeful_duplicate(_A, _B, seed, index)
+        net, stats = play_cubeful_duplicate(_A, _B, seed, index, dice_key=_KEY)
         return {"i": index, "net": net, **stats}
     away_a, away_b, crawford_done = sampled_score(seed, index, length)
     net, stats = play_match_duplicate(_A, _B, away_a, away_b, seed, index,
-                                      crawford_done=crawford_done)
+                                      crawford_done=crawford_done, dice_key=_KEY)
     return {"i": index, "net": net, "away_a": away_a, "away_b": away_b,
             "post_crawford": crawford_done, **stats}
 
@@ -243,13 +244,36 @@ def main() -> int:
     parser.add_argument("--gnubg-filter", default="0,1,1")
     parser.add_argument("--gnubg-cube-ply", type=int, default=None)
     parser.add_argument("--match-length", type=int, default=7)
+    # La politique sans état (docs/specs/politique-spec.md §9) pour notre camp,
+    # au niveau nommé, à la place du joueur de T35.
+    parser.add_argument("--ours-policy", default=None,
+                        help="niveau de la politique sans état (instant, normal, thorough)")
+    # Rejouer les DÉS d'un journal existant : les dés d'une paire dérivent des
+    # noms des deux joueurs, et un joueur renommé tirerait d'autres parties.
+    # Avec la clé du journal, la paire i rejoue la situation de sa paire i —
+    # même score échantillonné, mêmes jets — et la comparaison s'apparie.
+    parser.add_argument("--dice-key-from", type=Path, default=None,
+                        help="journal dont reprendre la clé de dés (noms de son en-tête)")
     args = parser.parse_args()
 
     ours_cube = args.ours_cube_ply if args.ours_cube_ply is not None else args.ours_ply
-    ours = GammonNetCubePlayer(ply=args.ours_ply,
-                               filter=parse_filter(args.ours_filter),
-                               cube_ply=ours_cube,
-                               prune_k=args.ours_prune_k)
+    if args.ours_policy:
+        from gammonnet.policy import PolicyPlayer, search_level_shape
+
+        ours = PolicyPlayer(level=args.ours_policy)
+        shape = search_level_shape(args.ours_policy)
+        ours.ply, ours.filter, ours.cube_ply = shape.ply, shape.filter, shape.ply
+    else:
+        ours = GammonNetCubePlayer(ply=args.ours_ply,
+                                   filter=parse_filter(args.ours_filter),
+                                   cube_ply=ours_cube,
+                                   prune_k=args.ours_prune_k)
+    dice_key = None
+    if args.dice_key_from is not None:
+        source, _ = read_journal(args.dice_key_from)
+        if source is None:
+            raise SystemExit(f"pas d'en-tête dans {args.dice_key_from}")
+        dice_key = pair_key(source["ours"]["name"], source["theirs"]["name"])
     if args.theirs == "self":
         other_k = (args.theirs_prune_k if args.theirs_prune_k is not None
                    else args.ours_prune_k)
@@ -286,6 +310,10 @@ def main() -> int:
                            if args.mode == "match" else None),
         "pairs_target": args.pairs,
     }
+    if args.ours_policy:
+        wanted_header["ours"]["policy_level"] = args.ours_policy
+    if dice_key is not None:
+        wanted_header["dice_key"] = dice_key
 
     header, rows = read_journal(args.journal)
     if header is not None:
@@ -328,7 +356,8 @@ def main() -> int:
 
         with ProcessPoolExecutor(args.workers, initializer=_install,
                                  initargs=(ours, theirs,
-                                           args.evalcache_log2)) as pool:
+                                           args.evalcache_log2,
+                                           dice_key)) as pool:
             try:
                 refill(pool)
                 while pending:

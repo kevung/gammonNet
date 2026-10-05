@@ -364,6 +364,13 @@ wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/worker_invariants.mjs
 	node $(WASM_DIR)/pool_invariants.mjs
 
+# La politique sans état, cible WebAssembly contre la référence native : le
+# corpus `data/policy_reference.bin` rejoué décision par décision
+# (docs/specs/politique-spec.md §8). `--all` y ajoute les niveaux qui cherchent.
+.PHONY: wasm-policy
+wasm-policy: wasm $(MODEL) $(PRUNE_MODEL)
+	node $(WASM_DIR)/policy_parity.mjs --all
+
 # La parité du CODEC, sur le corpus T12 entier et à l'égalité EXACTE — un
 # identifiant est une chaîne, il n'y a pas de tolérance à lui accorder. Le
 # repère vient du C natif (`tools/dump_codec_reference.py`), jamais d'une

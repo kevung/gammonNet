@@ -110,9 +110,37 @@ static int pips_needed(const GnPosition *pos, int side, Goal goal)
     return 0;
 }
 
+/* The 21 rolls, largest first: an existential search finds its witness
+ * soonest among the big rolls, and the order changes no answer. */
+static const signed char ROLLS[21][2] = {
+    {6, 6}, {5, 5}, {4, 4}, {6, 5}, {3, 3}, {6, 4}, {5, 4}, {6, 3}, {5, 3},
+    {2, 2}, {6, 2}, {4, 3}, {5, 2}, {6, 1}, {4, 2}, {5, 1}, {1, 1}, {3, 2},
+    {4, 1}, {3, 1}, {2, 1}
+};
+
+/*
+ * A lower bound on the DICE `side` must spend before `goal` can hold: a die
+ * moves one checker at most six pips, so a checker `e` pips short of where the
+ * goal wants it needs ceil(e / 6) dice. A roll offers at most four. Sharper
+ * than the pip bound whenever the distance is spread over many checkers.
+ */
+static int dice_needed(const GnPosition *pos, int side, Goal goal)
+{
+    const int edge = (goal == GOAL_ALL_OFF) ? 0 : (goal == GOAL_ONE_OFF) ? 6 : 18;
+    int need = 0;
+    for (int i = 0; i < GN_NUM_POINTS; i++) {
+        if (owns(pos, side, i) && distance(side, i) > edge)
+            need += count_at(pos, i) * ((distance(side, i) - edge + 5) / 6);
+    }
+    /* ONE_OFF also needs the die that bears the checker off. */
+    return need + (goal == GOAL_ONE_OFF ? 1 : 0);
+}
+
 /* `exists` = 1: can `side` reach `goal` within `k` rolls for SOME dice?
  * `exists` = 0: is it SURE to, whatever the dice? Either way the player picks
- * the play. Valid only in a race, where the other side cannot interfere. */
+ * the play, and the plays are tried closest-to-the-goal first -- an order that,
+ * like the rolls', only decides how soon the answer is found, never which.
+ * Valid only in a race, where the other side cannot interfere. */
 static int reach(const GnPosition *pos, int side, Goal goal, int k, int exists,
                  GnPlay *buffer)
 {
@@ -120,7 +148,7 @@ static int reach(const GnPosition *pos, int side, Goal goal, int k, int exists,
         return 1;
     if (k == 0)
         return 0;
-    if (pips_needed(pos, side, goal) > 24 * k)
+    if (pips_needed(pos, side, goal) > 24 * k || dice_needed(pos, side, goal) > 4 * k)
         return 0;
     if (goal == GOAL_ALL_OFF) {
         const int left = GN_NUM_CHECKERS - pos->off[side];
@@ -134,23 +162,39 @@ static int reach(const GnPosition *pos, int side, Goal goal, int k, int exists,
     mover.turn = (unsigned char)side;
     GnPlay *plays = buffer;
     GnPlay *next = buffer + GN_MAX_PLAYS;
+    static _Thread_local int need[GN_POLICY_RESIGN_HORIZON + 1][GN_MAX_PLAYS];
+    int *order = need[k - 1 < GN_POLICY_RESIGN_HORIZON ? k - 1 : GN_POLICY_RESIGN_HORIZON];
 
-    for (int d1 = 1; d1 <= 6; d1++) {
-        for (int d2 = d1; d2 <= 6; d2++) {
-            const int n = gn_legal_plays(&mover, d1, d2, plays, GN_MAX_PLAYS);
-            int ok = 0;
-            if (n < 0)
-                return 0;   /* unreadable: never claim a certainty */
-            if (n == 0) {
-                ok = reach(&mover, side, goal, k - 1, exists, next);
-            }
-            for (int j = 0; j < n && !ok; j++)
-                ok = reach(&plays[j].result, side, goal, k - 1, exists, next);
-            if (exists && ok)
-                return 1;
-            if (!exists && !ok)
-                return 0;
+    for (int r = 0; r < 21; r++) {
+        const int n = gn_legal_plays(&mover, ROLLS[r][0], ROLLS[r][1], plays,
+                                     GN_MAX_PLAYS);
+        int ok = 0;
+        if (n < 0)
+            return 0;   /* unreadable: never claim a certainty */
+        if (n == 0)
+            ok = reach(&mover, side, goal, k - 1, exists, next);
+        for (int j = 0; j < n && !ok; j++) {
+            if (goal_reached(&plays[j].result, side, goal))
+                ok = 1;
         }
+        if (!ok && k > 1 && n > 0) {
+            /* Closest first: pick the next best by a selection walk, so a
+             * witness found early stops the whole enumeration. */
+            for (int j = 0; j < n; j++)
+                order[j] = pips_needed(&plays[j].result, side, goal);
+            for (int tried = 0; tried < n && !ok; tried++) {
+                int best = -1;
+                for (int j = 0; j < n; j++)
+                    if (order[j] >= 0 && (best < 0 || order[j] < order[best]))
+                        best = j;
+                order[best] = -1;
+                ok = reach(&plays[best].result, side, goal, k - 1, exists, next);
+            }
+        }
+        if (exists && ok)
+            return 1;
+        if (!exists && !ok)
+            return 0;
     }
     return exists ? 0 : 1;
 }
