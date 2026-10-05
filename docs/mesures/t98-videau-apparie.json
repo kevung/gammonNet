@@ -1,0 +1,11 @@
+{
+ "task": "T98",
+ "what": "T34 cube comparison vs gnubg 0-ply, same 30000 decisions (corpus drawn by the 128 network), paired by row order",
+ "agreement_128": 0.9229333333333334,
+ "agreement_256": 0.9195666666666666,
+ "only_128_agrees": 523,
+ "only_256_agrees": 422,
+ "mcnemar_z": -3.285530245593395,
+ "action_changed": 959,
+ "note": "the control (128) does not reproduce the published T34 figure 0.8134: unmodified main gives 0.9229 too; the instrument changed since 2026-08-07, not the network"
+}

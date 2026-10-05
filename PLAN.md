@@ -2943,6 +2943,10 @@ score, et l'avantage statique sous recherche.
 - **Volume fixé avant la lecture du signe** : les 1 000 premières paires de chaque moitié ne
   servent qu'à mesurer l'écart-type par paire. Le volume final est celui qui ramène la
   demi-largeur de l'IC sous la moitié de la marge, consigné ici avant de reprendre.
+- **Volumes consignés le 2026-10-05**, écart-type seul lu sur le pilote : match **0,474** par
+  paire → **35 000 paires** (mochy, graine 20261005) ; money **1,144** par paire →
+  **201 000 paires**, en deux journaux indépendants mis en commun — 120 000 sur melbaa (graine
+  20261005), 81 000 sur mochy (graine 20261006). Les pilotes font partie des journaux.
 - **Lecture** — borne basse au-dessus de la marge : pas de régression, bascule. En dessous :
   bascule suspendue, et la moitié en cause est instruite avant toute autre chose.
 
