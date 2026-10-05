@@ -224,6 +224,21 @@ def export(net, args) -> None:
         raise SystemExit(result.returncode)
 
 
+def configure_paths(teacher: Path, out: Path) -> None:
+    """Point the module-level paths at another teacher and another artefact.
+
+    The defaults reproduce `prune_32.bin`; redistilling from another big network
+    must not overwrite it, so the raw .pt and the provenance follow the .bin's
+    stem.
+    """
+    global RAW_PT, OUT_BIN, OUT_PROVENANCE, GRAND_MODEL, GRAND_PROVENANCE
+    GRAND_MODEL = teacher.resolve()
+    GRAND_PROVENANCE = GRAND_MODEL.with_name(GRAND_MODEL.stem + ".provenance.json")
+    OUT_BIN = out.resolve()
+    RAW_PT = OUT_BIN.with_name(OUT_BIN.stem + "_raw.pt")
+    OUT_PROVENANCE = OUT_BIN.with_name(OUT_BIN.stem + ".provenance.json")
+
+
 def verify_c_loader() -> list[dict]:
     """Load the exported .bin through OUR C loader, evaluate 3 positions.
 
@@ -273,7 +288,12 @@ def main() -> int:
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--seed", type=int, default=TRAIN_SEED)
     parser.add_argument("--split-seed", type=int, default=TRAIN_SEED)
+    parser.add_argument("--teacher", type=Path, default=GRAND_MODEL,
+                        help="grand réseau qui a étiqueté le corpus (provenance)")
+    parser.add_argument("--out", type=Path, default=OUT_BIN,
+                        help="artefact .bin ; le .pt brut et la provenance suivent son nom")
     args = parser.parse_args()
+    configure_paths(args.teacher, args.out)
 
     print("T3A — entraînement du réseau d'élagage par distillation")
     set_seeds(args.seed)
@@ -281,6 +301,9 @@ def main() -> int:
     features, labels, corpus_meta = load_corpus(args.corpus)
     print(f"  corpus : {corpus_meta['size']:,} positions, graine {corpus_meta['seed']}, "
           f"{corpus_meta['workers']} processus, enseignant {Path(corpus_meta['model']).name}")
+    if Path(corpus_meta["model"]).name != GRAND_MODEL.name:
+        raise SystemExit(f"le corpus a été étiqueté par {Path(corpus_meta['model']).name}, "
+                         f"pas par --teacher {GRAND_MODEL.name}")
 
     net, train_meta = train(features, labels, args)
 
@@ -295,7 +318,7 @@ def main() -> int:
     grand_provenance = json.loads(GRAND_PROVENANCE.read_text()) if GRAND_PROVENANCE.is_file() else None
 
     provenance = {
-        "network": "prune_32",
+        "network": OUT_BIN.stem,
         "architecture": {
             "input_size": INPUT_SIZE,
             "hidden_sizes": HIDDEN_SIZES,
@@ -303,12 +326,12 @@ def main() -> int:
             "output_mode": "prob5",
         },
         "distilled_from": {
-            "network": "cubeless_prob5_512_512_256_128",
+            "network": GRAND_MODEL.stem,
             "artifact": str(GRAND_MODEL.relative_to(ROOT)),
             "sha256": grand_provenance["sha256"] if grand_provenance else None,
         },
         "corpus": {
-            "path": "build/prune_corpus.npz (gitignored — se régénère par graine)",
+            "path": f"{args.corpus.resolve().relative_to(ROOT)} (gitignored — se régénère par graine)",
             "size": corpus_meta["size"],
             "seed": corpus_meta["seed"],
             "workers": corpus_meta["workers"],

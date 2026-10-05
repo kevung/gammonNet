@@ -1,0 +1,332 @@
+{
+  "task": "T34-phase2-3a + T80",
+  "seed": 20260808,
+  "positions": 2000,
+  "efficiency": {
+    "OWNED": 0.5660000000000001,
+    "CENTRED": 0.6880000000000001
+  },
+  "network": "",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "per_owner": {
+    "OWNED": {
+      "ply0": {
+        "n": 2000,
+        "agreed": 1966,
+        "rate": 0.983,
+        "mean_loss": 0.0007225909819180592,
+        "worst_loss": 0.27775997558556487,
+        "above_0.01": 20
+      },
+      "ply1": {
+        "n": 2000,
+        "agreed": 1966,
+        "rate": 0.983,
+        "mean_loss": 0.0007225909819180592,
+        "worst_loss": 0.27775997558556487,
+        "above_0.01": 20
+      },
+      "contested": {
+        "ply0": {
+          "n": 1059,
+          "agreed": 1025,
+          "rate": 0.9678942398489141,
+          "mean_loss": 0.0013646666325175811,
+          "worst_loss": 0.27775997558556487,
+          "above_0.01": 20
+        },
+        "ply1": {
+          "n": 1059,
+          "agreed": 1025,
+          "rate": 0.9678942398489141,
+          "mean_loss": 0.0013646666325175811,
+          "worst_loss": 0.27775997558556487,
+          "above_0.01": 20
+        }
+      }
+    },
+    "CENTRED": {
+      "ply0": {
+        "n": 2000,
+        "agreed": 1950,
+        "rate": 0.975,
+        "mean_loss": 0.0013524834058136882,
+        "worst_loss": 0.27775997558556487,
+        "above_0.01": 31
+      },
+      "ply1": {
+        "n": 2000,
+        "agreed": 1950,
+        "rate": 0.975,
+        "mean_loss": 0.0013524834058136882,
+        "worst_loss": 0.27775997558556487,
+        "above_0.01": 31
+      },
+      "contested": {
+        "ply0": {
+          "n": 1064,
+          "agreed": 1014,
+          "rate": 0.9530075187969925,
+          "mean_loss": 0.0025422620410031735,
+          "worst_loss": 0.27775997558556487,
+          "above_0.01": 31
+        },
+        "ply1": {
+          "n": 1064,
+          "agreed": 1014,
+          "rate": 0.9530075187969925,
+          "mean_loss": 0.0025422620410031735,
+          "worst_loss": 0.27775997558556487,
+          "above_0.01": 31
+        }
+      }
+    }
+  },
+  "ply_flips": {
+    "n": 0,
+    "toward_exact": 0,
+    "away_from_exact": 0
+  },
+  "worst_disagreements": [
+    {
+      "id": "AQAASAAAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.27775997558556487,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.10743692708015445,
+      "ply0_loss": 0.27775997558556487,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.10741665154695518,
+      "ply1_loss": 0.27775997558556487
+    },
+    {
+      "id": "AQAASAAAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.27775997558556487,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.09808978780110655,
+      "ply0_loss": 0.27775997558556487,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.0980740623474119,
+      "ply1_loss": 0.27775997558556487
+    },
+    {
+      "id": "mQAAQBUAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.21355001144426655,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.000660575866699098,
+      "ply0_loss": 0.21355001144426655,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.0006501274108885458,
+      "ply1_loss": 0.21355001144426655
+    },
+    {
+      "id": "QQAAQAIAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.1972533760585946,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.10624950408935535,
+      "ply0_loss": 0.1972533760585946,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.10623293431599923,
+      "ply1_loss": 0.1972533760585946
+    },
+    {
+      "id": "DAAAGAEAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.18669413290608072,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.21138863325119034,
+      "ply0_loss": 0.18669413290608072,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.2113770666718485,
+      "ply1_loss": 0.18669413290608072
+    },
+    {
+      "id": "DAAAGAEAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.18669413290608072,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.17871345011393241,
+      "ply0_loss": 0.18669413290608072,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.1787044792175293,
+      "ply1_loss": 0.18669413290608072
+    },
+    {
+      "id": "NgAA4CAAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.183978027008469,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.04478208287556951,
+      "ply0_loss": 0.183978027008469,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.04478049977620424,
+      "ply1_loss": 0.183978027008469
+    },
+    {
+      "id": "QQAAQAIAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.17769130998702987,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.11795761549472811,
+      "ply0_loss": 0.17769130998702987,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.11793625134229663,
+      "ply1_loss": 0.17769130998702987
+    },
+    {
+      "id": "IgAAQAEAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.1616083009079119,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.16501499684651677,
+      "ply0_loss": 0.1616083009079119,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.16499177805582674,
+      "ply1_loss": 0.1616083009079119
+    },
+    {
+      "id": "sAAAsBIAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.15742732890821687,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.008604146321614325,
+      "ply0_loss": 0.15742732890821687,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.008591375986734762,
+      "ply1_loss": 0.15742732890821687
+    },
+    {
+      "id": "DAAAWAEAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.1539787899595637,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.24504057526588455,
+      "ply0_loss": 0.1539787899595637,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.24504057526588455,
+      "ply1_loss": 0.1539787899595637
+    },
+    {
+      "id": "DAAAWAEAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.1539787899595637,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.204813481648763,
+      "ply0_loss": 0.1539787899595637,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.204813481648763,
+      "ply1_loss": 0.1539787899595637
+    },
+    {
+      "id": "KgEAICoAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.14320592050049585,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.012981099446614408,
+      "ply0_loss": 0.14320592050049585,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.012957880655924292,
+      "ply1_loss": 0.14320592050049585
+    },
+    {
+      "id": "0wEAAFYBAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.13530174715800736,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.0040379600524901305,
+      "ply0_loss": 0.13530174715800736,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.004023712158203074,
+      "ply1_loss": 0.13530174715800736
+    },
+    {
+      "id": "xQAAoBoAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.11003280689707817,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.06604574584960926,
+      "ply0_loss": 0.11003280689707817,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.06612226231892887,
+      "ply1_loss": 0.11003280689707817
+    },
+    {
+      "id": "IgAAQAEAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.1098496986343176,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.19372660267353062,
+      "ply0_loss": 0.1098496986343176,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.19369666564464574,
+      "ply1_loss": 0.1098496986343176
+    },
+    {
+      "id": "CwMAAJcAAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.09227130540932338,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.03872989400227855,
+      "ply0_loss": 0.09227130540932338,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.03872313944498673,
+      "ply1_loss": 0.09227130540932338
+    },
+    {
+      "id": "GwYAgJwCAAAAAA",
+      "owner": "CENTRED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.0841840238040743,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.0061724001566567654,
+      "ply0_loss": 0.0841840238040743,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.006348757425943874,
+      "ply1_loss": 0.0841840238040743
+    },
+    {
+      "id": "xQAAoBoAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.08006408789196628,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.06612110567092899,
+      "ply0_loss": 0.08006408789196628,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.06621976178884509,
+      "ply1_loss": 0.08006408789196628
+    },
+    {
+      "id": "NgAA4CAAAAAAAA",
+      "owner": "OWNED",
+      "exact": "DOUBLE_TAKE",
+      "exact_margin": -0.07469291218432916,
+      "ply0": "NO_DOUBLE",
+      "ply0_margin": 0.03870491069555293,
+      "ply0_loss": 0.07469291218432916,
+      "ply1": "NO_DOUBLE",
+      "ply1_margin": 0.038702869534492534,
+      "ply1_loss": 0.07469291218432916
+    }
+  ]
+}

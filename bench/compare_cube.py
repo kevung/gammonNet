@@ -285,14 +285,15 @@ def measure(payload):
     return rows
 
 
-def opponent_sanity_check(positions: list[tuple[Position, str]], efficiency) -> dict:
+def opponent_sanity_check(positions: list[tuple[Position, str]], efficiency,
+                          model: str = MODEL) -> dict:
     """A small sample where NOBODY can double -- both engines must agree that
     no double is possible. Never folded into the confusion matrix: there is
     no real decision here, only a structural check.
     """
     from gammonnet.gnubg_engine import GnubgSession
 
-    network = Network.load(MODEL)
+    network = Network.load(model)
     session = GnubgSession()
 
     boards = [gb.to_gnubg(position) for position, _origin in positions]
@@ -355,12 +356,12 @@ def agreement_stats(rows: list[dict]) -> dict:
 
 
 def run(positions: list[tuple[Position, str]], efficiency, workers: int,
-        progress: Path | None) -> tuple[list[dict], float]:
+        progress: Path | None, model: str = MODEL) -> tuple[list[dict], float]:
     from concurrent.futures import ProcessPoolExecutor
 
     workers = max(1, min(workers, len(positions)))
     chunks = [positions[i::workers] for i in range(workers)]
-    payloads = [(MODEL, efficiency, chunk, progress) for chunk in chunks if chunk]
+    payloads = [(model, efficiency, chunk, progress) for chunk in chunks if chunk]
 
     start = time.perf_counter()
     if len(payloads) == 1:
@@ -385,7 +386,14 @@ def main() -> int:
     parser.add_argument("--sanity-sample", type=int, default=60,
                         help="sample size for the opponent-owns-the-cube sanity check")
     parser.add_argument("--out", default="")
+    # The corpus is always walked by the reference network, so that two runs
+    # with different --model score the SAME positions and pair row by row.
+    parser.add_argument("--model", default=MODEL,
+                        help="réseau qui décide le videau (le corpus reste celui de MODEL)")
+    parser.add_argument("--dump", default="",
+                        help="écrire chaque décision (.jsonl) pour apparier deux réseaux")
     args = parser.parse_args()
+    args.model = str(Path(args.model).resolve())
 
     print("T34 §6.3 — cube decisions against GNU Backgammon")
     print(f"  corpus: {args.contact} contact (seed {CONTACT_SEED}) + "
@@ -407,7 +415,8 @@ def main() -> int:
 
     if args.pilot:
         pilot_positions = positions[:args.pilot]
-        pilot_rows, pilot_elapsed = run(pilot_positions, efficiency, workers=1, progress=None)
+        pilot_rows, pilot_elapsed = run(pilot_positions, efficiency, workers=1, progress=None,
+                                        model=args.model)
         per_position = pilot_elapsed / len(pilot_positions)
         projected = per_position * len(positions) / max(1, args.workers)
         print(f"pilot: {len(pilot_positions)} positions, {len(pilot_rows)} decisions, "
@@ -417,13 +426,18 @@ def main() -> int:
               f"see CLAUDE.md rule 3)\n", flush=True)
 
     print("running the full corpus...", flush=True)
-    rows, elapsed = run(positions, efficiency, workers=args.workers, progress=PROGRESS)
+    rows, elapsed = run(positions, efficiency, workers=args.workers, progress=PROGRESS,
+                        model=args.model)
+    if args.dump:
+        with open(args.dump, "w") as handle:
+            for row in rows:
+                handle.write(json.dumps(row) + "\n")
     print(f"{len(rows)} decisions in {elapsed / 60:.1f} min on {args.workers} workers "
           f"(MEASURED, not extrapolated)\n")
 
     print("opponent-owns-the-cube sanity check...", flush=True)
     sanity_positions = positions[:args.sanity_sample]
-    sanity = opponent_sanity_check(sanity_positions, efficiency)
+    sanity = opponent_sanity_check(sanity_positions, efficiency, model=args.model)
     print(f"  {sanity['agreed']}/{sanity['checked']} agree that no double is possible "
           f"({sanity['contexts']})\n")
 
@@ -478,6 +492,7 @@ def main() -> int:
     if args.out:
         Path(args.out).write_text(json.dumps({
             "task": "T34-6.3",
+            "model": Path(args.model).name,
             "seed_contact": CONTACT_SEED,
             "seed_bearoff": BEAROFF_SEED,
             "positions": {"contact": args.contact, "bearoff": args.bearoff,

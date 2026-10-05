@@ -342,8 +342,8 @@ def main() -> int:
     payload = {
         "task": "T3A",
         "measure_seed": args.seed,
-        "grand_model": str(args.grand.relative_to(ROOT)),
-        "small_model": str(args.small.relative_to(ROOT)),
+        "grand_model": str(args.grand.resolve().relative_to(ROOT)),
+        "small_model": str(args.small.resolve().relative_to(ROOT)),
         "contact": {"decisions": results["contact"]["n_cases"],
                     "hits": results["contact"]["hits"],
                     "n_sum": results["contact"]["n_sum"],

@@ -150,12 +150,12 @@ def net_decision(net: BearoffNet, position: Position,
 
 def evaluate(payload):
     """Un lot de positions, dans un processus : rien n'est partagé."""
-    (positions, x_of_raw, net_path, plies) = payload
+    (positions, x_of_raw, net_path, plies, model) = payload
 
     x_of = {CubeOwner(owner): x for owner, x in x_of_raw.items()}
     use_shared(str(DATABASE))
     native = NativeBearoff(str(DATABASE))
-    network = Network.load(str(MODEL_BIN))
+    network = Network.load(model)
     net = BearoffNet.load(net_path) if net_path else None
 
     rows = []
@@ -216,6 +216,8 @@ def main() -> int:
     parser.add_argument("--net", default="",
                         help="réseau distillé à quatre sorties (T80)")
     parser.add_argument("--out", default="")
+    parser.add_argument("--model", default=str(MODEL_BIN),
+                        help="grand réseau qui alimente la recherche (défaut : l'incumbent)")
     args = parser.parse_args()
 
     plies = [int(p) for p in args.plies.split(",") if p.strip()]
@@ -234,7 +236,7 @@ def main() -> int:
 
     workers = max(1, min(args.workers, args.positions))
     chunks = [drawn[i::workers] for i in range(workers)]
-    payloads = [(chunk, {int(k): v for k, v in x_of.items()}, args.net, plies)
+    payloads = [(chunk, {int(k): v for k, v in x_of.items()}, args.net, plies, args.model)
                 for chunk in chunks if chunk]
 
     print(f"T34/T80 — la décision de videau contre la décision exacte")
@@ -255,7 +257,7 @@ def main() -> int:
     report = {"task": "T34-phase2-3a + T80", "seed": SEED,
               "positions": args.positions,
               "efficiency": {k.name: v for k, v in x_of.items()},
-              "network": args.net, "per_owner": {}}
+              "network": args.net, "model": Path(args.model).name, "per_owner": {}}
     columns = [f"ply{p}" for p in plies] + (["net"] if args.net else [])
 
     for owner in x_of:
