@@ -44,6 +44,10 @@ const kernels = (args.get("kernels") || "auto,intrin").split(",");
 const reps = args.get("reps") || "2";
 const decisions = args.get("decisions") || "3";
 const timeoutMs = Number(args.get("timeout") || 600_000);
+/* The big network under test, relative to the preloaded `models/`. A list
+   may repeat its entries: they are measured in that order, so two networks
+   interleave and machine drift cannot pass for a network difference. */
+const models = (args.get("models") || "cubeless_prob5_512_512_256_128.bin").split(",");
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -59,13 +63,13 @@ const TYPES = {
  * doit être détourné avant la première ligne, sans quoi la sortie du banc va
  * dans la console et nulle part ailleurs.
  */
-function page(kernel, width) {
+function page(kernel, width, model) {
   return `<!doctype html><meta charset="utf-8"><title>bench_kernel</title>
 <pre id="out"></pre>
 <script>
   const lines = [];
   var Module = {
-    arguments: ["models/cubeless_prob5_512_512_256_128.bin",
+    arguments: ["models/${model}",
                 "models/prune_32.bin", "${reps}", "${decisions}"],
     print: (text) => {
       lines.push(text);
@@ -82,7 +86,7 @@ function page(kernel, width) {
 <script src="/bench_kernel_${kernel}_${width}.js"></script>`;
 }
 
-async function measure(kernel, width) {
+async function measure(kernel, width, model) {
   let resolve;
   const answered = new Promise((r) => { resolve = r; });
 
@@ -96,7 +100,7 @@ async function measure(kernel, width) {
     }
     if (request.url === "/" || request.url.startsWith("/?")) {
       response.writeHead(200, { "content-type": TYPES[".html"] });
-      response.end(page(kernel, width));
+      response.end(page(kernel, width, model));
       return;
     }
     const path = normalize(join(WASM, decodeURIComponent(request.url.split("?")[0])));
@@ -141,10 +145,11 @@ const EXACT = /max\|Δ\| = ([0-9.e+-]+)/;
 const table = [];
 for (const width of widths) {
   for (const kernel of kernels) {
-    const lines = await measure(kernel, width);
+   for (const model of models) {
+    const lines = await measure(kernel, width, model);
     const text = lines.join("\n");
     const row = {
-      browser, width, kernel,
+      browser, width, kernel, model,
       rate: Number(text.match(RATE)[1]),
       decision: Number(text.match(DECISION)[1]),
       maxDelta: Number(text.match(EXACT)[1]),
@@ -152,7 +157,8 @@ for (const width of widths) {
     table.push(row);
     console.log(`${browser}  largeur ${String(width).padStart(2)}  ` +
                 `${kernel.padEnd(7)}  ${row.rate.toFixed(1).padStart(9)} éval/s  ` +
-                `${row.decision.toFixed(4)} s  max|Δ| ${row.maxDelta.toExponential(1)}`);
+                `${row.decision.toFixed(4)} s  max|Δ| ${row.maxDelta.toExponential(1)}  ${model}`);
+   }
   }
 }
 

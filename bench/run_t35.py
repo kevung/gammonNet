@@ -248,6 +248,11 @@ def main() -> int:
     # au niveau nommé, à la place du joueur de T35.
     parser.add_argument("--ours-policy", default=None,
                         help="niveau de la politique sans état (instant, normal, thorough)")
+    # Another big network for our side (same prune network, same search): the
+    # header carries the path and the evaluation fingerprint, so a journal can
+    # never mix two networks.
+    parser.add_argument("--ours-model", default=None,
+                        help="réseau de notre camp (défaut : celui du joueur)")
     # Rejouer les DÉS d'un journal existant : les dés d'une paire dérivent des
     # noms des deux joueurs, et un joueur renommé tirerait d'autres parties.
     # Avec la clé du journal, la paire i rejoue la situation de sa paire i —
@@ -260,14 +265,17 @@ def main() -> int:
     if args.ours_policy:
         from gammonnet.policy import PolicyPlayer, search_level_shape
 
-        ours = PolicyPlayer(level=args.ours_policy)
+        ours = (PolicyPlayer(level=args.ours_policy, model=args.ours_model)
+                if args.ours_model else PolicyPlayer(level=args.ours_policy))
         shape = search_level_shape(args.ours_policy)
         ours.ply, ours.filter, ours.cube_ply = shape.ply, shape.filter, shape.ply
     else:
         ours = GammonNetCubePlayer(ply=args.ours_ply,
                                    filter=parse_filter(args.ours_filter),
                                    cube_ply=ours_cube,
-                                   prune_k=args.ours_prune_k)
+                                   prune_k=args.ours_prune_k,
+                                   **({"model": args.ours_model}
+                                      if args.ours_model else {}))
     dice_key = None
     if args.dice_key_from is not None:
         source, _ = read_journal(args.dice_key_from)

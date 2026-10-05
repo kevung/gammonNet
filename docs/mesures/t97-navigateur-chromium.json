@@ -1,0 +1,74 @@
+[
+  {
+    "browser": "chromium",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "rate": 22688.3,
+    "decision": 0.6185,
+    "maxDelta": 0
+  },
+  {
+    "browser": "chromium",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 22621.5,
+    "decision": 0.6977,
+    "maxDelta": 0
+  },
+  {
+    "browser": "chromium",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 23594.5,
+    "decision": 0.7305,
+    "maxDelta": 0
+  },
+  {
+    "browser": "chromium",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "rate": 25858.6,
+    "decision": 0.6416,
+    "maxDelta": 0
+  },
+  {
+    "browser": "chromium",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "rate": 28080.4,
+    "decision": 0.6697,
+    "maxDelta": 0
+  },
+  {
+    "browser": "chromium",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 23167.4,
+    "decision": 0.7071,
+    "maxDelta": 0
+  },
+  {
+    "browser": "chromium",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 26482.8,
+    "decision": 0.7269,
+    "maxDelta": 0
+  },
+  {
+    "browser": "chromium",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "rate": 24075.2,
+    "decision": 0.6303,
+    "maxDelta": 0
+  }
+]
