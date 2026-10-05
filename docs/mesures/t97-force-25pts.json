@@ -1,0 +1,20 @@
+{
+ "a": "kazaross-xg2",
+ "b": "gammonnet-t97-v1",
+ "table_a": "",
+ "table_b": "/home/kunger/dev/gammonNet-logs/t97-reunie.met",
+ "pairs": 60000,
+ "matches": 120000,
+ "games": 1827686,
+ "length": 25,
+ "ply": 0,
+ "cube_ply": 0,
+ "seed": 20260918,
+ "seconds": 6603.958884000778,
+ "stalled": 0,
+ "mean": -0.003933333333333333,
+ "ci": [
+  -0.008766666666666667,
+  0.00105
+ ]
+}

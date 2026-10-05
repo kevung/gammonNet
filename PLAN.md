@@ -23,6 +23,8 @@ Phase 8 — Vitesse pour l'appelant  T84 T85 T86 T87 T88 T89 T90  ← OUVERTE le
                                    T91                          (l'artefact navigateur)
 Phase 9 — Se situer                T92 T93 T94 T95              ← OUVERTE le 2026-09-07
                                                                 (T95 conditionnelle)
+Phase 10 — Ne plus rien devoir     T96 T97                      ← OUVERTE le 2026-09-17
+                                                                (les poids amont, la MET calculée)
 ```
 
 **Chemin critique** :
@@ -2790,6 +2792,126 @@ distiller notre propre 2-ply, entraîner le réseau à être bon *sous* recherch
 jusqu'ici par une courbe volume→force qui ne s'aplatit pas. Elle se défend désormais par une
 seconde mesure, indépendante et venue d'un moteur réel. **C'est le seul changement que la
 phase 9 apporte au plan de travail.**
+
+---
+
+# Phase 10 — Ne plus rien devoir à personne *(ouverte le 2026-09-17)*
+
+> **Les deux faits qui l'ouvrent.** Le dépôt amont a publié le 2026-09-02 des poids qui
+> remplacent les nôtres, et notre artefact embarque une table d'équité de match qui est l'œuvre
+> d'un tiers. Le premier est une occasion à mesurer ; le second est la dernière brique de
+> l'artefact distribué qui ne soit pas du calcul reproductible.
+
+## T96 — La mise à jour des poids amont, mesurée
+
+> **Ce qui rend cette fiche nécessaire plutôt qu'évidente.** Le tableau amont annonce le passage
+> de +35,4 à +45,8 mEq/partie contre GNU Backgammon 0-ply. **Ce chiffre n'est pas attribuable au
+> seul réseau** : entre les deux tableaux, l'auteur a corrigé son générateur de coups, forcé
+> gnubg à toujours consulter sa table bilatérale, et changé d'adversaire de mesure
+> (`gnubg-nn` → le binaire gnubg 1.08.003). Quatre variables ont bougé ensemble. La règle n°3
+> s'applique : on mesure, on ne transporte pas.
+
+**Objectif** — décider si le réseau de record du dépôt change, sur nos instruments et à
+protocole identique.
+
+**Périmètre** — Les poids `cubeless_prob5_512_512_256_256` (562 k paramètres, 560 384 MACs,
++6,3 % sur les 526 976 de l'incumbent), épinglés à `7184e2f`, licence MIT vérifiée par relecture
+du fichier `LICENSE` (inchangé depuis `b2750df`). Exclut le cubeful et le 5 couches expérimental :
+le premier n'émet pas de probabilités et ne sert donc pas le match (`BRIEF.md` §3.1), le second
+rend +1,0 mEq pour +18,8 % de MACs.
+
+**Le changement de moteur de règles qui vient avec, et qui a été mesuré d'abord** — `7184e2f`
+corrige dans `c_engine/bg_engine.c` un faux passage forcé dont l'incidence annoncée est
+≤ 1/3 700. Ce fichier est compilé dans notre artefact. Avant tout changement de poids, le
+correctif a donc été isolé et mesuré seul (`tools/scan_movegen.py`).
+
+**Critères d'acceptation**
+- **Parité PyTorch** à `max|Δ| < 1e-5` sur le corpus de 2 000 positions de T10 — le même
+  critère, avec le même instrument, pas un contrôle écrit pour l'occasion.
+- **La note sur le registre arbitré de T70**, 10 000 décisions, 2-ply `(0,1,3)` `k=12`, comparée
+  à l'étalon **0,00313** [0,00298 ; 0,00327] de l'incumbent. Le taux hors registre est publié
+  avec elle : au-delà de quelques pour cent, le chiffre note le corpus et non le moteur.
+- **Le biais du réseau d'élagage est nommé** : `prune_32.bin` est distillé de l'**ancien** grand
+  réseau, ce qui avantage l'incumbent d'un montant inconnu. Si la note du candidat est meilleure
+  malgré ce biais, la conclusion tient *a fortiori* ; si elle est moins bonne, le contrôle sans
+  élagage (`k=0`) est dû avant toute conclusion.
+- **Le coût est chronométré**, natif et navigateur, jamais déduit du compte de MACs — la leçon
+  de T3A, démentie quatre fois.
+- Si le réseau change, la nomenclature du `BRIEF.md` §8 s'applique : nouveaux poids, nouveau nom,
+  et le corpus de non-régression de T12 **doit** se déplacer visiblement.
+
+**Exclut** — tout ré-entraînement, qui appartient à T71 ; la reprise de leur branche `matchplay`,
+qui appartient à T82 si elle est un jour instruite.
+
+**Dépendances** — aucune. **Machine** — la machine de calcul, ~16 h·cœur par note.
+
+## T97 — La table d'équité de match, calculée par ce dépôt
+
+> **La dernière brique tierce.** `THIRD-PARTY.md` recense une œuvre dans l'artefact distribué que
+> nous ne savons pas refaire : la table Kazaross-XG2. Elle est licite et attribuée — mais elle
+> est le seul endroit où l'artefact dit « faites-nous confiance » plutôt que « voici le calcul ».
+> Et elle est arbitrée par des moteurs que nous ne contrôlons pas, dont l'un est commercial.
+
+**Objectif** — produire une table d'équité de match **entièrement dérivée du moteur de ce
+dépôt**, jusqu'à 25-away, Crawford et après-Crawford compris, et que l'artefact distribué n'ait
+plus besoin d'aucune table tierce.
+
+**Ce qui rend le calcul possible sans point fixe, et qu'il faut vérifier plutôt que croire** — une
+partie se termine toujours par des points gagnés, donc l'un des deux `away` **décroît
+strictement**. La table se calcule par programmation dynamique sur `a + b` croissant : les
+décisions de videau prises pendant une partie au score `(a, b)` ne consultent que des cellules
+déjà calculées. **Aucune itération jusqu'à convergence n'est nécessaire, et aucune valeur initiale
+n'est injectée** — ce qui retire d'emblée l'objection « la table de départ était la leur ».
+
+**Périmètre**
+- `gn_met_load` / `gn_met_set_table` : la table devient **chargeable à l'exécution**, au lieu
+  d'être un en-tête généré. C'est la pièce qui manque de toute façon pour distribuer la nôtre, et
+  c'est elle qui permet au calcul de consulter la table qu'il est en train de produire.
+- Le pilote de calcul : pour chaque cellule, N parties **complètes avec videau** au score, dés
+  dupliqués, et la distribution des points gagnés portée sur les cellules déjà connues.
+- Crawford et après-Crawford : la partie de Crawford se joue **sans videau** — c'est une règle,
+  pas une connaissance injectée. Le **free drop** d'après-Crawford ne doit être écrit nulle part :
+  il doit **apparaître** dans la table calculée.
+- L'erreur-type de **chaque cellule** est calculée et publiée avec elle. Une table sans barres
+  d'erreur n'est pas une mesure.
+
+**Critères d'acceptation**
+- **Le volume est mesuré par un pilote et publié en début de fiche**, jamais extrapolé : coût
+  d'une partie cubeful au score, cellules à produire, total. Règle n°3.
+- **Les identités tiennent sans être imposées** : `MET(a,b) = 1 − MET(b,a)` à l'erreur-type près,
+  `MET(1,1) = 0,5`, monotonie en `a` et en `b`. Elles sont vérifiées **a posteriori** sur la table
+  produite : une table qui les impose par construction ne les démontre pas.
+- **Kazaross-XG2 est l'instrument, jamais l'entrée.** Comparaison cellule par cellule, seuil
+  annoncé **d'avance**, et les cellules qui le dépassent sont **arbitrées par un rollout plus
+  long**, pas expliquées. Un écart n'est pas nécessairement une erreur : leur table est
+  elle-même une mesure, faite par d'autres moteurs.
+- **La force est mesurée, pas la ressemblance.** Une campagne de matchs `notre table` contre
+  `Kazaross-XG2`, tout le reste identique, dés dupliqués : c'est le seul énoncé qui autorise à
+  changer la table de l'artefact. Une table plus proche d'une autre table n'est pas une table
+  meilleure.
+
+  > **L'obstacle, nommé d'avance.** La table active est un état **global du processus**, et les
+  > dés dupliqués exigent les deux joueurs dans le **même** processus. Les deux ne peuvent pas
+  > tenir ensemble tels quels. La sortie est bon marché et ne touche pas à l'architecture C :
+  > la table devient un attribut du **joueur**, qui l'installe avant chacune de ses décisions —
+  > 5 200 octets de `memcpy` contre une recherche 2-ply, soit rien. Ce qu'il ne faut **pas**
+  > faire est l'inverse : mesurer les deux tables dans deux processus séparés, ce qui perdrait
+  > les dés communs et ferait passer l'écart sous le bruit.
+- **La profondeur de jeu qui a produit la table est dite**, et sa sensibilité mesurée : quelques
+  cellules recalculées à une profondeur supérieure disent si la table est celle d'un joueur de
+  ce niveau ou celle du jeu.
+
+**Ce que ça rapporte, au-delà de la propreté** — `THIRD-PARTY.md` perd sa dernière ligne d'œuvre
+tierce embarquée ; la table devient reproductible par quiconque relance le calcul ; et T82 gagne
+l'étalon qui lui manquait — une MET de référence qui ne vient pas d'un concurrent.
+
+**Exclut** — le videau appris (T81), la MET organique apprise dans une tête (T82) : celle-ci
+**calcule** une table, celle-là s'en passe. Les deux se contrôlent l'une l'autre et ne se
+remplacent pas.
+
+**Dépendances** — `play_cubeful_game` (T34) et le harnais de match de T35, tous deux rendus.
+
+**Machine** — les trois machines. **Coût** — *inconnu tant que le pilote n'a pas tourné.*
 
 ---
 
