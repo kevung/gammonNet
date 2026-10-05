@@ -379,6 +379,11 @@ static int exact_equities(const GnDecision *d, double equities[4])
     const GnBearoff *table = gn_bearoff_shared();
     if (d->use_match || table == NULL || !gn_bearoff_contains(table, &d->position))
         return 0;
+    /* Only where no gammon is possible -- what makes the Jacoby rule moot on
+     * this path (decide_cube). The shipped table (11 checkers) never holds
+     * anything else; a wider one would, and is then not consulted here. */
+    if (d->position.off[GN_WHITE] == 0 || d->position.off[GN_BLACK] == 0)
+        return 0;
     return gn_bearoff_equities(table, &d->position, equities);
 }
 
@@ -406,6 +411,10 @@ static int decide_cube(const GnNetwork *net, const GnSearchLevel *level,
     GnCubeAction verdict;
     double exact[4];
     if (exact_equities(d, exact)) {
+        /* No Jacoby adjustment, deliberately: the table only holds positions
+         * where both sides have borne off at least four checkers, so no
+         * gammon is possible there (gn_bearoff.h), and gammons are all that
+         * Jacoby removes. */
         e_nd = (d->cube_owner == GN_CUBE_CENTRED) ? exact[2] : exact[1];
         e_dt = 2.0 * exact[3];
         e_dp = 1.0;

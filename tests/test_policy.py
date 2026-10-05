@@ -25,9 +25,9 @@ from gammonnet.cube import CubeOwner
 from gammonnet.cubeful import (GammonNetCubePlayer, play_cubeful_duplicate,
                                play_match_duplicate)
 from gammonnet.met import MatchState
-from gammonnet.policy import (LEVELS, ActionKind, Decision, Pending, PolicyPlayer,
-                              Shape, answer, certain_loss, efficiency,
-                              read_corpus, unpack_decision)
+from gammonnet.policy import (LEVELS, REQUIRED_CATEGORIES, ActionKind, Decision,
+                              Pending, PolicyPlayer, Shape, answer, categories,
+                              certain_loss, efficiency, read_corpus, unpack_decision)
 from gammonnet.rules import BLACK, WHITE, Position
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -297,3 +297,37 @@ def test_corpus_replays_byte_for_byte(player):
         assert answer(player._network, player._prune, level, decision) == record, decision
         replayed[level] += 1
     assert replayed["instant"] > 300
+
+
+def test_corpus_covers_every_category():
+    """Un portage vérifié contre un corpus qui n'a jamais posé une question n'a
+    rien vérifié sur elle : chaque verdict de videau (money et match), le double
+    optionnel, chaque réponse, chaque valeur de défaite certaine et chaque
+    régime doivent y figurer."""
+    seen = set()
+    for record in read_corpus(CORPUS):
+        seen |= categories(record)
+    missing = REQUIRED_CATEGORIES - seen
+    assert not missing, sorted(missing)
+
+
+def test_exact_table_path_ignores_jacoby_only_where_no_gammon_exists():
+    """Le chemin par la table bilatérale (money) n'applique pas Jacoby : il ne
+    le peut pas, puisqu'aucun gammon n'existe dans son domaine — et la
+    politique ne la consulte que si chaque camp a sorti un pion."""
+    db = ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd"
+    if not db.exists() or bearoff._shared is not None:
+        pytest.skip("table bilatérale absente")
+    p = PolicyPlayer(level="instant")
+    p._load()
+    race = board({0: 2, 1: 2, 2: 1, 4: 1}, {23: 3, 22: 2, 20: 1})
+    bearoff.use_shared(db)
+    try:
+        with_table = p.decide(Decision(race, Pending.CUBE, jacoby=True))
+        without_jacoby = p.decide(Decision(race, Pending.CUBE, jacoby=False))
+    finally:
+        bearoff.disable_shared()
+    assert with_table.raw == without_jacoby.raw
+    assert with_table.searched
+    model = p.decide(Decision(race, Pending.CUBE, jacoby=True))
+    assert model.raw != with_table.raw      # the table really was consulted

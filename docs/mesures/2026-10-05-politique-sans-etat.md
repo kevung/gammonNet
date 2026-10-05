@@ -30,8 +30,8 @@ La composition ne change donc rien à ce que T35 a mesuré, sauf ce double sans 
 
 ## 3. Parité WebAssembly ↔ natif
 
-`wasm/policy_parity.mjs --all` rejoue `data/policy_reference.bin` (1 435 décisions : 1 315
-`instant`, 90 `normal`, 30 `thorough`, dont 7 refus) à travers `Evaluator.policy` :
+`wasm/policy_parity.mjs --all` rejoue `data/policy_reference.bin` (1 443 décisions : 1 321
+`instant`, 92 `normal`, 30 `thorough`, dont 7 refus ; chaque catégorie de la spec §8 couverte) à travers `Evaluator.policy` :
 **0 écart d'action, max|Δ| = 0 sur les équités, 0 non bit à bit** — module SIMD, tous niveaux ;
 module scalaire, niveau `instant`. La politique hérite du bit à bit de T91.
 
@@ -60,7 +60,7 @@ verdict de force :
 |---|---|---|
 | politique `normal` | 50,82 % | [44,67 ; 56,97] |
 | T35, mêmes indices | 52,46 % | [46,72 ; 58,20] |
-| T35, 50 000 paires | 50,42 % | [50,17 ; 50,68] |
+| T35, 50 000 paires (`2026-08-26-T35-verdict.md`) | 50,42 % | [50,16 ; 50,69] |
 | **écart apparié politique − T35** | **−1,64 pt** | **[−6,15 ; +2,87]** |
 
 96 paires sur 122 au même résultat net. L'écart apparié contient zéro : **compatible avec T35**,

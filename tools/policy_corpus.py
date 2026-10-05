@@ -40,8 +40,9 @@ from gammonnet import bearoff  # noqa: E402
 from gammonnet.cube import CubeOwner  # noqa: E402
 from gammonnet.cubeful import play_cubeful_game  # noqa: E402
 from gammonnet.met import MatchState  # noqa: E402
-from gammonnet.policy import (LEVELS, Decision, Pending, PolicyPlayer, answer,  # noqa: E402
-                              unpack_decision, write_corpus)
+from gammonnet.policy import (LEVELS, REQUIRED_CATEGORIES, Decision, Pending,  # noqa: E402
+                              PolicyPlayer, answer, categories, unpack_decision,
+                              write_corpus)
 from gammonnet.rules import WHITE, Position  # noqa: E402
 
 OUT = ROOT / "data" / "policy_reference.bin"
@@ -154,6 +155,63 @@ def edge_cases() -> list[Decision]:
     return cases
 
 
+def optional_doubles() -> list[Decision]:
+    """Le double optionnel (spec §5.2) : un bearoff gagné à coup sûr, où
+    doubler vaut exactement ne pas doubler. Il n'existe qu'à partir d'un ply
+    — à 0-ply le réseau ne rend jamais P(gain) = 1 exactement —, d'où sa place
+    au niveau `normal`. Le premier est la position que la fiche du 2026-10-05
+    (§2) a trouvée contre le joueur de T35."""
+    won = Position(points=(1,) + (0,) * 17 + (-6, -2, -2, -1, 0, -2), bar=(0, 0),
+                   off=(14, 2), turn=WHITE)
+    return [
+        Decision(won, Pending.CUBE, cube=2, cube_owner=CubeOwner.OWNED, jacoby=True,
+                 match=MatchState(3, 4, 2, False)),
+        Decision(won, Pending.CUBE, cube=2, cube_owner=CubeOwner.OWNED),
+    ]
+
+
+#: Les états de videau sous lesquels on cherche les verdicts manquants.
+SCAN_STATES = (
+    dict(),
+    dict(jacoby=True),
+    dict(cube=2, cube_owner=CubeOwner.OWNED),
+    dict(match=MatchState(3, 5, 1, False)),
+    dict(match=MatchState(2, 4, 1, False)),
+    dict(match=MatchState(5, 2, 1, False)),
+    dict(cube=2, cube_owner=CubeOwner.OWNED, match=MatchState(4, 4, 2, False)),
+)
+
+
+def targeted(network, prune, have: set[str]) -> list[tuple[str, Decision]]:
+    """Des décisions avant le jet tirées de parties au hasard (graine fixe), au
+    niveau `instant`, retenues seulement si elles illustrent une catégorie que
+    le corpus n'a pas encore — deux exemples au plus par catégorie."""
+    rng = random.Random(SEED + 2)
+    wanted = {c: 2 for c in REQUIRED_CATEGORIES if c not in have}
+    picked = []
+    for _ in range(400):
+        if not wanted:
+            break
+        pos = Position.initial()
+        while not pos.is_over() and wanted:
+            for state in SCAN_STATES:
+                d = Decision(pos, Pending.CUBE, **state)
+                record = answer(network, prune, "instant", d)
+                hit = [c for c in categories(record) if c in wanted]
+                if hit and any(c.split("/")[0] in ("trop-bon", "double-passe",
+                                                   "double-prise", "pas-de-double")
+                               for c in hit):
+                    picked.append(("instant", d))
+                    for c in categories(record):
+                        if c in wanted:
+                            wanted[c] -= 1
+                            if wanted[c] == 0:
+                                del wanted[c]
+            plays = pos.legal_plays(rng.randint(1, 6), rng.randint(1, 6))
+            pos = rng.choice(plays).result if plays else pos.swapped_turn()
+    return picked
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.resolve().read_bytes()).hexdigest()
 
@@ -187,6 +245,13 @@ def main() -> int:
     jobs = ([("instant", d) for d in decisions]
             + [("normal", d) for d in draw(NORMAL)]
             + [("thorough", d) for d in draw(THOROUGH)])
+
+    jobs += [("normal", d) for d in optional_doubles()]
+    have = set()
+    for level, d in jobs:
+        if level == "instant" or d in optional_doubles():
+            have |= categories(answer(network, prune, level, d))
+    jobs += targeted(network, prune, have)
 
     records = []
     for i, (level, d) in enumerate(jobs):

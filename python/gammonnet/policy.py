@@ -375,3 +375,61 @@ def answer(network, prune, level: str, decision: Decision) -> bytes:
     except ValueError:
         action = None
     return pack_record(level, decision, action)
+
+
+#: Ce que le corpus doit couvrir (spec §8) : chaque verdict de videau en money
+#: et en match, chaque réponse, chaque valeur de défaite certaine, et les
+#: régimes. `tests/test_policy.py` échoue si une catégorie manque.
+REQUIRED_CATEGORIES = frozenset({
+    *(f"{verdict}/{mode}" for verdict in ("pas-de-double", "double-prise",
+                                          "double-passe", "trop-bon")
+      for mode in ("argent", "match")),
+    "double-optionnel/argent", "double-optionnel/match",
+    "videau-indisponible", "prise", "passe", "abandon-accepte", "abandon-refuse",
+    "defaite-1", "defaite-2", "defaite-3", "coup", "coup-impossible", "coup-force",
+    "argent", "match", "crawford", "jacoby", "refus",
+})
+
+
+def categories(record: bytes) -> set[str]:
+    """Les catégories qu'un enregistrement du corpus illustre.
+
+    Le verdict de videau se relit dans la sortie, sans rien recalculer :
+    `equity_b` (doubler) vaut l'encaissement exactement sur un double/passe,
+    `equity_a` (ne pas doubler) le dépasse sur un trop-bon, et les deux
+    l'égalent sur un double optionnel (spec §5.2)."""
+    level, d = unpack_decision(record)
+    rc, kind, value, searched, num = struct.unpack_from("<5i", record, 80)
+    a, b = struct.unpack_from("<2d", record, 140)
+    mode = "match" if d.match is not None else "argent"
+    out = {mode}
+    if d.match is not None and d.match.crawford:
+        out.add("crawford")
+    if d.match is None and d.jacoby:
+        out.add("jacoby")
+    if rc == -1:
+        return out | {"refus"}
+    kind = ActionKind(kind)
+    if d.pending == Pending.MOVE:
+        out.add("coup" if searched else ("coup-impossible" if num == 0 else "coup-force"))
+    elif d.pending == Pending.CUBE:
+        if kind == ActionKind.RESIGN:
+            out.add(f"defaite-{value}")
+        elif not searched:
+            out.add("videau-indisponible")
+        else:
+            cash = 1.0 if d.match is None else d.match.after(d.cube, True)
+            if kind == ActionKind.DOUBLE:
+                verdict = "double-passe" if b == cash else "double-prise"
+            elif a == b == cash:
+                verdict = "double-optionnel"
+            elif a > cash:
+                verdict = "trop-bon"
+            else:
+                verdict = "pas-de-double"
+            out.add(f"{verdict}/{mode}")
+    elif d.pending == Pending.TAKE:
+        out.add("prise" if kind == ActionKind.TAKE else "passe")
+    else:
+        out.add("abandon-accepte" if kind == ActionKind.ACCEPT else "abandon-refuse")
+    return out

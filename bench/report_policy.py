@@ -58,8 +58,6 @@ def main() -> int:
     lo, hi = bootstrap_ci(ours, args.bootstrap, seed=seed)
     rlo, rhi = bootstrap_ci(ref, args.bootstrap, seed=seed)
     dlo, dhi = bootstrap_ci(diff, args.bootstrap, seed=seed)
-    all_ref = [r["net"] / 2.0 for r in ref_rows.values()]
-    flo, fhi = bootstrap_ci(all_ref, min(args.bootstrap, 2000), seed=seed)
 
     same = sum(1 for a, b in zip(ours, ref) if a == b)
     print(f"paires communes : {len(common)} (indices {common[0]}..{common[-1]})")
@@ -67,8 +65,8 @@ def main() -> int:
           f"[{(lo + 1) / 2 * 100:.2f} ; {(hi + 1) / 2 * 100:.2f}]")
     print(f"T35, mêmes indices : MWC {mwc(ref) * 100:.2f} % "
           f"[{(rlo + 1) / 2 * 100:.2f} ; {(rhi + 1) / 2 * 100:.2f}]")
-    print(f"T35, journal entier ({len(all_ref)} paires) : MWC {mwc(all_ref) * 100:.2f} % "
-          f"[{(flo + 1) / 2 * 100:.2f} ; {(fhi + 1) / 2 * 100:.2f}]")
+    # The full-journal figure has ONE source, its published verdict
+    # (docs/mesures/2026-08-26-T35-verdict.md); it is not recomputed here.
     mean = sum(diff) / len(diff)
     print(f"écart apparié politique − T35 : {mean / 2 * 100:+.2f} points de MWC "
           f"[{dlo / 2 * 100:+.2f} ; {dhi / 2 * 100:+.2f}]")

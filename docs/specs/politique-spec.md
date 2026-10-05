@@ -110,6 +110,12 @@ Dans l'ordre :
    - money, et la table bilatérale exacte installée (`gn_bearoff_shared`) connaît la position :
      `gn_cube_verdict(e_nd, 2·E_adverse, 1)` sur les équités exactes de la table (`e_nd` =
      l'équité centrée ou possédée selon `cube_owner`) ;
+     **Jacoby n'y change rien, et ce n'est pas un oubli** : la table ne couvre que des positions
+     où chaque camp a déjà sorti au moins quatre pions (`gn_bearoff.h`), donc aucun gammon n'y
+     est possible, et Jacoby ne retire que les gammons. La politique l'exige d'ailleurs
+     elle-même : elle ne consulte la table que si chaque camp a sorti au moins un pion. Ce chemin n'existe que si une table est
+     installée ; le corpus de référence se génère sans, et un portage qui n'en a pas ne
+     l'emprunte jamais ;
    - sinon : `gn_search_probs` au niveau, puis `gn_cube_decide` à l'efficacité de l'état du
      videau du joueur au trait, `jacoby` transmis.
    - **Double** sur `GN_DOUBLE_TAKE` et `GN_DOUBLE_PASS`. **Pas de double** sur
@@ -184,21 +190,33 @@ chacun peut-il, au mieux et au pire, atteindre un but ?* Avec `H = 2` jets d'hor
 - `sûr(camp, but, k)` : quels que soient les lancers, un coup atteint le but en au plus `k`
   jets (∀ lancer, ∃ coup).
 
-Le joueur au trait joue le premier. Pour `k = 1..H`, la **défaite est certaine** si
-`¬peut(joueur, tout sortir, k) ∧ sûr(adversaire, tout sortir, k)`. Alors, avec `k` ce plus
-petit horizon :
+Le joueur au trait joue le premier. Pour `k = 1..H`, dans l'ordre, la **défaite est certaine**
+si `¬peut(joueur, tout sortir, k) ∧ sûr(adversaire, tout sortir, k)` ; le premier `k` qui la
+rend certaine est retenu, et la lecture s'arrête là. On pose alors
 
-- **simple certain** si le joueur a déjà sorti un pion, ou s'il est `sûr` d'en sortir un en
-  1 jet (l'adversaire ne peut pas finir avant que le joueur ait lancé une fois) ;
-- **gammon certain** si le joueur n'a rien sorti, ne `peut` pas en sortir un en `k` jets, et
-  n'a aucun pion dans le jan adverse ni sur la barre — ou s'il en a et est `sûr` de les en
-  sortir en 1 jet ;
-- **backgammon certain** si gammon certain et le joueur ne `peut` pas sortir du jan adverse en
-  `k` jets.
+- `s` = le plus petit `j` de `1..k` tel que `peut(adversaire, tout sortir, j)`, et `s = k` si
+  aucun `j < k` ne le permet — l'adversaire ne peut pas finir avant son `s`-ième jet, donc le
+  joueur, qui lance le premier, aura lancé **au moins `s` fois** à la fin de la partie ;
 
-La valeur est certaine si exactement une de ces trois lectures l'est ; sinon, pas d'abandon.
-**Jacoby** (money, videau centré) : une partie dont le videau n'a pas tourné vaut un point,
-donc la valeur certaine est 1.
+et la valeur se lit ainsi, dans cet ordre :
+
+1. **simple certain** si le joueur a déjà sorti un pion, ou si `sûr(joueur, sortir un pion, s)` ;
+2. sinon, **gammon au moins certain** si le joueur n'a rien sorti et
+   `¬peut(joueur, sortir un pion, k)` — l'adversaire finit au plus tard à son `k`-ième jet, le
+   joueur n'aura lancé que `k` fois au plus. Alors :
+   - **backgammon certain** si de plus `¬peut(joueur, quitter le jan adverse et la barre, k)` ;
+   - **gammon certain** (sans backgammon) si le joueur n'a aucun pion dans le jan adverse ni sur
+     la barre, ou si `sûr(joueur, les en sortir, s)` ;
+   - sinon, valeur incertaine ;
+3. sinon, valeur incertaine.
+
+Une valeur incertaine ne donne pas d'abandon. **Jacoby** (money, videau centré) : une partie dont
+le videau n'a pas tourné vaut un point, donc toute défaite certaine vaut 1 — appliqué par la
+politique, pas par la lecture (`gn_policy_certain_loss` rend la valeur brute).
+
+Les bornes qui écartent une branche sans l'explorer (pips et nombre de dés nécessaires) et
+l'ordre des essais (gros jets d'abord, coups les plus avancés d'abord) ne décident que de la
+vitesse, jamais de la réponse.
 
 L'horizon borne le coût, il ne rend jamais une réponse fausse : au-delà, la défaite n'est
 simplement pas lue, et l'on joue. `H` est une constante nommée ; l'élargir est un choix mesuré.
@@ -230,6 +248,13 @@ Un export canonique (`CONTEXT.md`) : ce que la référence C répond pour chaque
 pour qu'un portage se vérifie contre la référence au lieu de contre lui-même. Généré par
 `tools/policy_corpus.py` ; un test le rejoue sur le build par défaut et exige l'égalité **octet
 pour octet**.
+
+**Couverture exigée** (`REQUIRED_CATEGORIES`, `python/gammonnet/policy.py`) : chaque verdict de
+videau — pas de double, double/prise, double/passe, trop bon — en money **et** en match, le double
+optionnel dans les deux modes, le videau indisponible, prendre et passer, abandon accepté et
+refusé, la défaite certaine à chacune de ses trois valeurs, le coup cherché, forcé et impossible,
+et les régimes money, match, Crawford, Jacoby et refus. Le verdict se relit dans la sortie sans
+recalcul (`categories`) ; un test échoue si une catégorie manque.
 
 **Conditions de génération** (et donc de rejeu) : build natif par défaut (pas `NATIVE_FP`),
 poids `models/cubeless_prob5_512_512_256_128.bin` et `models/prune_32.bin` — leurs empreintes
@@ -287,7 +312,8 @@ pas à ce fichier de la promettre.
 
 La boucle de match de T35 (`python/gammonnet/cubeful.py`, `bench/run_t35.py`), rejouée avec
 cette politique pour notre camp, contre gnubg au même réglage que T35, doit retrouver le résultat
-de T35 dans son intervalle : **50,42 % [50,16 ; 50,69]** de MWC sur 50 000 paires
+de T35 dans son intervalle : **50,42 % [50,16 ; 50,69]** de MWC sur 50 000 paires — l'intervalle publié par
+`docs/mesures/2026-08-26-T35-verdict.md`, la seule source de ce chiffre
 (`docs/mesures/2026-08-26-T35-verdict.md`).
 
 Deux contrôles, parce que l'un est rapide et l'autre ne l'est pas :
