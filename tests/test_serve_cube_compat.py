@@ -12,7 +12,9 @@ because a caller may have recorded a response, hashed it, or diffed it.
 stood before any of those fields existed (its first line names the commit and
 the pinned artifact). This test replays every recorded request against the
 CURRENT server and compares the raw response body, byte for byte, and the
-HTTP status. A server that recomputed the gold with its own new code would
+HTTP status. One recorded body is allowed to differ, and only to the exact
+text written in `DELIBERATE_CHANGES`: the error that lists the accepted
+`kind` values, which would otherwise keep listing two of three. A server that recomputed the gold with its own new code would
 prove nothing; this one is held to what an older process answered.
 
 The matrix is deliberately wide where a regression would hide: money and
@@ -117,6 +119,20 @@ def request_matrix() -> list[dict]:
     return requests
 
 
+#: The ONLY recorded answers allowed to differ, each with its new body and
+#: its reason. An error message that ENUMERATES the accepted values must
+#: change when a value is added, or it states something false; the status
+#: stays the same. Any other difference fails, and so does this one if its
+#: new body is not exactly the one written here.
+DELIBERATE_CHANGES = {
+    json.dumps({"xgid": OPENING_31_XGID, "kind": "redouble", "decider_away": 7,
+                "opponent_away": 7, "cube": 1, "decider_on_roll": True}): (
+        '{"error": "kind doit \\u00eatre \'double\', \'take\' ou \'equity\'"}',
+        "#26 : le message énumère les kinds admis, et 'equity' en est un",
+    ),
+}
+
+
 def post_raw(base_url: str, payload: dict) -> tuple[int, str]:
     """The status and the body AS SENT — not re-serialised from a parse,
     which would normalise away exactly the differences this test exists to
@@ -209,10 +225,18 @@ def test_a_request_without_the_new_fields_gets_the_recorded_bytes(current_server
     tolerance = float(os.environ.get("GN_REGRESSION_TOLERANCE", "0"))
 
     differences = []
+    deliberate_seen = set()
     for entry in entries:
         status, body = post_raw(current_server, entry["request"])
         if status != entry["status"]:
             differences.append(f"{entry['request']}: statut {status} != {entry['status']}")
+            continue
+        key = json.dumps(entry["request"])
+        if key in DELIBERATE_CHANGES:
+            deliberate_seen.add(key)
+            expected, _reason = DELIBERATE_CHANGES[key]
+            if body != expected:
+                differences.append(f"{entry['request']}: changement délibéré attendu {expected}, obtenu {body}")
             continue
         if tolerance == 0.0:
             if body != entry["body"]:
@@ -221,6 +245,7 @@ def test_a_request_without_the_new_fields_gets_the_recorded_bytes(current_server
             for line in _close(json.loads(entry["body"]), json.loads(body), tolerance):
                 differences.append(f"{entry['request']}: {line}")
 
+    assert deliberate_seen == set(DELIBERATE_CHANGES), "un changement délibéré ne figure plus dans le repère"
     assert not differences, (
         f"{len(differences)} réponse(s) sur {len(entries)} ont changé :\n"
         + "\n".join(differences[:10])
