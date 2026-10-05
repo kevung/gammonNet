@@ -23,7 +23,9 @@ une **bibliothèque d'inférence**.
   utilisateur → **ailleurs**.
 
 Aucune notion d'utilisateur, de compte, de session ni de persistance n'entre dans ce dépôt. Une
-position entre, une évaluation sort.
+position entre, une évaluation sort ; une décision entre, une action sort — toujours ni partie ni
+appelant : la partie, les dés, le score et l'horloge restent chez qui appelle
+(`docs/specs/politique-spec.md`).
 
 ## Les trois règles non négociables
 

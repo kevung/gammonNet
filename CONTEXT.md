@@ -1,6 +1,7 @@
 # gammonNet
 
-Un évaluateur de positions de backgammon : une position entre, une évaluation sort. Ce
+Un évaluateur de positions de backgammon : une position entre, une évaluation sort ; une
+décision entre, une action sort — toujours ni partie ni appelant. Ce
 glossaire fixe le vocabulaire de la **règle de frontière** (`CLAUDE.md`) — *ce dépôt évalue
 une position, il ne connaît pas ses appelants* — parce que c'est la confusion de trois mots
 voisins qui l'a laissée s'éroder.

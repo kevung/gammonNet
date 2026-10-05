@@ -16,7 +16,8 @@ match play, reproduced on a second machine.
 developer manual, in [English](https://kevung.github.io/gammonNet/en/) and
 [French](https://kevung.github.io/gammonNet/fr/).
 
-> One position goes in, one evaluation comes out. This repository does not know its callers: no
+> One position goes in, one evaluation comes out; one decision goes in, one action comes out —
+> still no game and no caller. This repository does not know its callers: no
 > user, no account, no storage, no game library. Everything distributed is permissively licensed,
 > with no usage clause — a WebAssembly module served to a browser *is* a distribution, which rules
 > out strong copyleft and non-commercial terms.

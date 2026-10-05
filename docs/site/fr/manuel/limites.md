@@ -34,5 +34,6 @@ mieux qu'un chiffre faux.
 ## Ce que le projet ne fait pas
 
 gammonNet **évalue une position**. Il ne lit pas de fichiers de match, ne gère ni parties ni
-utilisateurs, et n'a pas d'interface. Une position entre, une évaluation sort. Pour analyser un
+utilisateurs, et n'a pas d'interface. Une position entre, une évaluation sort ; une décision entre, une action sort — la partie, les
+dés et le score restent chez vous. Pour analyser un
 match, faites-le lire par un logiciel qui sait le faire et passez les positions.
