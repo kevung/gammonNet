@@ -1,0 +1,82 @@
+{
+  "contexts": {
+    "4a-2a": {
+      "by_class": {
+        "backgame": 11,
+        "bearoff_contact": 31,
+        "blitz": 78,
+        "contact": 322,
+        "crashed": 21,
+        "holding": 63,
+        "prime_vs_prime": 27,
+        "race_contact": 43
+      },
+      "compared": 6076,
+      "decisions": 596,
+      "disagreement_rate": 0.09809084924292298,
+      "examined": 8416,
+      "fill": {
+        "backgame": 0.4583333333333333,
+        "bearoff_contact": 0.9393939393939394,
+        "blitz": 1.0833333333333333,
+        "contact": 0.9969040247678018,
+        "crashed": 0.875,
+        "holding": 1.0161290322580645,
+        "prime_vs_prime": 1.0384615384615385,
+        "race_contact": 1.131578947368421
+      },
+      "seconds": 3874.925556325994,
+      "sha256": "69b4d99bdd3335ef250cd49d68428cf67a77252f0daf601724892a9b43f5cbc2",
+      "starved": [
+        "backgame"
+      ]
+    }
+  },
+  "filters": {
+    "0": [],
+    "1": [
+      0,
+      5
+    ],
+    "2": [
+      0,
+      1,
+      5
+    ],
+    "3": [
+      0,
+      1,
+      1,
+      5
+    ]
+  },
+  "model": "cubeless_prob5_512_512_256_128.bin",
+  "natural": {
+    "backgame": 0.0255,
+    "bearoff_contact": 0.05645,
+    "bearoff_noncontact": 0.0,
+    "blitz": 0.12275,
+    "contact": 0.54865,
+    "crashed": 0.03385,
+    "holding": 0.10495,
+    "over": 0.0,
+    "prime_vs_prime": 0.0435,
+    "race": 0.0,
+    "race_contact": 0.06435
+  },
+  "natural_sample": 20000,
+  "ply": 2,
+  "quota": {
+    "backgame": 24,
+    "bearoff_contact": 33,
+    "blitz": 72,
+    "contact": 323,
+    "crashed": 24,
+    "holding": 62,
+    "prime_vs_prime": 26,
+    "race_contact": 38
+  },
+  "seed": 20260827,
+  "version": 1,
+  "width": 6
+}
