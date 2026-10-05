@@ -10,7 +10,7 @@
 | La composition reproduit-elle exactement le joueur de T35 ? | **mesuré** (§2) |
 | La cible WebAssembly répond-elle comme le natif ? | **mesuré** (§3) |
 | La lecture exacte de la défaite certaine coûte-t-elle ? | **mesuré** (§4) |
-| Le niveau `normal` en match contre gnubg retrouve-t-il T35 ? | **échantillon** (§5) ; le volume complet reste à faire |
+| Le niveau `normal` en match contre gnubg retrouve-t-il T35 ? | **mesuré** à 2 000 paires (§5), à ±1,1 point |
 
 ## 2. Identité avec le joueur de T35
 
@@ -71,6 +71,19 @@ soit une demi-largeur d'IC de ±2,2 points de MWC à 500 paires, ±1,1 à 2 000,
 Retrouver T35 **dans son propre intervalle** (±0,26) demanderait ~37 000 paires. Débit mesuré :
 ~0,09-0,11 paire/s à 8 ouvriers sur ce poste chargé, soit ~6 h pour 2 000 paires.
 
-**Reste à confirmer** : la campagne de 2 000 paires est lancée (journal
-`docs/mesures/politique-t35-match.jsonl`, reprise en relançant la même commande) ; le chiffre se
-relit à tout moment par `bench/report_policy.py`.
+**Campagne complète, 2 000 paires (indices 0..1999)**, 322,8 min à 8 ouvriers :
+
+| | MWC | IC 95 % |
+|---|---|---|
+| politique `normal` | 50,02 % | [48,62 ; 51,42] |
+| T35, mêmes indices | 49,75 % | [48,38 ; 51,10] |
+| **écart apparié politique − T35** | **+0,27 pt** | **[−0,83 ; +1,38]** |
+
+1 570 paires sur 2 000 au même résultat net. L'écart apparié contient zéro et sa demi-largeur
+(±1,1 point) est celle que prévoyait le dimensionnement : **le niveau `normal` est compatible
+avec T35 à ±1,1 point de MWC**. L'écart de −1,64 point de l'échantillon était du bruit. Ce
+n'est pas une identité dans l'intervalle propre de T35 (±0,26), qui demanderait ~37 000 paires.
+
+Journal : `docs/mesures/politique-t35-match.jsonl` ; le chiffre se relit par
+`bench/report_policy.py --journal docs/mesures/politique-t35-match.jsonl --reference
+docs/mesures/t35-match-v2.jsonl`.
