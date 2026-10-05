@@ -33,7 +33,15 @@ index manque donc au journal, et la paire est simplement rejouée.
 
 Ctrl-C draine les paires en vol puis sort proprement. `--limit` borne un lot
 en nombre de paires plutôt qu'en minutes. Sans l'un ni l'autre, le pilote
-joue jusqu'au bout de `--pairs`.
+joue jusqu'au bout de `--pairs`. La liste des index à jouer est figée au
+lancement : un processus en cours ne relit pas son journal, et ne saute donc
+pas des lignes ajoutées par un autre.
+
+## Partager une campagne entre machines
+
+`--indices A:B` ne joue que cette plage, dans un journal à part, au même
+en-tête (l'option n'y figure pas). `bench/merge_t35.py` réunit ensuite les
+journaux, une fois leurs pilotes arrêtés.
 
 ## Le mode match
 
@@ -108,6 +116,20 @@ def eval_fingerprint(model: str) -> str:
         values.extend(evaluation.as_tuple())
     return hashlib.blake2b(struct.pack(f"<{len(values)}f", *values),
                            digest_size=8).hexdigest()
+
+
+def parse_indices(text: str | None, pairs: int) -> tuple[int, int]:
+    """`A:B` → la plage [A, B) bornée par la cible ; rien → toute la cible."""
+    if not text:
+        return 0, pairs
+    a, sep, b = text.partition(":")
+    if not sep:
+        raise SystemExit(f"--indices attend A:B, reçu {text!r}")
+    first = int(a) if a else 0
+    last = min(int(b), pairs) if b else pairs
+    if not 0 <= first < last:
+        raise SystemExit(f"--indices {text!r} : plage vide dans [0, {pairs})")
+    return first, last
 
 
 def sampled_score(seed: int, index: int, length: int) -> tuple[int, int, bool]:
@@ -225,6 +247,14 @@ def main() -> int:
                              "(2^n entrées ; 0 = désactivé)")
     parser.add_argument("--limit", type=int, default=0,
                         help="taille du lot en paires (0 = jusqu'au bout)")
+    # A slice of the indices, to split one campaign across machines: each plays
+    # its slice into its own journal, bench/merge_t35.py joins them. Not in the
+    # header — a pair is a pure function of its index, so which machine played
+    # which slice is not part of the protocol, and the slices' headers must
+    # stay identical for the merge and the resume to accept them.
+    parser.add_argument("--indices", default=None, metavar="A:B",
+                        help="ne jouer que les index A <= i < B (A ou B "
+                             "omis : 0 ou --pairs) ; hors en-tête")
     parser.add_argument("--minutes", type=float, default=0.0,
                         help="budget de temps du lot (0 = sans limite)")
     parser.add_argument("--ours-ply", type=int, default=2)
@@ -327,7 +357,8 @@ def main() -> int:
     if header is not None:
         check_header(header, wanted_header, args.journal)
     done = set(rows)
-    todo = [i for i in range(args.pairs) if i not in done]
+    first, last = parse_indices(args.indices, args.pairs)
+    todo = [i for i in range(first, last) if i not in done]
     if args.limit:
         todo = todo[:args.limit]
 
