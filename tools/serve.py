@@ -39,11 +39,15 @@ listening — never a server that started anyway on the wrong weights.
                     IGNORED here: this is deliberately a plain cubeless money
                     search. A caller wanting a cube-aware or match-aware
                     decision uses /v1/cube, which takes the score explicitly.
-  * `/v1/cube`    — a cube decision, "double" or "take", given explicit away
-                    scores (0 on either side means money, not "match not
-                    started"). Static (0-ply) always. Crawford is not carried
-                    by this contract and defaults to false — a known,
-                    documented limitation, not a silent guess.
+  * `/v1/cube`    — a cube decision, "double" or "take", or the cubeful
+                    "equity" of the position, given explicit away scores (0
+                    on either side means money, not "match not started").
+                    Static (0-ply) always. The cube state is carried by the
+                    request (#26): `jacoby`, `cube_owner` and `crawford`,
+                    each defaulting to what the route assumed before it
+                    could be told — Jacoby on, owner deduced from the cube's
+                    value, not the Crawford game. An impossible state is
+                    refused (422), never corrected.
   * `/v1/rollout` — Monte-Carlo estimate of a position (the XGID's dice, if
                     any, are ignored: a rollout answers for the position
                     BEFORE a roll, same convention as `gn_rollout`).
@@ -175,6 +179,15 @@ class ApiError(Exception):
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise ApiError(400, message)
+
+
+def require_state(condition: bool, message: str) -> None:
+    """A well-formed request describing a game state that cannot occur, or a
+    question that state leaves nothing to answer — 422, the status this
+    server already gives a score outside the match equity table. 400 stays
+    for a request that is malformed as such."""
+    if not condition:
+        raise ApiError(422, message)
 
 
 def is_int(value: object) -> bool:
@@ -318,28 +331,79 @@ def handle_rollout(engine: Engine, body: dict) -> dict:
 
 
 # ── /v1/cube ─────────────────────────────────────────────────────────────
+#
+# #26 — the cube state is CARRIED by the request, no longer assumed. Three
+# optional fields, each defaulting to exactly what the route assumed before
+# it existed, so that a request sending none of them gets the same bytes
+# (`tests/test_serve_cube_compat.py` replays 780 recorded answers):
+#
+#   * `jacoby`     — the Jacoby rule in money play. Default `true`.
+#   * `cube_owner` — "centred" | "decider" | "opponent", RELATIVE TO THE
+#                    DECIDER like `decider_away`/`opponent_away` beside it.
+#                    The XGID's own owner field is absolute (uppercase /
+#                    lowercase player) and this contract has never read the
+#                    XGID's colours for anything but the checkers; a second,
+#                    absolute convention inside one request would be one more
+#                    thing to get backwards. Default: deduced from the cube's
+#                    value, as before — centred at 1, held by the player on
+#                    roll above 1.
+#   * `crawford`   — the game being evaluated IS the Crawford game, the same
+#                    meaning as the XGID's Crawford flag and as
+#                    `GnMatchState.crawford`. Default `false`.
+#
+# And one new `kind`, "equity": the cubeful equity of a position at a given
+# cube state, which is the only question left to ask when the player on roll
+# CANNOT double (cube held by the opponent, or the Crawford game) and which
+# "double" / "take" therefore refuse to answer rather than price an action
+# the rules forbid.
 
-_JACOBY_DEFAULT = True  # Not carried by this contract; documented assumption.
+_JACOBY_DEFAULT = True  # the assumption the route made before #26 — still the default
+
+#: The wire names of `cube_owner`, relative to the deciding player.
+_OWNER_NAMES = ("centred", "decider", "opponent")
 
 
 def _cube_owner(cube: int) -> CubeOwner:
     # A centred cube is always at value 1; anything higher means whoever is
     # weighing the double already owns it (the opponent could not have
     # doubled them to that value and left them still holding the option).
+    # Since #26 this is only the DEFAULT, for a request that does not say.
     return CubeOwner.CENTRED if cube <= 1 else CubeOwner.OWNED
 
 
-def _match_state(decider_away: int, opponent_away: int, cube: int) -> MatchState | None:
+def _owner_for_player_on_roll(name: str, on_roll_is_decider: bool) -> CubeOwner:
+    """`cube_owner` as the request states it (relative to the decider),
+    restated relative to the player on roll — the only frame `gn_cube` has
+    (`GnCubeOwner`: OWNED is "the player on roll owns it")."""
+    if name == "centred":
+        return CubeOwner.CENTRED
+    decider_holds_it = name == "decider"
+    return CubeOwner.OWNED if decider_holds_it == on_roll_is_decider else CubeOwner.OPPONENT
+
+
+def _optional_bool(body: dict, key: str, default: bool) -> bool:
+    """A NEW boolean field: absent means the default, present means a JSON
+    boolean and nothing else — `"false"` is a non-empty string, which
+    `bool()` would read as true, silently answering the opposite question."""
+    if key not in body:
+        return default
+    value = body[key]
+    require(isinstance(value, bool), f"{key} doit être un booléen JSON (true ou false)")
+    return value
+
+
+def _match_state(decider_away: int, opponent_away: int, cube: int, crawford: bool = False) -> MatchState | None:
     if decider_away <= 0 or opponent_away <= 0:
         return None  # money game: 0 is the "no match" sentinel, not "match won"
-    state = MatchState(away_on_roll=decider_away, away_opponent=opponent_away, cube=cube, crawford=False)
+    state = MatchState(away_on_roll=decider_away, away_opponent=opponent_away, cube=cube, crawford=crawford)
     if not state.is_valid:
         raise ApiError(422, f"état de match non évaluable : {state}")
     return state
 
 
 def _cube_triple(
-    engine: Engine, evaluation: Evaluation, owner: CubeOwner, cube: int, state: MatchState | None
+    engine: Engine, evaluation: Evaluation, owner: CubeOwner, cube: int, state: MatchState | None,
+    jacoby: bool = _JACOBY_DEFAULT,
 ) -> tuple[CubeAction, float, float, float]:
     """(action, no_double, double_take, double_pass), all from the DOUBLER's
     own point of view, on ONE consistent scale: real points in money, `2*MWC-1`
@@ -364,8 +428,13 @@ def _cube_triple(
         level 0 equal the original state's level 1, which is exactly the
         doubled-stake node `gn_cube_decide` resolves for `e_dt`. No further
         scaling: the result is already the number this function reports.
+
+    `jacoby` reaches `decide()` untouched, and `gn_cube_decide` alone says
+    where it bites: the "no double" branch of a CENTRED cube in MONEY, and
+    nowhere else (`gn_cube.h`). `double_take` and `double_pass` do not depend
+    on it — a doubled cube has been turned, which is what ends Jacoby.
     """
-    decision = cube_decide(evaluation, owner, engine.efficiency[owner], state, jacoby=_JACOBY_DEFAULT)
+    decision = cube_decide(evaluation, owner, engine.efficiency[owner], state, jacoby=jacoby)
     opp_efficiency = engine.efficiency[CubeOwner.OPPONENT]
 
     if state is None:
@@ -381,18 +450,76 @@ def _cube_triple(
     return decision.action, no_double, double_take, double_pass
 
 
+def _equity_response(
+    engine: Engine, roller_eval: Evaluation, decider_eval: Evaluation, owner: CubeOwner,
+    cube: int, state: MatchState | None, jacoby: bool, on_roll_is_decider: bool,
+) -> dict:
+    """kind="equity": the cubeful equity of the position at this cube state,
+    BEFORE the player on roll turns the cube this turn — `decide()`'s own
+    "no double" equity, on `_cube_triple`'s scale (money points at the
+    current stake; `2*MWC-1` in a match), reported for the DECIDER.
+
+    Why "no double" and not the value of the best cube action: when doubling
+    is allowed, `no_double`, `double_take` and `double_pass` of kind="double"
+    already give every branch, and the best one is the verdict's; what no
+    kind could say before #26 is the value of a position whose player on roll
+    has NO cube action — opponent owns the cube, or the Crawford game. There
+    `decide()` reports precisely that value: `gn_cube_value` at the same
+    state (Janowski with the opponent owning, or the dead cube in the
+    Crawford game; `tests/test_serve.py` holds the identity). One definition
+    for every state, and it equals `no_double` wherever both exist — so the
+    two kinds never give two numbers for one thing. Jacoby applies exactly
+    where `decide()` applies it: a centred cube in money.
+
+    The decider not on roll reads the negation: the game is zero-sum at
+    every cube state, and the on-roll player's equity is the only one the
+    cube model computes."""
+    decision = cube_decide(roller_eval, owner, engine.efficiency[owner], state, jacoby=jacoby)
+    if state is None:
+        roller_equity = decision.equity_no_double * cube
+    else:
+        roller_equity = 2.0 * decision.equity_no_double - 1.0
+    return {
+        "should_double": False,
+        "too_good": False,
+        "should_take": False,
+        "no_double": 0.0,
+        "double_take": 0.0,
+        "double_pass": 0.0,
+        "probs": _probs_json(decider_eval),
+        "take": 0.0,
+        "pass": 0.0,
+        "equity": roller_equity if on_roll_is_decider else -roller_equity,
+    }
+
+
 def handle_cube(engine: Engine, body: dict) -> dict:
     xgid = body.get("xgid")
     kind = body.get("kind")
     require(isinstance(xgid, str) and xgid, "xgid manquant ou invalide")
-    require(kind in ("double", "take"), "kind doit être 'double' ou 'take'")
+    require(kind in ("double", "take", "equity"), "kind doit être 'double', 'take' ou 'equity'")
 
     decider_away = body.get("decider_away", 0)
     opponent_away = body.get("opponent_away", 0)
     cube = body.get("cube", 1)
-    decider_on_roll = bool(body.get("decider_on_roll", True))
+    if kind == "equity":
+        # A new kind gets the strict reading; "double"/"take" keep the old
+        # `bool()` coercion, which a recorded answer depends on.
+        decider_on_roll = _optional_bool(body, "decider_on_roll", True)
+    else:
+        decider_on_roll = bool(body.get("decider_on_roll", True))
     require(is_int(decider_away) and is_int(opponent_away), "decider_away/opponent_away doivent être des entiers")
     require(is_int(cube) and cube >= 1 and (cube & (cube - 1)) == 0, "cube doit être une puissance de deux >= 1")
+
+    # #26 — the three fields that make the cube state explicit. Absent, each
+    # is the assumption the route made before them.
+    jacoby = _optional_bool(body, "jacoby", _JACOBY_DEFAULT)
+    crawford = _optional_bool(body, "crawford", False)
+    owner_name = body.get("cube_owner") if "cube_owner" in body else None
+    require(
+        "cube_owner" not in body or owner_name in _OWNER_NAMES,
+        "cube_owner doit être 'centred', 'decider' ou 'opponent'",
+    )
 
     try:
         position, _fields = codec.position_from_xgid(xgid)
@@ -400,30 +527,67 @@ def handle_cube(engine: Engine, body: dict) -> dict:
         raise ApiError(400, str(exc)) from exc
     require(not position.is_over(), "position déjà terminée : rien à décider")
 
-    # `decider_away`/`opponent_away` name the AWAY SCORES OF THE DECIDER — the
-    # responder for kind="take", not the doubler. Every cube computation below
-    # is anchored on the DOUBLER's own perspective (gn_cube.h — the formulas
-    # need only the doubler's own state), so for a "take" request the two
-    # scores must be swapped back to the doubler's own view before building
-    # the MatchState. Getting this backwards does not crash: it silently
-    # scores the decision at the WRONG player's away score, and a symmetric
-    # match (equal away scores) would never reveal it — see
+    # Every cube computation below is anchored on the player ON ROLL — the
+    # doubler for "double" and "take" (gn_cube.h: the formulas need only the
+    # doubler's own state, the opponent's side folds in by symmetry), and the
+    # player whose position is valued for "equity". `decider_away` /
+    # `opponent_away` and `cube_owner` name the DECIDER's side instead: the
+    # responder for kind="take", not the doubler. So both are restated from
+    # the on-roll player's own view before building the MatchState. Getting
+    # this backwards does not crash: it silently scores the decision at the
+    # WRONG player's away score, and a symmetric match (equal away scores)
+    # would never reveal it — see
     # `test_cube_take_uses_the_doublers_own_away_score` for the asymmetric
     # case that catches exactly this mistake.
-    doubler_away, doubler_opponent_away = (
-        (decider_away, opponent_away) if kind == "double" else (opponent_away, decider_away)
+    on_roll_is_decider = {"double": True, "take": False, "equity": decider_on_roll}[kind]
+    roller_away, roller_opponent_away = (
+        (decider_away, opponent_away) if on_roll_is_decider else (opponent_away, decider_away)
     )
-    state = _match_state(doubler_away, doubler_opponent_away, cube)
+    state = _match_state(roller_away, roller_opponent_away, cube, crawford)
 
-    # Cube math is always taken from the DOUBLER's (on-roll) own perspective —
-    # gn_cube.h: the formulas need only the doubler's own (W, L), the
-    # opponent's side folds in by symmetry. `decider_on_roll` never enters
-    # this call; it only decides whose distribution gets REPORTED below.
-    doubler_eval = engine.network.evaluate(position)
-    owner = _cube_owner(cube)
-    action, no_double, double_take, double_pass = _cube_triple(engine, doubler_eval, owner, cube, state)
+    # Refused, never corrected: a cube state that cannot occur in a game.
+    if owner_name is not None:
+        if cube == 1:
+            require_state(owner_name == "centred",
+                          "état de videau impossible : un videau à 1 est centré, personne ne le détient")
+        else:
+            require_state(owner_name != "centred",
+                          f"état de videau impossible : un videau centré vaut 1, pas {cube}")
+    if crawford:
+        require_state(state is not None,
+                      "crawford n'existe qu'en match : decider_away et opponent_away doivent être > 0")
+        require_state((roller_away == 1) != (roller_opponent_away == 1),
+                      "crawford exige qu'exactement un joueur soit à 1-away : la partie Crawford "
+                      "est celle où le meneur atteint la balle de match")
+        require_state(cube == 1,
+                      f"état de videau impossible : aucun videau n'est tourné dans la partie Crawford (cube={cube})")
 
-    decider_eval = doubler_eval if decider_on_roll else engine.network.evaluate(position.swapped_turn())
+    owner = _cube_owner(cube) if owner_name is None else _owner_for_player_on_roll(owner_name, on_roll_is_decider)
+
+    if kind != "equity":
+        # "double" and "take" weigh a double. Where the player on roll may
+        # not double, there is no such decision to weigh, and its branch
+        # equities would price an action the rules forbid.
+        require_state(owner != CubeOwner.OPPONENT,
+                      "le joueur au trait ne détient pas le videau : il ne peut pas doubler "
+                      "(kind='equity' rend la valeur de la position dans cet état)")
+        require_state(not crawford,
+                      "pas de videau en jeu dans la partie Crawford : rien à doubler ni à prendre "
+                      "(kind='equity' rend la valeur de la position)")
+
+    roller_eval = engine.network.evaluate(position)
+    decider_eval = roller_eval if decider_on_roll else engine.network.evaluate(position.swapped_turn())
+
+    if kind == "equity":
+        return _equity_response(engine, roller_eval, decider_eval, owner, cube, state, jacoby,
+                                on_roll_is_decider)
+
+    # `decider_on_roll` never enters the cube math for "double"/"take"; it
+    # only decides whose distribution gets REPORTED below.
+    doubler_eval = roller_eval
+    action, no_double, double_take, double_pass = _cube_triple(
+        engine, doubler_eval, owner, cube, state, jacoby
+    )
 
     result: dict[str, Any] = {
         "should_double": False,
@@ -493,7 +657,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
     #: numbers were wrong, not a different contract someone could still want —
     #: but a client that cached a response, or a gold file recorded against
     #: the old server, is stale, and this header is what tells it apart.
-    server_version = "gammonNet-serve/2"
+    #:
+    #: /3 (#26): `/v1/cube` learnt `jacoby`, `cube_owner`, `crawford` and
+    #: kind "equity". Additive — every /2 request gets the same body back,
+    #: `tests/test_serve_cube_compat.py` replays them — but a caller needs
+    #: SOME way to know whether the server it reached understands the new
+    #: fields before relying on them, and this header is the one the
+    #: contract already has.
+    server_version = "gammonNet-serve/3"
 
     def log_message(self, fmt: str, *args) -> None:  # quieter, structured-ish
         sys.stderr.write(f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {self.address_string()} {fmt % args}\n")

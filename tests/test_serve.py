@@ -342,6 +342,226 @@ def test_cube_rejects_an_unknown_kind(server):
     assert "error" in body
 
 
+# ── /v1/cube : the cube state carried by the request (#26) ───────────────
+#
+# Every number below is checked against the LIBRARY called directly, in this
+# process, on the same pinned weights and the same measured efficiencies —
+# never against another answer of the same server, which would only prove
+# the server agrees with itself.
+
+# On roll: 82.8 % to win, 61 % gammons (T12 corpus). Without Jacoby it is
+# too good to double in money; with Jacoby, the gammons it would play for
+# do not count, and it must double.
+GAMMONISH_XGID = "XGID=-cABCaCBA---aaaA--af-B--a-:0:0:1:00:0:0:0:0:10"
+
+
+@pytest.fixture(scope="module")
+def library():
+    """The pinned network and T34's measured efficiencies, loaded the way any
+    caller of the library would — `tools/serve.py` is not imported."""
+    from gammonnet import codec
+    from gammonnet.cube import CubeOwner
+    from gammonnet.infer import Network
+
+    manque = _pinned_weights_missing()
+    if manque:
+        pytest.skip(manque)
+    pin = json.loads(PIN.read_text())
+    network = Network.load(PIN.parent / pin["network_fp16"]["filename"])
+    measured = json.loads((ROOT / "docs" / "mesures" / "t34-efficacite.json").read_text())["results"]
+    efficiency = {
+        CubeOwner.CENTRED: measured["centered"]["x"],
+        CubeOwner.OWNED: measured["owned"]["x"],
+        CubeOwner.OPPONENT: measured["opponent"]["x"],
+    }
+
+    def evaluate(xgid: str):
+        position, _fields = codec.position_from_xgid(xgid)
+        return network.evaluate(position)
+
+    yield evaluate, efficiency
+    network.close()
+
+
+def _cube(server: str, **fields) -> dict:
+    status, body = _post(server, "/v1/cube", fields)
+    assert status == 200, body
+    return body
+
+
+def test_cube_jacoby_moves_no_double_in_money_and_only_there(server, library):
+    """Issue #26, first check: with and without Jacoby, on a gammonish
+    position with a centred cube, the equities differ in the expected
+    direction — without Jacoby the favourite's gammons count, so playing on
+    is worth MORE — and each equals `decide()` called with that flag."""
+    from gammonnet.cube import CubeAction, CubeOwner, decide
+
+    evaluate, efficiency = library
+    common = dict(xgid=GAMMONISH_XGID, kind="double", decider_away=0, opponent_away=0, cube=1)
+    with_jacoby = _cube(server, **common, jacoby=True)
+    without = _cube(server, **common, jacoby=False)
+    default = _cube(server, **common)
+
+    assert default == with_jacoby, "sans le champ, la route suppose Jacoby — comme avant #26"
+    assert without["no_double"] > with_jacoby["no_double"], (with_jacoby, without)
+
+    evaluation = evaluate(GAMMONISH_XGID)
+    x = efficiency[CubeOwner.CENTRED]
+    for flag, body in ((True, with_jacoby), (False, without)):
+        expected = decide(evaluation, CubeOwner.CENTRED, x, None, jacoby=flag)
+        assert body["no_double"] == expected.equity_no_double  # cube 1: points == per unit
+        assert body["should_double"] == (expected.action in (CubeAction.DOUBLE_TAKE, CubeAction.DOUBLE_PASS))
+        assert body["too_good"] == (expected.action == CubeAction.TOO_GOOD)
+    # The verdict itself turns over on this position, which is why it was chosen.
+    assert with_jacoby["should_double"] and not with_jacoby["too_good"]
+    assert without["too_good"] and not without["should_double"]
+
+    # Jacoby governs the "no double" branch only (gn_cube.h): a turned cube
+    # ends it, so both doubled branches are untouched by the flag.
+    assert without["double_take"] == with_jacoby["double_take"]
+    assert without["double_pass"] == with_jacoby["double_pass"]
+
+    # And in a match it has no effect at all: the table prices gammons at the score.
+    match = dict(common, decider_away=5, opponent_away=7)
+    assert _cube(server, **match, jacoby=True) == _cube(server, **match, jacoby=False)
+
+
+def test_cube_owner_opponent_is_answered_by_kind_equity_and_matches_the_library(server, library):
+    """Issue #26, second check: a cube at 2 held by the player on roll, then
+    by the opponent — the equities differ, and the second is what the library
+    returns for `CubeOwner.OPPONENT`, both through `decide()` and through
+    `value()` (the two must agree; `tools/serve.py` relies on it)."""
+    from gammonnet.cube import CubeOwner, decide, value
+    from gammonnet.met import MatchState
+
+    evaluate, efficiency = library
+    evaluation = evaluate(GAMMONISH_XGID)
+    x_opp = efficiency[CubeOwner.OPPONENT]
+
+    for away in ((0, 0), (5, 7), (2, 4)):
+        common = dict(xgid=GAMMONISH_XGID, kind="equity", decider_away=away[0],
+                      opponent_away=away[1], cube=2, decider_on_roll=True)
+        mine = _cube(server, **common, cube_owner="decider")
+        theirs = _cube(server, **common, cube_owner="opponent")
+        assert mine["equity"] != theirs["equity"], away
+        # NOT asserted: "owning the cube cannot cost". On this too-good,
+        # gammonish position the library's own model gives, at 5-away/7-away
+        # and cube 2, 0.61047 owned against 0.61328 opponent-owned — at equal
+        # efficiency too. That is the cube model's property, measured here and
+        # reported, not something this route may correct.
+
+        state = None if away == (0, 0) else MatchState(away[0], away[1], cube=2)
+        no_double = decide(evaluation, CubeOwner.OPPONENT, x_opp, state).equity_no_double
+        leaf = value(evaluation, CubeOwner.OPPONENT, x_opp, state)
+        if state is None:
+            assert theirs["equity"] == no_double * 2 == leaf * 2  # money: points at stake 2
+        else:
+            assert theirs["equity"] == 2.0 * no_double - 1.0 == leaf  # match: 2*MWC-1
+
+        # Where both kinds exist they give ONE number: "equity" with the cube
+        # held by the player on roll is "double"'s no_double for that state.
+        doubling = _cube(server, **dict(common, kind="double"), cube_owner="decider")
+        assert mine["equity"] == doubling["no_double"]
+
+        # And the value after a take, which "double" already reported, is
+        # this very state one cube level up: opponent owns, stake doubled.
+        before = _cube(server, **dict(common, kind="double", cube=1))
+        assert before["double_take"] == theirs["equity"], away
+
+
+def test_cube_owner_states_the_default_explicitly_without_changing_it(server):
+    """Naming the owner the route used to deduce gives the same bytes back —
+    for "double" (doubler holds cube 2) and for "take" (seen from the
+    responder, the cube 2 belongs to the opponent who redoubles)."""
+    common = dict(xgid=GAMMONISH_XGID, decider_away=0, opponent_away=0, cube=2)
+    assert (_cube(server, **common, kind="double", cube_owner="decider")
+            == _cube(server, **common, kind="double"))
+    assert (_cube(server, **common, kind="take", decider_on_roll=False, cube_owner="opponent")
+            == _cube(server, **common, kind="take", decider_on_roll=False))
+    centred = dict(common, cube=1)
+    assert _cube(server, **centred, kind="double", cube_owner="centred") == _cube(server, **centred, kind="double")
+
+
+def test_cube_equity_reports_the_deciders_side(server, library):
+    """The decider not on roll reads the exact negation, with the away scores
+    and the owner both stated from HIS side — an asymmetric score, so that a
+    swap done backwards cannot cancel out."""
+    from gammonnet import codec
+
+    on_roll = _cube(server, xgid=GAMMONISH_XGID, kind="equity", decider_away=2, opponent_away=7,
+                    cube=2, cube_owner="opponent", decider_on_roll=True)
+    other = _cube(server, xgid=GAMMONISH_XGID, kind="equity", decider_away=7, opponent_away=2,
+                  cube=2, cube_owner="decider", decider_on_roll=False)
+    assert other["equity"] == -on_roll["equity"]
+
+    # The distribution beside it is the decider's too — the README's rule —
+    # i.e. the network's own reading with the decider's side to play, as the
+    # "double"/"take" kinds already report it.
+    evaluate, _efficiency = library
+    position, _fields = codec.position_from_xgid(GAMMONISH_XGID)
+    as_decider = evaluate(codec.xgid(position.swapped_turn()))
+    assert other["probs"]["win"] == pytest.approx(as_decider.win, abs=1e-7)
+    assert on_roll["probs"]["win"] == pytest.approx(evaluate(GAMMONISH_XGID).win, abs=1e-7)
+
+
+def test_cube_crawford_game_matches_the_library(server, library):
+    """Issue #26, third check: the Crawford game, compared to the library
+    called directly. There the cube is dead — `gn_cube_value` says so — and
+    the same score without `crawford` is post-Crawford, a different game."""
+    from gammonnet.cube import CubeOwner, decide, value
+    from gammonnet.met import MatchState
+
+    evaluate, efficiency = library
+    x = efficiency[CubeOwner.CENTRED]
+    for xgid in (GAMMONISH_XGID, OPENING_31_XGID):
+        evaluation = evaluate(xgid)
+        for away in ((1, 5), (4, 1)):
+            common = dict(xgid=xgid, kind="equity", decider_away=away[0], opponent_away=away[1], cube=1)
+            crawford = _cube(server, **common, crawford=True)
+            post = _cube(server, **common, crawford=False)
+            assert post == _cube(server, **common), "sans le champ, la route suppose crawford=false"
+
+            state = MatchState(away[0], away[1], cube=1, crawford=True)
+            expected = 2.0 * decide(evaluation, CubeOwner.CENTRED, x, state).equity_no_double - 1.0
+            assert crawford["equity"] == expected == value(evaluation, CubeOwner.CENTRED, x, state)
+            assert crawford["equity"] == pytest.approx(state.equity(evaluation), abs=1e-12), (
+                "partie Crawford : la valeur est l'équité de match sans videau"
+            )
+            assert post["equity"] != crawford["equity"], (xgid, away)
+
+
+@pytest.mark.parametrize("fields, status", [
+    # A cube at 1 is centred; a centred cube is at 1.
+    (dict(cube=1, cube_owner="decider"), 422),
+    (dict(cube=1, cube_owner="opponent"), 422),
+    (dict(cube=2, cube_owner="centred"), 422),
+    # The Crawford game: a match, exactly one player at 1-away, no cube turned.
+    (dict(crawford=True), 422),                                        # money
+    (dict(crawford=True, decider_away=7, opponent_away=7), 422),       # nobody at 1-away
+    (dict(crawford=True, decider_away=1, opponent_away=1), 422),       # both: DMP, post-Crawford
+    (dict(crawford=True, decider_away=1, opponent_away=5, cube=2, cube_owner="decider"), 422),
+    # "double"/"take" where the player on roll cannot double.
+    (dict(kind="double", cube=2, cube_owner="opponent"), 422),
+    (dict(kind="take", cube=2, cube_owner="decider", decider_on_roll=False), 422),
+    (dict(kind="double", crawford=True, decider_away=1, opponent_away=5), 422),
+    (dict(kind="take", crawford=True, decider_away=5, opponent_away=1, decider_on_roll=False), 422),
+    # Malformed: a new field takes its own type and nothing that looks like it.
+    (dict(jacoby="false"), 400),
+    (dict(jacoby=0), 400),
+    (dict(crawford=1), 400),
+    (dict(cube_owner="mine"), 400),
+    (dict(cube_owner=None), 400),
+    (dict(decider_on_roll="no"), 400),                                  # kind "equity" only
+])
+def test_cube_refuses_a_state_that_cannot_occur(server, fields, status):
+    """Refused, never corrected — the issue's own example first."""
+    request = dict(xgid=GAMMONISH_XGID, kind="equity", decider_away=0, opponent_away=0, cube=1)
+    request.update(fields)
+    got, body = _post(server, "/v1/cube", request)
+    assert got == status, body
+    assert "error" in body
+
+
 # ── /v1/rollout ──────────────────────────────────────────────────────────
 
 
