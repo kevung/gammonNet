@@ -205,14 +205,18 @@ def load_efficiency() -> dict[CubeOwner, float]:
     }
 
 
-def build_corpus(contact_count: int, bearoff_count: int) -> list[tuple[Position, str]]:
+def build_corpus(contact_count: int, bearoff_count: int,
+                 corpus_model: str = MODEL) -> list[tuple[Position, str]]:
     """The 3000-position corpus: contact positions, then bearoff positions.
 
     Both generators are reused verbatim from their own tasks (T36, T38) --
     see the module docstring for why (a corpus is versioned once, reused, not
     quietly rebuilt with a slightly different recipe every time it's needed).
+
+    The contact half is self-play by `corpus_model`: a different network walks
+    to different positions. Keep it fixed to compare two evaluators.
     """
-    network = Network.load(MODEL)
+    network = Network.load(corpus_model)
     contact = [(position, "contact")
                for position, _d1, _d2 in contact_corpus(contact_count, CONTACT_SEED, network)]
 
@@ -389,9 +393,12 @@ def main() -> int:
     # The corpus is always walked by the reference network, so that two runs
     # with different --model score the SAME positions and pair row by row.
     parser.add_argument("--model", default=MODEL,
-                        help="réseau qui décide le videau (le corpus reste celui de MODEL)")
+                        help="réseau qui décide le videau (le corpus reste celui de --corpus-model)")
     parser.add_argument("--dump", default="",
                         help="écrire chaque décision (.jsonl) pour apparier deux réseaux")
+    parser.add_argument("--corpus-model", default=MODEL,
+                        help="réseau dont l'autojeu tire les positions de contact "
+                             "(défaut : le corpus T34) ; à figer pour apparier deux réseaux")
     args = parser.parse_args()
     args.model = str(Path(args.model).resolve())
 
@@ -406,7 +413,7 @@ def main() -> int:
           f"centred={efficiency[CubeOwner.CENTRED]:.3f}\n", flush=True)
 
     build_start = time.perf_counter()
-    positions = build_corpus(args.contact, args.bearoff)
+    positions = build_corpus(args.contact, args.bearoff, args.corpus_model)
     print(f"  corpus built in {time.perf_counter() - build_start:.0f} s "
           f"({len(positions)} positions)\n", flush=True)
 
@@ -428,10 +435,6 @@ def main() -> int:
     print("running the full corpus...", flush=True)
     rows, elapsed = run(positions, efficiency, workers=args.workers, progress=PROGRESS,
                         model=args.model)
-    if args.dump:
-        with open(args.dump, "w") as handle:
-            for row in rows:
-                handle.write(json.dumps(row) + "\n")
     print(f"{len(rows)} decisions in {elapsed / 60:.1f} min on {args.workers} workers "
           f"(MEASURED, not extrapolated)\n")
 
@@ -489,10 +492,17 @@ def main() -> int:
               f"gnubg={r['gnubg_action']:12}({r['gnubg_margin']:+.4f}) "
               f"[{r['gnubg_text']}]")
 
+    if args.dump:
+        with open(args.dump, "w") as fh:
+            for row in sorted(rows, key=lambda r: (r["position_id"], r["turn"],
+                                                   r["origin"], r["context"], r["owner"])):
+                fh.write(json.dumps(row) + "\n")
+
     if args.out:
         Path(args.out).write_text(json.dumps({
             "task": "T34-6.3",
             "model": Path(args.model).name,
+            "corpus_model": Path(args.corpus_model).name,
             "seed_contact": CONTACT_SEED,
             "seed_bearoff": BEAROFF_SEED,
             "positions": {"contact": args.contact, "bearoff": args.bearoff,

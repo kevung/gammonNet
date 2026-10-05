@@ -2913,6 +2913,59 @@ remplacent pas.
 
 **Machine** — les trois machines. **Coût** — *inconnu tant que le pilote n'a pas tourné.*
 
+## T98 — Adopter le réseau de record, et mesurer ce que T96 a laissé
+
+> **Pourquoi une fiche plutôt qu'un changement de nom.** T96 a établi que
+> `cubeless_prob5_512_512_256_256` est le plus fort, **en évaluation statique** : au 0-ply,
+> cubeless, money. Quatre choses restent sans mesure, et chacune peut défaire l'adoption
+> autrement que par la force du réseau : le prix payé dans le navigateur, un réseau d'élagage
+> distillé de l'**ancien** réseau, un videau réglé autour de lui, et un avantage statique dont
+> T93 a montré qu'il ne survit pas toujours à la profondeur.
+
+**Objectif** — publier le nouveau réseau sous son nom, avec une force mesurée **aux réglages
+servis**, ou dire précisément pourquoi on ne le publie pas.
+
+**Les seuils, écrits avant les données**
+
+1. **Navigateur** — décision 2-ply `k=12` chronométrée dans au moins deux navigateurs, 128 et
+   256 **alternés dans la même séance**, ratio seul publié. Bloquant si la pénalité dépasse le
+   double de la pénalité native (+18 %), ou si la parité WebAssembly ↔ natif cesse d'être bit à bit.
+2. **Élagage** — `prune_32` redistillé du nouveau réseau, même recette (corpus de 800 000, graine
+   20260807). Le niveau `normal` **tel qu'il est défini aujourd'hui** (triplet
+   `(0,1,1)+(0,0,2)` à 0,04, `k=12`) est noté sur les 10 000 décisions du registre T70, avec
+   dumps appariés. Le nouveau réseau d'élagage est adopté s'il n'est **pas inférieur** à
+   l'ancien sur le même grand réseau (Δ apparié ≤ +0,001, la marge de T70). Le `normal` à publier
+   doit battre le `normal` publié, intervalles disjoints.
+3. **Videau** — les efficacités (0,566 / 0,688 / 0,687) sont ajustées sur la table bilatérale
+   exacte, **sans le réseau** (`bench/fit_efficiency.py`) : elles ne peuvent pas bouger et ne sont
+   pas réajustées. La comparaison T34 est rejouée **sur le corpus de T34** (positions tirées
+   par l'ancien réseau, `--corpus-model`), décision par décision. Si l'accord avec gnubg varie
+   de plus d'un point, les décisions qui changent sont arbitrées avant toute conclusion :
+   gnubg n'est pas la vérité, un écart à gnubg n'est pas une erreur.
+4. **Sous recherche** — deux instruments, qui ne répondent pas à la même question.
+   - **Le tête-à-tête cubeful**, 256 contre 128, chacun avec son réseau d'élagage, 2-ply
+     `(0,1,3)` `k=12`, videau 2-ply, matchs de 7 points aux scores tirés comme T35, dés
+     dupliqués (`bench/run_t35.py --theirs self --theirs-model`). **Il décide** : IC 95 % de la
+     MWC entièrement au-dessus de 50 % → gain sous recherche établi ; entièrement en dessous →
+     adoption suspendue ; à cheval au budget → l'adoption tient sur T96 et sur le point 2, et le
+     rapport dit « gain sous recherche non établi », sans arrondir.
+   - **Le protocole de T35 contre gnubg** (moitié match, 50 000 paires, réglage d'origine :
+     `(0,1,3)` sans élagage) — le chiffre publiable face à un moteur externe. Il ne départage
+     pas les deux réseaux : son intervalle (±0,27 point de MWC) est plus large que l'écart
+     attendu.
+
+**La bascule, une fois 1–4 rendus** — un réseau change de nom quand ses poids changent
+(`BRIEF.md` §8) : `strehl-prob5-512-512-256-256` et `strehl-prune-32` redistillé sous un nom
+neuf ; l'épingle `7184e2f` et les poids bougent ensemble ; le corpus T12 et les ors de
+`tests/test_search_filter.py` se déplacent **visiblement** ; `test_the_header_says_what_we_expect`,
+`tools/package_artifact.py`, `models/release_pin.json`, `cubeful.MODEL` et les chemins des bancs
+suivent ; la force et la provenance entrent dans les notes de version.
+
+**Exclut** — tout réentraînement du grand réseau (T71) ; les poids `cubeful_money_*` et le
+5 couches expérimental, écartés par T96.
+
+**Dépendances** — T96. **Machines** — mochy et melbaa.
+
 ---
 
 # Phase 5 — Publication
