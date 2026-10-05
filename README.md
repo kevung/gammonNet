@@ -210,7 +210,7 @@ bad parameters) — never a 200 with an error disguised as a result:
 | Route | Request | Response |
 |---|---|---|
 | `POST /v1/eval` | `{xgid, ply}` | `{best_move, equity, candidates: [{move, equity, probs}], ply, probs}` |
-| `POST /v1/cube` | `{xgid, kind: "double"\|"take", decider_away, opponent_away, cube, decider_on_roll}` | `{should_double, too_good, no_double, double_take, double_pass, should_take, take, pass, probs}` |
+| `POST /v1/cube` | `{xgid, kind: "double"\|"take"\|"equity", decider_away, opponent_away, cube, decider_on_roll, jacoby, cube_owner, crawford}` | `{should_double, too_good, no_double, double_take, double_pass, should_take, take, pass, probs}`, plus `equity` for kind `"equity"` |
 | `POST /v1/rollout` | `{xgid, trials, max_depth, seed}` | `{trials, equity, std_err, win_prob}` |
 
 The contract, in the places it is easy to get wrong:
@@ -219,8 +219,37 @@ The contract, in the places it is easy to get wrong:
   rather than assume the request was honoured.
 - `/v1/eval` needs an XGID carrying a roll (the two dice digits in its 4th field); `/v1/cube` does
   not, since away scores and cube value are explicit request fields, so the same call serves money
-  (either away score `0`) and match play. Crawford is assumed false: a documented limitation, not a
-  silent guess.
+  (either away score `0`) and match play.
+- **`/v1/cube` takes the cube state from the request, never from the XGID** (whose cube, owner and
+  Crawford fields it ignores). Three optional fields, each defaulting to what the route assumed
+  before it could be told — so a request that sends none of them gets the same answer as before
+  ([#26](https://github.com/kevung/gammonNet/issues/26)):
+
+  | Field | Values | Default | Meaning |
+  |---|---|---|---|
+  | `jacoby` | `true` / `false` | `true` | Money only: gammons do not count before the cube is turned. It moves the *no double* branch of a centred cube and nothing else; in a match it has no effect (the match equity table already prices gammons at the score). |
+  | `cube_owner` | `"centred"` / `"decider"` / `"opponent"` | centred at `cube: 1`, held by the player on roll above | Who holds the cube, **relative to the deciding player**, like `decider_away` / `opponent_away`. |
+  | `crawford` | `true` / `false` | `false` | The game evaluated **is** the Crawford game (the XGID's Crawford flag). Match only, with exactly one player at 1-away and the cube at 1. |
+
+  `kind: "equity"` returns `equity`: the cubeful equity of the position at that cube state, before
+  the player on roll turns the cube this turn — the decider's, negated when the decider is not on
+  roll. It is the only question left when the player on roll **cannot** double (cube held by the
+  opponent, or the Crawford game): there `"double"` and `"take"` are refused rather than price an
+  action the rules forbid. Where doubling is allowed, `equity` is exactly `"double"`'s `no_double`
+  for the same state — one number, never two.
+- **An impossible cube state is refused with `422`, never corrected**: a cube at 1 declared held, a
+  cube above 1 declared centred, Crawford in money, Crawford with no player (or both) at 1-away,
+  Crawford with a turned cube, `"double"` / `"take"` where the player on roll cannot double. A new
+  field of the wrong type (`"false"` as a string, `0` for a boolean) is a `400`.
+- **Units.** In money, `no_double`, `double_take`, `double_pass`, `take`, `pass` and `equity` are in
+  **points at the current stake** — the per-unit-of-cube equity multiplied by `cube`, so a pass
+  always costs exactly `cube`. In a match they are `2·MWC − 1`, at the stake the state names. The
+  WebAssembly `cubeDecision` reports the same quantities on its own scale — per unit of cube in
+  money, MWC in a match. Both call the same `gn_cube_decide`; on nine states checked at 0-ply on
+  2026-10-05 (Jacoby on and off, cube owned and opponent's, money and 5-away/7-away, two Crawford
+  games) they agree to |Δ| = 0 once converted. The module does not refuse the impossible states
+  listed above: it evaluates them as given.
+- The response's `Server` header names the contract: `gammonNet-serve/3` since these fields.
 - `/v1/rollout` ignores any dice the XGID carries — a rollout answers for the position *before* a
   roll. `max_depth: 0` plays every trial to completion, the only case where `win_prob` is an
   observed frequency rather than the honest `0.0` a truncated trial reports: it ends on an
@@ -232,6 +261,8 @@ The contract, in the places it is easy to get wrong:
   `GnCandidate.probs` holds the *resulting* position's distribution — the opponent's — which both
   published surfaces mirror.) `/v1/cube`'s four cube equities are the one thing that does not
   follow the deciding player: they are always the **doubler's**, `take` / `pass` their negation.
+  `equity` (kind `"equity"`) does follow it, like `probs` beside it — but being cubeful, it is not
+  the cubeless identity above.
 - The two surfaces differ on **depth**, deliberately: past 0-ply the probabilities come from the
   shallow ranking pass while the equity comes from the deep search. `/v1/eval` therefore omits
   `probs` for candidates once `ply >= 1`; `rankPlays` keeps them, because an analysis UI displays
