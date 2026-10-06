@@ -23,7 +23,7 @@ import { dirname, join } from "node:path";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const MODEL = join(ROOT, "models", "cubeless_prob5_512_512_256_128.bin");
+const MODEL = join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin");
 const PRUNE = join(ROOT, "models", "prune_32.bin");
 const MODULE = pathToFileURL(join(ROOT, "build", "wasm", "gammonnet-simd.mjs")).href;
 

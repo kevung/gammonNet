@@ -37,7 +37,7 @@ from gammonnet.search import SearchConfig, search_plays
 
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS = ROOT / "tests" / "data" / "corpus_t12.jsonl"
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 
 pytestmark = pytest.mark.skipif(
     not MODEL.is_file(), reason=f"{MODEL.name} absent — lancer `make model`"

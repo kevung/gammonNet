@@ -192,7 +192,7 @@ $(LIBRARY): $(OBJECTS) $(VENDOR_OBJECTS)
 
 # ── Modèle ───────────────────────────────────────────────────────────
 
-MODEL := models/cubeless_prob5_512_512_256_128.bin
+MODEL := models/cubeless_prob5_512_512_256_256.bin
 PRUNE_MODEL := models/prune_32.bin
 
 model: $(MODEL)

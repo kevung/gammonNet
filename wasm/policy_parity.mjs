@@ -33,7 +33,7 @@ if (magic !== "GNPL" || view.getUint32(4, true) !== 1 || view.getUint32(12, true
 
 const factory = (await import(MODULE)).default;
 const evaluator = await Evaluator.create(
-  factory, new Uint8Array(readFileSync(join(ROOT, "models", "cubeless_prob5_512_512_256_128.bin"))));
+  factory, new Uint8Array(readFileSync(join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin"))));
 evaluator.loadPrune(new Uint8Array(readFileSync(join(ROOT, "models", "prune_32.bin"))), 12);
 
 function boardAt(off) {

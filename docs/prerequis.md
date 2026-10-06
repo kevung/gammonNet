@@ -125,7 +125,7 @@ Poids MIT, non versionnés ici (`models/*.bin` est ignoré) :
 
 ```bash
 make setup      # clone le dépôt de référence à son commit épinglé
-make model      # exporte cubeless_prob5_512_512_256_128.bin
+make model      # exporte cubeless_prob5_512_512_256_256.bin
 ```
 
 ## Piste B — la chaîne navigateur
@@ -181,7 +181,7 @@ lier **en absolu**, jamais en relatif :
 
 ```bash
 ln -s /chemin/vers/gammonNet/vendor vendor
-ln -s /chemin/vers/gammonNet/models/cubeless_prob5_512_512_256_128.bin models/
+ln -s /chemin/vers/gammonNet/models/cubeless_prob5_512_512_256_256.bin models/
 ```
 
 > Le `.gitignore` porte la cicatrice de l'erreur inverse : un lien relatif

@@ -27,7 +27,7 @@ from gammonnet.search import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 PRUNE = ROOT / "models" / "prune_32.bin"
 
 #: float32 de bout en bout : l'écart admissible est celui de l'accumulation,

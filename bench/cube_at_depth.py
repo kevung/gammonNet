@@ -69,7 +69,7 @@ from gammonnet.rules import BLACK, NUM_POINTS, WHITE  # noqa: E402
 from gammonnet.search import SearchConfig, position_probs  # noqa: E402
 
 DATABASE = ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd"
-MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 EFFICIENCY_FILE = ROOT / "docs" / "mesures" / "t34-efficacite.json"
 
 SEED = 20260808

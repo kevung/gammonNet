@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT / "python"))
 from gammonnet.infer import Network  # noqa: E402
 from gammonnet.rules import Position  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 needs_model = pytest.mark.skipif(not MODEL.exists(), reason="modèle absent")
 
 

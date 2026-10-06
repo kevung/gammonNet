@@ -59,8 +59,8 @@ DEFAULT_CORPUS = ROOT / "build" / "prune_corpus.npz"
 RAW_PT = ROOT / "models" / "prune_32_raw.pt"          # gitignored (models/*.pt)
 OUT_BIN = ROOT / "models" / "prune_32.bin"            # gitignored (models/*.bin)
 OUT_PROVENANCE = ROOT / "models" / "prune_32.provenance.json"  # committed
-GRAND_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
-GRAND_PROVENANCE = ROOT / "models" / "cubeless_prob5_512_512_256_128.provenance.json"
+GRAND_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+GRAND_PROVENANCE = ROOT / "models" / "cubeless_prob5_512_512_256_256.provenance.json"
 
 HIDDEN_SIZES = [32]
 ACTIVATION = "relu"

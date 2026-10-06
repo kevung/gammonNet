@@ -202,7 +202,7 @@ def main() -> int:
     args = parser.parse_args()
 
     plies = [int(p) for p in args.plies.split(",") if p.strip()] if args.baseline else []
-    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
     net = BearoffNet.load(args.net)
 
     print(f"T78 — perte par décision du réseau distillé, arbitre : la table exacte")

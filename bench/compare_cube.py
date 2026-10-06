@@ -141,7 +141,7 @@ from decision_loss import corpus as contact_corpus  # noqa: E402
 from exact_gap import random_bearoff  # noqa: E402
 
 PROGRESS = Path(os.environ.get("T34CMP_PROGRESS", "/tmp/t34cmp-progress.log"))
-MODEL = str(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+MODEL = str(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
 EFFICIENCY_FILE = ROOT / "docs" / "mesures" / "t34-efficacite.json"
 DATABASE = str(ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd")
 

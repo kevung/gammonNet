@@ -18,7 +18,7 @@ play is a separate measurement, made once the network is wired into the search.
 
 Usage:
     python tools/gauge_race_net.py --corpus build/race_gauge.npz \\
-        --candidate models/race_net.bin --incumbent models/cubeless_prob5_512_512_256_128.bin \\
+        --candidate models/race_net.bin --incumbent models/cubeless_prob5_512_512_256_256.bin \\
         --exclude build/race_train.npz --out docs/mesures/race-gauge.json
     python tools/gauge_race_net.py --smoke
 """
@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--corpus", type=Path, default=ROOT / "build" / "race_gauge.npz")
     parser.add_argument("--candidate", type=Path, default=ROOT / "models" / "race_net.bin")
     parser.add_argument("--incumbent", type=Path,
-                        default=ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+                        default=ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
     parser.add_argument("--exclude", type=Path, nargs="*", default=[],
                         help="training corpora whose positions are dropped")
     parser.add_argument("--out", type=Path, default=None)

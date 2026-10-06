@@ -18,7 +18,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
-MODEL = REFERENCE / "best_models" / "cubeless_prob5_512_512_256_128.pt"
+MODEL = REFERENCE / "best_models" / "cubeless_prob5_512_512_256_256.pt"
 
 pytestmark = pytest.mark.skipif(
     not REFERENCE.is_dir(),

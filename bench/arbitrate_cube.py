@@ -77,7 +77,7 @@ from gammonnet.rollout import RolloutConfig, rollout  # noqa: E402
 from gammonnet.search import SearchConfig  # noqa: E402
 
 DATABASE = ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd"
-MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 EFFICIENCY_FILE = ROOT / "docs" / "mesures" / "t34-efficacite.json"
 GNUBG = "/usr/local/bin/gnubg"
 

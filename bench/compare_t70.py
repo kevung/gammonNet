@@ -46,7 +46,7 @@ from gammonnet import codec  # noqa: E402
 from gammonnet.infer import Network  # noqa: E402
 from gammonnet.search import SearchConfig, search_plays  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 FILTERS = {0: (), 1: (0, 5), 2: (0, 1, 5), 3: (0, 1, 1, 5)}
 
 

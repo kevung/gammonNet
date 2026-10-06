@@ -52,7 +52,7 @@ from gammonnet.rollout import RolloutConfig, rollout_candidates_paired  # noqa: 
 from gammonnet.rules import BLACK, WHITE  # noqa: E402
 from gammonnet.search import SearchConfig  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 
 #: Les réglages mis en concurrence. Écrits ici plutôt que passés en ligne de
 #: commande : ce sont les candidats du choix, et le tableau doit rester le même

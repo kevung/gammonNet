@@ -66,7 +66,7 @@ from .rules import BLACK, WHITE, Play, Position
 
 _ROOT = Path(__file__).resolve().parent.parent.parent
 
-MODEL = "models/cubeless_prob5_512_512_256_128.bin"
+MODEL = "models/cubeless_prob5_512_512_256_256.bin"
 DATABASE = "gnu_bearoff_database/gnubg_ts6x11.bd"
 EFFICIENCY_FILE = "docs/mesures/t34-efficacite.json"
 

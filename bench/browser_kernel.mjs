@@ -47,7 +47,7 @@ const timeoutMs = Number(args.get("timeout") || 600_000);
 /* The big network under test, relative to the preloaded `models/`. A list
    may repeat its entries: they are measured in that order, so two networks
    interleave and machine drift cannot pass for a network difference. */
-const models = (args.get("models") || "cubeless_prob5_512_512_256_128.bin").split(",");
+const models = (args.get("models") || "cubeless_prob5_512_512_256_256.bin").split(",");
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",

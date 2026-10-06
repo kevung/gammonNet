@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 PRUNE = ROOT / "models" / "prune_32.bin"
 
 WIDTHS = [8, 16, 32]
@@ -69,7 +69,7 @@ def run(target: str, width: int, kernel: str, reps: int, decisions: int) -> dict
         directory = ROOT / "build" / "wasm"
         binary = directory / f"bench_kernel_{kernel}_{width}.js"
         command = ["node", binary.name,
-                   "models/cubeless_prob5_512_512_256_128.bin",
+                   "models/cubeless_prob5_512_512_256_256.bin",
                    "models/prune_32.bin", str(reps), str(decisions)]
         hint = "make bench-width-wasm"
     else:

@@ -14,7 +14,7 @@
  * counts instructions exactly rather than sampling:
  *
  *     valgrind --tool=callgrind --callgrind-out-file=cg.out \
- *         build/bench_decision models/cubeless_prob5_512_512_256_128.bin 3
+ *         build/bench_decision models/cubeless_prob5_512_512_256_256.bin 3
  *     callgrind_annotate cg.out | head -40
  *
  * The setting is T35's: 2-ply, filter (0,1,3). Any other setting would measure

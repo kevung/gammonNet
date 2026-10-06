@@ -45,7 +45,7 @@ from gammonnet import BLACK, NUM_POINTS, WHITE, Position  # noqa: E402
 from gammonnet.infer import Network  # noqa: E402
 
 TABLE = ROOT / "models" / "bearoff_one_sided.bin"
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 SEED = 20260804
 
 

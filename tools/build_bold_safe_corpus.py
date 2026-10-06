@@ -33,7 +33,7 @@ from gammonnet.rules import BLACK, NUM_POINTS, WHITE, Position  # noqa: E402
 from gammonnet.search import SearchConfig, best_play  # noqa: E402
 
 DATABASE = ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd"
-MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 OUT = ROOT / "tests" / "data" / "t34-bold-safe.json"
 
 SEED = 20260808

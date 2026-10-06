@@ -45,7 +45,7 @@ from gammonnet import codec  # noqa: E402
 from gammonnet.infer import Network  # noqa: E402
 
 CORPUS = ROOT / "tests" / "data" / "corpus_t12.jsonl"
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 SEED = 20260804
 
 QUOTAS = {

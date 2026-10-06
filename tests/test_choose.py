@@ -22,7 +22,7 @@ import pytest
 from gammonnet import BLACK, WHITE, Position
 from gammonnet.arena import NetworkEngine, RandomEngine, game_value, play_pair
 
-MODEL = Path(__file__).resolve().parent.parent / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = Path(__file__).resolve().parent.parent / "models" / "cubeless_prob5_512_512_256_256.bin"
 
 pytestmark = pytest.mark.skipif(
     not MODEL.is_file(), reason=f"{MODEL.name} absent — lancer `make model`"

@@ -20,7 +20,7 @@ format n'en font un réseau nouveau.
 
 | Niveau | Forme | Qui nomme |
 |---|---|---|
-| Réseau (les poids) | `strehl-prob5-512-512-256-128` | conserve la paternité de l'auteur |
+| Réseau (les poids) | `strehl-prob5-512-512-256-256` | conserve la paternité de l'auteur |
 | Configuration (réseau + recherche + fins de partie + équité de match) | `gammonNet 2-ply` | nous |
 
 Un artefact publié porte donc `<réseau>_<version>_<date>.bin`, avec sa somme de contrôle et

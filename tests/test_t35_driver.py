@@ -22,7 +22,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 needs_model = pytest.mark.skipif(not MODEL.exists(), reason="modèle absent")
 
 DRIVER = ROOT / "bench" / "run_t35.py"

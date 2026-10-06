@@ -62,7 +62,7 @@ from gammonnet.infer import Network  # noqa: E402
 from gammonnet.rules import Position  # noqa: E402
 from gammonnet.search import SearchConfig, search_plays  # noqa: E402
 
-GRAND_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+GRAND_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 SMALL_MODEL = ROOT / "models" / "prune_32.bin"
 REFERENCE_BIN = ROOT / "build" / "reference.bin"
 BENCH_INFER = ROOT / "build" / "bench_infer"

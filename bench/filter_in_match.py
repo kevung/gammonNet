@@ -51,7 +51,7 @@ from gammonnet.infer import Network  # noqa: E402
 from gammonnet.met import MatchState  # noqa: E402
 from gammonnet.search import SearchConfig, search_plays  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 REFERENCE = ROOT / "docs" / "mesures" / "t31-reference-2ply.jsonl"
 
 # Les scores où le filtre a le plus de raisons de se comporter autrement.

@@ -35,7 +35,7 @@ sys.path.insert(0, str(ROOT / "python"))
 
 from gammonnet.rules import NUM_POINTS, WHITE, Position  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 DATABASE = ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd"
 
 X3 = (0.688, 0.566, 0.687)  # t34-efficacite.json — mesurées, jamais recyclées

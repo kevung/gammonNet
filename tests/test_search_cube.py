@@ -34,7 +34,7 @@ DATABASE = Path(os.environ.get(
     "GNUBG_TS_DATABASE",
     ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd",
 ))
-MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 
 SEED = 20260803
 

@@ -29,8 +29,8 @@ REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
 
 # The only model this project retains. `BRIEF.md` §3.1: the cubeful variants
 # emit an aggregated money equity, which match play cannot use.
-DEFAULT_MODEL = "cubeless_prob5_512_512_256_128.pt"
-DEFAULT_OUT = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+DEFAULT_MODEL = "cubeless_prob5_512_512_256_256.pt"
+DEFAULT_OUT = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 
 
 def sha256(path: Path) -> str:

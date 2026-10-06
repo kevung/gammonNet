@@ -225,7 +225,7 @@ def main() -> int:
             plies.append((int(a), int(b)))
         else:
             plies.append((int(token), int(token)))
-    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
 
     print("T36 — avantage par décision contre GNU Backgammon")
     print(f"  profondeurs : {', '.join(f'{a}-ply contre {b}-ply' for a, b in plies)}"
