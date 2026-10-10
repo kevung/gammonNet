@@ -58,7 +58,7 @@ extern unsigned long gn_sparsity_calls[2];
 extern unsigned long gn_sparsity_active[2];
 extern unsigned long gn_sparsity_widest[2];
 
-#define MAX_PLAYS 2048
+#define MAX_PLAYS GN_MAX_PLAYS
 #define NUM_LOTS 64
 
 static double now_seconds(void)

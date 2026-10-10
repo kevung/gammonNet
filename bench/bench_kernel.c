@@ -41,7 +41,7 @@
 #include "gn_rules.h"
 #include "gn_search.h"
 
-#define MAX_PLAYS 2048
+#define MAX_PLAYS GN_MAX_PLAYS
 #define NUM_LOTS 96
 
 static double now_seconds(void)

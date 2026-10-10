@@ -29,7 +29,7 @@ BLACK = 1
 NUM_POINTS = 24
 NUM_CHECKERS = 15
 MAX_MOVES_PER_PLAY = 4
-MAX_PLAYS = 2048
+MAX_PLAYS = 3072  # GN_MAX_PLAYS in gn_rules.h, a proven bound
 
 BAR = -1
 OFF = -2

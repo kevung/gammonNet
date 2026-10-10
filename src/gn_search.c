@@ -16,9 +16,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* A position has at most a few hundred legal plays; 2048 is the bound the rules
- * layer already uses, and reusing it keeps one number instead of two. */
-#define MAX_PLAYS 2048
+/* The rules layer's proven bound on distinct legal plays: one number, not two. */
+#define MAX_PLAYS GN_MAX_PLAYS
 
 typedef struct {
     signed char d1, d2;
@@ -864,14 +863,14 @@ static int rank_plays_prune(const GnPosition *pos, int d1, int d2,
         return -1;
     }
 
-    GnPlay *plays = malloc(sizeof(GnPlay) * MAX_PLAYS);
-    if (plays == NULL) {
-        return -1;
-    }
+    /* Thread-local rather than malloc'd: at MAX_PLAYS this block sits above
+     * glibc's trim threshold, so a malloc/free per node would shrink and
+     * regrow the heap (brk) at every call. Safe to share across the
+     * recursion: it is read back entirely before anything below recurses. */
+    static _Thread_local GnPlay plays[MAX_PLAYS];
 
     const int count = gn_legal_plays(pos, d1, d2, plays, MAX_PLAYS);
     if (count <= 0) {
-        free(plays);
         return (count < 0) ? -1 : 0;
     }
 
@@ -879,7 +878,6 @@ static int rank_plays_prune(const GnPosition *pos, int d1, int d2,
     for (int i = 0; i < written; i++) {
         out[i].play = plays[i];
     }
-    free(plays);
 
     const int keep = prune_keep(config, depth);
     if (keep > 0 && written > keep) {

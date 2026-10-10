@@ -32,7 +32,7 @@
 #include "gn_infer.h"
 #include "gn_rules.h"
 
-#define MAX_PLAYS 3072
+#define MAX_PLAYS GN_MAX_PLAYS
 #define DEFAULT_POSITIONS 20000
 #define DEFAULT_REPETITIONS 5
 

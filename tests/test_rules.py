@@ -263,12 +263,11 @@ def test_generation_refuses_dice_out_of_range(d1, d2):
 
 
 def test_play_count_stays_far_below_the_buffer_capacity():
-    """La capacité de génération doit garder une marge réelle sur le corpus.
+    """Sur le corpus, le compte de coups reste loin de la capacité.
 
-    Le moteur amont abandonne les coups au-delà de son tampon **sans le dire**
-    (`bg_engine.c:864`), et notre adaptateur refuse donc à capacité pleine. Ce
-    test rend visible la marge dont on dispose : c'est une borne mesurée, pas
-    une borne prouvée.
+    La capacité est une borne prouvée (`tests/test_rules_capacity.py`), atteinte
+    seulement par des doublets où presque tout est isolé. Ce test rend visible
+    l'écart entre une position ordinaire et ce pire cas.
     """
     worst = 0
     for _, _, position in CORPUS_ENTRIES:

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from .infer import NUM_OUTPUTS, Evaluation, Network
 from .met import MatchState, _CMatchState
-from .rules import _LIB, Move, Play, Position, _CPlay, _CPosition
+from .rules import _LIB, MAX_PLAYS, Move, Play, Position, _CPlay, _CPosition
 
 MAX_PLY = 4
 NUM_ROLLS = 21
@@ -130,7 +130,7 @@ _LIB.gn_search_level_count.restype = ctypes.c_int
 _LIB.gn_search_level_name.argtypes = [ctypes.c_int]
 _LIB.gn_search_level_name.restype = ctypes.c_char_p
 
-_MAX_CANDIDATES = 2048
+_MAX_CANDIDATES = MAX_PLAYS
 _CandidateArray = _CCandidate * _MAX_CANDIDATES
 
 

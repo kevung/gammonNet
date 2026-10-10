@@ -47,6 +47,26 @@
 #warning "no thread-local storage: gn_legal_plays is not safe to call concurrently"
 #endif
 
+/*
+ * Capacity of the backend's working buffer, distinct from GN_MAX_PLAYS.
+ *
+ * The backend records EVERY terminal node of its search -- plays cut short
+ * because no die fits any more included -- and only then keeps those that use
+ * the most dice. Its buffer must therefore hold the distinct positions of every
+ * depth, not just the deepest: by the bound proven in gn_rules.h, at most
+ * 1 + 15 + 120 + 680 + 3060 = 3876 for a double. Past its buffer the backend
+ * drops plays without a signal, and a drop BEFORE the filter can leave a short
+ * list that looks complete; sized at this bound, that cannot happen. The
+ * backend's deduplication table (HASH_TABLE_SIZE, 4096 slots in bg_engine.c)
+ * also stores terminal nodes only, so it never fills either.
+ */
+#define BACKEND_MAX_PLAYS 4096
+
+_Static_assert(BACKEND_MAX_PLAYS >= 1 + 15 + 120 + 680 + 3060,
+               "the backend buffer must hold the terminal nodes of every depth");
+_Static_assert(BACKEND_MAX_PLAYS >= GN_MAX_PLAYS,
+               "the backend buffer must hold every play it can return");
+
 /* ── Conversions ────────────────────────────────────────────────────── */
 
 static void to_backend(const GnPosition *pos, BoardState *out)
@@ -200,7 +220,7 @@ int gn_legal_plays(const GnPosition *pos, int d1, int d2,
      * harness runs one generator per core, and a shared static would corrupt
      * every one of them at once — silently, since each thread would still get a
      * well-formed list of somebody's legal plays. */
-    static GN_THREAD_LOCAL Play backend_plays[GN_MAX_PLAYS];
+    static GN_THREAD_LOCAL Play backend_plays[BACKEND_MAX_PLAYS];
     BoardState state;
     int count;
     int i;
@@ -245,19 +265,15 @@ int gn_legal_plays(const GnPosition *pos, int d1, int d2,
 
     to_backend(pos, &state);
 
-    count = get_legal_plays(&state, d1, d2, backend_plays, GN_MAX_PLAYS);
+    count = get_legal_plays(&state, d1, d2, backend_plays, BACKEND_MAX_PLAYS);
     if (count < 0)
         return -1;
 
     /*
-     * The backend drops plays past its buffer without saying so (bg_engine.c:864
-     * appends only `if (ctx->count < ctx->max_plays)`), so a full buffer cannot
-     * be told apart from a position that happens to have exactly that many
-     * plays. Treat a full buffer as failure. Refusing a position that genuinely
-     * had GN_MAX_PLAYS of them is the cheap error; returning a search that never
-     * saw the moves it was missing is the expensive one.
+     * Unreachable with BACKEND_MAX_PLAYS at the proven bound; kept so that a
+     * bound that turned out wrong refuses instead of returning a short list.
      */
-    if (count >= GN_MAX_PLAYS)
+    if (count > GN_MAX_PLAYS)
         return -1;
 
     if (count > max_plays)
