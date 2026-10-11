@@ -209,6 +209,25 @@ static int mirror_owner(int owner)
     return GN_CUBE_CENTRED;
 }
 
+int gn_search_set_root_stage(GnSearchConfig *config, int ply, int accept,
+                             int extra, double threshold)
+{
+    if (config == NULL || ply < 0 || ply >= GN_MAX_PLY || accept < 0 ||
+        extra < 0 || !isfinite(threshold) || threshold < 0.0) {
+        return -1;
+    }
+    if (ply == 0) {
+        accept = 0;
+        extra = 0;
+        threshold = 0.0;
+    }
+    config->root_stage_ply = ply;
+    config->root_stage_filter = accept;
+    config->root_stage_filter_extra = extra;
+    config->root_stage_filter_threshold = threshold;
+    return 0;
+}
+
 int gn_search_set_filter(GnSearchConfig *config, int depth, int accept,
                          int extra, double threshold)
 {
@@ -800,24 +819,34 @@ static int filter_widest(const GnSearchConfig *config, int depth)
  * `filter_extra` at zero searches the same candidates, in the same order,
  * bit for bit.
  */
-static int filter_survivors(const GnSearchConfig *config, int depth,
-                            const GnCandidate *ranked, int n)
+static int band_survivors(int accept, int extra, double threshold,
+                          const GnCandidate *ranked, int n)
 {
-    const int accept = (config->filter[depth] > 0) ? config->filter[depth] : 0;
-    const int extra =
-        (config->filter_extra[depth] > 0) ? config->filter_extra[depth] : 0;
+    if (accept < 0) {
+        accept = 0;
+    }
+    if (extra < 0) {
+        extra = 0;
+    }
     if (accept == 0 && extra == 0) {
         return n;
     }
     int keep = (accept < n) ? accept : n;
     if (extra > 0) {
         const int limit = (accept + extra < n) ? accept + extra : n;
-        const double floor = ranked[0].equity - config->filter_threshold[depth];
+        const double floor = ranked[0].equity - threshold;
         while (keep < limit && ranked[keep].equity >= floor) {
             keep++;
         }
     }
     return keep;
+}
+
+static int filter_survivors(const GnSearchConfig *config, int depth,
+                            const GnCandidate *ranked, int n)
+{
+    return band_survivors(config->filter[depth], config->filter_extra[depth],
+                          config->filter_threshold[depth], ranked, n);
 }
 
 /* How many candidates the pruning pass lets through at `depth`, or 0 when
@@ -854,10 +883,10 @@ static int prune_keep(const GnSearchConfig *config, int depth)
  * Leaves `out[0..returned)` carrying the SMALL network's probabilities when
  * pruning fired. They are not an answer; `rank_plays_finish` overwrites them.
  */
-static int rank_plays_prune(const GnPosition *pos, int d1, int d2,
-                            const GnSearchConfig *config, int depth,
-                            GnMatchState state, int owner, GnCandidate *out,
-                            int max_out)
+static int rank_plays_prune_to(const GnPosition *pos, int d1, int d2,
+                               const GnSearchConfig *config, int keep,
+                               GnMatchState state, int owner, GnCandidate *out,
+                               int max_out)
 {
     if (pos == NULL || out == NULL || max_out <= 0) {
         return -1;
@@ -879,7 +908,6 @@ static int rank_plays_prune(const GnPosition *pos, int d1, int d2,
         out[i].play = plays[i];
     }
 
-    const int keep = prune_keep(config, depth);
     if (keep > 0 && written > keep) {
         /* The result has handed the turn over, so everything about it is seen
          * from the opponent's side -- including the score. */
@@ -901,6 +929,35 @@ static int rank_plays_prune(const GnPosition *pos, int d1, int d2,
     return written;
 }
 
+/* Phase one at `depth`: pruned to `prune_keep(config, depth)`. */
+static int rank_plays_prune(const GnPosition *pos, int d1, int d2,
+                            const GnSearchConfig *config, int depth,
+                            GnMatchState state, int owner, GnCandidate *out,
+                            int max_out)
+{
+    return rank_plays_prune_to(pos, d1, d2, config, prune_keep(config, depth),
+                               state, owner, out, max_out);
+}
+
+/* The big network's shallow pass over the `written` survivors of phase one:
+ * probabilities, valuation, ranking. Returns 0, or -1 on error. */
+static int rank_plays_shallow(const GnNetwork *net,
+                              const GnSearchConfig *config, GnMatchState state,
+                              int owner, GnCandidate *out, int written)
+{
+    const GnMatchState theirs = swap_sides(state);
+
+    if (shallow_fill(net, out, written, 0) != 0) {
+        return -1;
+    }
+    if (value_sweep(out, written, config, theirs, owner) != 0) {
+        return -1;
+    }
+
+    sort_candidates(out, written);
+    return 0;
+}
+
 /*
  * PHASE TWO -- the big network over what survived, then the deep pass.
  *
@@ -917,16 +974,9 @@ static int rank_plays_finish(const GnNetwork *net,
         return (written < 0) ? -1 : written;
     }
 
-    const GnMatchState theirs = swap_sides(state);
-
-    if (shallow_fill(net, out, written, 0) != 0) {
+    if (rank_plays_shallow(net, config, state, owner, out, written) != 0) {
         return -1;
     }
-    if (value_sweep(out, written, config, theirs, owner) != 0) {
-        return -1;
-    }
-
-    sort_candidates(out, written);
 
     return rank_plays_deepen(net, config, depth, state, owner, out, written);
 }
@@ -995,6 +1045,90 @@ static int rank_plays(const GnNetwork *net, const GnPosition *pos,
         return written;
     }
     return rank_plays_finish(net, config, depth, state, owner, out, written);
+}
+
+/* Whether the root of a decision at `depth` goes through its stage: only a
+ * stage strictly shallower than the decision means anything. */
+static int root_stage_active(const GnSearchConfig *config, int depth)
+{
+    return config->root_stage_ply >= 1 && config->root_stage_ply < depth;
+}
+
+/*
+ * THE ROOT OF A MOVE DECISION -- unstaged, it is `rank_plays` at
+ * `config->ply`, untouched. Staged (`GnSearchConfig::root_stage_ply`,
+ * filtre-de-coups-spec §8), one pass is inserted between the shallow ranking
+ * and the deep one:
+ *
+ *   1. phase one and the big network's shallow pass, as everywhere -- the
+ *      pruning pass keeps at least as many as the stage can deepen;
+ *   2. the stage's triplet over that 0-ply ranking; its survivors are scored
+ *      at `root_stage_ply` plies, exactly as a decision at that depth scores
+ *      its deepened plays, and re-sorted among themselves;
+ *   3. `rank_plays_deepen` at `config->ply` over the STAGE's survivors only,
+ *      so `filter[ply]` reads the stage's ranking, not the 0-ply one.
+ *
+ * Every candidate keeps the equity of the deepest pass it reached, as the
+ * unstaged deep pass already leaves the 0-ply tail behind its prefix.
+ */
+static int rank_root(const GnNetwork *net, const GnPosition *pos, int d1,
+                     int d2, const GnSearchConfig *config, GnCandidate *out,
+                     int max_out)
+{
+    const int depth = config->ply;
+    const GnMatchState state = config->match;
+    const int owner = config->cube_owner;
+
+    if (!root_stage_active(config, depth)) {
+        return rank_plays(net, pos, d1, d2, config, depth, state, owner, out,
+                          max_out);
+    }
+    if (net == NULL) {
+        return -1;
+    }
+
+    int keep = prune_keep(config, depth);
+    if (keep > 0) {
+        const int accept = (config->root_stage_filter > 0)
+                               ? config->root_stage_filter : 0;
+        const int extra = (config->root_stage_filter_extra > 0)
+                              ? config->root_stage_filter_extra : 0;
+        if (accept + extra > keep) {
+            keep = accept + extra;
+        }
+    }
+    const int written = rank_plays_prune_to(pos, d1, d2, config, keep, state,
+                                            owner, out, max_out);
+    if (written <= 0) {
+        return written;
+    }
+    if (rank_plays_shallow(net, config, state, owner, out, written) != 0) {
+        return -1;
+    }
+
+    const int stage = config->root_stage_ply;
+    const int staged = band_survivors(config->root_stage_filter,
+                                      config->root_stage_filter_extra,
+                                      config->root_stage_filter_threshold,
+                                      out, written);
+    if (staged < written) {
+        tie_census_cut(out, written, staged);
+    }
+    for (int i = 0; i < staged; i++) {
+        const GnPosition *result = &out[i].play.result;
+        if (gn_position_is_over(result)) {
+            continue; /* already exact */
+        }
+        out[i].equity = -position_equity(net, result, config, stage,
+                                         swap_sides(state),
+                                         mirror_owner(owner));
+    }
+    sort_candidates(out, staged);
+
+    if (rank_plays_deepen(net, config, depth, state, owner, out, staged) < 0) {
+        return -1;
+    }
+    return written;
 }
 
 static double position_equity(const GnNetwork *net, const GnPosition *pos,
@@ -1372,8 +1506,7 @@ int gn_search_plays(const GnNetwork *net, const GnPosition *pos, int d1, int d2,
     if (config == NULL) {
         return -1;
     }
-    return rank_plays(net, pos, d1, d2, config, config->ply, config->match,
-                      config->cube_owner, out, max_out);
+    return rank_root(net, pos, d1, d2, config, out, max_out);
 }
 
 int gn_best_play(const GnNetwork *net, const GnPosition *pos, int d1, int d2,
@@ -1457,6 +1590,48 @@ static const GnSearchLevel LEVELS[] = {
         .prune_equity_loss = 0.0,
         .prune_equity_loss_ci_low = 0.0,
         .prune_equity_loss_ci_high = 0.0,
+    },
+    {
+        /* 3-ply, native only (docs/mesures/2026-10-11-filtres-3-4-plis.md,
+         * filtre-de-coups-spec §8). One reply at every interior node, the
+         * root staged through 2 plies: the wide triplet (0, 8, 0.16) over the
+         * 0-ply ranking, those scored at 2 plies, then (0, 2, 0.04) of that
+         * ranking scored at 3. Against the unstaged root (1, 2, 0.04): -23 %
+         * evaluations, the same play on 40 decisions out of 40. The pruning
+         * loss is this same shape against itself unpruned, at 3 plies. */
+        .name = "ply3",
+        .ply = 3,
+        .filter = {0, 1, 1, 0, 0},
+        .filter_extra = {0, 0, 0, 2, 0},
+        .filter_threshold = {0.0, 0.0, 0.0, 0.04, 0.0},
+        .prune_k = 12,
+        .prune_equity_loss = 0.000043,
+        .prune_equity_loss_ci_low = 0.0,
+        .prune_equity_loss_ci_high = 0.000125,
+        .root_stage_ply = 2,
+        .root_stage_filter = 0,
+        .root_stage_filter_extra = 8,
+        .root_stage_filter_threshold = 0.16,
+    },
+    {
+        /* 4-ply, native only: `ply3`'s shape one ply deeper. Against the
+         * unstaged root: -28 % evaluations, the wide-root reference's play on
+         * 14 decisions out of 14 (the unstaged root missed it once). Pruning
+         * loss as for `ply3`, at 4 plies, on 14 decisions: one of them carries
+         * it all, hence the width of its interval. */
+        .name = "ply4",
+        .ply = 4,
+        .filter = {0, 1, 1, 1, 0},
+        .filter_extra = {0, 0, 0, 0, 2},
+        .filter_threshold = {0.0, 0.0, 0.0, 0.0, 0.04},
+        .prune_k = 12,
+        .prune_equity_loss = 0.000478,
+        .prune_equity_loss_ci_low = 0.0,
+        .prune_equity_loss_ci_high = 0.001435,
+        .root_stage_ply = 2,
+        .root_stage_filter = 0,
+        .root_stage_filter_extra = 8,
+        .root_stage_filter_threshold = 0.16,
     },
 };
 

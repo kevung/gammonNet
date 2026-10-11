@@ -43,8 +43,8 @@ déduit de ce qui est en attente (§3) ; l'appelant n'a jamais à retourner quoi
 | `away_on_roll`, `away_opponent`, `crawford` | l'état de match, vu du trait (`GnMatchState`) |
 | `resign_value` | 1, 2 ou 3 : la valeur offerte, lue seulement si `pending == GN_PENDING_RESIGN` |
 
-Le niveau est un **nom** : `instant`, `normal`, `thorough` — ceux de `gn_search_level`, et
-aucun autre (§4).
+Le niveau est un **nom** : `instant`, `normal`, `thorough`, et les natifs `ply3`, `ply4` —
+ceux de `gn_search_level`, et aucun autre (§4).
 
 ## 3. Ce qui peut être en attente, et qui décide
 
@@ -66,7 +66,8 @@ de son point de vue, puis se retourne pour le décideur.
 ## 4. Les niveaux
 
 Un niveau est **la forme d'une recherche** : `gn_search_level(name)` — profondeur, filtre en
-triplet, élagage. La politique s'en sert à l'identique pour les coups **et** pour la
+triplet, élagage, racine étagée (`ply3`, `ply4` : filtre-de-coups-spec §8, pour le coup
+seulement — la distribution avant le jet ne lit pas l'étage). La politique s'en sert à l'identique pour les coups **et** pour la
 distribution qui alimente les décisions de videau et d'abandon : le videau se décide au ply du
 niveau, avec le même filtre. Un nom inconnu est refusé.
 
@@ -238,7 +239,7 @@ inconnu, élagage exigé et absent, état de match hors table (`gn_match_state_i
 ## 7. Hors périmètre
 
 Beaver et raccoon comme actions (`gn_cube_decide_ex` reste là pour les analyser) ; toute
-réflexion pendant le tour adverse ; un niveau au-dessus de `thorough` ; les niveaux affaiblis ;
+réflexion pendant le tour adverse ; les niveaux affaiblis ;
 le plafond money du videau (une règle de séance : qui l'applique ne demande pas) ; la
 valuation cubeful des feuilles pour le choix du coup (non mesurée comme joueur de match, §5.1).
 

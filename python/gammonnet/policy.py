@@ -160,6 +160,10 @@ def _level_struct(level) -> _CSearchLevel:
     for i, v in enumerate(tuple(getattr(level, "filter_threshold", ()))[: MAX_PLY + 1]):
         c.filter_threshold[i] = v
     c.prune_k = level.prune_k
+    c.root_stage_ply = getattr(level, "root_stage_ply", 0)
+    stage = tuple(getattr(level, "root_stage_filter", (0, 0, 0.0)))
+    c.root_stage_filter, c.root_stage_filter_extra = stage[0], stage[1]
+    c.root_stage_filter_threshold = stage[2]
     return c
 
 
@@ -210,6 +214,8 @@ class Shape:
     filter_extra: tuple[int, ...] = ()
     filter_threshold: tuple[float, ...] = ()
     prune_k: int = 0
+    root_stage_ply: int = 0
+    root_stage_filter: tuple[int, int, float] = (0, 0, 0.0)
 
 
 def search_level_shape(name: str) -> Shape:
@@ -218,7 +224,9 @@ def search_level_shape(name: str) -> Shape:
 
     lv = search_level(name)
     return Shape(ply=lv.ply, filter=lv.filter, filter_extra=lv.filter_extra,
-                 filter_threshold=lv.filter_threshold, prune_k=lv.prune_k)
+                 filter_threshold=lv.filter_threshold, prune_k=lv.prune_k,
+                 root_stage_ply=lv.root_stage_ply,
+                 root_stage_filter=lv.root_stage_filter)
 
 
 @dataclass

@@ -282,6 +282,11 @@ static int level_config(const GnSearchLevel *level, const GnNetwork *prune_net,
     memcpy(config->filter_extra, level->filter_extra, sizeof(config->filter_extra));
     memcpy(config->filter_threshold, level->filter_threshold,
            sizeof(config->filter_threshold));
+    if (gn_search_set_root_stage(config, level->root_stage_ply,
+                                 level->root_stage_filter,
+                                 level->root_stage_filter_extra,
+                                 level->root_stage_filter_threshold) != 0)
+        return -1;
     if (level->prune_k > 0) {
         if (prune_net == NULL)
             return -1;   /* another configuration than the name announces */

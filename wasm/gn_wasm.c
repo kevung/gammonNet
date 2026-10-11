@@ -943,7 +943,9 @@ int gnw_search_level(const char *name, int *out, double *out_quality)
         return -1;
     }
     const GnSearchLevel *level = gn_search_level(name);
-    if (level == NULL) {
+    /* A staged root ("ply3", "ply4") has no place in this shape: describing
+     * it as filter_top/filter_inner would name another search. */
+    if (level == NULL || level->root_stage_ply != 0) {
         return -1;
     }
     out[0] = level->ply;
