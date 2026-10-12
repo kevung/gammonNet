@@ -350,59 +350,60 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.5.0 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.6.0 — À LIRE AVANT DE METTRE À JOUR
 
-**Les poids changent : c'est un autre réseau.** `strehl-prob5-512-512-256-256`
-remplace `strehl-prob5-512-512-256-128` (`BRIEF.md` §8 : un réseau change de nom
-quand ses poids changent). Même auteur, même licence MIT, même codage d'entrée
-(196) et mêmes cinq sorties ; seul le dernier étage caché passe de 128 à 256
-neurones. Tiré de `best_models/cubeless_prob5_512_512_256_256.pt` au commit
-amont `7184e2f`, exporté au bit près : SHA-256 `a84ff7b4…cfdd3`, 2 247 736 o
-(provenance dans `verify/`).
+**Les poids ne changent pas.** `strehl-prob5-512-512-256-256` et
+`strehl-prune-32` sont ceux de v1.6.0, au bit près. Ce qui change est la
+**recherche à 3 et 4 plis** d'une décision de coup, et un refus du générateur
+de coups.
 
-**Ce que vous devez faire** : toute évaluation stockée avec une version
-antérieure vient d'un autre réseau et est à recalculer ; tout repère figé
-(« or », empreinte, snapshot) qui compare une équité ou un coup nommé est à
-régénérer. L'API, la recherche, l'équité de match, le videau et les niveaux
-nommés ne changent pas.
+### 1. Racine étagée à 3 et 4 plis, niveaux natifs `ply3` et `ply4`
 
-### La mesure, appariée contre le réseau précédent
+À 3 ou 4 plis, les candidats payés à `k` plis étaient choisis sur le classement
+0-ply. Ils le sont désormais sur un classement à 2 plis : triplet d'étage
+`(0, 8, 0,16)` sur le classement superficiel, survivants notés à 2 plis, puis
+`(0, 2, 0,04)` sur ce classement, notés à `k` plis. Seule la racine d'une
+décision de coup lit l'étage ; éteint (`root_stage_ply = 0`), la recherche est
+inchangée au bit près, et les niveaux de 0 à 2 plis le sont aussi.
 
-| | protocole | volume | écart nouveau − ancien | IC 95 % |
-|---|---|---|---|---|
-| évaluation statique, money cubeless | 0-ply, dés dupliqués | 1 000 000 parties | **+0,0092 ppg** | [+0,0070 ; +0,0114] |
-| perte par décision disputée, `k=12` | registre arbitré T70, 2-ply | 10 000 décisions | **0,00266 contre 0,00329** | intervalles disjoints |
-| match 7 points contre gnubg 2-ply | niveau `normal`, paires dupliquées | 2 000 paires | **+0,83 pt de MWC** | [−0,70 ; +2,33] |
-| money cubeful contre gnubg 2-ply | niveau `normal`, paires dupliquées | 2 000 paires | **+0,052 ppg** | [−0,040 ; +0,143] |
-| videau, perte valorisée par gnubg | 0-ply contre `cfevaluate` 0-ply | 30 000 décisions | **−0,00029** | [−0,00052 ; −0,00010] |
+Les niveaux natifs `ply3` et `ply4` publient cette forme : une réplique
+`(1, 0, 0)` à chaque nœud intérieur, l'étage à 2 plis, élagage `k = 12`, et le
+coût de l'élagage mesuré à la forme même (`data/search_levels.json` porte
+`root_stage_ply` et `root_stage_filter` pour chaque niveau).
+`gnw_search_level` les **refuse** : la forme WebAssembly ne sait pas porter
+l'étage.
 
-**Lecture, dans ses termes exacts** : gain résolu sur l'évaluation statique ;
-sous recherche, **non-régression**, sans gain résolu à cette résolution (±1,1 pt
-de MWC, ±0,09 ppg). Les efficacités du videau (0,688 / 0,566) ne dépendent pas du
-réseau et restent. Fiches : `docs/mesures/2026-09-17-T96-poids-amont.md`,
-`docs/mesures/2026-10-05-T97-adoption-256.md`.
+Mesuré sur un match réel (`docs/mesures/2026-10-11-filtres-3-4-plis.md`) :
+**−15 % d'évaluations à 3 plis** (40 décisions, mêmes coups que la racine
+large) et **−28 % à 4 plis** (14 décisions, le coup de la racine large partout,
+là où la racine directe le manque une fois). Échantillons petits : ordres de
+grandeur d'un réglage de recherche, pas une mesure de force.
 
-### Ce que cela coûte
+**Ce que vous devez faire** : toute analyse à 3 ou 4 plis stockée avec une
+version antérieure vient d'une autre recherche et est à recalculer ; tout repère
+figé à ces profondeurs (« or », empreinte, snapshot) est à régénérer. Rien à
+faire à 0, 1 ou 2 plis.
 
-+9,0 % par décision 2-ply en natif ; dans le navigateur, **+11,8 %** (Chromium
-153) et **+7,8 %** (Firefox 157), en mesures entrelacées. Le noyau WebAssembly
-traite la largeur 256 sans changement (max|Δ| = 0 contre le chemin scalaire).
-Le fichier float32 passe de 2 113 592 à 2 247 736 octets.
+### 2. Plus de refus sur un doublet
+
+`GN_MAX_PLAYS` passe de 2048 à 3072, la borne prouvée du nombre de positions
+distinctes qu'un doublet peut atteindre (3 060). Une position à 2 225 coups
+distincts sur un 1-1 était refusée par `gn_legal_plays` ; elle est désormais
+générée, et comparée à GNU Backgammon. Mêmes coups, même ordre sur 19 427
+positions × 36 jets.
 
 ### Ce qui ne change pas
 
-- **Le réseau d'élagage** `strehl-prune-32`, au bit près : distillé du réseau
-  précédent, il s'applique tel quel (même codage). Un élagueur redistillé du
-  nouveau réseau a été mesuré sans écart à `k=12` et n'est pas adopté.
-- **Les sources vendorées** montent à `7184e2f`, seul commit amont qui porte ces
-  poids ; son correctif du générateur de coups a été mesuré sans effet sur notre
-  chemin (0 désaccord sur 10 920 000 couples position × jet).
+Les poids, le module WebAssembly dans ce qu'il calcule, l'équité de match, le
+videau, et les niveaux nommés de 0 à 2 plis.
 
 ### La force publiée ci-dessous
 
 Les sections « La force », « Le taux d'erreur » et « Ce que l'analyse d'un vrai
-match montre » ont été **mesurées avec le réseau précédent** et ne sont pas
-rejouées à leur volume ; l'écart apparié ci-dessus est ce qui s'y ajoute.
+match montre » ont été **mesurées avec le réseau précédent**
+`strehl-prob5-512-512-256-128` et ne sont pas rejouées à leur volume ; l'écart
+apparié de v1.6.0 (`docs/mesures/2026-10-05-T97-adoption-256.md`) est ce qui s'y
+ajoute.
 
 """
 
