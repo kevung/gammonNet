@@ -6,6 +6,7 @@
  */
 
 #include "gn_policy.h"
+#include "gn_parallel.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -162,7 +163,11 @@ static int reach(const GnPosition *pos, int side, Goal goal, int k, int exists,
     mover.turn = (unsigned char)side;
     GnPlay *plays = buffer;
     GnPlay *next = buffer + GN_MAX_PLAYS;
-    static _Thread_local int need[GN_POLICY_RESIGN_HORIZON + 1][GN_MAX_PLAYS];
+    /* Per-thread, allocated once: see gn_parallel_scratch. */
+    static _Thread_local int (*need)[GN_MAX_PLAYS] = NULL;
+    if (need == NULL) {
+        need = gn_parallel_scratch(sizeof(int[GN_POLICY_RESIGN_HORIZON + 1][GN_MAX_PLAYS]));
+    }
     int *order = need[k - 1 < GN_POLICY_RESIGN_HORIZON ? k - 1 : GN_POLICY_RESIGN_HORIZON];
 
     for (int r = 0; r < 21; r++) {

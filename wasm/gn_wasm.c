@@ -43,6 +43,7 @@
 #include "gn_evalcache.h"
 #include "gn_gemm_int8.h"
 #include "gn_infer.h"
+#include "gn_parallel.h"
 
 static GnNetwork *g_network = NULL;
 static GnNetwork *g_prune = NULL;
@@ -234,6 +235,20 @@ void gnw_free_model(void)
  * binary. The flag is baked in at compile time so a loaded module can always
  * say which one it is.
  */
+/*
+ * Threads for every search of this module, the calling thread included
+ * (`src/gn_parallel.h`). Only the `-pthread` build (`make wasm-threads`) can
+ * say yes to more than one; every other build answers -1 for n > 1, so a
+ * caller that asked for threads learns it did not get them. Must be called
+ * from a Web Worker -- the search then blocks on its helpers, which a page's
+ * main thread is not allowed to do -- and never while a search runs.
+ */
+EMSCRIPTEN_KEEPALIVE
+int gnw_set_threads(int n)
+{
+    return gn_parallel_set_threads(n);
+}
+
 EMSCRIPTEN_KEEPALIVE
 int gnw_has_simd(void)
 {

@@ -954,11 +954,16 @@ static int rank_plays_prune_to(const GnPosition *pos, int d1, int d2,
         return -1;
     }
 
-    /* Thread-local rather than malloc'd: at MAX_PLAYS this block sits above
-     * glibc's trim threshold, so a malloc/free per node would shrink and
-     * regrow the heap (brk) at every call. Safe to share across the
-     * recursion: it is read back entirely before anything below recurses. */
-    static _Thread_local GnPlay plays[MAX_PLAYS];
+    /* Per-thread and allocated once, rather than malloc'd per node: at
+     * MAX_PLAYS this block sits above glibc's trim threshold, so a
+     * malloc/free per node would shrink and regrow the heap (brk) at every
+     * call. A pointer, not an array: see gn_parallel_scratch. Safe to share
+     * across the recursion: it is read back entirely before anything below
+     * recurses. */
+    static _Thread_local GnPlay *plays = NULL;
+    if (plays == NULL) {
+        plays = gn_parallel_scratch(sizeof(GnPlay) * MAX_PLAYS);
+    }
 
     const int count = gn_legal_plays(pos, d1, d2, plays, MAX_PLAYS);
     if (count <= 0) {

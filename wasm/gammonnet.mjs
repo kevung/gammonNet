@@ -70,6 +70,22 @@ const NOTATION_LENGTH = 40;
  * that is not a rounding error -- it is a large share of what T21 is trying to
  * time.
  */
+/**
+ * Quel module charger : le multi-fils (`gammonnet-simd-mt`, `make
+ * wasm-threads`) si la page est isolée (`crossOriginIsolated`, en-têtes
+ * COOP/COEP) et partage la mémoire, sinon le SIMD actuel. Les deux rendent
+ * les mêmes résultats au bit près ; seul le temps d'une décision change.
+ *
+ * @returns {{ file: string, threads: boolean }}
+ */
+export function chooseBuild() {
+  const isolated = globalThis.crossOriginIsolated === true
+    && typeof SharedArrayBuffer === "function";
+  return isolated
+    ? { file: "gammonnet-simd-mt.mjs", threads: true }
+    : { file: "gammonnet-simd.mjs", threads: false };
+}
+
 export class Evaluator {
   #module;
   #featuresPtr = 0;
@@ -105,6 +121,21 @@ export class Evaluator {
    * rend ×2,21 dans un navigateur contre ×8,5 en natif. Cette méthode existe
    * pour que ce soit mesuré, pas transporté.
    */
+  /**
+   * Fils d'une recherche, le fil appelant compris (`src/gn_parallel.h`).
+   * Seul le module multi-fils accepte plus de 1 ; tout autre build REFUSE
+   * plutôt que d'ignorer. À appeler depuis un Web Worker — la recherche y
+   * attend ses fils, ce que le fil principal d'une page n'a pas le droit de
+   * faire — et jamais pendant une recherche. Le résultat ne dépend pas de ce
+   * nombre, au bit près.
+   */
+  setThreads(n) {
+    if (this.#module._gnw_set_threads(n) !== n) {
+      throw new Error(`nombre de fils refusé par ce module : ${n}`);
+    }
+    return n;
+  }
+
   loadPrune(pruneBytes, k) {
     const m = this.#module;
     if (!k || k <= 0) {

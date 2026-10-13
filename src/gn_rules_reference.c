@@ -19,6 +19,7 @@
  */
 
 #include "gn_rules.h"
+#include "gn_parallel.h"
 
 #include <string.h>
 
@@ -220,7 +221,10 @@ int gn_legal_plays(const GnPosition *pos, int d1, int d2,
      * harness runs one generator per core, and a shared static would corrupt
      * every one of them at once — silently, since each thread would still get a
      * well-formed list of somebody's legal plays. */
-    static GN_THREAD_LOCAL Play backend_plays[BACKEND_MAX_PLAYS];
+    static GN_THREAD_LOCAL Play *backend_plays = NULL;
+    if (backend_plays == NULL) {
+        backend_plays = gn_parallel_scratch(sizeof(Play) * BACKEND_MAX_PLAYS);
+    }
     BoardState state;
     int count;
     int i;

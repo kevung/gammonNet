@@ -52,10 +52,31 @@ GN_STATIC_ASSERT(GN_INT8_CHUNK >= 1 && GN_INT8_CHUNK <= 256,
 #define GN_INT8_TLS
 #endif
 
-static GN_INT8_TLS uint8_t g_int8_quantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
-static GN_INT8_TLS uint8_t g_int8_scratch_a[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
-static GN_INT8_TLS uint8_t g_int8_scratch_b[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
-static GN_INT8_TLS float g_int8_dequantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+/* One block per thread, allocated on first use -- the reason it is not four
+ * `_Thread_local` arrays is in gn_infer_reference.c (`InferScratch`): under
+ * WebAssembly their zeros would ship inside the module. */
+typedef struct {
+    uint8_t quantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+    uint8_t scratch_a[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+    uint8_t scratch_b[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+    float dequantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+} Int8Scratch;
+
+static GN_INT8_TLS Int8Scratch *g_int8 = NULL;
+
+static Int8Scratch *int8_scratch(void)
+{
+    if (g_int8 == NULL) {
+        const size_t size = (sizeof(Int8Scratch) + 63) & ~(size_t)63;
+        g_int8 = aligned_alloc(64, size);
+        if (g_int8 == NULL) {
+            fprintf(stderr, "gammonnet: mémoire de travail int8 indisponible\n");
+            abort();
+        }
+        memset(g_int8, 0, size);
+    }
+    return g_int8;
+}
 
 #define ACTIVATION_MAX 127
 
@@ -281,10 +302,11 @@ int gn_int8_model_evaluate(const GnInt8Model *model, const float *features,
     /* Static buffers (declared at file scope), not malloc'd here -- see the
      * comment on GN_INT8_MAX_WIDTH. `gn_int8_model_load` already refused
      * any model whose input or any hidden layer would not fit them. */
-    uint8_t *const quantised = g_int8_quantised;
-    uint8_t *const scratch_a = g_int8_scratch_a;
-    uint8_t *const scratch_b = g_int8_scratch_b;
-    float *const dequantised = g_int8_dequantised;
+    Int8Scratch *const block = int8_scratch();
+    uint8_t *const quantised = block->quantised;
+    uint8_t *const scratch_a = block->scratch_a;
+    uint8_t *const scratch_b = block->scratch_b;
+    float *const dequantised = block->dequantised;
 
     int status = 0;
     for (int base = 0; base < count && status == 0; base += GN_INT8_CHUNK) {

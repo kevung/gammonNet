@@ -332,10 +332,10 @@ WASM_FLAGS := $(WASM_CFLAGS) \
   -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 \
   -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPF32,HEAPF64,HEAP8,HEAPU8,HEAP32,UTF8ToString \
-  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw,_gnw_position_encode,_gnw_position_decode,_gnw_xgid_encode,_gnw_xgid_decode,_gnw_pip_count,_gnw_search_level,_gnw_policy_decide \
+  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw,_gnw_position_encode,_gnw_position_decode,_gnw_xgid_encode,_gnw_xgid_decode,_gnw_pip_count,_gnw_search_level,_gnw_policy_decide,_gnw_set_threads \
   --extern-pre-js $(WASM_DIR)/notice.js
 
-.PHONY: wasm wasm-simd wasm-scalar wasm-parity wasm-parity-int8 wasm-codec
+.PHONY: wasm wasm-simd wasm-scalar wasm-threads wasm-parity wasm-parity-int8 wasm-codec
 
 wasm: wasm-scalar wasm-simd
 
@@ -351,6 +351,23 @@ $(WASM_BUILD)/gammonnet-simd.mjs: $(WASM_SOURCES) $(HEADERS) $(WASM_DIR)/notice.
 	@mkdir -p $(WASM_BUILD)
 	$(EMCC) $(WASM_FLAGS) -msimd128 $(WASM_SOURCES) -o $@
 	@stat -c '→ SIMD     : %s octets  %n' $(WASM_BUILD)/gammonnet-simd.wasm
+
+# Le module MULTI-FILS : le même code que `gammonnet-simd`, compilé avec
+# -pthread, donc `src/gn_parallel.c` y tourne sur des Web Workers qui partagent
+# la mémoire. Exige une page isolée (en-têtes COOP/COEP, `crossOriginIsolated`) ;
+# `chooseBuild()` de `gammonnet.mjs` retombe sur `gammonnet-simd` sinon.
+# Le pool de workers est créé au démarrage (une recherche ne peut pas attendre
+# qu'un worker naisse), à la taille des cœurs annoncés, plafonnée à 16.
+WASM_THREAD_POOL ?= (typeof navigator!=='undefined'&&navigator.hardwareConcurrency)?Math.min(navigator.hardwareConcurrency,16):4
+wasm-threads: $(WASM_BUILD)/gammonnet-simd-mt.mjs
+
+$(WASM_BUILD)/gammonnet-simd-mt.mjs: $(WASM_SOURCES) $(HEADERS) $(WASM_DIR)/notice.js
+	@mkdir -p $(WASM_BUILD)
+	$(EMCC) $(WASM_FLAGS) -msimd128 -pthread \
+	    "-sPTHREAD_POOL_SIZE=$(WASM_THREAD_POOL)" \
+	    -sDEFAULT_PTHREAD_STACK_SIZE=4194304 \
+	    $(WASM_SOURCES) -o $@
+	@stat -c '→ SIMD multi-fils : %s octets  %n' $(WASM_BUILD)/gammonnet-simd-mt.wasm
 
 # Parité WebAssembly <-> natif, sur le repère figé produit par le côté natif.
 wasm-parity: wasm $(MODEL)

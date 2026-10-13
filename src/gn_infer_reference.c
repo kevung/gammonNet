@@ -30,6 +30,47 @@
 #define GN_INFER_TLS
 #endif
 
+#include <stdint.h>
+
+#define BATCH_MAX_WIDTH 1024
+#define SCALAR_MAX_WIDTH 1024
+
+/*
+ * Every thread's scratch, in ONE block allocated on the thread's first
+ * evaluation (`infer_scratch`). Not `_Thread_local` arrays: under WebAssembly
+ * the initial image of thread-local storage is shipped in the module, and
+ * these zeros alone weighed 1.19 MB of a 122 KB module. A thread-local
+ * POINTER costs eight bytes of that image instead. 64-byte aligned, at least
+ * what any kernel load here asks for. Never freed: search threads live as long
+ * as the process (gn_parallel.c), and the calling thread reuses its block.
+ */
+typedef struct {
+    float batch_a[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
+    float batch_b[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
+    float batch_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
+    float packed_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
+    float scalar_a[SCALAR_MAX_WIDTH];
+    float scalar_b[SCALAR_MAX_WIDTH];
+} InferScratch;
+
+static GN_INFER_TLS InferScratch *g_scratch = NULL;
+
+static InferScratch *infer_scratch(void)
+{
+    if (g_scratch == NULL) {
+        const size_t size = (sizeof(InferScratch) + 63) & ~(size_t)63;
+        g_scratch = aligned_alloc(64, size);
+        if (g_scratch == NULL) {
+            /* No scratch, no forward pass: stopping here is the only answer
+             * that is not a plausible wrong one. */
+            fprintf(stderr, "gammonnet: mémoire de travail indisponible\n");
+            abort();
+        }
+        memset(g_scratch, 0, size);
+    }
+    return g_scratch;
+}
+
 #include "gn_int8_model.h"
 #include "gn_tile.h"
 
@@ -319,9 +360,6 @@ int gn_network_input_size(const GnNetwork *net)
 }
 
 /* The scalar path's per-thread scratch (see `gn_evaluate_features`). */
-#define SCALAR_MAX_WIDTH 1024
-static GN_INFER_TLS float g_scalar_a[SCALAR_MAX_WIDTH];
-static GN_INFER_TLS float g_scalar_b[SCALAR_MAX_WIDTH];
 
 static int model_max_width(const NNModel *model)
 {
@@ -355,8 +393,8 @@ int gn_evaluate_features(const GnNetwork *net, const float *features,
      */
     NNModel local = net->model;
     if (model_max_width(&local) <= SCALAR_MAX_WIDTH) {
-        local.buf_a = g_scalar_a;
-        local.buf_b = g_scalar_b;
+        local.buf_a = infer_scratch()->scalar_a;
+        local.buf_b = infer_scratch()->scalar_b;
     } else if (gn_parallel_threads() > 1) {
         return -1;
     }
@@ -395,16 +433,13 @@ int gn_evaluate(const GnNetwork *net, const GnPosition *pos,
  * results bit-identical to `gn_evaluate`. T21 measured that property on the
  * 2000-position reference (max|Δ| = 0), and tests/test_batch.py holds it.
  *
- * Thread-local buffers: the search runs on several threads (gn_parallel.h),
- * each with its own scratch; tests/test_parallel_search.py holds the threaded
- * search to the serial one bit for bit.
+ * Per-thread buffers (`InferScratch`, at the top of this file): the search
+ * runs on several threads (gn_parallel.h), each with its own scratch;
+ * tests/test_parallel_search.py holds the threaded search to the serial one
+ * bit for bit.
  */
 
-#define BATCH_MAX_WIDTH 1024
 
-static GN_INFER_TLS float g_batch_a[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
-static GN_INFER_TLS float g_batch_b[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
-static GN_INFER_TLS float g_batch_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
 
 static int batch_kernel_applies(const NNModel *model)
 {
@@ -460,14 +495,15 @@ static void forward_batch(const NNModel *model, const float *in, int live,
                           const int *nonzero, int n_nonzero,
                           float (*out)[GN_NUM_OUTPUTS])
 {
+    InferScratch *const scratch = infer_scratch();
+    float *const packed_in = scratch->packed_in;
     const float *current = in;
-    float *next = g_batch_a;
+    float *next = scratch->batch_a;
     const int total_layers = model->num_hidden + 1;
 
     /* Les colonnes vivantes, rassemblées une fois : le noyau les relira
      * `rows` fois (512 pour le grand réseau), donc la compaction s'amortit
      * immédiatement. */
-    static GN_INFER_TLS float packed_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
     if (nonzero != NULL) {
         for (int idx = 0; idx < n_nonzero; idx++) {
             memcpy(packed_in + (size_t)idx * GN_EVAL_BATCH,
@@ -591,7 +627,7 @@ static void forward_batch(const NNModel *model, const float *in, int live,
 #endif
 
         current = next;
-        next = (next == g_batch_a) ? g_batch_b : g_batch_a;
+        next = (next == scratch->batch_a) ? scratch->batch_b : scratch->batch_a;
     }
 
     /* Un-transpose the five LIVE outputs and apply the nested-event clamp in
@@ -638,13 +674,14 @@ unsigned long gn_batch_fill_hist[GN_BATCH_STATS_MAX + 1] = {0};
 static void forward_feature_rows(const GnNetwork *net, const float *rows,
                                  int chunk, float (*probs)[GN_NUM_OUTPUTS])
 {
-    memset(g_batch_in, 0, sizeof(g_batch_in));
+    float *const batch_in = infer_scratch()->batch_in;
+    memset(batch_in, 0, sizeof(infer_scratch()->batch_in));
     unsigned char seen[GN_NUM_FEATURES];
     memset(seen, 0, sizeof(seen));
     for (int n = 0; n < chunk; n++) {
         const float *row = rows + (size_t)n * GN_NUM_FEATURES;
         for (int j = 0; j < GN_NUM_FEATURES; j++) {
-            g_batch_in[(size_t)j * GN_EVAL_BATCH + n] = row[j];
+            batch_in[(size_t)j * GN_EVAL_BATCH + n] = row[j];
             if (row[j] != 0.0f) {
                 seen[j] = 1;
             }
@@ -664,10 +701,10 @@ static void forward_feature_rows(const GnNetwork *net, const float *rows,
     if ((unsigned long)n_nonzero > gn_sparsity_widest[net->slot]) {
         gn_sparsity_widest[net->slot] = (unsigned long)n_nonzero;
     }
-    forward_batch(&net->model, g_batch_in, chunk,
+    forward_batch(&net->model, batch_in, chunk,
                   net->sparsity ? nonzero : NULL, n_nonzero, probs);
 #else
-    forward_batch(&net->model, g_batch_in, chunk, nonzero, n_nonzero, probs);
+    forward_batch(&net->model, batch_in, chunk, nonzero, n_nonzero, probs);
 #endif
 }
 

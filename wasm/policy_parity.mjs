@@ -35,6 +35,10 @@ const factory = (await import(MODULE)).default;
 const evaluator = await Evaluator.create(
   factory, new Uint8Array(readFileSync(join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin"))));
 evaluator.loadPrune(new Uint8Array(readFileSync(join(ROOT, "models", "prune_32.bin"))), 12);
+if (process.env.GN_WASM_THREADS) {
+  // Le module multi-fils doit rendre le même corpus au bit près.
+  evaluator.setThreads(Number(process.env.GN_WASM_THREADS));
+}
 
 function boardAt(off) {
   const points = [];

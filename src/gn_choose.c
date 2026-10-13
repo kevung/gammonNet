@@ -5,6 +5,7 @@
  */
 
 #include "gn_choose.h"
+#include "gn_parallel.h"
 
 #include "gn_bearoff.h"
 #include "gn_encoding.h"
@@ -63,7 +64,11 @@ int gn_game_value(const GnPosition *pos, int winner)
 int gn_best_play_0ply(const GnNetwork *net, const GnPosition *pos,
                       int d1, int d2, GnPlay *out)
 {
-    static GN_THREAD_LOCAL GnPlay plays[GN_MAX_PLAYS];
+    /* Per-thread, allocated once: see gn_parallel_scratch. */
+    static GN_THREAD_LOCAL GnPlay *plays = NULL;
+    if (plays == NULL) {
+        plays = gn_parallel_scratch(sizeof(GnPlay) * GN_MAX_PLAYS);
+    }
     float features[GN_NUM_FEATURES];
     float probs[GN_NUM_OUTPUTS];
     int count;

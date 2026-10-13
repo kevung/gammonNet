@@ -12,8 +12,30 @@
 
 #include "gn_parallel.h"
 
-#if defined(__EMSCRIPTEN__) || defined(GN_TIE_CENSUS) || \
-    defined(GN_BATCH_FILL_STATS) || defined(GN_BATCH_SPARSITY_SWITCH)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void *gn_parallel_scratch(size_t size)
+{
+    const size_t rounded = (size + 63) & ~(size_t)63;
+    void *block = aligned_alloc(64, rounded == 0 ? 64 : rounded);
+    if (block == NULL) {
+        fprintf(stderr, "gammonnet: mémoire de travail indisponible (%zu octets)\n",
+                size);
+        abort();
+    }
+    memset(block, 0, rounded == 0 ? 64 : rounded);
+    return block;
+}
+
+/* WebAssembly runs this pool only when the module is built with `-pthread`
+ * (`make wasm-threads`, which defines __EMSCRIPTEN_PTHREADS__): the same
+ * pthreads code, on Web Workers sharing one memory. Every other WebAssembly
+ * build, and the instrumentation builds, stay serial. */
+#if (defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)) || \
+    defined(GN_TIE_CENSUS) || defined(GN_BATCH_FILL_STATS) || \
+    defined(GN_BATCH_SPARSITY_SWITCH)
 #define GN_PARALLEL_SERIAL_ONLY 1
 #endif
 
