@@ -38,7 +38,7 @@ from gammonnet.infer import Network  # noqa: E402
 # les tâches parlent des mêmes positions, ce qui rend les rapports comparables.
 SEED = 20260803
 DEFAULT_COUNT = 2_000
-DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 DEFAULT_OUT = ROOT / "build" / "reference.bin"
 
 MAGIC = b"GNRF"

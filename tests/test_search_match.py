@@ -23,7 +23,7 @@ from gammonnet.met import MatchState
 from gammonnet.search import ROLLS, SearchConfig, best_play, position_equity
 
 ROOT = Path(__file__).resolve().parent.parent
-MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 SEED = 20260803
 
 

@@ -78,7 +78,7 @@ from gammonnet.search import (  # noqa: E402
     search_plays,
 )
 
-DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 DEFAULT_PRUNE = ROOT / "models" / "prune_32.bin"
 BASE_SEED = 20260902
 MAX_PLIES_PER_GAME = 300

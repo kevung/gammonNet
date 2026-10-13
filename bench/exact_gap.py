@@ -215,7 +215,7 @@ def main() -> int:
     args = parser.parse_args()
 
     plies = [int(p) for p in args.plies.split(",") if p.strip()]
-    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
 
     with TwoSidedBearoff(args.database) as probe:
         points, chequers = probe.points, probe.chequers

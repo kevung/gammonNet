@@ -44,7 +44,7 @@ from gammonnet.infer_int8 import Int8Network  # noqa: E402
 from gammonnet.search import ROLLS  # noqa: E402
 from measure_quantization import build_corpus  # noqa: E402
 
-REFERENCE = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+REFERENCE = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 
 
 def int8_money_equity(probs: list[float]) -> float:

@@ -199,7 +199,7 @@ def main() -> int:
     parser.add_argument("--out", default=str(ROOT / "docs" / "mesures" / "t37-calibration.json"))
     args = parser.parse_args()
 
-    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
 
     print("T37 — calibration de la distribution à cinq sorties, par composante")
     print(f"  corpus : {args.positions} positions de contact, graine {args.seed}")

@@ -92,3 +92,22 @@ A score outside the match equity table is **refused**, not silently reduced to m
 The cube changes not only whether you double, but **which move you play**: bold toward the cash when
 you own it, sober when it is against you. Measured on one position: **−0.167** owning the cube,
 **−0.449** with it against you.
+
+## Playing a match: the policy
+
+To **play** rather than analyse, one function is enough: a decision goes in, an action comes out.
+The game, the dice and the score stay with you; nothing is kept from one call to the next.
+
+```javascript
+const board = evaluator.positionFromId("4HPwATDgc/ABMA", 0);
+evaluator.policy(board, { pending: "move", d1: 3, d2: 1, level: "normal" });   // the play
+evaluator.policy(board, { pending: "cube", level: "normal",
+                          useMatch: true, awayOnRoll: 3, awayOpponent: 5 });  // roll, double or resign
+evaluator.policy(board, { pending: "take", level: "normal" });   // the side not on roll answers
+evaluator.policy(board, { pending: "resign", resignValue: 2 });  // a resignation offer
+```
+
+Everything is seen **from the player on roll**; who decides follows from `pending`. The level is a
+name (`instant`, `normal`, `thorough`); `normal` requires `loadPrune`. Resignation is offered only
+on a **certain** loss, read exactly in a race, never on an equity judgement. The full
+specification is `docs/specs/politique-spec.md` (in French).

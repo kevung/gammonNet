@@ -66,7 +66,7 @@ from gammonnet.search import (  # noqa: E402
     search_plays,
 )
 
-GRAND = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+GRAND = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 SMALL = ROOT / "models" / "prune_32.bin"
 
 #: Le point de fonctionnement de la campagne T35 : c'est celui dont le coût

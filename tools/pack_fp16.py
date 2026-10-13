@@ -22,8 +22,8 @@ Le format est celui du `.bin`, à deux différences près :
 l'autre. Ce format transporte, il ne calcule pas.
 
 Usage :
-    python tools/pack_fp16.py models/cubeless_prob5_512_512_256_128.bin \\
-                              models/cubeless_prob5_512_512_256_128.bin16
+    python tools/pack_fp16.py models/cubeless_prob5_512_512_256_256.bin \\
+                              models/cubeless_prob5_512_512_256_256.bin16
 """
 
 from __future__ import annotations

@@ -41,7 +41,7 @@ sys.path.insert(0, str(ROOT / "python"))
 from gammonnet import codec  # noqa: E402
 from gammonnet.infer import Network  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 
 #: Tailles de filtre évaluées. 0 signifie « aucun filtrage », donc le témoin.
 FILTER_SIZES = (1, 2, 3, 4, 5, 6, 8, 10, 12, 16)

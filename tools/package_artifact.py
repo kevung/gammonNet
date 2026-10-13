@@ -20,7 +20,7 @@ que d'en produire un qui aurait l'air fini.
 `BRIEF.md` §8 : **un réseau ne devient un autre réseau que si ses poids changent.**
 Ni le couplage à une table de fin de partie, ni la compilation en WebAssembly, ni
 une conversion de format n'en produisent un nouveau. Le fichier de poids porte
-donc `strehl-prob5-512-512-256-128` — la paternité d'Alexander Strehl — et c'est
+donc `strehl-prob5-512-512-256-256` — la paternité d'Alexander Strehl — et c'est
 la **configuration** qui s'appelle gammonNet. Rebaptiser les poids reviendrait à
 s'attribuer ce qu'on n'a pas produit, et coûterait la provenance traçable que le
 critère de succès exige.
@@ -52,7 +52,7 @@ from gammonnet.search import search_level  # noqa: E402
 #: Le nom du réseau garde la paternité de son auteur (BRIEF §8). Le nôtre est
 #: celui de la CONFIGURATION, pas des poids.
 NETWORKS = {
-    "strehl-prob5-512-512-256-128": ROOT / "models" / "cubeless_prob5_512_512_256_128.bin",
+    "strehl-prob5-512-512-256-256": ROOT / "models" / "cubeless_prob5_512_512_256_256.bin",
     "strehl-prune-32": ROOT / "models" / "prune_32.bin",
 }
 
@@ -102,7 +102,7 @@ VERIFY = [
     ROOT / "build" / "reference.bin",
     ROOT / "wasm" / "parity.mjs",
     ROOT / "wasm" / "api_invariants.mjs",
-    ROOT / "models" / "cubeless_prob5_512_512_256_128.provenance.json",
+    ROOT / "models" / "cubeless_prob5_512_512_256_256.provenance.json",
     ROOT / "models" / "prune_32.provenance.json",
 ]
 
@@ -155,13 +155,13 @@ def retarget_check(source: Path, destination: Path, weights_name: str,
     per_file = {
         "parity.mjs": [
             ('join(ROOT, "build", "reference.bin")', 'join(HERE, "reference.bin")'),
-            ('join(ROOT, "models", "cubeless_prob5_512_512_256_128.bin")',
+            ('join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin")',
              f'join(ROOT, "{weights_name}")'),
             ('"../build/wasm/gammonnet.mjs"', '"../gammonnet.mjs"'),
             ('"../build/wasm/gammonnet-simd.mjs"', '"../gammonnet-simd.mjs"'),
         ],
         "api_invariants.mjs": [
-            ('join(ROOT, "models", "cubeless_prob5_512_512_256_128.bin")',
+            ('join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin")',
              f'join(ROOT, "{weights_name}")'),
             ('join(ROOT, "models", "prune_32.bin")', f'join(ROOT, "{prune_name}")'),
             ('join(ROOT, "build", "wasm", "gammonnet-simd.mjs")',
@@ -350,149 +350,60 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.2.1 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.6.0 — À LIRE AVANT DE METTRE À JOUR
 
-Cette version ne touche **ni les poids, ni la recherche, ni l'équité de match**.
-Elle change trois choses : ce que le module WebAssembly **répond** quand des coups
-sont ex æquo, ce qu'il **coûte** en temps, et ce qu'il **expose**. Une rupture
-d'API, petite mais réelle, est nommée en troisième point.
+**Les poids ne changent pas.** `strehl-prob5-512-512-256-256` et
+`strehl-prune-32` sont ceux de v1.6.0, au bit près. Ce qui change est la
+**recherche à 3 et 4 plis** d'une décision de coup, et un refus du générateur
+de coups.
 
-### 1. Le classement des coups est déterministe entre plateformes
+### 1. Racine étagée à 3 et 4 plis, niveaux natifs `ply3` et `ply4`
 
-`compare_candidates` ne comparait **que l'équité**, et `qsort` n'est pas stable :
-l'ordre de deux candidats de même équité dépendait donc de la bibliothèque C sous
-le moteur. Celle de la glibc ne permutait aucun ex æquo ; celle d'Emscripten en
-permutait des centaines. **Le module WebAssembly et le moteur natif ne jouaient
-donc pas toujours le même coup.**
+À 3 ou 4 plis, les candidats payés à `k` plis étaient choisis sur le classement
+0-ply. Ils le sont désormais sur un classement à 2 plis : triplet d'étage
+`(0, 8, 0,16)` sur le classement superficiel, survivants notés à 2 plis, puis
+`(0, 2, 0,04)` sur ce classement, notés à `k` plis. Seule la racine d'une
+décision de coup lit l'étage ; éteint (`root_stage_ply = 0`), la recherche est
+inchangée au bit près, et les niveaux de 0 à 2 plis le sont aussi.
 
-Recensé sur le corpus T12 : **433 décisions sur 41 779 portent un meilleur coup
-ex æquo**, et l'artefact livré en annonçait **89 différemment du natif**. Le
-harnais de parité ne pouvait pas le voir : il comparait des équités à 1e-6, et
-deux ex æquo ont la même équité — c'est l'**ordre** qui différait.
+Les niveaux natifs `ply3` et `ply4` publient cette forme : une réplique
+`(1, 0, 0)` à chaque nœud intérieur, l'étage à 2 plis, élagage `k = 12`, et le
+coût de l'élagage mesuré à la forme même (`data/search_levels.json` porte
+`root_stage_ply` et `root_stage_filter` pour chaque niveau).
+`gnw_search_level` les **refuse** : la forme WebAssembly ne sait pas porter
+l'étage.
 
-Corrigé par un tri stable, départagé par un critère explicite aligné sur le
-portage Go. **Ce que vous devez faire** : rien dans le code appelant, mais tout
-repère figé (« or », golden, snapshot) qui compare un *coup nommé* et non une
-équité doit être régénéré — les vôtres bougeront là où le nôtre a bougé.
-Détail : `docs/mesures/2026-09-02-T88-census-ex-aequo.md`.
+Mesuré sur un match réel (`docs/mesures/2026-10-11-filtres-3-4-plis.md`) :
+**−15 % d'évaluations à 3 plis** (40 décisions, mêmes coups que la racine
+large) et **−28 % à 4 plis** (14 décisions, le coup de la racine large partout,
+là où la racine directe le manque une fois). Échantillons petits : ordres de
+grandeur d'un réglage de recherche, pas une mesure de force.
 
-### 2. Une décision 2-ply coûte quatre fois moins cher dans Chromium
+**Ce que vous devez faire** : toute analyse à 3 ou 4 plis stockée avec une
+version antérieure vient d'une autre recherche et est à recalculer ; tout repère
+figé à ces profondeurs (« or », empreinte, snapshot) est à régénérer. Rien à
+faire à 0, 1 ou 2 plis.
 
-Mesuré dans un vrai navigateur, profil neuf, sur une décision 2-ply `(0,1,3)`
-`k=12` — pas déduit du natif :
+### 2. Plus de refus sur un doublet
 
-| | avant (v1.2.1) | après (v1.3.0) | |
-|---|---|---|---|
-| Chromium 152 | 1,4980 s | **0,3343 s** | **×4,48** |
-| Firefox 154 | 1,1547 s | **0,6860 s** | **×1,68** |
+`GN_MAX_PLAYS` passe de 2048 à 3072, la borne prouvée du nombre de positions
+distinctes qu'un doublet peut atteindre (3 060). Une position à 2 225 coups
+distincts sur un 1-1 était refusée par `gn_legal_plays` ; elle est désormais
+générée, et comparée à GNU Backgammon. Mêmes coups, même ordre sur 19 427
+positions × 36 jets.
 
-Et le chemin d'`analyze()` — `gnw_evaluate_batch`, celui qui reçoit des centaines
-de vecteurs de caractéristiques — rend **×4,74** : il bouclait sur le chemin
-scalaire, une position à la fois, et entre désormais par la même porte que la
-recherche.
+### Ce qui ne change pas
 
-Trois causes, toutes mesurées : un **noyau d'inférence écrit à la main** en
-SIMD128 (2 lignes × 4 vecteurs), une **largeur de lot ramenée de 32 à 16** pour
-cette cible seule, et le **retrait de `-fassociative-math`**. Ce dernier point
-est contre-intuitif et vaut d'être dit : le drapeau achetait ×3,9 sur l'ancien
-chemin scalaire de T21, et **coûtait un facteur 2,8** sur le chemin par lot que la
-recherche emprunte depuis. Il reste défini et mesurable, plus rien ne le
-demande. **Le natif n'est pas touché** : les intrinsèques y exigeraient
-`-march=native`, donc un binaire qui ne démarre plus sans AVX2.
+Les poids, le module WebAssembly dans ce qu'il calcule, l'équité de match, le
+videau, et les niveaux nommés de 0 à 2 plis.
 
-**Les deux sommes de contrôle des `.wasm` changent**, et qui les épingle reprend
-les deux — leurs valeurs sont dans la table « Ce que cette version contient »
-plus bas, jamais ailleurs. Sur la taille, un avertissement qui vaut mieux qu'un
-chiffre : le noyau écrit à la main **ne déroule pas** la boucle chaude que
-l'auto-vectorisation sous réassociation déroulait, et il a fait **rétrécir**
-l'artefact de 109 240 à 100 992 o sur la machine où T91 l'a mesuré (emcc
-6.0.9-git). L'artefact **publié ici** est bâti par la CI avec emcc 3.1.64 et pèse
-**105 894 o** : le sens du changement tient, sa taille absolue **ne se transporte
-pas d'une chaîne à l'autre**. Comparez toujours deux constructions faites par la
-même chaîne.
-Détail : `docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md`.
+### La force publiée ci-dessous
 
-### 3. RUPTURE — `efficiency` n'a plus de valeur par défaut
-
-`wasm/gammonnet.mjs` exposait `efficiency = 0.566` en défaut de `rankPlays` **et**
-de `cubeDecision`, dont le défaut d'`owner` est `0` = videau **centré**. Or 0,566
-est l'efficacité **possédée** ; celle du centré est **0,688** (T34 :
-0,688 / 0,566 / 0,687). Le seul défaut du dépôt était donc celui d'un **autre état
-de possession**, et il était dans l'artefact distribué.
-
-Le remède n'est pas de remplacer 0,566 par 0,688, c'est de faire ce que le C fait :
-**pas de défaut du tout**. Le paramètre est exigé, et son absence lève désormais une
-erreur qui **nomme la valeur à passer** ; la constante `MEASURED_EFFICIENCY`
-`[centré, possédé, adverse]` est exportée pour que personne n'ait à la deviner.
-
-**Ceci casse un appelant qui s'appuyait sur le défaut** — c'est la seule rupture de
-cette version, et elle est délibérée : ce défaut ne rendait pas une réponse
-approximative, il rendait la réponse d'une **autre position**. Ce qu'inventer la
-valeur coûtait, mesuré : point de prise **0,726436** à x = 0,688 contre **0,720610**
-à x = 0,566, même position — de quoi retourner un verdict à la marge sans jamais
-avoir l'air faux. Un appel qui échoue bruyamment vaut mieux.
-
-**Ce que vous devez faire** : passer `efficiency: MEASURED_EFFICIENCY[owner]`, ou
-votre propre valeur si vous en avez une. Aucun autre point d'entrée n'est touché.
-
-### 4. La recherche est enfin appelable depuis un worker
-
-Le worker relaie `bestPlay`, `rankPlays`, `cubeDecision`, `analyze` et `configure`,
-avec file et générations : un geste dépassé n'oblige plus à `terminate()` le worker
-ni à recharger ses 1,06 Mo de poids. Le **codec de position** (Position ID, XGID,
-compte de pips) est exporté et vérifié contre le C sur les 2 050 positions du corpus
-T12, égalité **exacte**. La **notation de coup** est écrite en C — une seule écriture
-pour les trois cibles — et nomme la liste ordonnée que la recherche a réellement
-retenue, plutôt qu'une reconstruction par différence de plateaux, qui est ambiguë.
-Les formes canoniques sont des **valeurs** : `GnEngine.level("instant" | "normal" |
-"thorough")`.
-
-**Une limite, constatée et non supposée** : un appel WASM déjà en vol n'est pas
-interruptible depuis JavaScript — le worker est mono-thread, donc son `onmessage`
-ne tourne pas pendant le calcul, et un drapeau coopératif dans le C ne servirait à
-personne. `SharedArrayBuffer` exigerait COOP/COEP qu'un hébergeur statique ne donne
-pas ; Asyncify ferait grossir tout le module. Ce qui est livré, c'est la **file**
-abandonnée et le worker qui **survit**.
-
-### 5. Le videau valué par lot : ×2,43 sur le poste, ×1,13 sur la décision
-
-Les ~360 divisions séquentielles que chaque candidat impose à `gn_cube_value` sont
-menées en pas cadencé sur tous les candidats à la fois. Au score : le videau passe
-de 103,6 à **42,7 ms** par décision, sa part d'une décision de 19,35 % à 9,05 %,
-soit **11,4 % de moins sur la décision entière**. **En money : rien**, et rien
-n'était possible — ce chemin coûte 15 ns par valuation et reste scalaire.
-Exactitude tenue **au bit près** (141 distributions × 3 possessions × 7 états, `==`
-et non `approx`), invariance au découpage, et 12 600 classements du corpus rejoués
-**ordre compris**.
-
-### 6. La parité WebAssembly ↔ natif tombe à ZÉRO
-
-| `make wasm-parity` | scalaire | SIMD |
-|---|---|---|
-| v1.2.1 | 0,000e+00 | 6,407e-07 |
-| **v1.3.0** | **0,000e+00** | **0,000e+00** |
-
-**L'artefact WebAssembly est de nouveau bit à bit avec le moteur natif**, ce qu'il
-n'était plus depuis T21. Ce qui cassait le bit à bit n'était pas le noyau : c'était
-`-fassociative-math`, qui vectorisait la somme de la **référence** — les deux chemins
-du même artefact ne répondaient pas la même chose à 2e-07 près. La tolérance de 1e-6
-n'est plus consommée du tout.
-
-**Conséquence pour vous** : les réponses de ce module peuvent bouger d'au plus
-**6,4e-07** par rapport à v1.2.1, **dans le sens de l'accord avec le natif**. Tout
-repère figé produit par l'ancien module est à régénérer.
-
-### Ce qui NE change pas
-
-Les **poids**, bit pour bit — mêmes SHA-256 que ceux de v1.0.1, v1.1.0, v1.2.0 et
-v1.2.1, seuls les noms de fichiers portent la nouvelle version (`BRIEF.md` §8).
-La force mesurée ci-dessous est donc celle de la v1.2.1, inchangée et non
-remesurée : aucune des six sections ci-dessus ne déplace une équité au-delà de
-6,4e-07, et le corpus de non-régression T12 rejoue **au bit près**.
-
-Les notes de v1.2.0 (le verdict « trop bon » rendu atteignable) et de v1.2.1 (la
-partie de Crawford valuée à videau mort) restent valables et ne sont pas répétées
-ici.
+Les sections « La force », « Le taux d'erreur » et « Ce que l'analyse d'un vrai
+match montre » ont été **mesurées avec le réseau précédent**
+`strehl-prob5-512-512-256-128` et ne sont pas rejouées à leur volume ; l'écart
+apparié de v1.6.0 (`docs/mesures/2026-10-05-T97-adoption-256.md`) est ce qui s'y
+ajoute.
 
 """
 
@@ -639,7 +550,7 @@ def main() -> int:
         stem = f"{name}_{args.version}_{date}"
         if name == "strehl-prune-32":
             prune_name = f"{stem}.bin"
-        if name == "strehl-prob5-512-512-256-128":
+        if name == "strehl-prob5-512-512-256-256":
             #: `verify/parity.mjs` doit charger CES poids-là, sous le nom
             #: qu'ils portent dans l'archive — pas celui du dépôt.
             big_name = f"{stem}.bin"
@@ -704,8 +615,8 @@ def main() -> int:
     manifest = {
         "version": args.version,
         "date": date,
-        "network": f"strehl-prob5-512-512-256-128_{args.version}_{date}.bin",
-        "network_fp16": f"strehl-prob5-512-512-256-128_{args.version}_{date}.bin16",
+        "network": f"strehl-prob5-512-512-256-256_{args.version}_{date}.bin",
+        "network_fp16": f"strehl-prob5-512-512-256-256_{args.version}_{date}.bin16",
         "prune": f"strehl-prune-32_{args.version}_{date}.bin",
         "prune_fp16": f"strehl-prune-32_{args.version}_{date}.bin16",
         # La forme canonique "normal" (issue #25) : `gn_search_level`

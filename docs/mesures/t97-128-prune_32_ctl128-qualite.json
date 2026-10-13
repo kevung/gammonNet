@@ -1,0 +1,151 @@
+{
+  "task": "T3A",
+  "measure_seed": 20260808,
+  "grand_model": "models/cubeless_prob5_512_512_256_128.bin",
+  "small_model": "models/prune_32_ctl128.bin",
+  "contact": {
+    "decisions": 2000,
+    "hits": {
+      "1": 1220,
+      "2": 1562,
+      "3": 1733,
+      "5": 1874
+    },
+    "n_sum": 45316,
+    "elapsed_seconds": 1.206802164990222,
+    "ties": 0
+  },
+  "race": {
+    "decisions": 500,
+    "hits": {
+      "1": 284,
+      "2": 349,
+      "3": 380,
+      "5": 419
+    },
+    "n_sum": 8643,
+    "elapsed_seconds": 0.28499904200725723,
+    "ties": 0
+  },
+  "cost": {
+    "grand": {
+      "target": "native",
+      "positions": 2000,
+      "repetitions": 11,
+      "medianMs": 214.815154,
+      "fastestMs": 205.073062,
+      "slowestMs": 222.534361,
+      "evalsPerSecond": 9310.3,
+      "msPerEval": 0.107408
+    },
+    "small": {
+      "target": "native",
+      "positions": 2000,
+      "repetitions": 11,
+      "medianMs": 2.714331,
+      "fastestMs": 2.698371,
+      "slowestMs": 2.830959,
+      "evalsPerSecond": 736829.8,
+      "msPerEval": 0.001357
+    },
+    "speedup": 79.15106853352985
+  },
+  "rows": [
+    {
+      "category": "contact",
+      "k": 1,
+      "rate": 0.61,
+      "ci95": [
+        0.5884319929884799,
+        0.6311462411394072
+      ],
+      "n_avg": 22.658,
+      "saved_fraction": 0.943231409751043,
+      "effective_speedup": 17.61537490387783
+    },
+    {
+      "category": "contact",
+      "k": 2,
+      "rate": 0.781,
+      "ci95": [
+        0.762345217372498,
+        0.7985773625360137
+      ],
+      "n_avg": 22.658,
+      "saved_fraction": 0.8990968877279165,
+      "effective_speedup": 9.910497084604465
+    },
+    {
+      "category": "contact",
+      "k": 3,
+      "rate": 0.8665,
+      "ci95": [
+        0.8508889381701127,
+        0.8807058146287116
+      ],
+      "n_avg": 22.658,
+      "saved_fraction": 0.85496236570479,
+      "effective_speedup": 6.894762210231571
+    },
+    {
+      "category": "contact",
+      "k": 5,
+      "rate": 0.937,
+      "ci95": [
+        0.9254911725624734,
+        0.9468332666546785
+      ],
+      "n_avg": 22.658,
+      "saved_fraction": 0.7666933216585371,
+      "effective_speedup": 4.2862039231316835
+    },
+    {
+      "category": "race",
+      "k": 1,
+      "rate": 0.568,
+      "ci95": [
+        0.5242245356147506,
+        0.6107385162650465
+      ],
+      "n_avg": 17.286,
+      "saved_fraction": 0.9295156483077806,
+      "effective_speedup": 14.187546256602467
+    },
+    {
+      "category": "race",
+      "k": 2,
+      "rate": 0.698,
+      "ci95": [
+        0.6563715243917267,
+        0.7366091266700354
+      ],
+      "n_avg": 17.286,
+      "saved_fraction": 0.8716653648413916,
+      "effective_speedup": 7.792128748128691
+    },
+    {
+      "category": "race",
+      "k": 3,
+      "rate": 0.76,
+      "ci95": [
+        0.7206724477826185,
+        0.7953627505813117
+      ],
+      "n_avg": 17.286,
+      "saved_fraction": 0.8138150813750026,
+      "effective_speedup": 5.371004307895316
+    },
+    {
+      "category": "race",
+      "k": 5,
+      "rate": 0.838,
+      "ci95": [
+        0.8031470479440461,
+        0.8676987099290632
+      ],
+      "n_avg": 17.286,
+      "saved_fraction": 0.6981145144422247,
+      "effective_speedup": 3.3125143401722714
+    }
+  ]
+}

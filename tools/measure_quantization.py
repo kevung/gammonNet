@@ -43,8 +43,8 @@ from gammonnet.infer import Network  # noqa: E402
 from gammonnet.search import ROLLS, SearchConfig, search_plays  # noqa: E402
 
 SEED = 20260803
-REFERENCE = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
-QUANTIZED = ROOT / "models" / "cubeless_prob5_512_512_256_128-q8.bin"
+REFERENCE = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+QUANTIZED = ROOT / "models" / "cubeless_prob5_512_512_256_256-q8.bin"
 
 
 def _tested(name: str | None) -> Path:

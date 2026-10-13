@@ -46,7 +46,7 @@ from gammonnet.met import MatchState  # noqa: E402
 from gammonnet.rules import BAR, OFF  # noqa: E402
 from gammonnet.search import SearchConfig, search_level, search_plays  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 PRUNE = ROOT / "models" / "prune_32.bin"
 MATCH_LENGTH = 7
 CUBE_X = 0.688

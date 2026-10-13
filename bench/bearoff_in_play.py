@@ -260,7 +260,7 @@ def main() -> int:
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
-    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+    model = str(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
     workers = max(1, min(args.workers, args.games))
     share = [args.games // workers + (1 if i < args.games % workers else 0)
              for i in range(workers)]

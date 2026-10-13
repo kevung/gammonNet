@@ -195,6 +195,39 @@ typedef struct {
      */
     const GnNetwork *prune_net;
     int prune_k;
+
+    /*
+     * THE STAGED ROOT -- docs/specs/filtre-de-coups-spec.md §8.
+     *
+     * A move decision at depth k normally deepens the survivors of the 0-ply
+     * ranking straight to k plies, through `filter[k]`. With a stage, the
+     * root goes through one intermediate depth first:
+     *
+     *   0-ply ranking (pruned, then the big network)
+     *   -> root stage filter (`root_stage_filter`, `_extra`, `_threshold`)
+     *   -> those survivors scored at `root_stage_ply` plies, re-sorted
+     *   -> `filter[k]` over that ranking
+     *   -> those survivors scored at k plies, re-sorted.
+     *
+     * Why: at three and four plies a k-ply candidate costs a whole subtree,
+     * and choosing which ones to pay for from a 0-ply ranking spends them on
+     * plays that a 2-ply look already rejects. Staging chooses them from a
+     * 2-ply ranking instead -- fewer k-ply candidates, and better ones.
+     *
+     * Only the ROOT of a move decision (`gn_search_plays`, `gn_best_play`) is
+     * staged: interior nodes and the pre-roll searches (`gn_search_equity`,
+     * `gn_search_probs`) never read these fields. The stage is active only when
+     * `1 <= root_stage_ply < ply`; `root_stage_ply == 0` (what
+     * `gn_search_config` returns) turns it off and the search is the unstaged
+     * one, bit for bit. The stage's scoring reads `filter[1..root_stage_ply-1]`
+     * at its interior nodes, exactly as a `root_stage_ply`-ply decision would.
+     *
+     * `gn_search_set_root_stage` sets it, and refuses what cannot be meant.
+     */
+    int root_stage_ply;
+    int root_stage_filter;
+    int root_stage_filter_extra;
+    double root_stage_filter_threshold;
 } GnSearchConfig;
 
 /* Add pruning to a config. `k` is the number of candidates the small network
@@ -209,6 +242,14 @@ void gn_search_use_prune(GnSearchConfig *config, const GnNetwork *prune_net,
  * refused, never clamped into something else. */
 int gn_search_set_filter(GnSearchConfig *config, int depth, int accept,
                          int extra, double threshold);
+
+/* Stage the root of a move decision through `ply` plies, filtered by the
+ * triplet (accept, extra, threshold) -- see `GnSearchConfig::root_stage_ply`.
+ * `ply == 0` turns staging off and zeroes the four fields. Returns 0, or -1
+ * (config untouched) for a NULL config, a `ply` outside [0, GN_MAX_PLY - 1],
+ * a negative count, or a negative or non-finite threshold. */
+int gn_search_set_root_stage(GnSearchConfig *config, int ply, int accept,
+                             int extra, double threshold);
 
 /* Add cubeful leaf valuation to a config (money or match, per `use_match`).
  * `owner` is the cube as the ROOT player sees it. `efficiency` is MEASURED
@@ -379,13 +420,17 @@ unsigned long gn_search_cube_valuations(void);
  * unpruned): `k = 12` loses +0.00023 [-0.00000, +0.00067] equity per
  * decision; the `k = 3` that "fast" mode reached for
  * loses +0.00389 [+0.00232, +0.00585] -- seventeen times as much, for half
- * the additional speedup (x8.4 against x3.6-3.9, same table). Where pruning
+ * the additional speedup (x8.4 against x3.6-3.9, same table). For "ply3"
+ * and "ply4" they come from docs/mesures/2026-10-11-filtres-3-4-plis.md
+ * instead: the level's own shape against itself unpruned, at its depth, on
+ * the decisions of one real match. Where pruning
  * is off (`prune_k == 0`) there is nothing to lose and the three fields are
  * exactly 0.
  */
 typedef struct {
     /* "instant", "normal" or "thorough" -- wasm/gammonnet.mjs's own names
-     * (T91), matched here rather than invented twice. */
+     * (T91), matched here rather than invented twice -- and the native-only
+     * "ply3" and "ply4", whose staged root the WASM shape cannot carry. */
     const char *name;
 
     /* Same fields as GnSearchConfig, only the ones a canonical level fixes:
@@ -401,6 +446,13 @@ typedef struct {
     double prune_equity_loss;
     double prune_equity_loss_ci_low;
     double prune_equity_loss_ci_high;
+
+    /* The level's staged root (`GnSearchConfig::root_stage_ply`), all zero
+     * for a level that has none. */
+    int root_stage_ply;
+    int root_stage_filter;
+    int root_stage_filter_extra;
+    double root_stage_filter_threshold;
 } GnSearchLevel;
 
 /*

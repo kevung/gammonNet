@@ -38,7 +38,7 @@
 #include "gn_rules.h"
 #include "gn_search.h"
 
-#define MAX_PLAYS 2048
+#define MAX_PLAYS GN_MAX_PLAYS
 #define MAX_LINE 4096
 
 #ifdef GN_TIE_CENSUS

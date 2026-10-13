@@ -85,7 +85,7 @@ def sample_positions(seed: int, count: int) -> list[tuple[Position, int, int]]:
     from gammonnet.search import SearchConfig, best_play
     from gammonnet.infer import Network
 
-    net = Network.load(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+    net = Network.load(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
     rng = random.Random(seed)
     out: list[tuple[Position, int, int]] = []
     config = SearchConfig(ply=0)
@@ -118,7 +118,7 @@ def time_ours(items, level_name: str) -> dict:
     from gammonnet.infer import Network
     from gammonnet.search import SearchConfig, best_play, search_level
 
-    net = Network.load(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+    net = Network.load(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
 
     if level_name.startswith("ply"):
         ply = int(level_name[3:])

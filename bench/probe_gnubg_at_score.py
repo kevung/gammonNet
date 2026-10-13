@@ -100,7 +100,7 @@ from gammonnet.infer import Network  # noqa: E402
 from gammonnet.met import MatchState  # noqa: E402
 from gammonnet.rules import Position  # noqa: E402
 
-MODEL = str(ROOT / "models" / "cubeless_prob5_512_512_256_128.bin")
+MODEL = str(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
 DATABASE = str(ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd")
 CONTACT_SEED = 20260807
 BEAROFF_SEED = 20260808

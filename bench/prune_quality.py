@@ -62,7 +62,7 @@ from gammonnet.infer import Network  # noqa: E402
 from gammonnet.rules import Position  # noqa: E402
 from gammonnet.search import SearchConfig, search_plays  # noqa: E402
 
-GRAND_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+GRAND_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 SMALL_MODEL = ROOT / "models" / "prune_32.bin"
 REFERENCE_BIN = ROOT / "build" / "reference.bin"
 BENCH_INFER = ROOT / "build" / "bench_infer"
@@ -342,8 +342,8 @@ def main() -> int:
     payload = {
         "task": "T3A",
         "measure_seed": args.seed,
-        "grand_model": str(args.grand.relative_to(ROOT)),
-        "small_model": str(args.small.relative_to(ROOT)),
+        "grand_model": str(args.grand.resolve().relative_to(ROOT)),
+        "small_model": str(args.small.resolve().relative_to(ROOT)),
         "contact": {"decisions": results["contact"]["n_cases"],
                     "hits": results["contact"]["hits"],
                     "n_sum": results["contact"]["n_sum"],

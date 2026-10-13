@@ -36,7 +36,7 @@ SOURCES = (
     Source(
         name="backgammon-ai-engine",
         url="https://github.com/alexstrehl/backgammon-ai-engine.git",
-        commit="b2750df",
+        commit="7184e2f",
         licence="MIT",
     ),
 )

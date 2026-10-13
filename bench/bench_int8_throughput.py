@@ -35,7 +35,7 @@ from gammonnet.infer import Network  # noqa: E402
 from gammonnet.infer_int8 import Int8Network  # noqa: E402
 from gammonnet.rules import BLACK, Position  # noqa: E402
 
-FLOAT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+FLOAT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 INT8_MODEL = ROOT / "models" / "qat_int8.bin"
 
 

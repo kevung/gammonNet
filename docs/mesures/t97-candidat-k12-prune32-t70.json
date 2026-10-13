@@ -1,0 +1,66 @@
+{
+  "bounded": 335,
+  "by_class": {
+    "backgame": {
+      "loss": 0.005417411717545131,
+      "n": 423
+    },
+    "bearoff_contact": {
+      "loss": 0.0023243861917004367,
+      "n": 582
+    },
+    "blitz": {
+      "loss": 0.002432338947536297,
+      "n": 1232
+    },
+    "contact": {
+      "loss": 0.002724600967782987,
+      "n": 4904
+    },
+    "crashed": {
+      "loss": 0.0023372873734867346,
+      "n": 425
+    },
+    "holding": {
+      "loss": 0.0021205115231339045,
+      "n": 1123
+    },
+    "prime_vs_prime": {
+      "loss": 0.0032312368642903296,
+      "n": 452
+    },
+    "race_contact": {
+      "loss": 0.0024407578807125693,
+      "n": 645
+    }
+  },
+  "ci95": [
+    0.0025252616897964452,
+    0.002786858668018665
+  ],
+  "context": "money",
+  "core_hours": 2.4353418805011056,
+  "decisions": 10000,
+  "evals": 211208995,
+  "filter": [
+    0,
+    1,
+    5
+  ],
+  "filter_extra": [],
+  "filter_threshold": [],
+  "label": "candidat 2-ply k=12, ancien \u00e9lagueur (prune_32), reprise T96",
+  "loss": 0.002655288473784712,
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "outside": 214,
+  "outside_rate": 0.0214,
+  "ply": 2,
+  "prune_evals": 594690007,
+  "prune_k": 12,
+  "registry": "registre-money.jsonl",
+  "scored": 9786,
+  "search_seconds": 8692.86323085762,
+  "seconds": 2191.807692450995,
+  "unresolved": 163,
+  "workers": 4
+}

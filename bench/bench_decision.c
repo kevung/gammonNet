@@ -14,7 +14,7 @@
  * counts instructions exactly rather than sampling:
  *
  *     valgrind --tool=callgrind --callgrind-out-file=cg.out \
- *         build/bench_decision models/cubeless_prob5_512_512_256_128.bin 3
+ *         build/bench_decision models/cubeless_prob5_512_512_256_256.bin 3
  *     callgrind_annotate cg.out | head -40
  *
  * The setting is T35's: 2-ply, filter (0,1,3). Any other setting would measure
@@ -64,7 +64,7 @@
 #include "gn_rules.h"
 #include "gn_search.h"
 
-#define MAX_PLAYS 2048
+#define MAX_PLAYS GN_MAX_PLAYS
 #define DEFAULT_DECISIONS 20
 #define MAX_DECISIONS 4096
 

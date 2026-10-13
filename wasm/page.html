@@ -41,7 +41,7 @@
 
     const t0 = performance.now();
     const modelBytes = new Uint8Array(
-      await (await fetch("/models/cubeless_prob5_512_512_256_128.bin")).arrayBuffer(),
+      await (await fetch("/models/cubeless_prob5_512_512_256_256.bin")).arrayBuffer(),
     );
     const evaluator = await Evaluator.create(factory, modelBytes);
     const loadMs = performance.now() - t0;

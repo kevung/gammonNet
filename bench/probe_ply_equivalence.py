@@ -55,7 +55,7 @@ from gammonnet.infer import Network  # noqa: E402
 from gammonnet.rules import Position  # noqa: E402
 from gammonnet.search import SearchConfig, position_equity  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 SEED = 20260826
 
 #: `op_eval` rend six flottants par plateau : les cinq probabilités, puis

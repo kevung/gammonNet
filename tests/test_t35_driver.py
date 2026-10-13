@@ -22,7 +22,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 needs_model = pytest.mark.skipif(not MODEL.exists(), reason="modèle absent")
 
 DRIVER = ROOT / "bench" / "run_t35.py"
@@ -30,13 +30,15 @@ REPORT = ROOT / "bench" / "report_t35.py"
 
 
 def run_driver(journal: Path, mode: str, pairs: int, workers: int,
-               limit: int = 0) -> str:
+               limit: int = 0, indices: str | None = None) -> str:
     command = [sys.executable, str(DRIVER), "--mode", mode,
                "--pairs", str(pairs), "--journal", str(journal),
                "--theirs", "self", "--ours-ply", "0", "--ours-filter", "",
                "--workers", str(workers), "--seed", "20260810"]
     if limit:
         command += ["--limit", str(limit)]
+    if indices:
+        command += ["--indices", indices]
     done = subprocess.run(command, capture_output=True, text=True, timeout=600)
     assert done.returncode == 0, done.stderr + done.stdout
     return done.stdout
@@ -78,6 +80,29 @@ def test_the_match_mode_is_segmentable_too(tmp_path):
     # Les scores échantillonnés font partie du protocole : ils doivent être
     # dans le journal, pas seulement dans la mémoire du processus.
     assert all("away_a" in row for row in journal_rows(single).values())
+
+
+@needs_model
+def test_slices_on_separate_journals_merge_into_the_single_run(tmp_path):
+    single = tmp_path / "single.jsonl"
+    run_driver(single, "match", pairs=4, workers=4)
+
+    local = tmp_path / "local.jsonl"
+    remote = tmp_path / "remote.jsonl"
+    run_driver(local, "match", pairs=4, workers=2, indices=":3")
+    run_driver(remote, "match", pairs=4, workers=2, indices="2:")
+    assert sorted(journal_rows(remote)) == [2, 3]
+    # Same header: the slice is not part of the protocol.
+    assert local.read_text().splitlines()[0] == remote.read_text().splitlines()[0]
+
+    merged = subprocess.run([sys.executable, str(ROOT / "bench" / "merge_t35.py"),
+                             "--into", str(local), str(remote)],
+                            capture_output=True, text=True, timeout=60)
+    assert merged.returncode == 0, merged.stderr
+    assert "1 doublon" in merged.stdout
+    assert journal_rows(local) == journal_rows(single)
+    # The resumed driver finds nothing left to play.
+    assert "Rien à jouer" in run_driver(local, "match", pairs=4, workers=2)
 
 
 @needs_model

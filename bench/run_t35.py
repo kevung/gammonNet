@@ -33,7 +33,15 @@ index manque donc au journal, et la paire est simplement rejouée.
 
 Ctrl-C draine les paires en vol puis sort proprement. `--limit` borne un lot
 en nombre de paires plutôt qu'en minutes. Sans l'un ni l'autre, le pilote
-joue jusqu'au bout de `--pairs`.
+joue jusqu'au bout de `--pairs`. La liste des index à jouer est figée au
+lancement : un processus en cours ne relit pas son journal, et ne saute donc
+pas des lignes ajoutées par un autre.
+
+## Partager une campagne entre machines
+
+`--indices A:B` ne joue que cette plage, dans un journal à part, au même
+en-tête (l'option n'y figure pas). `bench/merge_t35.py` réunit ensuite les
+journaux, une fois leurs pilotes arrêtés.
 
 ## Le mode match
 
@@ -68,7 +76,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
-from gammonnet.arena import derive_seed  # noqa: E402
+from gammonnet.arena import derive_seed, pair_key  # noqa: E402
 from gammonnet.cubeful import (  # noqa: E402
     CUBE_CAP,
     GammonNetCubePlayer,
@@ -110,6 +118,20 @@ def eval_fingerprint(model: str) -> str:
                            digest_size=8).hexdigest()
 
 
+def parse_indices(text: str | None, pairs: int) -> tuple[int, int]:
+    """`A:B` → la plage [A, B) bornée par la cible ; rien → toute la cible."""
+    if not text:
+        return 0, pairs
+    a, sep, b = text.partition(":")
+    if not sep:
+        raise SystemExit(f"--indices attend A:B, reçu {text!r}")
+    first = int(a) if a else 0
+    last = min(int(b), pairs) if b else pairs
+    if not 0 <= first < last:
+        raise SystemExit(f"--indices {text!r} : plage vide dans [0, {pairs})")
+    return first, last
+
+
 def sampled_score(seed: int, index: int, length: int) -> tuple[int, int, bool]:
     """Le score de départ de la paire `index` : pur, publié, rejouable."""
     rng = random.Random(derive_seed(seed, "scores", index))
@@ -130,11 +152,12 @@ def sampled_score(seed: int, index: int, length: int) -> tuple[int, int, bool]:
 
 _A = None
 _B = None
+_KEY = None
 
 
-def _install(a, b, evalcache_log2):
-    global _A, _B
-    _A, _B = a, b
+def _install(a, b, evalcache_log2, dice_key=None):
+    global _A, _B, _KEY
+    _A, _B, _KEY = a, b, dice_key
     if evalcache_log2:
         # ×3,41 mesuré sur une paire identique (2026-08-09), résultats
         # vérifiés bit à bit : le cache rejoue les mêmes évaluations, il n'en
@@ -148,11 +171,11 @@ def _install(a, b, evalcache_log2):
 def _play(payload):
     mode, seed, index, length = payload
     if mode == "money":
-        net, stats = play_cubeful_duplicate(_A, _B, seed, index)
+        net, stats = play_cubeful_duplicate(_A, _B, seed, index, dice_key=_KEY)
         return {"i": index, "net": net, **stats}
     away_a, away_b, crawford_done = sampled_score(seed, index, length)
     net, stats = play_match_duplicate(_A, _B, away_a, away_b, seed, index,
-                                      crawford_done=crawford_done)
+                                      crawford_done=crawford_done, dice_key=_KEY)
     return {"i": index, "net": net, "away_a": away_a, "away_b": away_b,
             "post_crawford": crawford_done, **stats}
 
@@ -224,6 +247,14 @@ def main() -> int:
                              "(2^n entrées ; 0 = désactivé)")
     parser.add_argument("--limit", type=int, default=0,
                         help="taille du lot en paires (0 = jusqu'au bout)")
+    # A slice of the indices, to split one campaign across machines: each plays
+    # its slice into its own journal, bench/merge_t35.py joins them. Not in the
+    # header — a pair is a pure function of its index, so which machine played
+    # which slice is not part of the protocol, and the slices' headers must
+    # stay identical for the merge and the resume to accept them.
+    parser.add_argument("--indices", default=None, metavar="A:B",
+                        help="ne jouer que les index A <= i < B (A ou B "
+                             "omis : 0 ou --pairs) ; hors en-tête")
     parser.add_argument("--minutes", type=float, default=0.0,
                         help="budget de temps du lot (0 = sans limite)")
     parser.add_argument("--ours-ply", type=int, default=2)
@@ -243,13 +274,44 @@ def main() -> int:
     parser.add_argument("--gnubg-filter", default="0,1,1")
     parser.add_argument("--gnubg-cube-ply", type=int, default=None)
     parser.add_argument("--match-length", type=int, default=7)
+    # La politique sans état (docs/specs/politique-spec.md §9) pour notre camp,
+    # au niveau nommé, à la place du joueur de T35.
+    parser.add_argument("--ours-policy", default=None,
+                        help="niveau de la politique sans état (instant, normal, thorough)")
+    # Another big network for our side (same prune network, same search): the
+    # header carries the path and the evaluation fingerprint, so a journal can
+    # never mix two networks.
+    parser.add_argument("--ours-model", default=None,
+                        help="réseau de notre camp (défaut : celui du joueur)")
+    # Rejouer les DÉS d'un journal existant : les dés d'une paire dérivent des
+    # noms des deux joueurs, et un joueur renommé tirerait d'autres parties.
+    # Avec la clé du journal, la paire i rejoue la situation de sa paire i —
+    # même score échantillonné, mêmes jets — et la comparaison s'apparie.
+    parser.add_argument("--dice-key-from", type=Path, default=None,
+                        help="journal dont reprendre la clé de dés (noms de son en-tête)")
     args = parser.parse_args()
 
     ours_cube = args.ours_cube_ply if args.ours_cube_ply is not None else args.ours_ply
-    ours = GammonNetCubePlayer(ply=args.ours_ply,
-                               filter=parse_filter(args.ours_filter),
-                               cube_ply=ours_cube,
-                               prune_k=args.ours_prune_k)
+    if args.ours_policy:
+        from gammonnet.policy import PolicyPlayer, search_level_shape
+
+        ours = (PolicyPlayer(level=args.ours_policy, model=args.ours_model)
+                if args.ours_model else PolicyPlayer(level=args.ours_policy))
+        shape = search_level_shape(args.ours_policy)
+        ours.ply, ours.filter, ours.cube_ply = shape.ply, shape.filter, shape.ply
+    else:
+        ours = GammonNetCubePlayer(ply=args.ours_ply,
+                                   filter=parse_filter(args.ours_filter),
+                                   cube_ply=ours_cube,
+                                   prune_k=args.ours_prune_k,
+                                   **({"model": args.ours_model}
+                                      if args.ours_model else {}))
+    dice_key = None
+    if args.dice_key_from is not None:
+        source, _ = read_journal(args.dice_key_from)
+        if source is None:
+            raise SystemExit(f"pas d'en-tête dans {args.dice_key_from}")
+        dice_key = pair_key(source["ours"]["name"], source["theirs"]["name"])
     if args.theirs == "self":
         other_k = (args.theirs_prune_k if args.theirs_prune_k is not None
                    else args.ours_prune_k)
@@ -286,12 +348,17 @@ def main() -> int:
                            if args.mode == "match" else None),
         "pairs_target": args.pairs,
     }
+    if args.ours_policy:
+        wanted_header["ours"]["policy_level"] = args.ours_policy
+    if dice_key is not None:
+        wanted_header["dice_key"] = dice_key
 
     header, rows = read_journal(args.journal)
     if header is not None:
         check_header(header, wanted_header, args.journal)
     done = set(rows)
-    todo = [i for i in range(args.pairs) if i not in done]
+    first, last = parse_indices(args.indices, args.pairs)
+    todo = [i for i in range(first, last) if i not in done]
     if args.limit:
         todo = todo[:args.limit]
 
@@ -328,7 +395,8 @@ def main() -> int:
 
         with ProcessPoolExecutor(args.workers, initializer=_install,
                                  initargs=(ours, theirs,
-                                           args.evalcache_log2)) as pool:
+                                           args.evalcache_log2,
+                                           dice_key)) as pool:
             try:
                 refill(pool)
                 while pending:

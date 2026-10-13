@@ -16,7 +16,8 @@ match play, reproduced on a second machine.
 developer manual, in [English](https://kevung.github.io/gammonNet/en/) and
 [French](https://kevung.github.io/gammonNet/fr/).
 
-> One position goes in, one evaluation comes out. This repository does not know its callers: no
+> One position goes in, one evaluation comes out; one decision goes in, one action comes out —
+> still no game and no caller. This repository does not know its callers: no
 > user, no account, no storage, no game library. Everything distributed is permissively licensed,
 > with no usage clause — a WebAssembly module served to a browser *is* a distribution, which rules
 > out strong copyleft and non-commercial terms.
@@ -36,6 +37,19 @@ GNU Backgammon at the same settings, common dice, bootstrap over duplicate pairs
 Equivalent, confirmed. **Superior is not established**: in money the interval contains zero, in
 match the +0.42 points of MWC clear equality by a hair. eXtreme Gammon has never been measured
 here. ([T35](docs/mesures/2026-08-26-T35-verdict.md))
+
+These two lines were measured with the previous network, `strehl-prob5-512-512-256-128`. Since
+v1.6.0 the published network is `strehl-prob5-512-512-256-256` (same author, same upstream
+commit `7184e2f`, last hidden layer 256 wide), measured paired against its predecessor:
+
+| Protocol | Volume | New − previous | 95 % CI |
+|---|---|---|---|
+| 0-ply money cubeless, duplicate dice | 1 000 000 games | **+0.0092 ppg** | [+0.0070 ; +0.0114] |
+| `normal` level vs GNU Backgammon 2-ply, 7-point match | 2 000 pairs | **+0.83 pt MWC** | [−0.70 ; +2.33] |
+| `normal` level vs GNU Backgammon 2-ply, money cubeful | 2 000 pairs | **+0.052 ppg** | [−0.040 ; +0.143] |
+
+A resolved gain of the static evaluation; under search, non-regression without a resolved gain.
+([T96](docs/mesures/2026-09-17-T96-poids-amont.md), [T97](docs/mesures/2026-10-05-T97-adoption-256.md))
 
 ### Performance rating
 

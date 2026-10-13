@@ -9,7 +9,7 @@
  * ── Poids du réseau et moteur d'inférence ───────────────────────────────
  * backgammon-ai-engine — Copyright (c) 2026 alexstrehl — licence MIT
  * https://github.com/alexstrehl/backgammon-ai-engine
- * Réseau : cubeless_prob5_512_512_256_128
+ * Réseau : cubeless_prob5_512_512_256_256
  *
  * ── gammonNet ──────────────────────────────────────────────────────────
  * Copyright (c) 2026 Kévin Unger — licence MIT

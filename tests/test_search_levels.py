@@ -31,8 +31,9 @@ from gammonnet.search import (  # noqa: E402
 )
 
 
-def test_les_trois_niveaux_canoniques_existent():
-    assert search_level_names() == ("instant", "normal", "thorough")
+def test_les_niveaux_canoniques_existent():
+    """`ply3` et `ply4` (natifs seulement) : `test_search_root_stage.py`."""
+    assert search_level_names() == ("instant", "normal", "thorough", "ply3", "ply4")
 
 
 def test_instant_est_le_reseau_seul_sans_elagage():
@@ -154,6 +155,9 @@ def test_export_matches_gn_search_level_exactly(reference_export):
         assert tuple(entry["filter_threshold"]) == pytest.approx(
             level.filter_threshold[: level.ply + 1]), name
         assert entry["prune_k"] == level.prune_k, name
+        assert entry["root_stage_ply"] == level.root_stage_ply, name
+        assert tuple(entry["root_stage_filter"]) == pytest.approx(
+            level.root_stage_filter), name
         assert entry["prune_equity_loss"] == pytest.approx(level.prune_equity_loss), name
         assert entry["prune_equity_loss_ci"][0] == pytest.approx(
             level.prune_equity_loss_ci_low), name

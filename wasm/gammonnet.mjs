@@ -268,6 +268,83 @@ export class Evaluator {
   }
 
   /**
+   * LA POLITIQUE SANS ÉTAT (`docs/specs/politique-spec.md`) : une décision
+   * entre, une action sort. La partie, les dés et le score restent chez
+   * l'appelant ; rien n'est gardé d'un appel à l'autre.
+   *
+   * `board` : le plateau en 29 entiers (convention de `positionId`), `turn` =
+   * le joueur au trait. Tout le reste est vu de lui. `pending` dit ce qui est
+   * en attente — et donc qui décide :
+   *
+   *   "move"   dés lancés (`d1`, `d2`)      → le joueur au trait
+   *   "cube"   avant de lancer              → le joueur au trait
+   *   "take"   le joueur au trait a doublé  → son adversaire
+   *   "resign" le joueur au trait abandonne → son adversaire (`resignValue`)
+   *
+   * `level` : "instant", "normal" ou "thorough". "normal" élague, et exige
+   * donc `loadPrune` — le `k` du niveau vaut, pas celui de `loadPrune`.
+   * L'efficacité du videau n'est pas un paramètre : c'est la mesure de T34.
+   *
+   * Rend `{ action, resignValue, searched, equityA, equityB, play }` —
+   * `play` : `{ moves, board, notation }` pour "move", sinon `null`.
+   */
+  policy(board, {
+    pending, level = "normal", d1 = 0, d2 = 0, cube = 1, cubeOwner = 0,
+    jacoby = false, useMatch = false, awayOnRoll = 0, awayOpponent = 0,
+    crawford = false, resignValue = 0,
+  } = {}) {
+    const m = this.#module;
+    const PENDING = { move: 0, cube: 1, take: 2, resign: 3 };
+    const ACTIONS = ["move", "roll", "double", "resign", "take", "pass",
+                     "accept", "reject"];
+    if (!(pending in PENDING)) {
+      throw new Error(`décision inconnue : ${pending} (move, cube, take, resign)`);
+    }
+    const fields = [PENDING[pending], d1, d2, cube, cubeOwner, jacoby ? 1 : 0,
+                    useMatch ? 1 : 0, awayOnRoll, awayOpponent, crawford ? 1 : 0,
+                    resignValue];
+    return this.#withBoard(board, (boardPtr) => {
+      const fieldsPtr = m._malloc(11 * 4);
+      const intsPtr = m._malloc(41 * 4);
+      const eqPtr = m._malloc(2 * 8);
+      const notationPtr = m._malloc(64);
+      try {
+        m.HEAP32.set(fields, fieldsPtr >> 2);
+        const status = m.ccall(
+          "gnw_policy_decide", "number",
+          ["number", "number", "string", "number", "number", "number"],
+          [boardPtr, fieldsPtr, level, intsPtr, eqPtr, notationPtr]);
+        if (status !== 0) {
+          throw new Error("décision refusée : entrée incohérente, niveau inconnu, " +
+                          "élagage absent, ou score hors de la table");
+        }
+        const v = Array.from(m.HEAP32.subarray(intsPtr >> 2, (intsPtr >> 2) + 41));
+        const e = m.HEAPF64.subarray(eqPtr >> 3, (eqPtr >> 3) + 2);
+        const action = ACTIONS[v[0]];
+        let play = null;
+        if (action === "move") {
+          const moves = [];
+          for (let i = 0; i < v[3]; i++) moves.push([v[4 + 2 * i], v[5 + 2 * i]]);
+          const b = v.slice(12, 41);
+          play = {
+            moves,
+            board: { points: b.slice(0, 24), bar: [b[24], b[25]], off: [b[26], b[27]],
+                     turn: b[28] },
+            notation: m.UTF8ToString(notationPtr),
+          };
+        }
+        return { action, resignValue: v[1], searched: v[2] === 1,
+                 equityA: e[0], equityB: e[1], play };
+      } finally {
+        m._free(fieldsPtr);
+        m._free(intsPtr);
+        m._free(eqPtr);
+        m._free(notationPtr);
+      }
+    });
+  }
+
+  /**
    * La TABLE EXACTE de fin de partie.
    *
    * L'artefact la livre (`bearoff_one_sided.bin`, 6,9 Mio). Sans elle la

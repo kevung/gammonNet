@@ -66,7 +66,7 @@ from gammonnet.infer import Network  # noqa: E402
 from gammonnet.rules import Position  # noqa: E402
 from gammonnet.search import SearchConfig, search_plays  # noqa: E402
 
-DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 DEFAULT_OUT = ROOT / "build" / "prune_corpus.npz"
 DEFAULT_COUNT = 800_000
 DEFAULT_WORKERS = 26

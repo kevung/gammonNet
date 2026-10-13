@@ -41,7 +41,7 @@ sys.path.insert(0, str(ROOT / "python"))
 from gammonnet import BLACK, WHITE, Position  # noqa: E402
 from gammonnet import codec  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 SEED = 20260804
 
 _NETWORK = None

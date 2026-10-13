@@ -52,6 +52,10 @@ def build_export() -> dict:
             "filter_extra": list(level.filter_extra[: level.ply + 1]),
             "filter_threshold": list(level.filter_threshold[: level.ply + 1]),
             "prune_k": level.prune_k,
+            # La racine étagée (filtre-de-coups-spec §8) : la profondeur de
+            # l'étage et son triplet ; 0 et (0, 0, 0) quand il n'y en a pas.
+            "root_stage_ply": level.root_stage_ply,
+            "root_stage_filter": list(level.root_stage_filter),
             "prune_equity_loss": level.prune_equity_loss,
             "prune_equity_loss_ci": [
                 level.prune_equity_loss_ci_low,
@@ -65,6 +69,8 @@ def build_export() -> dict:
             "source -- read this instead of retyping ply/filter/prune_k. "
             "The move filter is the triplet (filter, filter_extra, "
             "filter_threshold) per depth: accept, extra, equity threshold. "
+            "root_stage_ply and root_stage_filter stage the root of a move "
+            "decision (filtre-de-coups-spec section 8); 0 when unstaged. "
             "prune_equity_loss and its 95% CI are measured "
             "(docs/mesures/2026-08-26-T3A-regroupement.md, 450 decisions "
             "at 2-ply filter (0,1,3), pruned vs the same search unpruned); "

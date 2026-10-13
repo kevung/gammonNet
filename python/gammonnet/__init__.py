@@ -2,7 +2,8 @@
 
 Ce dépôt évalue une position. Il ne connaît pas ses appelants : aucune notion
 d'utilisateur, de compte, de session ni de persistance n'y entre. Une position
-entre, une évaluation sort.
+entre, une évaluation sort ; une décision entre, une action sort — toujours
+ni partie ni appelant.
 
 Ce paquet est la face Python de la bibliothèque — l'entraînement et la mesure.
 Le calcul lui-même vit en C, dans `src/`.

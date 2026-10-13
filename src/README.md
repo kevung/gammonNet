@@ -16,5 +16,6 @@ La bibliothèque d'inférence : C/C++ pour le calcul, compilé pour **deux cible
 > **Ce dépôt évalue une position. Il ne connaît pas ses appelants.**
 
 Rien ici ne connaît d'utilisateur, de compte, de session ni de persistance. Une position
-entre, une évaluation sort. Le stockage, la bibliothèque de parties, l'import de matchs et
+entre, une évaluation sort ; une décision entre, une action sort — toujours ni partie ni
+appelant. Le stockage, la bibliothèque de parties, l'import de matchs et
 l'interface sont **ailleurs**.

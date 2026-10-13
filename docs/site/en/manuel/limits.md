@@ -32,4 +32,5 @@ returns five perfectly plausible probabilities**. A loud refusal beats a wrong n
 ## What the project does not do
 
 gammonNet **evaluates a position**. It does not read match files, manage games or users, and has no
-interface. A position goes in, an evaluation comes out.
+interface. A position goes in, an evaluation comes out; a decision goes in, an action comes out — the game,
+the dice and the score stay with you.

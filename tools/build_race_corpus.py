@@ -20,7 +20,7 @@ The output is an `.npz` with `features`, `probs` (rollout frequencies),
 (seed, workers) up to the rollout engine's own determinism.
 
 Usage:
-    python tools/build_race_corpus.py --model models/cubeless_prob5_512_512_256_128.bin \\
+    python tools/build_race_corpus.py --model models/cubeless_prob5_512_512_256_256.bin \\
         --count 50000 --trials 1296 --workers 12 --seed 20261004 \\
         --out build/race_train.npz
     python tools/build_race_corpus.py --smoke
@@ -41,7 +41,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(ROOT / "tools"))
 
-DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_128.bin"
+DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
 DEFAULT_SEED = 20261004
 MAX_PLIES = 300
 

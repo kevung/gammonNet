@@ -21,7 +21,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 
 const REFERENCE = join(ROOT, "build", "reference.bin");
-const MODEL = join(ROOT, "models", "cubeless_prob5_512_512_256_128.bin");
+const MODEL = join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin");
 
 const TOLERANCE = 1e-6;
 const MAGIC = 0x46524e47; // 'GNRF' little-endian

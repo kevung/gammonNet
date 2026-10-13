@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from .infer import NUM_OUTPUTS, Evaluation, Network
 from .met import MatchState, _CMatchState
-from .rules import _LIB, Move, Play, Position, _CPlay, _CPosition
+from .rules import _LIB, MAX_PLAYS, Move, Play, Position, _CPlay, _CPosition
 
 MAX_PLY = 4
 NUM_ROLLS = 21
@@ -45,6 +45,10 @@ class _CSearchConfig(ctypes.Structure):
         ("cube_x", ctypes.c_double),
         ("prune_net", ctypes.c_void_p),
         ("prune_k", ctypes.c_int),
+        ("root_stage_ply", ctypes.c_int),
+        ("root_stage_filter", ctypes.c_int),
+        ("root_stage_filter_extra", ctypes.c_int),
+        ("root_stage_filter_threshold", ctypes.c_double),
     ]
 
 
@@ -66,6 +70,15 @@ _LIB.gn_search_plays.argtypes = [
     ctypes.c_int,
 ]
 _LIB.gn_search_plays.restype = ctypes.c_int
+
+_LIB.gn_search_set_root_stage.argtypes = [
+    ctypes.POINTER(_CSearchConfig),
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_double,
+]
+_LIB.gn_search_set_root_stage.restype = ctypes.c_int
 
 _LIB.gn_search_equity.argtypes = [
     ctypes.c_void_p,
@@ -118,6 +131,10 @@ class _CSearchLevel(ctypes.Structure):
         ("prune_equity_loss", ctypes.c_double),
         ("prune_equity_loss_ci_low", ctypes.c_double),
         ("prune_equity_loss_ci_high", ctypes.c_double),
+        ("root_stage_ply", ctypes.c_int),
+        ("root_stage_filter", ctypes.c_int),
+        ("root_stage_filter_extra", ctypes.c_int),
+        ("root_stage_filter_threshold", ctypes.c_double),
     ]
 
 
@@ -130,7 +147,7 @@ _LIB.gn_search_level_count.restype = ctypes.c_int
 _LIB.gn_search_level_name.argtypes = [ctypes.c_int]
 _LIB.gn_search_level_name.restype = ctypes.c_char_p
 
-_MAX_CANDIDATES = 2048
+_MAX_CANDIDATES = MAX_PLAYS
 _CandidateArray = _CCandidate * _MAX_CANDIDATES
 
 
@@ -183,6 +200,13 @@ class SearchConfig:
     les coups légaux. Les recalés portent les probabilités du **petit** réseau,
     et cinq nombres plausibles venus du mauvais réseau sont exactement le mode
     de défaillance de la règle 2 de `CLAUDE.md` : ils ne sortent pas.
+
+    `root_stage_ply` / `root_stage_filter` étagent la **racine** d'une décision
+    de coup (`docs/specs/filtre-de-coups-spec.md` §8) : classement 0-ply →
+    triplet `root_stage_filter` (accepte, extra, seuil) → ses survivants notés
+    à `root_stage_ply` plis → `filter[ply]` sur ce classement → notés à `ply`.
+    Actif seulement si `1 <= root_stage_ply < ply` ; `0` laisse la recherche
+    exactement comme avant. Un étage incohérent est refusé (`ValueError`).
     """
 
     ply: int = 0
@@ -196,6 +220,8 @@ class SearchConfig:
     cube_x: float = 0.0
     prune_net: object | None = None
     prune_k: int = 0
+    root_stage_ply: int = 0
+    root_stage_filter: tuple[int, int, float] = (0, 0, 0.0)
 
     def _to_c(self) -> _CSearchConfig:
         c = _CSearchConfig()
@@ -221,6 +247,14 @@ class SearchConfig:
                 raise ValueError("prune_net n'est pas un Network chargé")
             c.prune_net = ctypes.c_void_p(handle)
             c.prune_k = int(self.prune_k)
+        if self.root_stage_ply:
+            accept, extra, threshold = self.root_stage_filter
+            if _LIB.gn_search_set_root_stage(
+                    ctypes.byref(c), int(self.root_stage_ply), int(accept),
+                    int(extra), float(threshold)) != 0:
+                raise ValueError(
+                    f"étage de racine refusé : ply={self.root_stage_ply}, "
+                    f"filtre={self.root_stage_filter}")
         return c
 
 
@@ -275,6 +309,9 @@ class SearchLevel:
     `prune_equity_loss` et son intervalle à 95 % sont MESURÉS
     (`docs/mesures/2026-08-26-T3A-regroupement.md`), toujours 0 quand
     `prune_k == 0` : il n'y a rien à perdre.
+
+    `root_stage_ply` / `root_stage_filter` : l'étage de racine du niveau
+    (`SearchConfig.root_stage_ply`), `0` / `(0, 0, 0.0)` s'il n'en a pas.
     """
 
     name: str
@@ -286,17 +323,22 @@ class SearchLevel:
     prune_equity_loss: float
     prune_equity_loss_ci_low: float
     prune_equity_loss_ci_high: float
+    root_stage_ply: int = 0
+    root_stage_filter: tuple[int, int, float] = (0, 0, 0.0)
 
     def to_config(self) -> SearchConfig:
         """La `SearchConfig` correspondante — sans réseau d'élagage : c'est à
         l'appelant de charger celui qu'il veut brancher (`SearchConfig.prune_net`)."""
         return SearchConfig(ply=self.ply, filter=self.filter,
                             filter_extra=self.filter_extra,
-                            filter_threshold=self.filter_threshold)
+                            filter_threshold=self.filter_threshold,
+                            root_stage_ply=self.root_stage_ply,
+                            root_stage_filter=self.root_stage_filter)
 
 
 def search_level(name: str) -> SearchLevel:
-    """La forme canonique nommée (`"instant"`, `"normal"`, `"thorough"`).
+    """La forme canonique nommée (`"instant"`, `"normal"`, `"thorough"`, et
+    les natives `"ply3"`, `"ply4"`, à racine étagée).
 
     Lève `ValueError` si `name` n'est pas connu — jamais un défaut deviné ; le
     message nomme les niveaux qui existent réellement, plutôt que de forcer
@@ -317,6 +359,9 @@ def search_level(name: str) -> SearchLevel:
         prune_equity_loss=c.prune_equity_loss,
         prune_equity_loss_ci_low=c.prune_equity_loss_ci_low,
         prune_equity_loss_ci_high=c.prune_equity_loss_ci_high,
+        root_stage_ply=c.root_stage_ply,
+        root_stage_filter=(c.root_stage_filter, c.root_stage_filter_extra,
+                           c.root_stage_filter_threshold),
     )
 
 

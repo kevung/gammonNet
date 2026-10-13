@@ -52,7 +52,7 @@ sys.path.insert(0, str(ROOT / "vendor" / "backgammon-ai-engine"))
 
 BENCH_RESULT = ROOT / "docs" / "mesures" / "t73-gemm-int8.json"
 DEFAULT_TEACHER = ROOT / "vendor" / "backgammon-ai-engine" / "best_models" / \
-    "cubeless_prob5_512_512_256_128.pt"
+    "cubeless_prob5_512_512_256_256.pt"
 
 
 def check_the_kernel_pays(force: bool) -> dict | None:

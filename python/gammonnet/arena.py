@@ -131,7 +131,7 @@ class NetworkEngine:
     only worth trusting while they agree.
     """
 
-    model: str = "models/cubeless_prob5_512_512_256_128.bin"
+    model: str = "models/cubeless_prob5_512_512_256_256.bin"
     name: str = "gammonnet-0ply"
     _network: object = field(default=None, repr=False, compare=False)
 
@@ -324,7 +324,7 @@ class SearchEngine:
     ply: int = 0
     #: `filter[d]` candidates survive at depth d; empty means no filtering.
     filter: tuple[int, ...] = ()
-    model: str = "models/cubeless_prob5_512_512_256_128.bin"
+    model: str = "models/cubeless_prob5_512_512_256_256.bin"
     #: LE RÉSEAU D'ÉLAGAGE FAIT PARTIE DE L'IDENTITÉ DU JOUEUR, comme le filtre.
     #: Sans lui, ce moteur n'est pas celui que l'artefact sert : le niveau
     #: canonique `normal` porte `k = 12`, et T3A a mesuré ce que l'élagage

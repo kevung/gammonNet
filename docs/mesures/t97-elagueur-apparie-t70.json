@@ -1,0 +1,61 @@
+{
+  "candidate": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      5
+    ],
+    "filter_extra": [],
+    "filter_threshold": [],
+    "header": true,
+    "label": "candidat 2-ply k=12, \u00e9lagueur redistill\u00e9 (prune_32_256)",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "registre-money.jsonl"
+  },
+  "changed": 955,
+  "ci95": [
+    -4.164396166002812e-05,
+    9.86078419708682e-05
+  ],
+  "cost": {
+    "evals": {
+      "candidate": 211190719,
+      "reference": 211208995
+    },
+    "prune_evals": {
+      "candidate": 596195421,
+      "reference": 594690007
+    },
+    "seconds": {
+      "candidate": 8258.914445459493,
+      "reference": 8692.86323085762
+    }
+  },
+  "delta": 2.8778810864507563e-05,
+  "margin": 0.001,
+  "non_inferior": true,
+  "outside": 312,
+  "paired": 9688,
+  "reference": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      5
+    ],
+    "filter_extra": [],
+    "filter_threshold": [],
+    "header": true,
+    "label": "candidat 2-ply k=12, ancien \u00e9lagueur (prune_32), reprise T96",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "registre-money.jsonl"
+  },
+  "z": 0.7676529684290083
+}

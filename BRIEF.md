@@ -67,6 +67,11 @@ produire les **cinq probabilités** — gain, gain-gammon, gain-backgammon, pert
 perte-backgammon — indispensables au match play (§6). Les variantes `cubeful_money` sortent une
 équité money agrégée, inutilisable en match.
 
+Depuis v1.6.0, le réseau publié est son successeur au même commit amont `7184e2f`,
+`cubeless_prob5_512_512_256_256.pt` (dernier étage de 256) : même codage, mêmes cinq sorties,
+adopté sur mesure (`docs/mesures/2026-09-17-T96-poids-amont.md`,
+`docs/mesures/2026-10-05-T97-adoption-256.md`).
+
 ### 3.2 Le moteur d'inférence — écrit ici
 
 > **Tranché en T22 le 2026-08-03.** Un moteur d'inférence tiers a été évalué comme candidat, puis
@@ -384,7 +389,7 @@ le nôtre :
 
 | Niveau | Forme | Qui nomme |
 |---|---|---|
-| **Réseau** (les poids) | `strehl-prob5-512-512-256-128` | conserve la paternité de l'auteur |
+| **Réseau** (les poids) | `strehl-prob5-512-512-256-256` | conserve la paternité de l'auteur |
 | **Configuration** (réseau + recherche + fins de partie + équité de match) | `gammonNet 2-ply` | nous |
 | **Affichage** | « 2-ply · sur votre appareil » | nous |
 

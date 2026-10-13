@@ -1,0 +1,74 @@
+[
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "rate": 11130.4,
+    "decision": 1.2718,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 10308.7,
+    "decision": 1.3414,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 8213.9,
+    "decision": 1.3098,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "rate": 10666.7,
+    "decision": 1.2484,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "rate": 10039.2,
+    "decision": 1.2226,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 9721.5,
+    "decision": 1.3486,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 9481.5,
+    "decision": 1.3436,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_128.bin",
+    "rate": 10449,
+    "decision": 1.2128,
+    "maxDelta": 0
+  }
+]

@@ -1,0 +1,722 @@
+{
+  "task": "T34-6.3",
+  "model": "cubeless_prob5_512_512_256_128.bin",
+  "seed_contact": 20260807,
+  "seed_bearoff": 20260808,
+  "positions": {
+    "contact": 2000,
+    "bearoff": 1000,
+    "total": 3000
+  },
+  "efficiency": {
+    "owned": 0.5660000000000001,
+    "centered": 0.6880000000000001
+  },
+  "contexts": [
+    "money",
+    "match_2a2a",
+    "match_4a2a",
+    "match_2a4a",
+    "match_postcrawford"
+  ],
+  "elapsed_seconds": 152.23719894399983,
+  "workers": 2,
+  "opponent_sanity": {
+    "checked": 120,
+    "agreed": 120,
+    "contexts": [
+      "money",
+      "match_2a2a"
+    ]
+  },
+  "global_agreement": {
+    "n": 30000,
+    "agreed": 27688,
+    "rate": 0.9229333333333334,
+    "ci95": [
+      0.9198609267450941,
+      0.9258974377438052
+    ]
+  },
+  "contested_agreement": {
+    "n": 17148,
+    "agreed": 14836,
+    "rate": 0.8651737811989736,
+    "ci95": [
+      0.859979940520857,
+      0.8702040415886791
+    ]
+  },
+  "confusion_matrix": {
+    "NO_DOUBLE": {
+      "NO_DOUBLE": 12852,
+      "DOUBLE_TAKE": 554,
+      "DOUBLE_PASS": 21,
+      "TOO_GOOD": 3
+    },
+    "DOUBLE_TAKE": {
+      "NO_DOUBLE": 742,
+      "DOUBLE_TAKE": 3884,
+      "DOUBLE_PASS": 165,
+      "TOO_GOOD": 0
+    },
+    "DOUBLE_PASS": {
+      "NO_DOUBLE": 10,
+      "DOUBLE_TAKE": 123,
+      "DOUBLE_PASS": 7662,
+      "TOO_GOOD": 296
+    },
+    "TOO_GOOD": {
+      "NO_DOUBLE": 28,
+      "DOUBLE_TAKE": 3,
+      "DOUBLE_PASS": 367,
+      "TOO_GOOD": 3290
+    }
+  },
+  "per_context": [
+    {
+      "context": "money",
+      "owner": "OWNED",
+      "global": {
+        "n": 3000,
+        "agreed": 2819,
+        "rate": 0.9396666666666667,
+        "ci95": [
+          0.9305708635544437,
+          0.9476378941909714
+        ]
+      },
+      "contested": {
+        "n": 1187,
+        "agreed": 1006,
+        "rate": 0.8475147430497051,
+        "ci95": [
+          0.8259447620683897,
+          0.8668425910103068
+        ]
+      }
+    },
+    {
+      "context": "money",
+      "owner": "CENTRED",
+      "global": {
+        "n": 3000,
+        "agreed": 2834,
+        "rate": 0.9446666666666667,
+        "ci95": [
+          0.9359020545923777,
+          0.9522939141963893
+        ]
+      },
+      "contested": {
+        "n": 1271,
+        "agreed": 1105,
+        "rate": 0.8693941778127459,
+        "ci95": [
+          0.849749891651112,
+          0.8868122035927205
+        ]
+      }
+    },
+    {
+      "context": "match_2a2a",
+      "owner": "OWNED",
+      "global": {
+        "n": 3000,
+        "agreed": 2460,
+        "rate": 0.82,
+        "ci95": [
+          0.8058454820943701,
+          0.8333360246801549
+        ]
+      },
+      "contested": {
+        "n": 1771,
+        "agreed": 1231,
+        "rate": 0.6950875211744777,
+        "ci95": [
+          0.673242865165464,
+          0.7160876531185338
+        ]
+      }
+    },
+    {
+      "context": "match_2a2a",
+      "owner": "CENTRED",
+      "global": {
+        "n": 3000,
+        "agreed": 2787,
+        "rate": 0.929,
+        "ci95": [
+          0.919250500981293,
+          0.9376522065383048
+        ]
+      },
+      "contested": {
+        "n": 1816,
+        "agreed": 1603,
+        "rate": 0.8827092511013216,
+        "ci95": [
+          0.8670957191917189,
+          0.8967070205632136
+        ]
+      }
+    },
+    {
+      "context": "match_4a2a",
+      "owner": "OWNED",
+      "global": {
+        "n": 3000,
+        "agreed": 2627,
+        "rate": 0.8756666666666667,
+        "ci95": [
+          0.8633764856818745,
+          0.8869959707086358
+        ]
+      },
+      "contested": {
+        "n": 1570,
+        "agreed": 1197,
+        "rate": 0.7624203821656051,
+        "ci95": [
+          0.7407430803135225,
+          0.7828165968483977
+        ]
+      }
+    },
+    {
+      "context": "match_4a2a",
+      "owner": "CENTRED",
+      "global": {
+        "n": 3000,
+        "agreed": 2812,
+        "rate": 0.9373333333333334,
+        "ci95": [
+          0.9280887211381373,
+          0.9454593381203803
+        ]
+      },
+      "contested": {
+        "n": 1548,
+        "agreed": 1360,
+        "rate": 0.8785529715762274,
+        "ci95": [
+          0.8613367531001008,
+          0.8938949664259126
+        ]
+      }
+    },
+    {
+      "context": "match_2a4a",
+      "owner": "OWNED",
+      "global": {
+        "n": 3000,
+        "agreed": 2866,
+        "rate": 0.9553333333333334,
+        "ci95": [
+          0.9473407754726043,
+          0.9621612435419803
+        ]
+      },
+      "contested": {
+        "n": 1007,
+        "agreed": 873,
+        "rate": 0.8669314796425025,
+        "ci95": [
+          0.844552157748703,
+          0.8865218305002969
+        ]
+      }
+    },
+    {
+      "context": "match_2a4a",
+      "owner": "CENTRED",
+      "global": {
+        "n": 3000,
+        "agreed": 2877,
+        "rate": 0.959,
+        "ci95": [
+          0.9512975471257966,
+          0.9655284266539127
+        ]
+      },
+      "contested": {
+        "n": 978,
+        "agreed": 855,
+        "rate": 0.8742331288343558,
+        "ci95": [
+          0.8519761501241034,
+          0.8935616229749381
+        ]
+      }
+    },
+    {
+      "context": "match_postcrawford",
+      "owner": "OWNED",
+      "global": {
+        "n": 3000,
+        "agreed": 2776,
+        "rate": 0.9253333333333333,
+        "ci95": [
+          0.9153736034379235,
+          0.9342051493165494
+        ]
+      },
+      "contested": {
+        "n": 3000,
+        "agreed": 2776,
+        "rate": 0.9253333333333333,
+        "ci95": [
+          0.9153736034379235,
+          0.9342051493165494
+        ]
+      }
+    },
+    {
+      "context": "match_postcrawford",
+      "owner": "CENTRED",
+      "global": {
+        "n": 3000,
+        "agreed": 2830,
+        "rate": 0.9433333333333334,
+        "ci95": [
+          0.9344786821987704,
+          0.9510540303117695
+        ]
+      },
+      "contested": {
+        "n": 3000,
+        "agreed": 2830,
+        "rate": 0.9433333333333334,
+        "ci95": [
+          0.9344786821987704,
+          0.9510540303117695
+        ]
+      }
+    }
+  ],
+  "worst_disagreements": [
+    {
+      "position_id": "JQMAgDoBAAAAAA",
+      "turn": 0,
+      "origin": "bearoff",
+      "context": "match_postcrawford",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_TAKE",
+      "our_margin": -0.07695914784759134,
+      "our_equity_no_double": 0.41636993011146933,
+      "our_equity_double": 0.49332907795906067,
+      "gnubg_action": "DOUBLE_PASS",
+      "gnubg_margin": -0.9961395263671875,
+      "gnubg_optimal": 1.0,
+      "gnubg_nodouble": 0.0038604736328125,
+      "gnubg_take": 1.007720947265625,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, pass",
+      "agree": false
+    },
+    {
+      "position_id": "ZAAAcAwAAAAAAA",
+      "turn": 0,
+      "origin": "bearoff",
+      "context": "match_postcrawford",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.07766623012199375,
+      "our_equity_no_double": 0.42233376987800625,
+      "our_equity_double": 0.5,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.9689478874206543,
+      "gnubg_optimal": 0.9378957748413086,
+      "gnubg_nodouble": -0.031052112579345703,
+      "gnubg_take": 0.9378957748413086,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, take",
+      "agree": false
+    },
+    {
+      "position_id": "kwAAoCoAAAAAAA",
+      "turn": 0,
+      "origin": "bearoff",
+      "context": "match_postcrawford",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.07556251344033105,
+      "our_equity_no_double": 0.42443748655966895,
+      "our_equity_double": 0.5,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.9517662525177002,
+      "gnubg_optimal": 0.9035325050354004,
+      "gnubg_nodouble": -0.048233747482299805,
+      "gnubg_take": 0.9035325050354004,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, take",
+      "agree": false
+    },
+    {
+      "position_id": "qr0GwQDYzp0BAA",
+      "turn": 0,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "OWNED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.04939998017694114,
+      "our_equity_no_double": 0.6279600198230588,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6374463737010956,
+      "gnubg_optimal": 0.9962111711502075,
+      "gnubg_nodouble": 0.35876479744911194,
+      "gnubg_take": 0.9962111711502075,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Redouble, take",
+      "agree": false
+    },
+    {
+      "position_id": "qr0GwQDYzp0BAA",
+      "turn": 0,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.03551235759032756,
+      "our_equity_no_double": 0.6418476424096724,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6374463737010956,
+      "gnubg_optimal": 0.9962111711502075,
+      "gnubg_nodouble": 0.35876479744911194,
+      "gnubg_take": 0.9962111711502075,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, take",
+      "agree": false
+    },
+    {
+      "position_id": "OM8cBwCYdxsMAA",
+      "turn": 1,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "OWNED",
+      "our_action": "DOUBLE_TAKE",
+      "our_margin": -0.04802101637590894,
+      "our_equity_no_double": 0.6263471863104009,
+      "our_equity_double": 0.6743682026863098,
+      "gnubg_action": "DOUBLE_PASS",
+      "gnubg_margin": -0.6345021426677704,
+      "gnubg_optimal": 1.0,
+      "gnubg_nodouble": 0.3654978573322296,
+      "gnubg_take": 1.0178427696228027,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Redouble, pass",
+      "agree": false
+    },
+    {
+      "position_id": "OM8cBwCYdxsMAA",
+      "turn": 1,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_TAKE",
+      "our_margin": -0.03510176845826174,
+      "our_equity_no_double": 0.6392664342280481,
+      "our_equity_double": 0.6743682026863098,
+      "gnubg_action": "DOUBLE_PASS",
+      "gnubg_margin": -0.6345021426677704,
+      "gnubg_optimal": 1.0,
+      "gnubg_nodouble": 0.3654978573322296,
+      "gnubg_take": 1.0178427696228027,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, pass",
+      "agree": false
+    },
+    {
+      "position_id": "nwgAADoFAAAAAA",
+      "turn": 0,
+      "origin": "bearoff",
+      "context": "match_2a2a",
+      "owner": "OWNED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.0467871680891363,
+      "our_equity_no_double": 0.6305728319108637,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.634208083152771,
+      "gnubg_optimal": 0.9828414916992188,
+      "gnubg_nodouble": 0.34863340854644775,
+      "gnubg_take": 0.9828414916992188,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Redouble, take",
+      "agree": false
+    },
+    {
+      "position_id": "nwgAADoFAAAAAA",
+      "turn": 0,
+      "origin": "bearoff",
+      "context": "match_2a2a",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.03363501164723226,
+      "our_equity_no_double": 0.6437249883527677,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.634208083152771,
+      "gnubg_optimal": 0.9828414916992188,
+      "gnubg_nodouble": 0.34863340854644775,
+      "gnubg_take": 0.9828414916992188,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, take",
+      "agree": false
+    },
+    {
+      "position_id": "tt0E4ADsbg4GAA",
+      "turn": 0,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "OWNED",
+      "our_action": "DOUBLE_TAKE",
+      "our_margin": -0.04771222928269048,
+      "our_equity_no_double": 0.6258485688854919,
+      "our_equity_double": 0.6735607981681824,
+      "gnubg_action": "DOUBLE_PASS",
+      "gnubg_margin": -0.6324171721935272,
+      "gnubg_optimal": 1.0,
+      "gnubg_nodouble": 0.3675828278064728,
+      "gnubg_take": 1.0251058340072632,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Redouble, pass",
+      "agree": false
+    },
+    {
+      "position_id": "tt0E4ADsbg4GAA",
+      "turn": 0,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_TAKE",
+      "our_margin": -0.03500594234906318,
+      "our_equity_no_double": 0.6385548558191192,
+      "our_equity_double": 0.6735607981681824,
+      "gnubg_action": "DOUBLE_PASS",
+      "gnubg_margin": -0.6324171721935272,
+      "gnubg_optimal": 1.0,
+      "gnubg_nodouble": 0.3675828278064728,
+      "gnubg_take": 1.0251058340072632,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, pass",
+      "agree": false
+    },
+    {
+      "position_id": "mt6CAQbGbiwjAA",
+      "turn": 1,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "OWNED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.04695312405114027,
+      "our_equity_no_double": 0.6304068759488597,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6238992512226105,
+      "gnubg_optimal": 0.9880632758140564,
+      "gnubg_nodouble": 0.3641640245914459,
+      "gnubg_take": 0.9880632758140564,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Redouble, take",
+      "agree": false
+    },
+    {
+      "position_id": "mt6CAQbGbiwjAA",
+      "turn": 1,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.03367026838868048,
+      "our_equity_no_double": 0.6436897316113195,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6238992512226105,
+      "gnubg_optimal": 0.9880632758140564,
+      "gnubg_nodouble": 0.3641640245914459,
+      "gnubg_take": 0.9880632758140564,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, take",
+      "agree": false
+    },
+    {
+      "position_id": "NgAA4CAAAAAAAA",
+      "turn": 0,
+      "origin": "bearoff",
+      "context": "match_2a2a",
+      "owner": "OWNED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.048806389952639195,
+      "our_equity_no_double": 0.6285536100473608,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6148133873939514,
+      "gnubg_optimal": 0.9527854323387146,
+      "gnubg_nodouble": 0.3379720449447632,
+      "gnubg_take": 0.9527854323387146,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Redouble, take",
+      "agree": false
+    },
+    {
+      "position_id": "NgAA4CAAAAAAAA",
+      "turn": 0,
+      "origin": "bearoff",
+      "context": "match_2a2a",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.03508662045961364,
+      "our_equity_no_double": 0.6422733795403863,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6148133873939514,
+      "gnubg_optimal": 0.9527854323387146,
+      "gnubg_nodouble": 0.3379720449447632,
+      "gnubg_take": 0.9527854323387146,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, take",
+      "agree": false
+    },
+    {
+      "position_id": "2foJAAPb8cAGAA",
+      "turn": 1,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "OWNED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.04553561248890081,
+      "our_equity_no_double": 0.6318243875110992,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6137396395206451,
+      "gnubg_optimal": 0.9390016794204712,
+      "gnubg_nodouble": 0.32526203989982605,
+      "gnubg_take": 0.9390016794204712,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Redouble, take",
+      "agree": false
+    },
+    {
+      "position_id": "2foJAAPb8cAGAA",
+      "turn": 1,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.03255904458864611,
+      "our_equity_no_double": 0.6448009554113538,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6137396395206451,
+      "gnubg_optimal": 0.9390016794204712,
+      "gnubg_nodouble": 0.32526203989982605,
+      "gnubg_take": 0.9390016794204712,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, take",
+      "agree": false
+    },
+    {
+      "position_id": "rQEAgGkCAAAAAA",
+      "turn": 0,
+      "origin": "bearoff",
+      "context": "match_postcrawford",
+      "owner": "OWNED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.1083647387011315,
+      "our_equity_no_double": 0.3916352612988685,
+      "our_equity_double": 0.5,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6136264801025391,
+      "gnubg_optimal": 0.9736019372940063,
+      "gnubg_nodouble": 0.3599754571914673,
+      "gnubg_take": 0.9736019372940063,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Redouble, take",
+      "agree": false
+    },
+    {
+      "position_id": "220DAANts40BAA",
+      "turn": 1,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "OWNED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.04809942867660355,
+      "our_equity_no_double": 0.6292605713233964,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6125452816486359,
+      "gnubg_optimal": 0.9577323198318481,
+      "gnubg_nodouble": 0.3451870381832123,
+      "gnubg_take": 0.9577323198318481,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Redouble, take",
+      "agree": false
+    },
+    {
+      "position_id": "220DAANts40BAA",
+      "turn": 1,
+      "origin": "contact",
+      "context": "match_2a2a",
+      "owner": "CENTRED",
+      "our_action": "DOUBLE_PASS",
+      "our_margin": -0.034543049065889564,
+      "our_equity_no_double": 0.6428169509341104,
+      "our_equity_double": 0.67736,
+      "gnubg_action": "DOUBLE_TAKE",
+      "gnubg_margin": -0.6125452816486359,
+      "gnubg_optimal": 0.9577323198318481,
+      "gnubg_nodouble": 0.3451870381832123,
+      "gnubg_take": 0.9577323198318481,
+      "gnubg_drop": 1.0,
+      "gnubg_text": "Double, take",
+      "agree": false
+    }
+  ],
+  "observed_gnubg_verdicts": [
+    [
+      0,
+      "Double, take"
+    ],
+    [
+      1,
+      "Double, pass"
+    ],
+    [
+      2,
+      "No double, take"
+    ],
+    [
+      4,
+      "Too good to double, pass"
+    ],
+    [
+      7,
+      "Redouble, take"
+    ],
+    [
+      8,
+      "Redouble, pass"
+    ],
+    [
+      9,
+      "No redouble, take"
+    ],
+    [
+      11,
+      "Too good to redouble, pass"
+    ],
+    [
+      13,
+      "Never double, take (dead cube)"
+    ],
+    [
+      15,
+      "Cube not available"
+    ]
+  ]
+}

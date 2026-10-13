@@ -11,7 +11,7 @@ effectivement utilisé**. Tenu à jour à chaque ajout de dépendance.
 
 | Brique | Auteur | Licence | Ce qui est utilisé | Source |
 |---|---|---|---|---|
-| `backgammon-ai-engine` | Alexander Strehl | MIT | **Les poids** `cubeless_prob5_512_512_256_128`, publiés sous le nom `strehl-prob5-512-512-256-128` — la paternité reste à l'auteur (`BRIEF.md` §8) ; **le moteur de règles** `c_engine/bg_engine.c` et **le moteur d'inférence** `c_inference/nn_eval.c`, compilés dans l'artefact | [dépôt](https://github.com/alexstrehl/backgammon-ai-engine), commit `b2750df` |
+| `backgammon-ai-engine` | Alexander Strehl | MIT | **Les poids** `cubeless_prob5_512_512_256_256`, publiés sous le nom `strehl-prob5-512-512-256-256` — la paternité reste à l'auteur (`BRIEF.md` §8) ; **le moteur de règles** `c_engine/bg_engine.c` et **le moteur d'inférence** `c_inference/nn_eval.c`, compilés dans l'artefact | [dépôt](https://github.com/alexstrehl/backgammon-ai-engine), commit `7184e2f` |
 | Table d'équité de match Kazaross-XG2 | Neil Kazaross | œuvre de N. Kazaross, avec attribution | La table, compilée dans l'artefact (`src/gn_met_table.h`) et exportée dans `data/met_kazaross_xg2.json` (#24) | `Kazaross-XG2.xml` (GNU Backgammon, rendu faisant autorité) |
 | `strehl-prune-32` | poids produits par ce dépôt, **distillés de** `strehl-prob5-...` (Strehl, MIT) | MIT | Le réseau d'élagage, qui trie les coups candidats | `tools/train_prune.py`, provenance dans `models/prune_32.provenance.json` |
 
@@ -27,7 +27,7 @@ exact qui l'a produite.
 
 | Brique | Auteur | Licence | Commit épinglé | Ce qui en est utilisé |
 |---|---|---|---|---|
-| [`backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine) | Alexander Strehl | MIT — vérifiée par lecture du fichier `LICENSE` (« Copyright (c) 2026 alexstrehl »), pas par confiance dans le nom du dépôt | `b2750df` | **`c_engine/bg_engine.c`, compilé dans `build/libgammonnet.so`** — le moteur de règles, derrière notre `src/gn_rules.h`. Également : les poids `cubeless_prob5_512_512_256_128.pt` comme référence de mesure. À terme dans l'artefact distribué : les poids, et le moteur d'inférence C (`c_inference/nn_eval.c`) |
+| [`backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine) | Alexander Strehl | MIT — vérifiée par lecture du fichier `LICENSE` (« Copyright (c) 2026 alexstrehl »), pas par confiance dans le nom du dépôt | `7184e2f` | **`c_engine/bg_engine.c`, compilé dans `build/libgammonnet.so`** — le moteur de règles, derrière notre `src/gn_rules.h`. Également : les poids `cubeless_prob5_512_512_256_256.pt` comme référence de mesure. À terme dans l'artefact distribué : les poids, et le moteur d'inférence C (`c_inference/nn_eval.c`) |
 
 > **`bg_engine.c` est déjà lié dans notre bibliothèque native.** Dès que celle-ci sera
 > distribuée — et un module WebAssembly servi à un navigateur **est** une distribution — la

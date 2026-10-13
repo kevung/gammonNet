@@ -33,12 +33,24 @@ extern "C" {
 /*
  * Capacity of a legal-play buffer.
  *
- * This is a working bound, not a proven one. The largest count observed over
- * the T01 corpus is recorded in docs/mesures/ ; the margin here is wide enough
- * that reaching it means something is wrong. gn_legal_plays REFUSES at capacity
- * rather than returning a truncated list — see its contract below.
+ * This is a proven bound, not an observed one. A play of k sub-moves with one
+ * die gives each checker a number of steps; the resulting position -- hits
+ * included, since a checker lands on every point it passes through -- depends
+ * only on the multiset of (starting point, steps) pairs. Checkers sharing a
+ * point are interchangeable, so a point holding n checkers contributes the
+ * partitions of its steps into at most n parts, and spreading the fifteen
+ * checkers one per point maximises the count: C(k+14, k), that is 15, 120, 680,
+ * then 3060 for the four sub-moves of a double. A non-double stays far below:
+ * at most 15 + 15 + 15 x 15. Hits break the coincidences that keep ordinary
+ * boards in the hundreds, and real play does reach more than 2048 distinct
+ * plays on a 1-1. tests/test_rules_capacity.py recomputes the bound over every
+ * spread of the fifteen checkers.
+ *
+ * A buffer of GN_MAX_PLAYS therefore never makes gn_legal_plays refuse a valid
+ * position. It still refuses rather than truncate when the caller's buffer is
+ * smaller -- see its contract below.
  */
-#define GN_MAX_PLAYS 2048
+#define GN_MAX_PLAYS 3072
 
 /* Sentinels used in GnMove.from / GnMove.to. */
 #define GN_BAR (-1)
@@ -140,11 +152,11 @@ void gn_position_swap_turn(GnPosition *pos);
  * over-bearing off. Plays that reach the same position by a different order of
  * sub-moves are returned once.
  *
- * Returns -1 if the position is not valid, if the dice are out of range, if
- * `max_plays` is too small, or if generation hit its internal capacity.
+ * Returns -1 if the position is not valid, if the dice are out of range, or if
+ * `max_plays` is smaller than the number of legal plays. A `max_plays` of
+ * GN_MAX_PLAYS always suffices.
  *
- * A truncated list is NEVER returned. This matters more than it looks: the
- * backend engine drops plays past its buffer capacity without any signal, and a
+ * A truncated list is NEVER returned. This matters more than it looks: a
  * silently short list of candidate moves is indistinguishable from a position
  * that genuinely has fewer options — it would simply make the search quietly
  * blind to the moves it never saw. Refused, not approximated.
