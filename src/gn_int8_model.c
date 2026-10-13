@@ -39,16 +39,23 @@ GN_STATIC_ASSERT(GN_INT8_CHUNK >= 1 && GN_INT8_CHUNK <= 256,
  * malloc/free pairs per `gn_evaluate_batch` call -- paid on every search
  * node, not once per decision -- was the dominant cost keeping the native
  * int8 path at 0,39x float32's through `gn_search.c`, well under what the
- * kernel itself does at the same batch width. This project is
- * single-threaded per process (parallelism is by process,
- * `python/gammonnet/arena.py`), the same precondition the float32 batch
- * path's own static buffers already rest on. */
+ * kernel itself does at the same batch width. Thread-local, like the
+ * float32 batch path's own buffers, since the search may run on several
+ * threads (gn_parallel.h). */
 #define GN_INT8_MAX_WIDTH 1024
 
-static uint8_t g_int8_quantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
-static uint8_t g_int8_scratch_a[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
-static uint8_t g_int8_scratch_b[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
-static float g_int8_dequantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define GN_INT8_TLS _Thread_local
+#elif defined(__GNUC__)
+#define GN_INT8_TLS __thread
+#else
+#define GN_INT8_TLS
+#endif
+
+static GN_INT8_TLS uint8_t g_int8_quantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+static GN_INT8_TLS uint8_t g_int8_scratch_a[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+static GN_INT8_TLS uint8_t g_int8_scratch_b[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
+static GN_INT8_TLS float g_int8_dequantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
 
 #define ACTIVATION_MAX 127
 

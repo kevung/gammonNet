@@ -71,6 +71,9 @@ LIBRARY := $(BUILD)/libgammonnet.so
 
 # Nos sources sont tenues au silence complet du compilateur.
 CFLAGS ?= -O2 -std=c11 -Wall -Wextra -fPIC
+# La recherche peut tourner sur plusieurs fils (src/gn_parallel.h) : chaque
+# compilation et chaque édition de liens natives portent -pthread.
+CFLAGS += -pthread
 # Les sources vendorées ne sont pas les nôtres à corriger : on les compile sans
 # -Wextra plutôt que de les modifier, ce qui compliquerait chaque mise à jour du
 # commit épinglé.
@@ -102,12 +105,14 @@ SOURCES := src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
            src/gn_rollout.c src/gn_bearoff.c src/gn_evalcache.c \
            src/gn_search.c \
            src/gn_infer_reference.c src/gn_choose.c src/gn_met.c src/gn_cube.c \
-           src/gn_gemm_int8.c src/gn_int8_model.c src/gn_policy.c
+           src/gn_gemm_int8.c src/gn_int8_model.c src/gn_policy.c \
+           src/gn_parallel.c
 HEADERS := src/gn_rules.h src/gn_encoding.h src/gn_position_id.h src/gn_infer.h \
            src/gn_notation.h \
            src/gn_rollout.h src/gn_bearoff.h src/gn_evalcache.h \
            src/gn_choose.h src/gn_search.h src/gn_met.h src/gn_met_table.h \
-           src/gn_cube.h src/gn_gemm_int8.h src/gn_int8_model.h src/gn_policy.h
+           src/gn_cube.h src/gn_gemm_int8.h src/gn_int8_model.h src/gn_policy.h \
+           src/gn_parallel.h
 OBJECTS := $(patsubst src/%.c,$(BUILD)/%.o,$(SOURCES))
 
 # Sources vendorées, compilées telles quelles — voir VENDOR_CFLAGS.
@@ -187,7 +192,7 @@ $(BUILD)/nn_eval.o: $(REFERENCE)/c_inference/nn_eval.c
 	$(CC) $(VENDOR_CFLAGS) $(INCLUDES) -c $< -o $@
 
 $(LIBRARY): $(OBJECTS) $(VENDOR_OBJECTS)
-	$(CC) -shared -o $@ $^ -lm
+	$(CC) -shared -pthread -o $@ $^ -lm
 	@echo "→ $@"
 
 # ── Modèle ───────────────────────────────────────────────────────────
@@ -234,6 +239,7 @@ WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
                 src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
                 src/gn_search.c src/gn_met.c src/gn_choose.c \
                 src/gn_gemm_int8.c src/gn_int8_model.c src/gn_policy.c \
+                src/gn_parallel.c \
                 $(REFERENCE)/c_engine/bg_engine.c \
                 $(REFERENCE)/c_inference/nn_eval.c
 

@@ -31,6 +31,10 @@
  *   --repeat=n        time the whole set n times and report the MEDIAN
  *   --ab              alternate the configuration WITH and WITHOUT the cube,
  *                     decision by decision, and report both
+ *   --threads=n       run every search on n threads (gn_parallel.h), the
+ *                     recorded walk included; the "empreinte" line is a
+ *                     digest of every ranking produced, bit for bit, so two
+ *                     thread counts can be held equal by comparing it
  *   --level=name      time a canonical level (`gn_search_level`: normal, ply3,
  *                     ply4, ...) instead of T35's fixed 2-ply (0,1,3). Its
  *                     prune_k overrides [k]; [prune.bin] is then required
@@ -66,6 +70,7 @@
 #include "gn_cube.h"
 #include "gn_infer.h"
 #include "gn_met.h"
+#include "gn_parallel.h"
 #include "gn_rules.h"
 #include "gn_search.h"
 
@@ -124,6 +129,7 @@ int main(int argc, char **argv)
     double efficiency = -1.0;
     int away_on_roll = 0, away_opponent = 0;
     const GnSearchLevel *level = NULL;
+    int threads = 1;
 
     for (int i = 1; i < argc; i++) {
         if (strncmp(argv[i], "--", 2) != 0) {
@@ -149,6 +155,8 @@ int main(int argc, char **argv)
                 fprintf(stderr, "score illisible : %s\n", argv[i] + 8);
                 return 2;
             }
+        } else if (strncmp(argv[i], "--threads=", 10) == 0) {
+            threads = atoi(argv[i] + 10);
         } else if (strncmp(argv[i], "--level=", 8) == 0) {
             level = gn_search_level(argv[i] + 8);
             if (level == NULL) {
@@ -277,6 +285,13 @@ int main(int argc, char **argv)
 
     /* ── The walk, untimed: record the decisions, do not measure them. ─── */
     GnPosition pos;
+    /* Threads from the walk on: the threaded search returns the serial one's
+     * bits (tests/test_parallel_search.py), so the recorded decisions are the
+     * same either way, and a 4-ply walk does not cost its serial time. */
+    if (gn_parallel_set_threads(threads) != threads) {
+        fprintf(stderr, "fils refusés : %d\n", threads);
+        return 2;
+    }
     gn_position_initial(&pos);
     int done = 0;
 
@@ -306,6 +321,7 @@ int main(int argc, char **argv)
 
     /* ── The timed runs, over exactly those decisions. ──────────────────── */
     unsigned long big = 0, small = 0, cube_nodes = 0;
+    unsigned long long digest = 0xcbf29ce484222325ULL;
 
     for (int r = 0; r < repeat; r++) {
         double total = 0.0, total_a = 0.0;
@@ -319,9 +335,25 @@ int main(int argc, char **argv)
             }
             gn_search_reset_evaluations();
             const double start = now_seconds();
-            gn_search_plays(net, &cases[i].pos, cases[i].d1, cases[i].d2,
-                            &config, out, MAX_PLAYS);
+            const int ranked = gn_search_plays(net, &cases[i].pos, cases[i].d1,
+                                               cases[i].d2, &config, out,
+                                               MAX_PLAYS);
             total += now_seconds() - start;
+            if (r == repeat - 1) {
+                /* Every play's result and equity, in ranked order. */
+                for (int j = 0; j < ranked; j++) {
+                    const unsigned char *bytes[2] = {
+                        (const unsigned char *)&out[j].play.result,
+                        (const unsigned char *)&out[j].equity};
+                    const size_t sizes[2] = {sizeof(out[j].play.result),
+                                             sizeof(out[j].equity)};
+                    for (int b = 0; b < 2; b++) {
+                        for (size_t k = 0; k < sizes[b]; k++) {
+                            digest = (digest ^ bytes[b][k]) * 0x100000001b3ULL;
+                        }
+                    }
+                }
+            }
             big += gn_search_evaluations();
             small += gn_search_prune_evaluations();
             cube_nodes += gn_search_cube_valuations();
@@ -394,6 +426,8 @@ int main(int argc, char **argv)
     } else {
         printf("  videau : inactif (cubeless)\n");
     }
+    printf("  fils : %d ; empreinte des classements : %016llx\n", threads,
+           digest);
     printf("  %.4f s/décision", median);
     if (repeat > 1) {
         printf("  (médiane de %d ; min %.4f, max %.4f)", repeat, samples[0],

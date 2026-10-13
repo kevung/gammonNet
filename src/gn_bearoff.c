@@ -6,6 +6,7 @@
 
 #include "gn_bearoff.h"
 
+#include <stdatomic.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,12 +49,13 @@ struct GnBearoff {
 
 /*
  * The shared table (T38). A single module-level pointer, deliberately not
- * locked -- see the note in gn_bearoff.h. `g_shared_hits` is the same story
- * as `g_evaluations` in gn_search.c: an honestly single-threaded counter, not
- * one that pretends to be thread-safe without being tested as such.
+ * locked -- see the note in gn_bearoff.h: it is installed before searches
+ * start and only read during them. `g_shared_hits` is incremented by every
+ * search thread (gn_parallel.h), hence atomic; relaxed, since it orders
+ * nothing and is only read once the searches are over.
  */
 static const GnBearoff *g_shared = NULL;
-static unsigned long g_shared_hits = 0;
+static _Atomic unsigned long g_shared_hits = 0;
 
 long gn_bearoff_index(const int *side, int points)
 {
@@ -298,7 +300,7 @@ int gn_bearoff_probs(const GnBearoff *table, const GnPosition *pos,
      * table that answered", so it is the only place that cannot double-count
      * or miss a hit. */
     if (table == g_shared) {
-        g_shared_hits++;
+        atomic_fetch_add_explicit(&g_shared_hits, 1, memory_order_relaxed);
     }
     return 1;
 }
@@ -307,6 +309,6 @@ void gn_bearoff_set_shared(const GnBearoff *table) { g_shared = table; }
 
 const GnBearoff *gn_bearoff_shared(void) { return g_shared; }
 
-unsigned long gn_bearoff_shared_hits(void) { return g_shared_hits; }
+unsigned long gn_bearoff_shared_hits(void) { return atomic_load(&g_shared_hits); }
 
-void gn_bearoff_shared_reset_hits(void) { g_shared_hits = 0; }
+void gn_bearoff_shared_reset_hits(void) { atomic_store(&g_shared_hits, 0); }

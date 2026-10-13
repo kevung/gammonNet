@@ -272,6 +272,34 @@ def match_config(ply: int, state: MatchState) -> SearchConfig:
     return SearchConfig(ply=ply, use_match=True, match=state)
 
 
+_LIB.gn_parallel_set_threads.argtypes = [ctypes.c_int]
+_LIB.gn_parallel_set_threads.restype = ctypes.c_int
+_LIB.gn_parallel_threads.argtypes = []
+_LIB.gn_parallel_threads.restype = ctypes.c_int
+
+
+def set_threads(count: int) -> int:
+    """Nombre de fils d'une recherche, le fil appelant compris (`gn_parallel.h`).
+
+    `1` (le défaut) est le moteur séquentiel exact. Au-delà, les sous-arbres
+    indépendants — les 21 jets d'un nœud de hasard, les candidats d'une
+    racine — se répartissent sur les fils, et le résultat reste **le même au
+    bit près** : `tests/test_parallel_search.py` le tient. Un nombre refusé
+    (hors de [1, 256], ou un build d'instrumentation) lève `ValueError`, jamais
+    rabattu en silence. À ne pas appeler pendant qu'une recherche tourne.
+    """
+    # The C side answers -1 on refusal: compared with the request alone, a
+    # request of -1 would read as accepted.
+    if count < 1 or _LIB.gn_parallel_set_threads(int(count)) != int(count):
+        raise ValueError(f"nombre de fils refusé : {count}")
+    return int(count)
+
+
+def threads() -> int:
+    """Le nombre de fils en vigueur (1 en séquentiel)."""
+    return _LIB.gn_parallel_threads()
+
+
 def evaluations() -> int:
     """Nombre d'évaluations réseau consommées depuis la dernière remise à zéro.
 

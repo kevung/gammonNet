@@ -20,6 +20,15 @@
 #include <string.h>
 
 #include "nn_eval.h"
+#include "gn_parallel.h"
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define GN_INFER_TLS _Thread_local
+#elif defined(__GNUC__)
+#define GN_INFER_TLS __thread
+#else
+#define GN_INFER_TLS
+#endif
 
 #include "gn_int8_model.h"
 #include "gn_tile.h"
@@ -309,6 +318,22 @@ int gn_network_input_size(const GnNetwork *net)
                                           : net->model.input_size;
 }
 
+/* The scalar path's per-thread scratch (see `gn_evaluate_features`). */
+#define SCALAR_MAX_WIDTH 1024
+static GN_INFER_TLS float g_scalar_a[SCALAR_MAX_WIDTH];
+static GN_INFER_TLS float g_scalar_b[SCALAR_MAX_WIDTH];
+
+static int model_max_width(const NNModel *model)
+{
+    int widest = model->input_size;
+    for (int i = 0; i <= model->num_hidden; i++) {
+        if (model->layer_out[i] > widest) {
+            widest = model->layer_out[i];
+        }
+    }
+    return widest;
+}
+
 int gn_evaluate_features(const GnNetwork *net, const float *features,
                          float probs[GN_NUM_OUTPUTS])
 {
@@ -321,12 +346,28 @@ int gn_evaluate_features(const GnNetwork *net, const float *features,
     }
 
     /*
+     * The vendored forward pass writes into scratch buffers OWNED BY THE
+     * MODEL (`buf_a`, `buf_b`), which every thread evaluating this network
+     * would share. A shallow copy of the model pointing at this thread's own
+     * scratch keeps the vendored code untouched and the arithmetic identical:
+     * same weights, same order, other memory. A network too wide for that
+     * scratch is refused under threads rather than raced on.
+     */
+    NNModel local = net->model;
+    if (model_max_width(&local) <= SCALAR_MAX_WIDTH) {
+        local.buf_a = g_scalar_a;
+        local.buf_b = g_scalar_b;
+    } else if (gn_parallel_threads() > 1) {
+        return -1;
+    }
+
+    /*
      * `nn_forward_prob5` returns the money equity and fills `probs` with the
      * five post-clamp probabilities. We drop the equity: it is the reduction
      * `PLAN.md` warns about, and callers who want it ask `gn_money_equity`
      * explicitly, from the distribution they were given.
      */
-    (void)nn_forward_prob5(&net->model, features, probs);
+    (void)nn_forward_prob5(&local, features, probs);
     return 0;
 }
 
@@ -354,17 +395,16 @@ int gn_evaluate(const GnNetwork *net, const GnPosition *pos,
  * results bit-identical to `gn_evaluate`. T21 measured that property on the
  * 2000-position reference (max|Δ| = 0), and tests/test_batch.py holds it.
  *
- * Static buffers, like the scalar path's model-owned ones: this project is
- * single-threaded per process (parallelism is by process, see arena.py), and
- * a buffer that pretended to be thread-safe without being tested as such
- * would be worse than one that is honestly not.
+ * Thread-local buffers: the search runs on several threads (gn_parallel.h),
+ * each with its own scratch; tests/test_parallel_search.py holds the threaded
+ * search to the serial one bit for bit.
  */
 
 #define BATCH_MAX_WIDTH 1024
 
-static float g_batch_a[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
-static float g_batch_b[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
-static float g_batch_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
+static GN_INFER_TLS float g_batch_a[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
+static GN_INFER_TLS float g_batch_b[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
+static GN_INFER_TLS float g_batch_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
 
 static int batch_kernel_applies(const NNModel *model)
 {
@@ -427,7 +467,7 @@ static void forward_batch(const NNModel *model, const float *in, int live,
     /* Les colonnes vivantes, rassemblées une fois : le noyau les relira
      * `rows` fois (512 pour le grand réseau), donc la compaction s'amortit
      * immédiatement. */
-    static float packed_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
+    static GN_INFER_TLS float packed_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
     if (nonzero != NULL) {
         for (int idx = 0; idx < n_nonzero; idx++) {
             memcpy(packed_in + (size_t)idx * GN_EVAL_BATCH,

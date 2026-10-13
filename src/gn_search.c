@@ -11,6 +11,7 @@
 #include "gn_choose.h"
 #include "gn_cube.h"
 #include "gn_evalcache.h"
+#include "gn_parallel.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -18,6 +19,20 @@
 
 /* The rules layer's proven bound on distinct legal plays: one number, not two. */
 #define MAX_PLAYS GN_MAX_PLAYS
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define GN_SEARCH_TLS _Thread_local
+#elif defined(__GNUC__)
+#define GN_SEARCH_TLS __thread
+#else
+#define GN_SEARCH_TLS
+#endif
+
+/* Below this depth a subtree is too small to be worth a task: a chance node
+ * at depth 1 is twenty-one shallow passes of a dozen evaluations each, and
+ * the batching across its rolls (see `position_equity`) is worth more than
+ * spreading them. A starting choice, NOT yet measured against 1 or 3. */
+#define PARALLEL_MIN_DEPTH 2
 
 typedef struct {
     signed char d1, d2;
@@ -33,6 +48,12 @@ typedef struct {
  */
 static GnRoll g_rolls[GN_NUM_ROLLS];
 static int g_rolls_ready = 0;
+
+/* Also run once when the library loads (gcc, clang and emcc all honour the
+ * attribute), so that by the time any search can start -- on any thread --
+ * the table is only ever READ. The calls left in the search are then a load
+ * and a branch, never a write racing another thread's write. */
+static void build_rolls(void) __attribute__((constructor));
 
 static void build_rolls(void)
 {
@@ -51,19 +72,60 @@ static void build_rolls(void)
     g_rolls_ready = 1;
 }
 
-/* Deliberately not thread-local: this project has no threads yet, and a
- * counter that pretended to be thread-safe without being tested as such would
- * be worse than one that is honestly single-threaded. */
-static unsigned long g_evaluations = 0;
+/* Thread-local since the search runs on several threads (gn_parallel.h).
+ * Each counter still reads "the last search on THIS thread": the work a
+ * parallel section does on other threads is carried back to the thread that
+ * opened the section (`GnCounts` below), so a caller sees one total whatever
+ * the thread count. */
+static GN_SEARCH_TLS unsigned long g_evaluations = 0;
 
 unsigned long gn_search_evaluations(void) { return g_evaluations; }
-static unsigned long g_prune_evaluations = 0;
+static GN_SEARCH_TLS unsigned long g_prune_evaluations = 0;
 
 unsigned long gn_search_prune_evaluations(void) { return g_prune_evaluations; }
 
 /* Nodes valued through the cube model -- see gn_search.h for why this is a
  * counter and not an arithmetic assumption. */
-static unsigned long g_cube_valuations = 0;
+static GN_SEARCH_TLS unsigned long g_cube_valuations = 0;
+
+/*
+ * The counters a task produced, moved from whichever thread ran it to the
+ * thread that opened the parallel section. A task snapshots the counters,
+ * works, then hands back the difference AND restores the snapshot -- so a
+ * thread that ran someone else's task while waiting keeps its own totals
+ * clean, and the opener adds every task's share exactly once.
+ */
+typedef struct {
+    unsigned long evaluations;
+    unsigned long prune_evaluations;
+    unsigned long cube_valuations;
+} GnCounts;
+
+static GnCounts counts_now(void)
+{
+    GnCounts c = {g_evaluations, g_prune_evaluations, g_cube_valuations};
+    return c;
+}
+
+static GnCounts counts_take(GnCounts before)
+{
+    GnCounts delta = {g_evaluations - before.evaluations,
+                      g_prune_evaluations - before.prune_evaluations,
+                      g_cube_valuations - before.cube_valuations};
+    g_evaluations = before.evaluations;
+    g_prune_evaluations = before.prune_evaluations;
+    g_cube_valuations = before.cube_valuations;
+    return delta;
+}
+
+static void counts_add(const GnCounts *delta, int n)
+{
+    for (int i = 0; i < n; i++) {
+        g_evaluations += delta[i].evaluations;
+        g_prune_evaluations += delta[i].prune_evaluations;
+        g_cube_valuations += delta[i].cube_valuations;
+    }
+}
 
 unsigned long gn_search_cube_valuations(void) { return g_cube_valuations; }
 
@@ -989,6 +1051,62 @@ static int rank_plays_finish(const GnNetwork *net,
  * shallow pass its own way. `rank_plays_finish` is now this plus the shallow
  * pass in front of it, so the two orders cannot drift apart.
  */
+/*
+ * Score `out[0 .. n)` at `depth` plies: each candidate's equity becomes
+ * -V(result, depth). The candidates are independent subtrees, so from
+ * PARALLEL_MIN_DEPTH on they are spread over the search threads; each task
+ * writes only its own candidate's equity.
+ */
+typedef struct {
+    const GnNetwork *net;
+    const GnSearchConfig *config;
+    int depth;
+    GnMatchState state;
+    int owner;
+    GnCandidate *out;
+    GnCounts *counts_delta;
+} DeepenJob;
+
+static void deepen_one(const DeepenJob *job, int i)
+{
+    const GnPosition *result = &job->out[i].play.result;
+    if (gn_position_is_over(result)) {
+        return; /* already exact */
+    }
+    job->out[i].equity = -position_equity(job->net, result, job->config,
+                                          job->depth, swap_sides(job->state),
+                                          mirror_owner(job->owner));
+}
+
+static void deepen_task(void *ctx, int i)
+{
+    DeepenJob *job = ctx;
+    const GnCounts before = counts_now();
+    deepen_one(job, i);
+    job->counts_delta[i] = counts_take(before);
+}
+
+static void deepen_candidates(const GnNetwork *net,
+                              const GnSearchConfig *config, int depth,
+                              GnMatchState state, int owner, GnCandidate *out,
+                              int n)
+{
+    DeepenJob job = {net, config, depth, state, owner, out, NULL};
+    if (depth >= PARALLEL_MIN_DEPTH && n > 1 && gn_parallel_threads() > 1) {
+        GnCounts *delta = calloc((size_t)n, sizeof(GnCounts));
+        if (delta != NULL) {
+            job.counts_delta = delta;
+            gn_parallel_for(n, deepen_task, &job);
+            counts_add(delta, n);
+            free(delta);
+            return;
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        deepen_one(&job, i);
+    }
+}
+
 static int rank_plays_deepen(const GnNetwork *net, const GnSearchConfig *config,
                              int depth, GnMatchState state, int owner,
                              GnCandidate *out, int written)
@@ -1004,26 +1122,18 @@ static int rank_plays_deepen(const GnNetwork *net, const GnSearchConfig *config,
         searched = keep;
     }
 
-    for (int i = 0; i < searched; i++) {
-        const GnPosition *result = &out[i].play.result;
-        if (gn_position_is_over(result)) {
-            continue; /* already exact */
-        }
-        /*
-         * `depth`, not `depth - 1`. A decision at depth k scores each play at
-         * -V(result, k): the k counts the opponent's rolls to enumerate AFTER
-         * the play, and the play itself is not one of them.
-         *
-         * Written as `depth - 1` first, and the mistake was instructive: at
-         * 1-ply the deep pass then recomputed exactly what the shallow pass had
-         * already computed. Nothing crashed, the equity still moved -- the
-         * other entry point was right -- and only the ranking gave it away, by
-         * never once differing from 0-ply over 114 decisions.
-         */
-        out[i].equity = -position_equity(net, result, config, depth,
-                                         swap_sides(state),
-                                         mirror_owner(owner));
-    }
+    /*
+     * `depth`, not `depth - 1`. A decision at depth k scores each play at
+     * -V(result, k): the k counts the opponent's rolls to enumerate AFTER
+     * the play, and the play itself is not one of them.
+     *
+     * Written as `depth - 1` first, and the mistake was instructive: at
+     * 1-ply the deep pass then recomputed exactly what the shallow pass had
+     * already computed. Nothing crashed, the equity still moved -- the
+     * other entry point was right -- and only the ranking gave it away, by
+     * never once differing from 0-ply over 114 decisions.
+     */
+    deepen_candidates(net, config, depth, state, owner, out, searched);
 
     /* Re-rank: the deep pass is allowed to disagree with the shallow one, and
      * if it never did, the deep pass would be pointless. */
@@ -1114,21 +1224,126 @@ static int rank_root(const GnNetwork *net, const GnPosition *pos, int d1,
     if (staged < written) {
         tie_census_cut(out, written, staged);
     }
-    for (int i = 0; i < staged; i++) {
-        const GnPosition *result = &out[i].play.result;
-        if (gn_position_is_over(result)) {
-            continue; /* already exact */
-        }
-        out[i].equity = -position_equity(net, result, config, stage,
-                                         swap_sides(state),
-                                         mirror_owner(owner));
-    }
+    deepen_candidates(net, config, stage, state, owner, out, staged);
     sort_candidates(out, staged);
 
     if (rank_plays_deepen(net, config, depth, state, owner, out, staged) < 0) {
         return -1;
     }
     return written;
+}
+
+/*
+ * One roll of an ungrouped chance node (pruning off): rank the replies at
+ * `depth - 1` and keep the best, or pass the turn when there is none.
+ * Shared by `position_equity` (equity) and the distribution backups
+ * (`position_probs`, `probs_by_roll`), which keep the best reply's five
+ * probabilities instead. Writes slot `r` only.
+ */
+typedef struct {
+    const GnNetwork *net;
+    const GnPosition *pos;
+    const GnSearchConfig *config;
+    int depth;
+    GnMatchState state;
+    int owner;
+    double best[GN_NUM_ROLLS];
+    int failed[GN_NUM_ROLLS];
+    GnCounts counts_delta[GN_NUM_ROLLS];
+    float mine[GN_NUM_ROLLS][GN_NUM_OUTPUTS];
+} RollJob;
+
+static void roll_equity(RollJob *job, int r, GnCandidate *candidates)
+{
+    const int count = rank_plays(job->net, job->pos, g_rolls[r].d1,
+                                 g_rolls[r].d2, job->config, job->depth - 1,
+                                 job->state, job->owner, candidates,
+                                 MAX_PLAYS);
+    if (count > 0) {
+        job->best[r] = candidates[0].equity;
+    } else {
+        /*
+         * No legal play: the turn simply passes. Not an error -- a closed
+         * board or a hopeless bar entry produces it, and treating it as one
+         * would silently drop those branches from the average.
+         */
+        GnPosition passed = *job->pos;
+        gn_position_swap_turn(&passed);
+        job->best[r] = -position_equity(job->net, &passed, job->config,
+                                        job->depth - 1,
+                                        swap_sides(job->state),
+                                        mirror_owner(job->owner));
+    }
+}
+
+static void roll_equity_task(void *ctx, int r)
+{
+    RollJob *job = ctx;
+    const GnCounts before = counts_now();
+    GnCandidate *candidates = malloc(sizeof(GnCandidate) * MAX_PLAYS);
+    if (candidates == NULL) {
+        job->failed[r] = 1;
+        job->best[r] = 0.0;
+    } else {
+        roll_equity(job, r, candidates);
+        free(candidates);
+    }
+    job->counts_delta[r] = counts_take(before);
+}
+
+/*
+ * One roll of a grouped chance node (see `position_equity`): the valuation,
+ * the ranking and the deep pass of that roll's survivors, or the passed turn
+ * when it has none. Reads the shared node, writes its own slot only -- the
+ * contract of gn_parallel_for.
+ */
+typedef struct {
+    const GnNetwork *net;
+    const GnPosition *pos;
+    const GnSearchConfig *config;
+    int depth;
+    GnMatchState state;
+    int owner;
+    int keep;
+    GnCandidate *grouped;
+    const int *counts;
+    double best[GN_NUM_ROLLS];
+    int failed[GN_NUM_ROLLS];
+    GnCounts counts_delta[GN_NUM_ROLLS];
+} GroupedRolls;
+
+static void grouped_roll(GroupedRolls *job, int r)
+{
+    GnCandidate *slot = job->grouped + (size_t)r * job->keep;
+    const int count = job->counts[r];
+    if (count > 0) {
+        /* The probabilities are already in place; only the valuation, the
+         * ranking and the deep pass remain. */
+        if (value_sweep(slot, count, job->config, swap_sides(job->state),
+                        job->owner) != 0) {
+            job->failed[r] = 1;
+            job->best[r] = 0.0;
+            return;
+        }
+        sort_candidates(slot, count);
+        const int n = rank_plays_deepen(job->net, job->config, job->depth - 1,
+                                        job->state, job->owner, slot, count);
+        job->best[r] = (n > 0) ? slot[0].equity : 0.0;
+    } else {
+        GnPosition passed = *job->pos;
+        gn_position_swap_turn(&passed);
+        job->best[r] = -position_equity(job->net, &passed, job->config,
+                                        job->depth - 1, swap_sides(job->state),
+                                        mirror_owner(job->owner));
+    }
+}
+
+static void grouped_roll_task(void *ctx, int r)
+{
+    GroupedRolls *job = ctx;
+    const GnCounts before = counts_now();
+    grouped_roll(job, r);
+    job->counts_delta[r] = counts_take(before);
 }
 
 static double position_equity(const GnNetwork *net, const GnPosition *pos,
@@ -1241,62 +1456,55 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
             free(dense);
         }
 
-        const GnMatchState theirs = swap_sides(state);
-        double sum = 0.0;
-        for (int r = 0; r < GN_NUM_ROLLS; r++) {
-            GnCandidate *slot = grouped + (size_t)r * keep;
-            double best;
-            if (counts[r] > 0) {
-                /* The probabilities are already in place; only the valuation,
-                 * the ranking and the deep pass remain. */
-                if (value_sweep(slot, counts[r], config, theirs, owner) != 0) {
-                    free(grouped); free(counts); free(candidates);
-                    return 0.0;
-                }
-                sort_candidates(slot, counts[r]);
-                const int n = rank_plays_deepen(net, config, depth - 1, state,
-                                                owner, slot, counts[r]);
-                best = (n > 0) ? slot[0].equity : 0.0;
-            } else {
-                GnPosition passed = *pos;
-                gn_position_swap_turn(&passed);
-                best = -position_equity(net, &passed, config, depth - 1,
-                                        swap_sides(state), mirror_owner(owner));
+        /* The rest is one independent subtree per roll -- in parallel from
+         * PARALLEL_MIN_DEPTH on, summed below in roll order either way. */
+        GroupedRolls job = {net, pos, config, depth, state, owner, keep,
+                            grouped, counts, {0.0}, {0}, {{0, 0, 0}}};
+        if (depth >= PARALLEL_MIN_DEPTH) {
+            gn_parallel_for(GN_NUM_ROLLS, grouped_roll_task, &job);
+            counts_add(job.counts_delta, GN_NUM_ROLLS);
+        } else {
+            for (int r = 0; r < GN_NUM_ROLLS; r++) {
+                grouped_roll(&job, r);
             }
-            sum += g_rolls[r].weight * best;
+        }
+
+        double sum = 0.0;
+        int failed = 0;
+        for (int r = 0; r < GN_NUM_ROLLS; r++) {
+            failed |= job.failed[r];
+            sum += g_rolls[r].weight * job.best[r];
         }
 
         free(grouped);
         free(counts);
         free(candidates);
-        return sum;
+        return failed ? 0.0 : sum;
+    }
+
+    RollJob job = {net, pos, config, depth, state, owner, {0.0}, {0},
+                   {{0, 0, 0}}, {{0.0f}}};
+    if (depth >= PARALLEL_MIN_DEPTH && gn_parallel_threads() > 1) {
+        /* Each task needs its own candidate buffer; this one is not used. */
+        free(candidates);
+        candidates = NULL;
+        gn_parallel_for(GN_NUM_ROLLS, roll_equity_task, &job);
+        counts_add(job.counts_delta, GN_NUM_ROLLS);
+    } else {
+        for (int r = 0; r < GN_NUM_ROLLS; r++) {
+            roll_equity(&job, r, candidates);
+        }
     }
 
     double total = 0.0;
+    int failed = 0;
     for (int r = 0; r < GN_NUM_ROLLS; r++) {
-        const int count = rank_plays(net, pos, g_rolls[r].d1, g_rolls[r].d2,
-                                     config, depth - 1, state, owner,
-                                     candidates, MAX_PLAYS);
-
-        double best;
-        if (count > 0) {
-            best = candidates[0].equity;
-        } else {
-            /*
-             * No legal play: the turn simply passes. Not an error -- a closed
-             * board or a hopeless bar entry produces it, and treating it as one
-             * would silently drop those branches from the average.
-             */
-            GnPosition passed = *pos;
-            gn_position_swap_turn(&passed);
-            best = -position_equity(net, &passed, config, depth - 1,
-                                    swap_sides(state), mirror_owner(owner));
-        }
-        total += g_rolls[r].weight * best;
+        failed |= job.failed[r];
+        total += g_rolls[r].weight * job.best[r];
     }
 
     free(candidates);
-    return total;
+    return failed ? 0.0 : total;
 }
 
 /* ── The distribution at depth (t34-videau-spec §8, step 1) ──────────── */
@@ -1344,6 +1552,87 @@ static void terminal_probs(const GnPosition *pos, float out[GN_NUM_OUTPUTS])
 static int position_probs(const GnNetwork *net, const GnPosition *pos,
                           const GnSearchConfig *config, int depth,
                           GnMatchState state, int owner,
+                          float out[GN_NUM_OUTPUTS]);
+
+/*
+ * One roll of a distribution backup: rank the replies at `job->depth`, then
+ * take the best reply's own distribution at that same depth -- mirroring
+ * `-V(result, depth)` -- or the passed turn's when there is no legal play
+ * (dropping the branch would bias the average). Stores the distribution from
+ * the mover's side in `job->mine[r]`; sets `job->failed[r]` on any error.
+ */
+static void roll_probs(RollJob *job, int r, GnCandidate *candidates)
+{
+    const int count = rank_plays(job->net, job->pos, g_rolls[r].d1,
+                                 g_rolls[r].d2, job->config, job->depth,
+                                 job->state, job->owner, candidates,
+                                 MAX_PLAYS);
+    if (count < 0) {
+        job->failed[r] = 1;
+        return;
+    }
+    float theirs[GN_NUM_OUTPUTS];
+    int failed;
+    if (count > 0) {
+        failed = position_probs(job->net, &candidates[0].play.result,
+                                job->config, job->depth,
+                                swap_sides(job->state),
+                                mirror_owner(job->owner), theirs);
+    } else {
+        GnPosition passed = *job->pos;
+        gn_position_swap_turn(&passed);
+        failed = position_probs(job->net, &passed, job->config, job->depth,
+                                swap_sides(job->state),
+                                mirror_owner(job->owner), theirs);
+    }
+    if (failed != 0) {
+        job->failed[r] = 1;
+        return;
+    }
+    invert_probs(theirs, job->mine[r]);
+}
+
+static void roll_probs_task(void *ctx, int r)
+{
+    RollJob *job = ctx;
+    const GnCounts before = counts_now();
+    GnCandidate *candidates = malloc(sizeof(GnCandidate) * MAX_PLAYS);
+    if (candidates == NULL) {
+        job->failed[r] = 1;
+    } else {
+        roll_probs(job, r, candidates);
+        free(candidates);
+    }
+    job->counts_delta[r] = counts_take(before);
+}
+
+/* All twenty-one rolls of a distribution backup, on the search threads when
+ * `parallel` and there are any. Returns -1 if any roll failed. The serial
+ * path stops at the first failure, as the loop it replaces did. */
+static int run_roll_probs(RollJob *job, int parallel, GnCandidate *candidates)
+{
+    if (parallel && gn_parallel_threads() > 1) {
+        gn_parallel_for(GN_NUM_ROLLS, roll_probs_task, job);
+        counts_add(job->counts_delta, GN_NUM_ROLLS);
+        for (int r = 0; r < GN_NUM_ROLLS; r++) {
+            if (job->failed[r]) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+    for (int r = 0; r < GN_NUM_ROLLS; r++) {
+        roll_probs(job, r, candidates);
+        if (job->failed[r]) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+static int position_probs(const GnNetwork *net, const GnPosition *pos,
+                          const GnSearchConfig *config, int depth,
+                          GnMatchState state, int owner,
                           float out[GN_NUM_OUTPUTS])
 {
     if (gn_position_is_over(pos)) {
@@ -1362,42 +1651,18 @@ static int position_probs(const GnNetwork *net, const GnPosition *pos,
         return -1;
     }
 
+    /* `depth` here is the node's; each roll's replies sit at `depth - 1`. */
+    RollJob job = {net, pos, config, depth - 1, state, owner, {0.0}, {0},
+                   {{0, 0, 0}}, {{0.0f}}};
+    if (run_roll_probs(&job, depth >= PARALLEL_MIN_DEPTH, candidates) != 0) {
+        free(candidates);
+        return -1;
+    }
+
     double total[GN_NUM_OUTPUTS] = {0.0, 0.0, 0.0, 0.0, 0.0};
     for (int r = 0; r < GN_NUM_ROLLS; r++) {
-        const int count = rank_plays(net, pos, g_rolls[r].d1, g_rolls[r].d2,
-                                     config, depth - 1, state, owner,
-                                     candidates, MAX_PLAYS);
-        if (count < 0) {
-            free(candidates);
-            return -1;
-        }
-
-        float theirs[GN_NUM_OUTPUTS];
-        int failed;
-        if (count > 0) {
-            /* The best play's own distribution, at the depth its equity was
-             * scored at -- `depth - 1`, mirroring `-V(result, depth - 1)`. */
-            failed = position_probs(net, &candidates[0].play.result, config,
-                                    depth - 1, swap_sides(state),
-                                    mirror_owner(owner), theirs);
-        } else {
-            /* No legal play: the turn passes, exactly as in the scalar
-             * recursion -- dropping the branch would bias the average. */
-            GnPosition passed = *pos;
-            gn_position_swap_turn(&passed);
-            failed = position_probs(net, &passed, config, depth - 1,
-                                    swap_sides(state), mirror_owner(owner),
-                                    theirs);
-        }
-        if (failed != 0) {
-            free(candidates);
-            return -1;
-        }
-
-        float mine[GN_NUM_OUTPUTS];
-        invert_probs(theirs, mine);
         for (int i = 0; i < GN_NUM_OUTPUTS; i++) {
-            total[i] += g_rolls[r].weight * (double)mine[i];
+            total[i] += g_rolls[r].weight * (double)job.mine[r][i];
         }
     }
 
@@ -1431,34 +1696,14 @@ static int probs_by_roll(const GnNetwork *net, const GnPosition *pos,
         return -1;
     }
 
+    RollJob job = {net, pos, config, depth, state, owner, {0.0}, {0},
+                   {{0, 0, 0}}, {{0.0f}}};
+    if (run_roll_probs(&job, depth + 1 >= PARALLEL_MIN_DEPTH, candidates) != 0) {
+        free(candidates);
+        return -1;
+    }
     for (int r = 0; r < GN_NUM_ROLLS; r++) {
-        const int count = rank_plays(net, pos, g_rolls[r].d1, g_rolls[r].d2,
-                                     config, depth, state, owner,
-                                     candidates, MAX_PLAYS);
-        if (count < 0) {
-            free(candidates);
-            return -1;
-        }
-
-        float theirs[GN_NUM_OUTPUTS];
-        int failed;
-        if (count > 0) {
-            failed = position_probs(net, &candidates[0].play.result, config,
-                                    depth, swap_sides(state),
-                                    mirror_owner(owner), theirs);
-        } else {
-            GnPosition passed = *pos;
-            gn_position_swap_turn(&passed);
-            failed = position_probs(net, &passed, config, depth,
-                                    swap_sides(state), mirror_owner(owner),
-                                    theirs);
-        }
-        if (failed != 0) {
-            free(candidates);
-            return -1;
-        }
-
-        invert_probs(theirs, out[r]);
+        memcpy(out[r], job.mine[r], sizeof(job.mine[r]));
         if (weights != NULL) {
             weights[r] = g_rolls[r].weight;
         }

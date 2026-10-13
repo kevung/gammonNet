@@ -6,6 +6,7 @@
 
 #include "gn_evalcache.h"
 
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,14 +28,40 @@ typedef struct {
     unsigned char occupied;
 } GnEvalCacheEntry;
 
+/*
+ * Several search threads may share one table (gn_parallel.h). An entry is
+ * 50-odd bytes, so a reader racing a writer could see a matching key next to
+ * half-overwritten probabilities -- a plausible wrong answer, the worst kind.
+ * Each bucket is therefore guarded by one of LOCK_STRIPES spinlocks (bucket
+ * index modulo the stripe count). Held for a memcmp and two memcpy, against
+ * ~40 us for the evaluation a hit saves; atomic_flag needs no thread library,
+ * so the WebAssembly build compiles the same code.
+ */
+#define LOCK_STRIPES 4096
+
 struct GnEvalCache {
     GnEvalCacheEntry *entries;
     unsigned long capacity; /* a power of two */
     unsigned long mask;     /* capacity - 1 */
-    unsigned long hits;
-    unsigned long misses;
-    unsigned long stores;
+    _Atomic unsigned long hits;
+    _Atomic unsigned long misses;
+    _Atomic unsigned long stores;
+    atomic_flag locks[LOCK_STRIPES];
 };
+
+static void stripe_lock(GnEvalCache *cache, unsigned long bucket)
+{
+    atomic_flag *flag = &cache->locks[bucket & (LOCK_STRIPES - 1)];
+    while (atomic_flag_test_and_set_explicit(flag, memory_order_acquire)) {
+        /* spin: the critical section is a few dozen bytes of copying */
+    }
+}
+
+static void stripe_unlock(GnEvalCache *cache, unsigned long bucket)
+{
+    atomic_flag_clear_explicit(&cache->locks[bucket & (LOCK_STRIPES - 1)],
+                               memory_order_release);
+}
 
 /*
  * FNV-1a, 64-bit. The two constants are the published offset basis and prime
@@ -91,9 +118,12 @@ GnEvalCache *gn_evalcache_create(unsigned log2_entries)
     cache->entries = entries;
     cache->capacity = capacity;
     cache->mask = capacity - 1;
-    cache->hits = 0;
-    cache->misses = 0;
-    cache->stores = 0;
+    atomic_init(&cache->hits, 0);
+    atomic_init(&cache->misses, 0);
+    atomic_init(&cache->stores, 0);
+    for (int i = 0; i < LOCK_STRIPES; i++) {
+        atomic_flag_clear(&cache->locks[i]);
+    }
     return cache;
 }
 
@@ -120,7 +150,9 @@ int gn_evalcache_lookup(GnEvalCache *cache, const GnPosition *pos,
         return 0;
     }
 
-    const GnEvalCacheEntry *entry = &cache->entries[bucket_of(cache, pos)];
+    const unsigned long bucket = bucket_of(cache, pos);
+    const GnEvalCacheEntry *entry = &cache->entries[bucket];
+    stripe_lock(cache, bucket);
 
     /*
      * The occupancy byte alone would not be enough: two different positions
@@ -131,10 +163,12 @@ int gn_evalcache_lookup(GnEvalCache *cache, const GnPosition *pos,
      */
     if (entry->occupied && memcmp(&entry->key, pos, sizeof(GnPosition)) == 0) {
         memcpy(probs, entry->probs, sizeof(entry->probs));
-        cache->hits++;
+        stripe_unlock(cache, bucket);
+        atomic_fetch_add_explicit(&cache->hits, 1, memory_order_relaxed);
         return 1;
     }
-    cache->misses++;
+    stripe_unlock(cache, bucket);
+    atomic_fetch_add_explicit(&cache->misses, 1, memory_order_relaxed);
     return 0;
 }
 
@@ -149,26 +183,29 @@ void gn_evalcache_store(GnEvalCache *cache, const GnPosition *pos,
      * hashed here wins the slot. See gn_evalcache.h for why this is a
      * deliberate simplicity rather than an oversight -- the table is sized
      * to make this rare during one search, not to make it impossible. */
-    GnEvalCacheEntry *entry = &cache->entries[bucket_of(cache, pos)];
+    const unsigned long bucket = bucket_of(cache, pos);
+    GnEvalCacheEntry *entry = &cache->entries[bucket];
+    stripe_lock(cache, bucket);
     memcpy(&entry->key, pos, sizeof(GnPosition));
     memcpy(entry->probs, probs, sizeof(entry->probs));
     entry->occupied = 1;
-    cache->stores++;
+    stripe_unlock(cache, bucket);
+    atomic_fetch_add_explicit(&cache->stores, 1, memory_order_relaxed);
 }
 
 unsigned long gn_evalcache_hits(const GnEvalCache *cache)
 {
-    return (cache != NULL) ? cache->hits : 0;
+    return (cache != NULL) ? atomic_load(&cache->hits) : 0;
 }
 
 unsigned long gn_evalcache_misses(const GnEvalCache *cache)
 {
-    return (cache != NULL) ? cache->misses : 0;
+    return (cache != NULL) ? atomic_load(&cache->misses) : 0;
 }
 
 unsigned long gn_evalcache_stores(const GnEvalCache *cache)
 {
-    return (cache != NULL) ? cache->stores : 0;
+    return (cache != NULL) ? atomic_load(&cache->stores) : 0;
 }
 
 void gn_evalcache_reset_counters(GnEvalCache *cache)
@@ -176,9 +213,9 @@ void gn_evalcache_reset_counters(GnEvalCache *cache)
     if (cache == NULL) {
         return;
     }
-    cache->hits = 0;
-    cache->misses = 0;
-    cache->stores = 0;
+    atomic_store(&cache->hits, 0);
+    atomic_store(&cache->misses, 0);
+    atomic_store(&cache->stores, 0);
 }
 
 unsigned long gn_evalcache_capacity(const GnEvalCache *cache)
@@ -187,9 +224,9 @@ unsigned long gn_evalcache_capacity(const GnEvalCache *cache)
 }
 
 /*
- * The shared cache (T3A). A single module-level pointer, deliberately not
- * locked -- see the note in gn_evalcache.h. This mirrors gn_bearoff.c's
- * g_shared exactly: parallelism here is by process, never by thread.
+ * The shared cache (T3A). A single module-level pointer, installed before
+ * searches start and only read while they run; the TABLE it points to is
+ * what the stripes above make safe to share between search threads.
  */
 static GnEvalCache *g_shared = NULL;
 
