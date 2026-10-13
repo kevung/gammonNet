@@ -61,6 +61,7 @@ import argparse
 import hashlib
 import http.server
 import json
+import os
 import socketserver
 import sys
 import threading
@@ -79,7 +80,7 @@ from gammonnet.infer import Evaluation, Network  # noqa: E402
 from gammonnet.met import MatchState  # noqa: E402
 from gammonnet.rollout import RolloutConfig, rollout as run_rollout  # noqa: E402
 from gammonnet.notation import play_notation  # noqa: E402
-from gammonnet.search import Candidate, SearchConfig, search_plays  # noqa: E402
+from gammonnet.search import Candidate, SearchConfig, search_plays, set_threads  # noqa: E402
 
 DEFAULT_PIN = ROOT / "models" / "release_pin.json"
 DEFAULT_EFFICIENCY_FILE = ROOT / "docs" / "mesures" / "t34-efficacite.json"
@@ -483,6 +484,12 @@ ROUTES = {
 #: real but small: 0-ply is ~86 us/eval (`docs/mesures/`), and
 #: `tests/test_serve_concurrency.py` measures the actual throughput this
 #: leaves under concurrent load -- a number, not an assumption.
+#:
+#: Since the search runs on several threads (`--threads`, `src/gn_parallel.h`)
+#: the lock no longer confines the service to one core: requests still pass
+#: one at a time, and each one uses every thread. That is the order that pays
+#: for an analysis -- the latency of ONE deep decision -- and it needs no new
+#: concurrency guarantee from the native side.
 _ENGINE_LOCK = threading.Lock()
 
 
@@ -567,7 +574,16 @@ def main(argv: list[str] | None = None) -> int:
         help=f"plafond de profondeur pour /v1/eval, <= {MAX_SEARCH_PLY} (défaut : {MAX_SEARCH_PLY})",
     )
     parser.add_argument("--efficiency-file", type=Path, default=DEFAULT_EFFICIENCY_FILE)
+    parser.add_argument(
+        "--threads", type=int, default=min(os.cpu_count() or 1, 64),
+        help="fils d'une recherche (défaut : les cœurs de la machine) ; 1 = moteur séquentiel. "
+             "Le résultat est le même au bit près quel que soit ce nombre.",
+    )
     args = parser.parse_args(argv)
+    try:
+        set_threads(args.threads)
+    except ValueError:
+        raise SystemExit(f"REFUS DE DÉMARRER : --threads {args.threads} refusé par le moteur")
 
     pin = json.loads(args.pin.read_text())
     weights_path = args.weights or (args.pin.parent / pin["network_fp16"]["filename"])
@@ -597,7 +613,8 @@ def main(argv: list[str] | None = None) -> int:
     Handler.engine = engine
 
     httpd = ThreadingServer((args.host, args.port), Handler)
-    print(f"==> gammonNet serve : http://{args.host}:{args.port}  (0-ply par défaut, {max_ply}-ply au plus)")
+    print(f"==> gammonNet serve : http://{args.host}:{args.port}  (0-ply par défaut, {max_ply}-ply au plus, "
+          f"{args.threads} fil(s) par recherche)")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
