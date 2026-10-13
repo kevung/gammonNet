@@ -121,8 +121,12 @@ function requireEvaluator() {
  * cache : tout est optionnel. Un worker qui ne reçoit rien de plus se comporte
  * exactement comme avant.
  */
-function applyConfiguration({ pruneBytes, pruneK, bearoffBytes, cacheLog2 }) {
+function applyConfiguration({ pruneBytes, pruneK, bearoffBytes, cacheLog2, threads }) {
   const ev = requireEvaluator();
+  if (threads !== undefined) {
+    // Refusé par tout module qui n'est pas le multi-fils : jamais ignoré.
+    ev.setThreads(threads);
+  }
   if (pruneBytes !== undefined || pruneK !== undefined) {
     ev.loadPrune(pruneBytes ? new Uint8Array(pruneBytes) : null, pruneK ?? 0);
   }
@@ -270,6 +274,7 @@ self.onmessage = async (event) => {
         type: "ready", id,
         simd: evaluator.hasSimd,
         pruneK: evaluator.pruneK(),
+        threads: evaluator.threads(),
       });
       return;
     }

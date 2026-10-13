@@ -91,6 +91,7 @@ export class Evaluator {
   #featuresPtr = 0;
   #outputsPtr = 0;
   #capacity = 0;
+  #threads = 1;
 
   constructor(module) {
     this.#module = module;
@@ -133,7 +134,13 @@ export class Evaluator {
     if (this.#module._gnw_set_threads(n) !== n) {
       throw new Error(`nombre de fils refusé par ce module : ${n}`);
     }
+    this.#threads = n;
     return n;
+  }
+
+  /** Le nombre de fils en vigueur (1 tant que `setThreads` n'a rien changé). */
+  threads() {
+    return this.#threads;
   }
 
   loadPrune(pruneBytes, k) {
