@@ -161,6 +161,10 @@ def main() -> int:
     parser.add_argument("--patience", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=8192)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--schedule", choices=("plateau", "cosine"), default="plateau",
+                        help="plateau: halve on a stalled hold-out, stop after "
+                             "--patience; cosine: --max-epochs epochs exactly, "
+                             "lr decayed to zero, best hold-out kept")
     parser.add_argument("--device", default="cuda")
     args = parser.parse_args()
 
@@ -185,7 +189,10 @@ def main() -> int:
 
     model = build(nn, shape).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
-    sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, factor=0.5, patience=6)
+    if args.schedule == "cosine":
+        sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.max_epochs)
+    else:
+        sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, factor=0.5, patience=6)
     bce = nn.BCEWithLogitsLoss()
     gen = torch.Generator(device=device).manual_seed(args.seed)
 
@@ -215,7 +222,10 @@ def main() -> int:
             loss.backward()
             opt.step()
         held, absolute = held_out()
-        sched.step(held)
+        if args.schedule == "cosine":
+            sched.step()
+        else:
+            sched.step(held)
         history.append((epoch, held, absolute))
         if held < best - 1e-7:
             best, best_epoch = held, epoch
@@ -224,7 +234,7 @@ def main() -> int:
             print(f"  époque {epoch:4d}  bce {held:.6f}  |écart| {absolute:.5f}  "
                   f"lr {opt.param_groups[0]['lr']:.1e}  {time.perf_counter() - start:.0f} s",
                   flush=True)
-        if epoch - best_epoch >= args.patience:
+        if args.schedule == "plateau" and epoch - best_epoch >= args.patience:
             break
     model.load_state_dict(best_state)
     model = model.cpu().eval()
@@ -239,6 +249,7 @@ def main() -> int:
         "holdout_parts": [p.name for p in hold_parts], "holdout_rows": int(hx.shape[0]),
         "shape": shape, "macs": macs(shape), "seed": args.seed,
         "epoch_rows": args.epoch_rows, "batch_size": args.batch_size, "lr": args.lr,
+        "schedule": args.schedule, "max_epochs": args.max_epochs,
         "best_epoch": best_epoch, "epochs_run": history[-1][0],
         "holdout_bce": held[1], "holdout_mean_abs": held[2],
         "seconds": time.perf_counter() - start, "sha256": sha256(args.out),

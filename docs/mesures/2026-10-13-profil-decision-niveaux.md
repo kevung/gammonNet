@@ -37,3 +37,16 @@ la décision ») date d'avant les optimisations de T3A et ne tient plus.
 - L'état global à rendre propre à chaque fil est court : les tampons de lot de
   `gn_infer_reference.c`, les compteurs de `gn_search.c`, la table des jets (initialisée une
   fois), le cache partagé `gn_evalcache_shared` et le compteur de `gn_bearoff.c`.
+
+## Après la recherche multi-fils (commit 6051023) — mesures, mochy au repos
+
+Mêmes décisions, même banc, `--threads=n`. **Empreinte des classements identique à tous les
+nombres de fils**, et même compte d'évaluations : le résultat est celui du mono-fil au bit près.
+
+| Niveau | 1 fil | 8 fils | 16 fils | 32 fils | Gain à 16 / 32 |
+|---|---|---|---|---|---|
+| `normal` (20 déc., médiane de 3) | 0,346 s | 0,056 s | 0,037 s | 0,030 s | ×9,4 / ×11,5 |
+| `ply3` (10 déc.) | 6,16 s | 0,82 s | 0,47 s | 0,36 s | ×13 / ×17 |
+| `ply4` (3 déc.) | 127,9 s | — | 9,08 s | 7,34 s | ×14 / ×17 |
+
+Reste à faire : retirer `_ENGINE_LOCK` de `tools/serve.py` et y exposer le nombre de fils.
