@@ -31,6 +31,11 @@
  *   --repeat=n        time the whole set n times and report the MEDIAN
  *   --ab              alternate the configuration WITH and WITHOUT the cube,
  *                     decision by decision, and report both
+ *   --level=name      time a canonical level (`gn_search_level`: normal, ply3,
+ *                     ply4, ...) instead of T35's fixed 2-ply (0,1,3). Its
+ *                     prune_k overrides [k]; [prune.bin] is then required
+ *                     when the level prunes. Added by T72, which needs the
+ *                     decisions the engine actually serves timed.
  *
  * `docs/mesures/2026-09-02-optimisation-mesures-d-entree.md` §5 could only
  * state the cost of the cube in a decision as a PRODUCT -- a per-call cost
@@ -118,6 +123,7 @@ int main(int argc, char **argv)
     int owner = GN_CUBE_CENTRED;
     double efficiency = -1.0;
     int away_on_roll = 0, away_opponent = 0;
+    const GnSearchLevel *level = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (strncmp(argv[i], "--", 2) != 0) {
@@ -141,6 +147,12 @@ int main(int argc, char **argv)
             if (sscanf(argv[i] + 8, "%d/%d", &away_on_roll, &away_opponent) != 2
                 || away_on_roll <= 0 || away_opponent <= 0) {
                 fprintf(stderr, "score illisible : %s\n", argv[i] + 8);
+                return 2;
+            }
+        } else if (strncmp(argv[i], "--level=", 8) == 0) {
+            level = gn_search_level(argv[i] + 8);
+            if (level == NULL) {
+                fprintf(stderr, "niveau inconnu : %s\n", argv[i] + 8);
                 return 2;
             }
         } else if (strcmp(argv[i], "--crawford") == 0) {
@@ -185,6 +197,32 @@ int main(int argc, char **argv)
     GnSearchConfig baseline = gn_search_config(2);
     baseline.filter[1] = 1;
     baseline.filter[2] = 3;
+    if (level != NULL) {
+        /* The same construction as gn_policy.c's level_config, so the timed
+         * decision is the one the engine serves under that name. */
+        baseline = gn_search_config(level->ply);
+        memcpy(baseline.filter, level->filter, sizeof(baseline.filter));
+        memcpy(baseline.filter_extra, level->filter_extra,
+               sizeof(baseline.filter_extra));
+        memcpy(baseline.filter_threshold, level->filter_threshold,
+               sizeof(baseline.filter_threshold));
+        if (gn_search_set_root_stage(&baseline, level->root_stage_ply,
+                                     level->root_stage_filter,
+                                     level->root_stage_filter_extra,
+                                     level->root_stage_filter_threshold) != 0) {
+            fprintf(stderr, "racine étagée refusée : %s\n", level->name);
+            return 1;
+        }
+        k = level->prune_k;
+        if (k > 0 && prune == NULL) {
+            fprintf(stderr, "le niveau %s élague : [prune.bin] requis\n",
+                    level->name);
+            return 2;
+        }
+        if (k == 0) {
+            prune = NULL;
+        }
+    }
     if (prune != NULL) {
         gn_search_use_prune(&baseline, prune, k);
     }
@@ -198,7 +236,7 @@ int main(int argc, char **argv)
         state.away_opponent = away_opponent;
         state.cube = 1;
         state.crawford = crawford;
-        GnSearchConfig at_score = gn_search_config_match(2, &state);
+        GnSearchConfig at_score = gn_search_config_match(baseline.ply, &state);
         if (!at_score.use_match) {
             fprintf(stderr, "score inévaluable : %d-away/%d-away\n",
                     away_on_roll, away_opponent);
@@ -336,8 +374,13 @@ int main(int argc, char **argv)
         }
     }
 #endif
-    printf("%d décisions 2-ply filtre (0,1,3)%s\n", decisions,
-           (prune != NULL) ? ", élagage actif" : "");
+    if (level != NULL) {
+        printf("%d décisions, niveau %s (%d-ply)%s\n", decisions, level->name,
+               level->ply, (prune != NULL) ? ", élagage actif" : "");
+    } else {
+        printf("%d décisions 2-ply filtre (0,1,3)%s\n", decisions,
+               (prune != NULL) ? ", élagage actif" : "");
+    }
     if (config.use_match) {
         printf("  score : %d-away/%d-away%s\n", away_on_roll, away_opponent,
                crawford ? ", Crawford" : "");
