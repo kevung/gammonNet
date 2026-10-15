@@ -1,6 +1,8 @@
 # 2026-10-15 — La recherche multi-fils dans un vrai navigateur
 
-**Nature** : une **mesure**, et une seule cible. Firefox 140.17.0esr sans interface, mochy
+**Nature** : une **mesure**, deux navigateurs sans interface — Firefox 140.17.0esr et
+Chromium 131.0.6778.33 (build Playwright v1148, installé dans le compte utilisateur, sans
+`sudo`), mesurés l'un après l'autre sur mochy
 (16 cœurs / 32 fils, `hardwareConcurrency` 32), page isolée (`crossOriginIsolated` vrai,
 en-têtes COOP/COEP du banc). Module `gammonnet-simd-mt` à `9549f92`, réseau
 `cubeless_prob5_512_512_256_256`, élagueur `prune_32` à `k=12`, niveau `normal` (2-ply).
@@ -9,13 +11,14 @@ en-têtes COOP/COEP du banc). Module `gammonnet-simd-mt` à `9549f92`, réseau
 ~2,9 fils, surtout en temps système (`top` : 90 % d'inactivité). Les trois passes ont été
 lancées **l'une après l'autre**, jamais en parallèle.
 
-**Banc** : `node bench/browser_threads.mjs --browser firefox --threads 1,2,4,8,16 --decisions 20`.
+**Banc** : `node bench/browser_threads.mjs --browser <firefox | chemin de chrome> --threads 1,2,4,8,16 --decisions 20`.
 Les 20 décisions sont une marche fixe (auto-jeu 0-ply, dés d'un générateur congruentiel
 figé, `wasm/threads_bench_worker.mjs`) ; ce ne sont **pas** les 20 décisions du banc natif
 de `2026-10-13-profil-decision-niveaux.md`, et les deux tableaux ne se divisent pas l'un par
-l'autre. Journaux bruts : `t72-navigateur/pass{1,2,3}.log`.
+l'autre. Journaux bruts : `t72-navigateur/{firefox,chromium}-pass{1,2,3}.log`. Chromium : même module,
+mêmes décisions, machine dans le même état (charge ~3,5, rien de ce dépôt).
 
-## Résultat
+## Résultat — Firefox
 
 | Fils | s/décision, médiane de 3 | min ; max | Gain |
 |---|---|---|---|
@@ -25,15 +28,28 @@ l'autre. Journaux bruts : `t72-navigateur/pass{1,2,3}.log`.
 | 8 | **0,2831** | 0,2820 ; 0,2832 | ×7,47 |
 | 16 | **0,1699** | 0,1683 ; 0,1712 | ×12,43 |
 
+## Résultat — Chromium
+
+| Fils | s/décision, médiane de 3 | min ; max | Gain |
+|---|---|---|---|
+| 1 | **1,1877** | 1,1875 ; 1,1891 | ×1,00 |
+| 2 | **0,6061** | 0,6035 ; 0,6085 | ×1,96 |
+| 4 | **0,3097** | 0,3095 ; 0,3100 | ×3,84 |
+| 8 | **0,1603** | 0,1601 ; 0,1604 | ×7,41 |
+| 16 | **0,0983** | 0,0972 ; 0,0993 | ×12,08 |
+
+Mêmes décisions, même module : à un fil, Firefox met **×1,78** le temps de Chromium ; le gain
+du multi-fils, lui, est le même dans les deux (×7,4 à 8 fils, ×12 à 16).
+
 Classements **identiques au mono-fil** à chaque nombre de fils, à chaque passe (le banc
 compare au bit).
 
 ## Ce que ça dit, et ce que ça ne dit pas
 
-- Le gain est quasi linéaire jusqu'à 8 fils et reste net à 16 : sur ce poste, le défaut
+- Dans les deux navigateurs, le gain est quasi linéaire jusqu'à 8 fils et reste net à 16 : sur ce poste, le défaut
   « fils annoncés, plafonnés à 16 » (`Evaluator.suggestedThreads`) est justifié **par la
   mesure**.
-- **Non mesuré** : Chromium (non installé sur les deux machines), un portable à cœurs
+- **Non mesuré** : un portable à cœurs
   hétérogènes, un téléphone. `hardwareConcurrency` compte des fils logiques ; au-delà des
   cœurs physiques le gain par fil baisse, de combien sur un autre appareil n'est pas connu.
 - **Non mesuré** : le coût mémoire du pool de pthreads (créé au démarrage, à la taille des

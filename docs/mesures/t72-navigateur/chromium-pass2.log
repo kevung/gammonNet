@@ -1,0 +1,6 @@
+/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome — 20 décisions, niveau normal, hardwareConcurrency 32, crossOriginIsolated true
+   1 fil(s)  1.1877 s/décision  ×1.00  identique
+   2 fil(s)  0.6035 s/décision  ×1.97  identique
+   4 fil(s)  0.3100 s/décision  ×3.83  identique
+   8 fil(s)  0.1601 s/décision  ×7.42  identique
+  16 fil(s)  0.0972 s/décision  ×12.22  identique
