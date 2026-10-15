@@ -189,9 +189,9 @@ export class Evaluator {
    * au-delà un fil naîtrait pendant la recherche — ce que le navigateur ne
    * sait pas faire sans rendre la main. Inconnu : un fil.
    *
-   * Ce qui est MESURÉ (Firefox 140, poste 16 cœurs / 32 fils, 2-ply `normal`,
-   * 20 décisions, médiane de trois passes, 2026-10-15) : ×3,86 à 4 fils,
-   * ×7,47 à 8, ×12,43 à 16, au bit près du mono-fil. Ce qui ne l'est PAS :
+   * Ce qui est MESURÉ (Chromium 131 et Firefox 140, poste 16 cœurs / 32 fils, 2-ply `normal`,
+   * 20 décisions, médiane de trois passes, 2026-10-15) : ×3,8 à 4 fils,
+   * ×7,4 à 8, ×12 à 16, au bit près du mono-fil. Ce qui ne l'est PAS :
    * un appareil à cœurs hétérogènes, ou un téléphone — `hardwareConcurrency`
    * y compte des fils logiques, et le gain s'y mesure plutôt qu'il ne se
    * déduit de ce tableau.

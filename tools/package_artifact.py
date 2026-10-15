@@ -305,8 +305,9 @@ bit**. Il faut trois choses :
    fils annoncés, plafonnés à 16 ; passez `threads` à l'`init` pour en décider
    autrement. Un `EvaluatorPool` de plusieurs workers reste à un fil par worker.
 
-Mesuré (Firefox 140, poste 16 cœurs / 32 fils, décision 2-ply `normal`,
-médiane de trois passes) : ×3,9 à 4 fils, ×7,5 à 8, ×12,4 à 16. Sur votre
+Mesuré (poste 16 cœurs / 32 fils, décision 2-ply `normal`, médiane de trois
+passes) : ×3,8 à 4 fils, ×7,4 à 8, ×12 à 16, dans Chromium 131 comme dans
+Firefox 140. Sur votre
 appareil, mesurez : un téléphone ou des cœurs hétérogènes ne se déduisent pas
 de ces chiffres.
 
@@ -383,60 +384,68 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.6.0 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.7.0 — À LIRE AVANT DE METTRE À JOUR
 
-**Les poids ne changent pas.** `strehl-prob5-512-512-256-256` et
-`strehl-prune-32` sont ceux de v1.6.0, au bit près. Ce qui change est la
-**recherche à 3 et 4 plis** d'une décision de coup, et un refus du générateur
-de coups.
+**Les poids ne changent pas, ni aucun résultat.** `strehl-prob5-512-512-256-256`
+et `strehl-prune-32` sont ceux de v1.6.0, au bit près ; toute décision rend le
+même coup et les mêmes équités qu'en v1.7.0, à tout nombre de fils. Ce qui
+change est le **temps** d'une décision, et ce que l'archive contient pour
+l'obtenir.
 
-### 1. Racine étagée à 3 et 4 plis, niveaux natifs `ply3` et `ply4`
+### 1. Une décision sur plusieurs cœurs, au bit près
 
-À 3 ou 4 plis, les candidats payés à `k` plis étaient choisis sur le classement
-0-ply. Ils le sont désormais sur un classement à 2 plis : triplet d'étage
-`(0, 8, 0,16)` sur le classement superficiel, survivants notés à 2 plis, puis
-`(0, 2, 0,04)` sur ce classement, notés à `k` plis. Seule la racine d'une
-décision de coup lit l'étage ; éteint (`root_stage_ply = 0`), la recherche est
-inchangée au bit près, et les niveaux de 0 à 2 plis le sont aussi.
+La recherche se répartit sur plusieurs fils (`src/gn_parallel.h`), en natif et
+dans un nouveau module WebAssembly multi-fils, `gammonnet-simd-mt.mjs` / `.wasm`
+(`manifest.json` : `wasm_threads`). Le résultat ne dépend pas du nombre de
+fils : parité au bit vérifiée sur le corpus de la politique à 1, 2, 4, 8 et
+16 fils.
 
-Les niveaux natifs `ply3` et `ply4` publient cette forme : une réplique
-`(1, 0, 0)` à chaque nœud intérieur, l'étage à 2 plis, élagage `k = 12`, et le
-coût de l'élagage mesuré à la forme même (`data/search_levels.json` porte
-`root_stage_ply` et `root_stage_filter` pour chaque niveau).
-`gnw_search_level` les **refuse** : la forme WebAssembly ne sait pas porter
-l'étage.
+Mesuré, décision 2-ply `normal`, poste 16 cœurs / 32 fils, médiane de trois
+passes (`docs/mesures/2026-10-15-T72-navigateur-multi-fils.md`) :
 
-Mesuré sur un match réel (`docs/mesures/2026-10-11-filtres-3-4-plis.md`) :
-**−15 % d'évaluations à 3 plis** (40 décisions, mêmes coups que la racine
-large) et **−28 % à 4 plis** (14 décisions, le coup de la racine large partout,
-là où la racine directe le manque une fois). Échantillons petits : ordres de
-grandeur d'un réglage de recherche, pas une mesure de force.
+| | 1 fil | 8 fils | 16 fils |
+|---|---|---|---|
+| Chromium 131 | 1,188 s | 0,160 s (×7,4) | 0,098 s (×12,1) |
+| Firefox 140 | 2,113 s | 0,283 s (×7,5) | 0,170 s (×12,4) |
 
-**Ce que vous devez faire** : toute analyse à 3 ou 4 plis stockée avec une
-version antérieure vient d'une autre recherche et est à recalculer ; tout repère
-figé à ces profondeurs (« or », empreinte, snapshot) est à régénérer. Rien à
-faire à 0, 1 ou 2 plis.
+En natif (`docs/mesures/2026-10-13-profil-decision-niveaux.md`) : ×9,4 à
+16 fils au 2-ply, ×13 au 3-ply, ×14 au 4-ply. Un téléphone ou des cœurs
+hétérogènes ne sont **pas** mesurés : ces facteurs ne s'y transposent pas.
 
-### 2. Plus de refus sur un doublet
+**Ce que vous devez faire pour en profiter** : servir la page avec
+`Cross-Origin-Opener-Policy: same-origin` et
+`Cross-Origin-Embedder-Policy: require-corp`, charger le module que désigne
+`chooseBuild()`, et chercher depuis un Web Worker (`QUICKSTART.md`, « Plusieurs
+cœurs par décision »). Sans ces en-têtes, rien ne change : le module SIMD
+mono-fil reste celui qu'on charge.
 
-`GN_MAX_PLAYS` passe de 2048 à 3072, la borne prouvée du nombre de positions
-distinctes qu'un doublet peut atteindre (3 060). Une position à 2 225 coups
-distincts sur un 1-1 était refusée par `gn_legal_plays` ; elle est désormais
-générée, et comparée à GNU Backgammon. Mêmes coups, même ordre sur 19 427
-positions × 36 jets.
+**Par défaut** : un worker initialisé sur le module multi-fils sans `threads`
+prend `Evaluator.suggestedThreads()` — les fils annoncés, plafonnés à 16 ; un
+`EvaluatorPool` de plusieurs workers reste à un fil par worker.
+
+### 2. `serve` : `--threads` et `/v1/cube`
+
+`tools/serve.py` cherche chaque requête sur tous les cœurs (`--threads`, défaut :
+les cœurs de la machine ; 1 = moteur séquentiel). `/v1/cube` reçoit l'état du
+videau — `jacoby`, `cube_owner`, `crawford` — au lieu de le supposer, et refuse
+un état impossible en `422`. Une requête sans ces champs reçoit les mêmes octets
+qu'avant (780 réponses rejouées). En-tête `Server` : `gammonNet-serve/3`.
 
 ### Ce qui ne change pas
 
-Les poids, le module WebAssembly dans ce qu'il calcule, l'équité de match, le
-videau, et les niveaux nommés de 0 à 2 plis.
+Les poids, l'équité de match (Kazaross-XG2 par défaut), le videau, les niveaux
+nommés, et le module SIMD mono-fil dans ce qu'il calcule.
 
 ### La force publiée ci-dessous
 
 Les sections « La force », « Le taux d'erreur » et « Ce que l'analyse d'un vrai
 match montre » ont été **mesurées avec le réseau précédent**
-`strehl-prob5-512-512-256-128` et ne sont pas rejouées à leur volume ; l'écart
-apparié de v1.6.0 (`docs/mesures/2026-10-05-T97-adoption-256.md`) est ce qui s'y
-ajoute.
+`strehl-prob5-512-512-256-128`. Le réseau actuel a été comparé à celui-là en
+tête-à-tête, 2-ply des deux côtés, dés dupliqués
+(`docs/mesures/2026-10-05-T98-non-regression.md`) : **match 7 points 50,05 %**
+[49,81 ; 50,29] sur 35 000 paires, **money +0,0056 ppg** [−0,0010 ; +0,0121]
+sur 201 000 paires. Aucune régression, et aucun gain résolu : les chiffres
+ci-dessous restent ceux qu'il faut lire.
 
 """
 
