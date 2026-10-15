@@ -331,7 +331,7 @@ WASM_FLAGS := $(WASM_CFLAGS) \
   -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node \
   -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 \
-  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPF32,HEAPF64,HEAP8,HEAPU8,HEAP32,UTF8ToString \
+  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,wasmMemory,HEAPF32,HEAPF64,HEAP8,HEAPU8,HEAP32,UTF8ToString \
   -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw,_gnw_position_encode,_gnw_position_decode,_gnw_xgid_encode,_gnw_xgid_decode,_gnw_pip_count,_gnw_search_level,_gnw_policy_decide,_gnw_set_threads \
   --extern-pre-js $(WASM_DIR)/notice.js
 
@@ -393,6 +393,15 @@ wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 .PHONY: wasm-policy
 wasm-policy: wasm $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/policy_parity.mjs --all
+
+# Le même corpus sur le module MULTI-FILS, à 16 fils : c'est là qu'un fil de
+# recherche fait grandir la mémoire et qu'une vue du tas gardée par le fil
+# principal devient périmée (Evaluator#views). Avant le correctif, chaque
+# décision à partir de la première qui cherche était refusée.
+.PHONY: wasm-policy-threads
+wasm-policy-threads: wasm-threads $(MODEL) $(PRUNE_MODEL)
+	GN_WASM_MODULE=gammonnet-simd-mt.mjs GN_WASM_THREADS=16 \
+	    node $(WASM_DIR)/policy_parity.mjs --all
 
 # La parité du CODEC, sur le corpus T12 entier et à l'égalité EXACTE — un
 # identifiant est une chaîne, il n'y a pas de tolérance à lui accorder. Le

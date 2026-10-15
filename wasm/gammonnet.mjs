@@ -101,6 +101,34 @@ export class Evaluator {
   }
 
   /**
+   * The module, with its heap views current. Every heap access goes through
+   * here, never through a view kept across a call.
+   *
+   * In the threaded module a search thread can grow the memory (its
+   * `malloc`, on a Web Worker). Emscripten's own code re-reads the buffer
+   * before touching the heap; `Module.HEAP32` and friends are only refreshed
+   * when that happens on THIS thread. A stale view is the old, shorter
+   * buffer: a write past its end is silently dropped and a read returns
+   * `undefined` -- the engine then saw dice of zero and refused a valid
+   * decision (`policy_parity --all` at 16 threads, from the first searched
+   * decision on). In the serial modules the buffer only changes on this
+   * thread and the check is one comparison.
+   */
+  #views() {
+    const m = this.#module;
+    const memory = m.wasmMemory;
+    if (memory !== undefined && m.HEAP8.buffer !== memory.buffer) {
+      const b = memory.buffer;
+      m.HEAP8 = new Int8Array(b);
+      m.HEAPU8 = new Uint8Array(b);
+      m.HEAP32 = new Int32Array(b);
+      m.HEAPF32 = new Float32Array(b);
+      m.HEAPF64 = new Float64Array(b);
+    }
+    return m;
+  }
+
+  /**
    * Instantiate a build and load a model into it.
    *
    * @param {Function} factory  the default export of a generated `.mjs`
@@ -153,7 +181,7 @@ export class Evaluator {
     }
     const ptr = m._malloc(pruneBytes.length);
     try {
-      m.HEAPU8.set(pruneBytes, ptr);
+      this.#views().HEAPU8.set(pruneBytes, ptr);
       const status = m._gnw_load_prune(ptr, pruneBytes.length, k);
       if (status !== 0) {
         // Refusé, jamais ignoré : un élagage silencieusement inactif ferait
@@ -232,9 +260,9 @@ export class Evaluator {
       const out = [];
       for (let i = 0; i < count; i++) {
         const base = (outPtr >> 2) + i * 6;
-        const probs = Array.from(m.HEAPF32.subarray(base + 1, base + 6));
+        const probs = Array.from(this.#views().HEAPF32.subarray(base + 1, base + 6));
         out.push({
-          equity: m.HEAPF32[base],
+          equity: this.#views().HEAPF32[base],
           resultId: m.UTF8ToString(idPtr + i * 15),
           // LE NOM DU COUP, tel que la recherche l'a retenu — « 6/5 8/5 »
           // sur l'ouverture 3-1. L'ordre des sous-coups est celui que la
@@ -291,7 +319,7 @@ export class Evaluator {
         throw new Error("décision de videau refusée : position illisible, ou " +
                         "score hors de la table d'équité de match");
       }
-      const v = m.HEAPF64.subarray(outPtr >> 3, (outPtr >> 3) + 9);
+      const v = this.#views().HEAPF64.subarray(outPtr >> 3, (outPtr >> 3) + 9);
       const ACTIONS = ["no-double", "double-take", "double-pass", "too-good"];
       return {
         action: ACTIONS[v[0]] ?? String(v[0]),
@@ -347,7 +375,7 @@ export class Evaluator {
       const eqPtr = m._malloc(2 * 8);
       const notationPtr = m._malloc(64);
       try {
-        m.HEAP32.set(fields, fieldsPtr >> 2);
+        this.#views().HEAP32.set(fields, fieldsPtr >> 2);
         const status = m.ccall(
           "gnw_policy_decide", "number",
           ["number", "number", "string", "number", "number", "number"],
@@ -356,8 +384,8 @@ export class Evaluator {
           throw new Error("décision refusée : entrée incohérente, niveau inconnu, " +
                           "élagage absent, ou score hors de la table");
         }
-        const v = Array.from(m.HEAP32.subarray(intsPtr >> 2, (intsPtr >> 2) + 41));
-        const e = m.HEAPF64.subarray(eqPtr >> 3, (eqPtr >> 3) + 2);
+        const v = Array.from(this.#views().HEAP32.subarray(intsPtr >> 2, (intsPtr >> 2) + 41));
+        const e = this.#views().HEAPF64.subarray(eqPtr >> 3, (eqPtr >> 3) + 2);
         const action = ACTIONS[v[0]];
         let play = null;
         if (action === "move") {
@@ -397,7 +425,7 @@ export class Evaluator {
     }
     const ptr = m._malloc(bytes.length);
     try {
-      m.HEAPU8.set(bytes, ptr);
+      this.#views().HEAPU8.set(bytes, ptr);
       const status = m._gnw_load_bearoff(ptr, bytes.length);
       if (status !== 0) {
         throw new Error(status === -2
@@ -498,7 +526,7 @@ export class Evaluator {
     const m = this.#module;
     const ptr = m._malloc(modelBytes.length);
     try {
-      m.HEAPU8.set(modelBytes, ptr);
+      this.#views().HEAPU8.set(modelBytes, ptr);
       const status = m._gnw_load_model(ptr, modelBytes.length);
       if (status !== 0) {
         // Refused, never approximated. A model this build cannot evaluate
@@ -545,12 +573,12 @@ export class Evaluator {
   evaluateBatch(features, count) {
     const m = this.#module;
     this.#reserve(count);
-    m.HEAPF32.set(features, this.#featuresPtr / F32);
+    this.#views().HEAPF32.set(features, this.#featuresPtr / F32);
     if (m._gnw_evaluate_batch(this.#featuresPtr, this.#outputsPtr, count) !== 0) {
       throw new Error("évaluation refusée : aucun modèle chargé");
     }
     const base = this.#outputsPtr / F32;
-    return m.HEAPF32.slice(base, base + count * this.numOutputs);
+    return this.#views().HEAPF32.slice(base, base + count * this.numOutputs);
   }
 
   /** Cubeless money equity from a distribution. A projection: it loses what
@@ -559,7 +587,7 @@ export class Evaluator {
     const m = this.#module;
     const ptr = m._malloc(this.numOutputs * F32);
     try {
-      m.HEAPF32.set(probs, ptr / F32);
+      this.#views().HEAPF32.set(probs, ptr / F32);
       return m._gnw_money_equity(ptr);
     } finally {
       m._free(ptr);
@@ -617,7 +645,7 @@ export class Evaluator {
         resultId: m.UTF8ToString(idPtr),
         // Le coup, nommé. Voir `rankPlays` ci-dessus et `src/gn_notation.h`.
         notation: m.UTF8ToString(notationPtr),
-        evaluations: m.HEAP32[countPtr >> 2],
+        evaluations: this.#views().HEAP32[countPtr >> 2],
       };
     } finally {
       m._free(idPtr);
@@ -654,7 +682,7 @@ export class Evaluator {
     const m = this.#module;
     const ptr = m._malloc(29 * 4);
     try {
-      const view = m.HEAP32.subarray(ptr >> 2, (ptr >> 2) + 29);
+      const view = this.#views().HEAP32.subarray(ptr >> 2, (ptr >> 2) + 29);
       const points = board?.points ?? [];
       for (let i = 0; i < 24; i++) view[i] = points[i] | 0;
       view[24] = board?.bar?.[0] | 0;
@@ -669,7 +697,7 @@ export class Evaluator {
   }
 
   #readBoard(ptr) {
-    const view = this.#module.HEAP32.subarray(ptr >> 2, (ptr >> 2) + 29);
+    const view = this.#views().HEAP32.subarray(ptr >> 2, (ptr >> 2) + 29);
     return {
       points: Array.from(view.subarray(0, 24)),
       bar: [view[24], view[25]],
@@ -741,7 +769,7 @@ export class Evaluator {
       const fieldsPtr = fields ? m._malloc(10 * 4) : 0;
       try {
         if (fields) {
-          m.HEAP32.set(Evaluator.#xgidFieldsToInts(fields), fieldsPtr >> 2);
+          this.#views().HEAP32.set(Evaluator.#xgidFieldsToInts(fields), fieldsPtr >> 2);
         }
         if (m._gnw_xgid_encode(boardPtr, fieldsPtr, outPtr) !== 0) {
           throw new Error("plateau refusé : ce n'est pas une position valide");
@@ -764,7 +792,7 @@ export class Evaluator {
                   ["string", "number", "number"], [xgid, boardPtr, fieldsPtr]) !== 0) {
         throw new Error("XGID illisible");
       }
-      const f = m.HEAP32.subarray(fieldsPtr >> 2, (fieldsPtr >> 2) + 10);
+      const f = this.#views().HEAP32.subarray(fieldsPtr >> 2, (fieldsPtr >> 2) + 10);
       return {
         board: this.#readBoard(boardPtr),
         fields: {
