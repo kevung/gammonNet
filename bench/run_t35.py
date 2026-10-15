@@ -289,7 +289,18 @@ def main() -> int:
     # même score échantillonné, mêmes jets — et la comparaison s'apparie.
     parser.add_argument("--dice-key-from", type=Path, default=None,
                         help="journal dont reprendre la clé de dés (noms de son en-tête)")
+    # Two networks face to face, same dice, same search: the second player's
+    # weights (T98). The header carries its path and fingerprint as well.
+    parser.add_argument("--ours-prune-model", default=None,
+                        help="réseau d'élagage de notre camp (défaut : celui du joueur)")
+    parser.add_argument("--theirs-model", default=None,
+                        help="--theirs self seulement : le grand réseau du second "
+                             "joueur (défaut : le même que le nôtre)")
+    parser.add_argument("--theirs-prune-model", default=None,
+                        help="--theirs self seulement (défaut : le même que le nôtre)")
     args = parser.parse_args()
+    if args.theirs != "self" and (args.theirs_model or args.theirs_prune_model):
+        parser.error("--theirs-model/--theirs-prune-model demandent --theirs self")
 
     ours_cube = args.ours_cube_ply if args.ours_cube_ply is not None else args.ours_ply
     if args.ours_policy:
@@ -305,7 +316,9 @@ def main() -> int:
                                    cube_ply=ours_cube,
                                    prune_k=args.ours_prune_k,
                                    **({"model": args.ours_model}
-                                      if args.ours_model else {}))
+                                      if args.ours_model else {}),
+                                   **({"prune_model": args.ours_prune_model}
+                                      if args.ours_prune_model else {}))
     dice_key = None
     if args.dice_key_from is not None:
         source, _ = read_journal(args.dice_key_from)
@@ -315,11 +328,23 @@ def main() -> int:
     if args.theirs == "self":
         other_k = (args.theirs_prune_k if args.theirs_prune_k is not None
                    else args.ours_prune_k)
+        ours_prune = getattr(ours, "prune_model", GammonNetCubePlayer.prune_model)
+        other_model = args.theirs_model or ours.model
+        other_prune = args.theirs_prune_model or ours_prune
+        same = (other_k == args.ours_prune_k and other_model == ours.model
+                and other_prune == ours_prune)
         theirs = GammonNetCubePlayer(ply=args.ours_ply,
                                      filter=parse_filter(args.ours_filter),
                                      cube_ply=ours_cube,
                                      prune_k=other_k,
-                                     name=(ours.name + "-bis") if other_k == args.ours_prune_k else None)
+                                     model=other_model,
+                                     prune_model=other_prune,
+                                     name=(ours.name + "-bis") if same else None)
+        # Different weights never share a name: the dice key derives from it.
+        if other_model != ours.model:
+            theirs.name += "@" + Path(other_model).stem
+        if other_prune != ours_prune:
+            theirs.name += "+" + Path(other_prune).stem
     else:
         gnubg_cube = (args.gnubg_cube_ply if args.gnubg_cube_ply is not None
                       else args.gnubg_ply)
@@ -338,6 +363,10 @@ def main() -> int:
                  "filter": list(ours.filter), "cube_ply": ours.cube_ply},
         "eval_fingerprint": eval_fingerprint(ours.model),
         "theirs": ({"name": theirs.name, "ply": theirs.ply,
+                    **({"model": theirs.model,
+                        "eval_fingerprint": eval_fingerprint(theirs.model)}
+                       if args.theirs == "self" and theirs.model != ours.model
+                       else {}),
                     "filter": list(theirs.filter),
                     "cube_ply": getattr(theirs, "cube_ply", None),
                     "prune": getattr(theirs, "prune", None)}),
