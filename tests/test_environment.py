@@ -36,6 +36,32 @@ def reference_on_path():
         sys.path.remove(str(path))
 
 
+def test_vendor_checkout_is_at_the_pinned_commit():
+    """The checkout must be the commit `tools/fetch_vendor.py` pins, not an older clone.
+
+    `make build` compiles `c_engine/bg_engine.c` from whatever is checked out. A
+    clone left at the previous pin builds without complaint and ships a rules engine
+    whose provenance is not the one `THIRD-PARTY.md` declares -- it went unnoticed
+    for weeks after the pin moved, caught only because a model file had vanished.
+    """
+    import subprocess
+
+    sys.path.insert(0, str(ROOT / "tools"))
+    try:
+        from fetch_vendor import SOURCES
+    finally:
+        sys.path.remove(str(ROOT / "tools"))
+    pinned = next(s.commit for s in SOURCES if s.name == REFERENCE.name)
+    head = subprocess.run(
+        ["git", "-C", str(REFERENCE), "rev-parse", "HEAD"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert head.startswith(pinned), (
+        f"vendor/{REFERENCE.name} est à {head[:7]}, l'épingle est {pinned} "
+        "— relancer `make vendor` puis `make build`"
+    )
+
+
 def test_rules_engine_is_compiled():
     """`make vendor` must have produced the shared library, not just cloned the source."""
     assert (REFERENCE / "c_engine" / "libbg_engine.so").is_file(), (
