@@ -61,6 +61,10 @@ WASM = [
     ROOT / "build" / "wasm" / "gammonnet.wasm",
     ROOT / "build" / "wasm" / "gammonnet-simd.mjs",
     ROOT / "build" / "wasm" / "gammonnet-simd.wasm",
+    # Le multi-fils (`make wasm-threads`) : sans lui, aucune page isolée ne
+    # peut avoir plus d'un cœur par décision, quoi qu'en dise l'API.
+    ROOT / "build" / "wasm" / "gammonnet-simd-mt.mjs",
+    ROOT / "build" / "wasm" / "gammonnet-simd-mt.wasm",
 ]
 
 #: L'API JavaScript et le pool de workers.
@@ -243,6 +247,7 @@ def quickstart() -> str:
 | `strehl-prob5-…​.bin` / `.bin16` | les poids du réseau, en float32 et en float16 (moitié moins lourd) |
 | `strehl-prune-32_…​.bin` / `.bin16` | le réseau d'élagage : il trie les coups pour que le grand n'en note qu'une poignée |
 | `gammonnet-simd.mjs` / `.wasm` | le moteur WebAssembly (préférez la version SIMD) |
+| `gammonnet-simd-mt.mjs` / `.wasm` | le même moteur sur plusieurs cœurs, pour une page isolée (voir plus bas) |
 | `api/gammonnet.mjs` | l'API JavaScript — `Evaluator` |
 | `api/pool.mjs`, `api/worker.mjs` | le pool de Web Workers : un match en 74 s au lieu de 350 |
 | `manifest.json` | les noms de fichiers de cette version — lisez-le plutôt que de les recopier |
@@ -276,6 +281,34 @@ evaluator.loadPrune(prune, files.prune_k);
 const best = evaluator.bestPlay("4HPwATDgc/ABMA", 0, 3, 1, Evaluator.level("normal"));
 console.log(best.equity, best.resultId, best.evaluations);
 ```
+
+## Plusieurs cœurs par décision
+
+Une décision peut se répartir sur plusieurs fils, **au même résultat près au
+bit**. Il faut trois choses :
+
+1. **Une page isolée.** Le serveur qui sert la page envoie
+   `Cross-Origin-Opener-Policy: same-origin` et
+   `Cross-Origin-Embedder-Policy: require-corp`. Sans eux le navigateur refuse
+   la mémoire partagée (`crossOriginIsolated` reste faux). Attention : COEP
+   bloque toute ressource d'une autre origine qui ne s'y prête pas.
+2. **Le module multi-fils**, que `chooseBuild()` désigne seul quand la page
+   est isolée, et `gammonnet-simd.mjs` sinon :
+
+   ```js
+   import { chooseBuild } from "./api/gammonnet.mjs";
+   const { file } = chooseBuild();   // "gammonnet-simd-mt.mjs" ou "gammonnet-simd.mjs"
+   ```
+3. **Un Web Worker** (`api/worker.mjs`) : la recherche y attend ses fils, ce
+   que le fil principal n'a pas le droit de faire. Un worker initialisé sur le
+   module multi-fils prend de lui-même `Evaluator.suggestedThreads()` — les
+   fils annoncés, plafonnés à 16 ; passez `threads` à l'`init` pour en décider
+   autrement. Un `EvaluatorPool` de plusieurs workers reste à un fil par worker.
+
+Mesuré (Firefox 140, poste 16 cœurs / 32 fils, décision 2-ply `normal`,
+médiane de trois passes) : ×3,9 à 4 fils, ×7,5 à 8, ×12,4 à 16. Sur votre
+appareil, mesurez : un téléphone ou des cœurs hétérogènes ne se déduisent pas
+de ces chiffres.
 
 ## Vérifier avant de faire confiance
 
@@ -626,11 +659,12 @@ def main() -> int:
         "prune_k": search_level("normal").prune_k,
         "wasm": "gammonnet-simd.mjs",
         "wasm_scalar": "gammonnet.mjs",
+        "wasm_threads": "gammonnet-simd-mt.mjs",
         "api": "api/gammonnet.mjs",
         "pool": "api/pool.mjs",
     }
     for key in ("network", "network_fp16", "prune", "prune_fp16", "wasm", "wasm_scalar",
-                "api", "pool"):
+                "wasm_threads", "api", "pool"):
         if not (target / manifest[key]).exists():
             raise SystemExit(
                 f"REFUSÉ : le manifeste annonce `{manifest[key]}`, qui n'est pas "
