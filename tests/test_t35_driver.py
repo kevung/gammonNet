@@ -30,11 +30,12 @@ REPORT = ROOT / "bench" / "report_t35.py"
 
 
 def run_driver(journal: Path, mode: str, pairs: int, workers: int,
-               limit: int = 0, indices: str | None = None) -> str:
+               limit: int = 0, indices: str | None = None,
+               seed: int = 20260810) -> str:
     command = [sys.executable, str(DRIVER), "--mode", mode,
                "--pairs", str(pairs), "--journal", str(journal),
                "--theirs", "self", "--ours-ply", "0", "--ours-filter", "",
-               "--workers", str(workers), "--seed", "20260810"]
+               "--workers", str(workers), "--seed", str(seed)]
     if limit:
         command += ["--limit", str(limit)]
     if indices:
@@ -129,3 +130,26 @@ def test_the_report_reads_a_partial_journal_and_says_so(tmp_path):
                           timeout=120)
     assert done.returncode == 0, done.stderr
     assert "PARTIEL" in done.stdout and "2 paire(s) manquante(s)" in done.stdout
+
+
+@needs_model
+def test_the_report_pools_independent_seeds_and_refuses_a_repeated_one(tmp_path):
+    first = tmp_path / "a.jsonl"
+    second = tmp_path / "b.jsonl"
+    run_driver(first, "money", pairs=3, workers=3)
+    run_driver(second, "money", pairs=2, workers=2, seed=20260811)
+
+    pooled = subprocess.run([sys.executable, str(REPORT), "--journal", str(first),
+                             "--journal", str(second)],
+                            capture_output=True, text=True, timeout=120)
+    assert pooled.returncode == 0, pooled.stderr
+    assert "2 journaux lus en commun" in pooled.stdout
+    assert "MESURE COMPLÈTE" in pooled.stdout
+    assert "paires jouées : 5" in pooled.stdout
+
+    # The same seed twice would count the same games twice.
+    twice = subprocess.run([sys.executable, str(REPORT), "--journal", str(first),
+                            "--journal", str(first)],
+                           capture_output=True, text=True, timeout=120)
+    assert twice.returncode != 0
+    assert "graines répétées" in twice.stdout + twice.stderr

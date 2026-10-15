@@ -12,6 +12,17 @@ stade de la campagne. Sur un journal incomplet il dit combien de paires
 manquent et donne le chiffre PARTIEL, clairement marqué comme tel.
 
     python bench/report_t35.py --journal docs/mesures/t35-money.jsonl
+
+Plusieurs `--journal` se lisent EN COMMUN : des lots indépendants de la même
+confrontation, joués sous des graines différentes (deux machines, par
+exemple). Les paires de graines différentes ne partagent aucun dé, donc la
+réunion est un échantillon plus grand de la même quantité. Refus si les
+joueurs, le mode ou le réglage diffèrent, ou si deux journaux ont la même
+graine — leurs paires de même index seraient les mêmes parties, comptées
+deux fois. Les empreintes numériques peuvent différer (deux builds) : elles
+sont imprimées, pas exigées égales.
+
+    python bench/report_t35.py --journal a.jsonl --journal b.jsonl
 """
 
 from __future__ import annotations
@@ -30,21 +41,47 @@ from run_t35 import read_journal  # noqa: E402
 from gammonnet.arena import bootstrap_ci  # noqa: E402
 
 
+# Fields that may differ between pooled journals: the dice (seed), the build
+# (fingerprints) and how far each pilot was first aimed (pairs_target).
+POOLABLE = {"seed", "eval_fingerprint", "pairs_target"}
+
+
+def comparable(header: dict) -> dict:
+    out = {k: v for k, v in header.items() if k not in POOLABLE}
+    if isinstance(out.get("theirs"), dict):
+        out["theirs"] = {k: v for k, v in out["theirs"].items()
+                         if k != "eval_fingerprint"}
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--journal", type=Path, required=True)
+    parser.add_argument("--journal", type=Path, required=True, action="append",
+                        help="répétable : plusieurs lots se lisent en commun")
     parser.add_argument("--bootstrap", type=int, default=10_000)
     args = parser.parse_args()
 
-    header, rows = read_journal(args.journal)
-    if header is None:
-        raise SystemExit(f"{args.journal} : pas d'en-tête — pas un journal T35")
-    if not rows:
-        raise SystemExit(f"{args.journal} : aucune paire jouée")
+    journals = []
+    for path in args.journal:
+        header, rows = read_journal(path)
+        if header is None:
+            raise SystemExit(f"{path} : pas d'en-tête — pas un journal T35")
+        if not rows:
+            raise SystemExit(f"{path} : aucune paire jouée")
+        journals.append((path, header, rows))
 
-    target = header.get("pairs_target", 0)
-    present = sorted(rows)
-    missing = target - len(present)
+    header = journals[0][1]
+    seeds = [h["seed"] for _, h, _ in journals]
+    if len(set(seeds)) != len(seeds):
+        raise SystemExit(f"graines répétées {seeds} : mêmes dés, paires comptées "
+                         f"deux fois — refus (bench/merge_t35.py réunit les "
+                         f"morceaux d'une même graine)")
+    for path, other, _ in journals[1:]:
+        a, b = comparable(header), comparable(other)
+        if a != b:
+            keys = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+            raise SystemExit(f"{path} : autre confrontation que {journals[0][0]} "
+                             f"(champs {keys}) — refus")
 
     print("── Protocole (en-tête du journal, verbatim) ──")
     for key, value in header.items():
@@ -52,10 +89,30 @@ def main() -> int:
             print(f"  {key}: {value}")
     print()
 
+    missing = 0
+    for path, own, rows in journals:
+        # A pilot resumed with a larger --pairs keeps its first target in the
+        # header: more pairs than that is not a negative shortfall.
+        missing += max(0, own.get("pairs_target", 0) - len(rows))
+    if len(journals) > 1:
+        print(f"── {len(journals)} journaux lus en commun ──")
+        for path, own, rows in journals:
+            theirs_fp = own["theirs"].get("eval_fingerprint") if isinstance(
+                own.get("theirs"), dict) else None
+            print(f"  {path} : {len(rows)} paires, graine {own['seed']}, "
+                  f"empreinte {own['eval_fingerprint']}"
+                  + (f" / {theirs_fp}" if theirs_fp else ""))
+        print()
+
+    present = [(j, i) for j, (_, _, rows) in enumerate(journals) for i in sorted(rows)]
+    rows = {(j, i): journals[j][2][i] for j, i in present}
+    target = sum(own.get("pairs_target", 0) for _, own, _ in journals)
+
     label = "MESURE COMPLÈTE" if missing == 0 else (
         f"CHIFFRE PARTIEL — {missing} paire(s) manquante(s) sur {target}")
     print(f"── {label} ──")
-    print(f"  paires jouées : {len(present)} (2 {'matchs' if header['mode'] == 'match' else 'parties'} chacune), graine {header['seed']}")
+    print(f"  paires jouées : {len(present)} (2 {'matchs' if header['mode'] == 'match' else 'parties'} chacune), "
+          f"graine{'s' if len(seeds) > 1 else ''} {', '.join(map(str, seeds))}")
 
     nets = [rows[i]["net"] for i in present]
     samples = [n / 2.0 for n in nets]
