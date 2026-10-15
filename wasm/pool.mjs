@@ -303,8 +303,14 @@ export class EvaluatorPool {
    * @param {string} workerUrl   URL of `worker.mjs`
    * @param {string} factoryUrl  URL of the generated `.mjs`
    * @param {Uint8Array} modelBytes
+   *
+   * Plusieurs workers restent à UN fil chacun sauf `config.threads` explicite :
+   * le pool parallélise déjà par worker, et un worker seul prendrait sinon
+   * tous les fils conseillés (`worker.mjs`, `applyInit`) — huit workers
+   * multi-fils se disputeraient alors les mêmes cœurs.
    */
   static async create(count, workerUrl, factoryUrl, modelBytes, config = {}) {
+    if (count > 1 && config.threads === undefined) config = { ...config, threads: 1 };
     const workers = await Promise.all(
       Array.from({ length: count }, () => new Promise((resolve, reject) => {
         const worker = new Worker(workerUrl, { type: "module" });

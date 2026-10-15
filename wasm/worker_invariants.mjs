@@ -178,6 +178,34 @@ check("`evaluate` répond comme avant",
       batch.type === "result" && batch.count === 2
       && batch.outputs.length === 2 * direct.numOutputs, batch.message || batch.type);
 
+/* 9. LE NOMBRE DE FILS PAR DÉFAUT.
+ *
+ * Un `init` sans `threads` laisse le module série à un fil — il n'en a pas
+ * d'autre — et met le module multi-fils sur `Evaluator.suggestedThreads()` :
+ * l'appelant qui n'a rien demandé reçoit la vitesse que la page isolée lui
+ * permet, au même résultat près au bit. Un `threads` explicite l'emporte. */
+check("module série, sans `threads` : un fil", ready.threads === 1, `${ready.threads}`);
+/* Node 18 n'a pas de `navigator` : on annonce quatre fils, comme un
+ * navigateur le ferait, avant que le module ne dimensionne son pool. */
+if (globalThis.navigator?.hardwareConcurrency === undefined) {
+  Object.defineProperty(globalThis, "navigator", {
+    value: { hardwareConcurrency: 4 }, configurable: true });
+}
+const THREADED = pathToFileURL(join(ROOT, "build", "wasm", "gammonnet-simd-mt.mjs")).href;
+send({ type: "init", id: 11, factoryUrl: THREADED, modelBytes, pruneBytes, pruneK: 12 });
+const readyMt = await next((m) => m.id === 11, "ready multi-fils");
+check("module multi-fils, sans `threads` : le conseil",
+      readyMt.type === "ready" && readyMt.threads === Evaluator.suggestedThreads()
+      && readyMt.threads > 1,
+      `${readyMt.threads} contre ${Evaluator.suggestedThreads()}`);
+send({ type: "init", id: 12, factoryUrl: THREADED, modelBytes, pruneBytes, pruneK: 12, threads: 2 });
+const readyTwo = await next((m) => m.id === 12, "ready à deux fils");
+check("un `threads` explicite l'emporte sur le conseil", readyTwo.threads === 2, `${readyTwo.threads}`);
+check("le conseil suit les fils annoncés, plafonné au pool du module",
+      Evaluator.suggestedThreads({ hardwareConcurrency: 4 }) === 4
+      && Evaluator.suggestedThreads({ hardwareConcurrency: 64 }) === 16
+      && Evaluator.suggestedThreads({ hardwareConcurrency: null }) === 1);
+
 console.log(failures === 0
   ? "\n✅ invariants du protocole de worker tenus"
   : `\n❌ ${failures} invariant(s) rompu(s)`);

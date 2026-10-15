@@ -139,6 +139,19 @@ function applyConfiguration({ pruneBytes, pruneK, bearoffBytes, cacheLog2, threa
 }
 
 /*
+ * À l'`init`, et là seulement : sans `threads`, le module multi-fils prend le
+ * conseil (`Evaluator.suggestedThreads`) plutôt que de rester à un fil. Le
+ * résultat est le même au bit près ; seul le temps d'une décision change. Le
+ * module série n'a qu'un fil, et `configure` ne touche qu'à ce qu'il nomme.
+ */
+function applyInit(config) {
+  applyConfiguration(config);
+  if (config.threads === undefined && evaluator.threaded) {
+    evaluator.setThreads(Evaluator.suggestedThreads());
+  }
+}
+
+/*
  * UNE DÉCISION, éventuellement en deux temps.
  *
  * `progressive` n'est pas un réglage de confort : c'est la seule frontière
@@ -269,7 +282,7 @@ self.onmessage = async (event) => {
       evaluator = await Evaluator.create(factory, modelBytes);
       /* Élagage, table de fin de partie, cache : optionnels, et pris ici
        * plutôt que par un aller-retour de plus. */
-      applyConfiguration(event.data);
+      applyInit(event.data);
       self.postMessage({
         type: "ready", id,
         simd: evaluator.hasSimd,

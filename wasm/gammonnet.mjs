@@ -62,6 +62,10 @@ function requireEfficiency(value, owner, method) {
 /* GN_NOTATION_LENGTH (`src/gn_notation.h`) : la place d'une notation de coup. */
 const NOTATION_LENGTH = 40;
 
+/* Le plafond de `WASM_THREAD_POOL` (Makefile) : les fils que le module
+ * multi-fils a déjà créés au démarrage. */
+const MAX_POOL_THREADS = 16;
+
 /**
  * A loaded evaluator.
  *
@@ -169,6 +173,37 @@ export class Evaluator {
   /** Le nombre de fils en vigueur (1 tant que `setThreads` n'a rien changé). */
   threads() {
     return this.#threads;
+  }
+
+  /** Vrai pour le module multi-fils : sa mémoire est partagée entre fils. */
+  get threaded() {
+    return typeof SharedArrayBuffer === "function"
+      && this.#module.wasmMemory?.buffer instanceof SharedArrayBuffer;
+  }
+
+  /**
+   * COMBIEN DE FILS DONNER À UNE DÉCISION, quand l'appelant n'a rien dit.
+   *
+   * Les fils annoncés, plafonnés à 16 : c'est la taille du pool de pthreads
+   * que le module crée au démarrage (`WASM_THREAD_POOL`, Makefile), et
+   * au-delà un fil naîtrait pendant la recherche — ce que le navigateur ne
+   * sait pas faire sans rendre la main. Inconnu : un fil.
+   *
+   * Ce qui est MESURÉ (Firefox 140, poste 16 cœurs / 32 fils, 2-ply `normal`,
+   * 20 décisions, médiane de trois passes, 2026-10-15) : ×3,86 à 4 fils,
+   * ×7,47 à 8, ×12,43 à 16, au bit près du mono-fil. Ce qui ne l'est PAS :
+   * un appareil à cœurs hétérogènes, ou un téléphone — `hardwareConcurrency`
+   * y compte des fils logiques, et le gain s'y mesure plutôt qu'il ne se
+   * déduit de ce tableau.
+   *
+   * @param {object} opts  `hardwareConcurrency` (défaut : celui du navigateur)
+   * @returns {number} au moins 1, au plus 16
+   */
+  static suggestedThreads({
+    hardwareConcurrency = globalThis.navigator?.hardwareConcurrency,
+  } = {}) {
+    if (!Number.isFinite(hardwareConcurrency) || hardwareConcurrency < 1) return 1;
+    return Math.min(Math.floor(hardwareConcurrency), MAX_POOL_THREADS);
   }
 
   loadPrune(pruneBytes, k) {
