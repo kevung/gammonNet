@@ -74,9 +74,17 @@ class FakeWorker {
 
     const ms = costOf(data);
     const mine = this.generation;
+    /* Le temps de calcul DÉCLARÉ est celui que ce faux worker a réellement
+     * passé, mesuré comme un vrai worker le mesure (`worker.mjs`, `timed`) —
+     * pas le `ms` demandé : un minuteur de Node peut se déclencher un peu
+     * avant `ms` au sens de `performance.now()`, et un calcul déclaré plus
+     * long que l'aller-retour vu par le pool faisait échouer l'invariant 5
+     * une fois sur quelques passes, sans que le pool y soit pour rien. */
+    const startedAt = performance.now();
     const timer = setTimeout(() => {
       if (this.terminated || this.generation !== mine) return;
       this.inFlight = null;
+      const computeMs = performance.now() - startedAt;
       if (type === "evaluate") {
         const outputs = new Float32Array(data.count * NUM_OUTPUTS);
         /* Une sortie qui DIT de quelle position elle vient : c'est ce qui
@@ -88,12 +96,12 @@ class FakeWorker {
           }
         }
         this.onmessage?.({
-          data: { type: "result", id: data.id, outputs, count: data.count, computeMs: ms },
+          data: { type: "result", id: data.id, outputs, count: data.count, computeMs },
         });
       } else {
         this.onmessage?.({
           data: {
-            type: "result", id: data.id, kind: type, ply: 0, computeMs: ms,
+            type: "result", id: data.id, kind: type, ply: 0, computeMs,
             outcome: { positionId: data.positionId, equity: 0, resultId: "x", evaluations: ms },
           },
         });
