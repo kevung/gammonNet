@@ -2955,6 +2955,15 @@ score, et l'avantage statique sous recherche.
 de `tests/test_search_filter.py` se déplacent **visiblement** ; `test_the_header_says_what_we_expect`,
 `tools/package_artifact.py`, `models/release_pin.json` et `cubeful.MODEL` suivent.
 
+**Statut au 2026-10-15 : rendue — pas de régression, ni en match ni en money.** Tête-à-tête
+256 contre 128, IC 95 % bootstrap sur les paires : **match** MWC **50,05 %** [49,81 ; 50,29] sur
+35 000 paires (seuil 49,5 %, tenu) ; **money** **+0,0056 ppg** [−0,0010 ; +0,0121] sur 201 000
+paires, deux journaux à graines disjointes lus en commun (seuil −0,010, tenu). Aucun gain résolu,
+et ce n'était pas la question. L'écart-type money réalisé (1,486 par paire) dépasse de 30 % celui
+du pilote : demi-largeur 0,0066 au lieu de 0,005 visée, sans effet sur le verdict. La bascule
+était déjà faite en v1.6.0 sur la non-régression de T97 ; cette fiche la confirme à 17 et 100 fois
+son volume. Fiche : `docs/mesures/2026-10-05-T98-non-regression.md` §5.
+
 **Exclut** — le protocole T35 contre gnubg (il ne départage pas deux réseaux proches : ±0,27 point
 de MWC), tout réglage nouveau, tout réentraînement.
 
