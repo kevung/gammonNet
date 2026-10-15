@@ -1,0 +1,49 @@
+{
+ "date": "2026-10-13",
+ "tool": "tools/distill_volume_t72.py",
+ "teacher_labels": "0-ply, cubeless_prob5_512_512_256_256 (build_distill_corpus)",
+ "rows": 800000,
+ "train_parts": [
+  "part-mochy-009-00006.npz",
+  "part-mochy-001-00004.npz",
+  "part-mochy-013-00022.npz",
+  "part-mochy-026-00005.npz",
+  "part-mochy-011-00003.npz",
+  "part-mochy-009-00009.npz",
+  "part-mochy-013-00005.npz",
+  "part-mochy-014-00015.npz",
+  "part-mochy-005-00004.npz"
+ ],
+ "holdout_parts": [
+  "part-mochy-006-00012.npz",
+  "part-mochy-003-00008.npz",
+  "part-mochy-002-00012.npz",
+  "part-mochy-026-00012.npz"
+ ],
+ "holdout_rows": 400000,
+ "shape": [
+  512,
+  512,
+  256,
+  256
+ ],
+ "macs": 560384,
+ "seed": 20261013,
+ "epoch_rows": 4000000,
+ "batch_size": 8192,
+ "lr": 0.001,
+ "best_epoch": 67,
+ "epochs_run": 87,
+ "holdout_bce": 0.2527628596305847,
+ "holdout_mean_abs": 0.006350072450339794,
+ "seconds": 61.14100475329906,
+ "sha256": "97b09ecce2acae3f04c911ca44074216cb1de565d85f4c55bdb4751949b073dd",
+ "opening_position": [
+  0.5208770632743835,
+  0.14599460363388062,
+  0.00680135702714324,
+  0.1315741389989853,
+  0.005793686956167221
+ ],
+ "verdict": "AUCUN \u2014 la force se lit sur T70"
+}
