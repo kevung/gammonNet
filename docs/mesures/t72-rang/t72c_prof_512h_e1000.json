@@ -1,0 +1,66 @@
+{
+  "bounded": 869,
+  "by_class": {
+    "backgame": {
+      "loss": 0.00695625098517606,
+      "n": 419
+    },
+    "bearoff_contact": {
+      "loss": 0.011797086724125888,
+      "n": 582
+    },
+    "blitz": {
+      "loss": 0.004439413733362847,
+      "n": 1228
+    },
+    "contact": {
+      "loss": 0.007890662556253557,
+      "n": 4861
+    },
+    "crashed": {
+      "loss": 0.020032173820436587,
+      "n": 422
+    },
+    "holding": {
+      "loss": 0.005959658451958379,
+      "n": 1108
+    },
+    "prime_vs_prime": {
+      "loss": 0.011712969104241367,
+      "n": 448
+    },
+    "race_contact": {
+      "loss": 0.006390652423545058,
+      "n": 635
+    }
+  },
+  "ci95": [
+    0.0074150605578353485,
+    0.008564314150735119
+  ],
+  "context": "money",
+  "core_hours": 6.035992923313752,
+  "decisions": 10000,
+  "evals": 211187658,
+  "filter": [
+    0,
+    1,
+    5
+  ],
+  "filter_extra": [],
+  "filter_threshold": [],
+  "label": "t72c_prof_512h_e1000",
+  "loss": 0.007973419896614195,
+  "model": "t72c_prof_512h_e1000.bin",
+  "outside": 297,
+  "outside_rate": 0.0297,
+  "ply": 2,
+  "prune_evals": 593336041,
+  "prune_k": 12,
+  "registry": "registre-money.jsonl",
+  "scored": 9703,
+  "search_seconds": 19215.652051423676,
+  "seconds": 1207.1985846627504,
+  "unresolved": 183,
+  "workers": 18
+}

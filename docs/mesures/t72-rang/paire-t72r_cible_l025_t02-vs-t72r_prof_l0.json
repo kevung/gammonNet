@@ -1,0 +1,61 @@
+{
+  "candidate": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      5
+    ],
+    "filter_extra": [],
+    "filter_threshold": [],
+    "header": true,
+    "label": "t72r_cible_l025_t02",
+    "model": "t72r_cible_l025_t02.bin",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "registre-money.jsonl"
+  },
+  "changed": 2755,
+  "ci95": [
+    -0.00037069342811866314,
+    0.00032536197917308607
+  ],
+  "cost": {
+    "evals": {
+      "candidate": 211101569,
+      "reference": 211187639
+    },
+    "prune_evals": {
+      "candidate": 594122527,
+      "reference": 593781702
+    },
+    "seconds": {
+      "candidate": 3872.6584255774505,
+      "reference": 18556.68827271741
+    }
+  },
+  "delta": -1.136207198303753e-05,
+  "margin": 0.001,
+  "non_inferior": true,
+  "outside": 453,
+  "paired": 9547,
+  "reference": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      5
+    ],
+    "filter_extra": [],
+    "filter_threshold": [],
+    "header": true,
+    "label": "t72r_prof_l0",
+    "model": "t72r_prof_l0.bin",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "registre-money.jsonl"
+  },
+  "z": -0.06374568145756354
+}
