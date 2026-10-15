@@ -1,0 +1,6 @@
+firefox — 20 décisions, niveau normal, hardwareConcurrency 32, crossOriginIsolated true
+   1 fil(s)  2.1115 s/décision  ×1.00  identique
+   2 fil(s)  1.0678 s/décision  ×1.98  identique
+   4 fil(s)  0.5468 s/décision  ×3.86  identique
+   8 fil(s)  0.2820 s/décision  ×7.49  identique
+  16 fil(s)  0.1699 s/décision  ×12.43  identique
