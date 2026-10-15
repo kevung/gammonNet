@@ -22,6 +22,12 @@ rows are hours, not weeks. Three things the T3A tool cannot do at that volume:
   exactly what the C encoder produced). 196 bytes instead of 784, losslessly
   -- `decode_part` below rebuilds the float32 matrix bit for bit, and refuses
   a value outside the table rather than rounding it.
+* **Decisions.** Every row carries `decisions`, the index of the decision
+  it belongs to in its worker's walk: the rows of one decision are the
+  teacher-labelled children of ONE position and roll -- siblings -- and they
+  are written contiguously. A ranking objective needs that grouping; a
+  decision cut by a chunk boundary simply continues in the next part, under
+  the same index. Parts written before this field existed have none.
 * **Exploration.** With probability `--explore`, the walk follows a uniformly
   drawn candidate instead of the best one, so the corpus does not stay on the
   teacher's own line of play. Every candidate is still labelled by the
@@ -109,20 +115,23 @@ def _worker(args: tuple) -> int:
     feats: list[list[float]] = []
     labels: list[tuple[float, ...]] = []
     ids: list[str] = []
+    decisions: list[int] = []
+    decision = 0   # index of the decision in this worker's walk
     c = 0          # index of the chunk being filled
     produced = 0   # rows of this worker's walk so far
 
     def flush() -> None:
-        nonlocal feats, labels, ids
+        nonlocal feats, labels, ids, decisions
         name = out / part_name(host, worker, c)
         if c in todo:
             codes, values = encode_codes(feats)
             tmp = name.with_suffix(".tmp.npz")
             np.savez(tmp, codes=codes, values=values,
                      labels=np.asarray(labels, dtype=np.float32),
-                     ids=np.asarray(ids, dtype="<U15"))
+                     ids=np.asarray(ids, dtype="<U15"),
+                     decisions=np.asarray(decisions, dtype=np.int64))
             os.replace(tmp, name)
-        feats, labels, ids = [], [], []
+        feats, labels, ids, decisions = [], [], [], []
 
     # The walk is replayed even through chunks already on disk (determinism),
     # but those chunks are neither encoded nor labelled-and-kept.
@@ -149,6 +158,7 @@ def _worker(args: tuple) -> int:
                         feats.append(codec.encode(result))
                         labels.append(cand.evaluation.as_tuple())
                         ids.append(codec.position_id(result))
+                        decisions.append(decision)
                     else:
                         feats.append(None)  # placeholder: keeps the count
                     produced += 1
@@ -157,6 +167,7 @@ def _worker(args: tuple) -> int:
                         c += 1
                         if produced == quota or c > last:
                             break
+                decision += 1
                 if not ranked:
                     position = position.swapped_turn()
                 elif rng.random() < explore:
