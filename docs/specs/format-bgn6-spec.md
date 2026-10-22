@@ -47,10 +47,11 @@ dans l'ordre :
 
 Les biais restent en float32 : 1 541 valeurs sur 561 925 (0,27 % du fichier), et l'endroit où
 une erreur se propagerait le plus. Le fichier s'arrête exactement après le dernier biais. Un
-fichier trop court est refusé par le lecteur C (`tests/test_fp16.py`,
-`test_a_truncated_artifact_is_refused_not_guessed`) ; un fichier trop long, lui, n'est **pas**
-détecté par ce lecteur, qui s'arrête au dernier biais attendu. Une réimplémentation fera mieux en
-refusant aussi les octets en trop : c'est une forme incomprise, pas une marge.
+fichier trop court **et** un fichier trop long sont refusés par le lecteur C (`tests/test_fp16.py`,
+`test_a_truncated_artifact_is_refused_not_guessed` et
+`test_an_overlong_artifact_is_refused_not_trimmed`) : un octet après le dernier biais est une
+forme incomprise, pas une marge. Une réimplémentation refuse de même. (Jusqu'à v1.8.1 incluse, le
+lecteur C s'arrêtait au dernier biais attendu sans regarder la suite.)
 
 Pour le réseau servi : 1 126 968 octets, contre 2 247 736 pour le `.bin`.
 
