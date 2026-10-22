@@ -253,6 +253,13 @@ static int load_fp16(NNModel *model, const char *path)
         }
         free(packed);
     }
+    /* The file ends exactly after the last bias (spec BGN6 §2): a trailing
+     * byte is a shape this reader does not understand, not padding. */
+    if (fgetc(file) != EOF) {
+        fclose(file);
+        nn_free(model);
+        return -1;
+    }
     fclose(file);
 
     model->buf_a = malloc((size_t)widest * sizeof(float));

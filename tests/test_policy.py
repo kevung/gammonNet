@@ -32,6 +32,8 @@ from gammonnet.rules import BLACK, WHITE, Position
 
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS = ROOT / "data" / "policy_reference.bin"
+CORPUS16 = ROOT / "data" / "policy_reference16.bin"
+PIN = ROOT / "models" / "release_pin.json"
 
 
 @pytest.fixture(scope="module")
@@ -297,6 +299,32 @@ def test_corpus_replays_byte_for_byte(player):
         assert answer(player._network, player._prune, level, decision) == record, decision
         replayed[level] += 1
     assert replayed["instant"] > 300
+
+
+def test_fp16_corpus_replays_byte_for_byte():
+    """Le pendant float16 (`tools/policy_corpus.py --fp16`) : les mêmes
+    questions que le corpus float32, rejouées sur les `.bin16` épinglés."""
+    if bearoff._shared is not None:
+        pytest.skip("une table bilatérale partagée est installée par un autre test")
+    pin = json.loads(PIN.read_text())
+    model = ROOT / "models" / pin["network_fp16"]["filename"]
+    prune = ROOT / "models" / pin["prune_fp16"]["filename"]
+    if not (model.exists() and prune.exists()):
+        pytest.skip("poids float16 absents : python tools/fetch_release.py")
+    p = PolicyPlayer(level="instant", model=str(model), prune_model=str(prune))
+    p._load()
+    questions, records = read_corpus(CORPUS), read_corpus(CORPUS16)
+    assert len(records) == len(questions)
+    slow = bool(os.environ.get("GN_POLICY_SLOW"))
+    replayed = 0
+    for question, record in zip(questions, records):
+        assert record[:80] == question[:80]   # la même question (l'entrée)
+        level, decision = unpack_decision(record)
+        if level != "instant" and not slow:
+            continue
+        assert answer(p._network, p._prune, level, decision) == record, decision
+        replayed += 1
+    assert replayed > 300
 
 
 def test_corpus_covers_every_category():

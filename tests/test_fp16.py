@@ -120,3 +120,14 @@ def test_a_truncated_artifact_is_refused_not_guessed(packed, tmp_path):
     broken.write_bytes(target.read_bytes()[: len(target.read_bytes()) // 2])
     with pytest.raises(Exception):
         Network.load(broken)
+
+
+def test_an_overlong_artifact_is_refused_not_trimmed(packed, tmp_path):
+    """Un octet de trop après le dernier biais est une forme incomprise, pas une
+    marge (spec BGN6 §2) : le lecteur doit refuser, pas s'arrêter là où il croit
+    que le fichier finit."""
+    target, _report = packed
+    broken = tmp_path / "overlong.bin16"
+    broken.write_bytes(target.read_bytes() + b"\x00")
+    with pytest.raises(Exception):
+        Network.load(broken)
