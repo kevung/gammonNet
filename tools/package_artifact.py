@@ -393,57 +393,49 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.7.0 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.8.0 — À LIRE AVANT DE METTRE À JOUR
 
 **Les poids ne changent pas, ni aucun résultat.** `strehl-prob5-512-512-256-256`
-et `strehl-prune-32` sont ceux de v1.6.0, au bit près ; toute décision rend le
-même coup et les mêmes équités qu'en v1.7.0, à tout nombre de fils. Ce qui
-change est le **temps** d'une décision, et ce que l'archive contient pour
-l'obtenir.
+et `strehl-prune-32` sont ceux de v1.6.0, au bit près, dans les deux formats ;
+toute décision rend le même coup et les mêmes équités qu'en v1.8.0. Ce qui
+change est ce que l'archive donne pour **vérifier** le `.bin16`, et ce qu'on
+sait de son coût.
 
-### 1. Une décision sur plusieurs cœurs, au bit près
+### 1. Le `.bin16` a son propre repère de parité
 
-La recherche se répartit sur plusieurs fils (`src/gn_parallel.h`), en natif et
-dans un nouveau module WebAssembly multi-fils, `gammonnet-simd-mt.mjs` / `.wasm`
-(`manifest.json` : `wasm_threads`). Le résultat ne dépend pas du nombre de
-fils : parité au bit vérifiée sur le corpus de la politique à 1, 2, 4, 8 et
-16 fils.
+`verify/reference16.bin` : les mêmes 2 000 positions que `verify/reference.bin`,
+avec les sorties que le moteur natif calcule depuis le `.bin16`.
+`node verify/parity.mjs` vérifie désormais **chaque format contre son propre
+repère** — comparer le `.bin16` au repère du float32 testerait l'arrondi des
+poids, pas le lecteur. Mesuré : `max|Δ| = 0` en scalaire et en SIMD, pour les
+deux formats.
 
-Mesuré, décision 2-ply `normal`, poste 16 cœurs / 32 fils, médiane de trois
-passes (`docs/mesures/2026-10-15-T72-navigateur-multi-fils.md`) :
+Le format est décrit pour une réimplémentation du lecteur dans
+`docs/specs/format-bgn6-spec.md` (disposition, conversion exacte, et les 631
+poids sous-normaux qu'un lecteur *flush-to-zero* perdrait).
 
-| | 1 fil | 8 fils | 16 fils |
-|---|---|---|---|
-| Chromium 131 | 1,188 s | 0,160 s (×7,4) | 0,098 s (×12,1) |
-| Firefox 140 | 2,113 s | 0,283 s (×7,5) | 0,170 s (×12,4) |
+### 2. Ce que le float16 coûte, remesuré sur le réseau actuel
 
-En natif (`docs/mesures/2026-10-13-profil-decision-niveaux.md`) : ×9,4 à
-16 fils au 2-ply, ×13 au 3-ply, ×14 au 4-ply. Un téléphone ou des cœurs
-hétérogènes ne sont **pas** mesurés : ces facteurs ne s'y transposent pas.
+Le chiffre publié jusqu'ici (0,015 % des décisions) venait du réseau précédent.
+Sur le réseau actuel, les deux réseaux en `.bin16`
+(`docs/mesures/2026-10-22-float16-reseau-servi.md`) :
 
-**Ce que vous devez faire pour en profiter** : servir la page avec
-`Cross-Origin-Opener-Policy: same-origin` et
-`Cross-Origin-Embedder-Policy: require-corp`, charger le module que désigne
-`chooseBuild()`, et chercher depuis un Web Worker (`QUICKSTART.md`, « Plusieurs
-cœurs par décision »). Sans ces en-têtes, rien ne change : le module SIMD
-mono-fil reste celui qu'on charge.
+| | valeur |
+|---|---|
+| perte en jeu, niveau `normal`, Δ apparié float16 − float32 (registre T70, 9 786 décisions) | **−0,0000049** [−0,000016 ; +0,000006] |
+| décisions où le coup change, même instrument | 0,33 % |
+| écart d'équité d'une position, moyen / p99,9 / maximal (9,6 M positions) | 1,3×10⁻⁴ / 7,0×10⁻⁴ / 8,6×10⁻³ |
 
-**Par défaut** : un worker initialisé sur le module multi-fils sans `threads`
-prend `Evaluator.suggestedThreads()` — les fils annoncés, plafonnés à 16 ; un
-`EvaluatorPool` de plusieurs workers reste à un fil par worker.
-
-### 2. `serve` : `--threads` et `/v1/cube`
-
-`tools/serve.py` cherche chaque requête sur tous les cœurs (`--threads`, défaut :
-les cœurs de la machine ; 1 = moteur séquentiel). `/v1/cube` reçoit l'état du
-videau — `jacoby`, `cube_owner`, `crawford` — au lieu de le supposer, et refuse
-un état impossible en `422`. Une requête sans ces champs reçoit les mêmes octets
-qu'avant (780 réponses rejouées). En-tête `Server` : `gammonNet-serve/3`.
+En jeu, le float16 est **indiscernable de zéro**. Une équité stockée sous l'un
+des formats et recalculée sous l'autre change pourtant de valeur, de l'ordre de
+10⁻⁴ : qui compare des analyses entre elles doit traiter un changement de format
+comme un changement de moteur.
 
 ### Ce qui ne change pas
 
 Les poids, l'équité de match (Kazaross-XG2 par défaut), le videau, les niveaux
-nommés, et le module SIMD mono-fil dans ce qu'il calcule.
+nommés, les trois modules WebAssembly (scalaire, SIMD, SIMD multi-fils) dans ce
+qu'ils calculent, et `serve`.
 
 ### La force publiée ci-dessous
 
