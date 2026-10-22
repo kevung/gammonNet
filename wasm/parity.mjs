@@ -8,6 +8,11 @@
  * Both builds are checked -- scalar and SIMD. Checking only one would leave the
  * other free to be wrong in exactly the way T21 would then measure.
  *
+ * Both weight formats are checked too, each against its OWN reference: the
+ * float16 artifact (`BGN6`) is not the float32 network, and holding it to the
+ * float32 outputs would test the rounding, not the reader. `reference16.bin` is
+ * what a port loading the `.bin16` must reproduce (docs/specs/format-bgn6-spec.md).
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -21,18 +26,25 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 
 const REFERENCE = join(ROOT, "build", "reference.bin");
-/* GN_MODEL_BIN retargets the check at another network, as in tests/test_infer.py. */
+const REFERENCE16 = join(ROOT, "build", "reference16.bin");
+/* GN_MODEL_BIN retargets the check at another network, as in tests/test_infer.py;
+ * the float16 pair is then skipped, its reference belonging to the default one. */
 const MODEL = process.env.GN_MODEL_BIN || join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin");
+const MODEL16 = join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin16");
+const PAIRS = [
+  { format: "float32", reference: REFERENCE, model: MODEL },
+  ...(process.env.GN_MODEL_BIN ? [] : [{ format: "float16", reference: REFERENCE16, model: MODEL16 }]),
+];
 
 const TOLERANCE = 1e-6;
 const MAGIC = 0x46524e47; // 'GNRF' little-endian
 
-async function loadReference() {
-  const raw = await readFile(REFERENCE);
+async function loadReference(path) {
+  const raw = await readFile(path);
   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
 
   if (view.getUint32(0, true) !== MAGIC) {
-    throw new Error(`${REFERENCE} : magic inattendu`);
+    throw new Error(`${path} : magic inattendu`);
   }
   const count = view.getInt32(4, true);
   const numFeatures = view.getInt32(8, true);
@@ -89,28 +101,32 @@ async function check(label, factoryPath, reference, modelBytes) {
   return { ok, worst, simd: evaluator.hasSimd };
 }
 
-const reference = await loadReference();
-const modelBytes = new Uint8Array(await readFile(MODEL));
+const results = [];
+for (const pair of PAIRS) {
+  const reference = await loadReference(pair.reference);
+  const modelBytes = new Uint8Array(await readFile(pair.model));
 
-console.log(
-  `repère : ${reference.count} positions × ${reference.numOutputs} sorties, ` +
-    `tolérance ${TOLERANCE.toExponential(0)}`,
-);
+  console.log(
+    `\n${pair.format} — repère : ${reference.count} positions × ` +
+      `${reference.numOutputs} sorties, tolérance ${TOLERANCE.toExponential(0)}`,
+  );
 
-const results = [
-  await check("scalaire", "../build/wasm/gammonnet.mjs", reference, modelBytes),
-  await check("SIMD", "../build/wasm/gammonnet-simd.mjs", reference, modelBytes),
-];
+  const pairResults = [
+    await check("scalaire", "../build/wasm/gammonnet.mjs", reference, modelBytes),
+    await check("SIMD", "../build/wasm/gammonnet-simd.mjs", reference, modelBytes),
+  ];
 
-// Les deux builds doivent aussi être d'accord entre eux : une divergence
-// signalerait que la vectorisation a changé le résultat, pas seulement sa
-// vitesse -- et T21 comparerait alors deux moteurs, pas deux compilations.
-if (results[0].simd === results[1].simd) {
-  console.log("⚠️  les deux builds rapportent le même drapeau SIMD");
+  // Les deux builds doivent aussi être d'accord entre eux : une divergence
+  // signalerait que la vectorisation a changé le résultat, pas seulement sa
+  // vitesse -- et T21 comparerait alors deux moteurs, pas deux compilations.
+  if (pairResults[0].simd === pairResults[1].simd) {
+    console.log("⚠️  les deux builds rapportent le même drapeau SIMD");
+  }
+  results.push(...pairResults);
 }
 
 if (!results.every((r) => r.ok)) {
   console.error(`\n❌ parité échouée : la tolérance est ${TOLERANCE.toExponential(0)}`);
   process.exit(1);
 }
-console.log("\n✅ parité WebAssembly ↔ natif établie sur les deux builds");
+console.log(`\n✅ parité WebAssembly ↔ natif établie sur les deux builds (${PAIRS.map((p) => p.format).join(", ")})`);

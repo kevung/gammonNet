@@ -29,7 +29,10 @@ and what it has measured to its own disadvantage.
 
 - **The exact bearoff table is not included** — 1.2 GiB. Cost: **0.00028 equity per bearoff
   decision**, worst case 0.0919 on a single decision. **It is the tail, not the mean, that costs.**
-- **The light variant is float16**, moving 0.015 % of decisions — ~1e-9 equity.
+- **The light variant is float16.** At the served setting its cost in play is indistinguishable
+  from zero: −0.0000049 [−0.000016; +0.000006] equity per contested decision over 9,786
+  arbitrated decisions; the chosen move changes in 0.33 % of them, between near-equal moves. A
+  position's equity itself moves by about 10⁻⁴.
 - **Pruning is on by default at `k = 12`**, costing +0.00023 equity per decision. Turning it off
   restores the previous search, bit for bit.
 

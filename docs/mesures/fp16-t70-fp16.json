@@ -1,0 +1,74 @@
+{
+  "bounded": 370,
+  "by_class": {
+    "backgame": {
+      "loss": 0.005967606060709213,
+      "n": 423
+    },
+    "bearoff_contact": {
+      "loss": 0.0022808204416229338,
+      "n": 582
+    },
+    "blitz": {
+      "loss": 0.00273425614581582,
+      "n": 1229
+    },
+    "contact": {
+      "loss": 0.002899033439397452,
+      "n": 4905
+    },
+    "crashed": {
+      "loss": 0.0026158089692974477,
+      "n": 425
+    },
+    "holding": {
+      "loss": 0.0023009970066510737,
+      "n": 1127
+    },
+    "prime_vs_prime": {
+      "loss": 0.003598836649388064,
+      "n": 453
+    },
+    "race_contact": {
+      "loss": 0.002816841857299267,
+      "n": 644
+    }
+  },
+  "ci95": [
+    0.0027324647847932282,
+    0.003000730493785931
+  ],
+  "context": "money",
+  "core_hours": 4.456433051091929,
+  "decisions": 10000,
+  "evals": 118615531,
+  "filter": [
+    0,
+    1,
+    1
+  ],
+  "filter_extra": [
+    0,
+    0,
+    2
+  ],
+  "filter_threshold": [
+    0.0,
+    0.0,
+    0.04
+  ],
+  "label": "fp16-normal",
+  "loss": 0.0028664901495562317,
+  "model": "strehl-prob5-512-512-256-256_v1.8.0_2026-10-15.bin16",
+  "outside": 212,
+  "outside_rate": 0.0212,
+  "ply": 2,
+  "prune_evals": 343059355,
+  "prune_k": 12,
+  "registry": "registre-money.jsonl",
+  "scored": 9788,
+  "search_seconds": 15189.281181123573,
+  "seconds": 1002.6974364956841,
+  "unresolved": 167,
+  "workers": 16
+}

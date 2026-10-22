@@ -5,10 +5,11 @@
 
 Ce qui coûte dans un navigateur n'est pas le calcul du réseau mais son
 **téléchargement** : 2,1 Mio de poids avant la première évaluation. En float16
-c'est 1,06 Mio, et `docs/mesures/2026-08-04-quantification.md` a mesuré ce que
-la précision coûte alors : **0,015 % des décisions déplacées**, ~1e-9 d'équité —
-« 1/100 000 du bruit ». int8, lui, coûterait 12 % de tout l'avantage du modèle
-et reste refusé.
+c'est 1,06 Mio. Ce que la précision coûte est mesuré : sur l'ancien réseau
+(`docs/mesures/2026-08-04-quantification.md`), 0,015 % des décisions déplacées ;
+sur le réseau servi (`docs/mesures/2026-10-22-float16-reseau-servi.md`), une
+perte en jeu indiscernable de zéro au réglage `normal`. int8, lui, coûte
++19 % de perte par décision (T73) et reste refusé.
 
 Le format est celui du `.bin`, à deux différences près :
 

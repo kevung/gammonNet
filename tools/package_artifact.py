@@ -104,6 +104,10 @@ TABLES: list = []
 #: destinataire.
 VERIFY = [
     ROOT / "build" / "reference.bin",
+    #: Le repère du `.bin16` : ce qu'un lecteur du format `BGN6` doit rendre
+    #: (`docs/specs/format-bgn6-spec.md`). Il n'est pas celui du float32 —
+    #: les poids arrondis sont d'autres poids.
+    ROOT / "build" / "reference16.bin",
     ROOT / "wasm" / "parity.mjs",
     ROOT / "wasm" / "api_invariants.mjs",
     ROOT / "models" / "cubeless_prob5_512_512_256_256.provenance.json",
@@ -159,8 +163,11 @@ def retarget_check(source: Path, destination: Path, weights_name: str,
     per_file = {
         "parity.mjs": [
             ('join(ROOT, "build", "reference.bin")', 'join(HERE, "reference.bin")'),
+            ('join(ROOT, "build", "reference16.bin")', 'join(HERE, "reference16.bin")'),
             ('join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin")',
              f'join(ROOT, "{weights_name}")'),
+            ('join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin16")',
+             f'join(ROOT, "{weights_name}16")'),
             ('"../build/wasm/gammonnet.mjs"', '"../gammonnet.mjs"'),
             ('"../build/wasm/gammonnet-simd.mjs"', '"../gammonnet-simd.mjs"'),
         ],
@@ -315,13 +322,15 @@ de ces chiffres.
 
 L'archive contient le repère de 2 000 positions et le contrôle qui le lit. Il
 compare le WebAssembly au moteur natif de référence et **refuse** au-delà de
-1e-6 :
+1e-6, pour chacun des deux formats de poids contre son propre repère
+(`verify/reference.bin` pour le `.bin`, `verify/reference16.bin` pour le
+`.bin16`) :
 
 ```sh
 node verify/parity.mjs
 ```
 
-Attendu : `max|Δ| = 0` en scalaire, ~6,4e-7 en SIMD.
+Attendu : `max|Δ| = 0` sur les deux builds, pour les deux formats.
 
 ## Ce que vous devez savoir avant de vous en servir
 
@@ -517,8 +526,11 @@ Fiche : `docs/mesures/2026-08-27-T3C-analyse-de-match.md`.
 {listing}
 
 **Les deux formats de poids sont le MÊME réseau.** `.bin` est en float32,
-`.bin16` en float16 — moitié moins lourd à télécharger, pour 0,015 % des
-décisions déplacées et ~1e-9 d'équité (`docs/mesures/2026-08-04-quantification.md`).
+`.bin16` en float16 — moitié moins lourd à télécharger, pour une perte en jeu
+indiscernable de zéro au réglage servi : −0,0000049 [−0,000016 ; +0,000006] par
+décision disputée, le coup changeant dans 0,33 % d'entre elles
+(`docs/mesures/2026-10-22-float16-reseau-servi.md`). Chaque format a son repère
+de parité ; le format est décrit dans `docs/specs/format-bgn6-spec.md`.
 Une quantification ne produit pas un réseau nouveau (`BRIEF.md` §8).
 
 **Le réseau d'élagage** accompagne le réseau principal : il trie les coups
