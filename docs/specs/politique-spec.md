@@ -258,9 +258,19 @@ et les régimes money, match, Crawford, Jacoby et refus. Le verdict se relit dan
 recalcul (`categories`) ; un test échoue si une catégorie manque.
 
 **Conditions de génération** (et donc de rejeu) : build natif par défaut (pas `NATIVE_FP`),
-poids `models/cubeless_prob5_512_512_256_128.bin` et `models/prune_32.bin` — leurs empreintes
+poids `models/cubeless_prob5_512_512_256_256.bin` et `models/prune_32.bin` — leurs empreintes
 SHA-256 sont dans `data/policy_reference.json` —, **aucune table bilatérale installée** (la
 politique suit alors le modèle partout, ce qu'un portage sans la table de 1,2 Gio reproduit).
+
+**Le pendant float16 — `data/policy_reference16.bin`.** Les **mêmes questions** (les 80 octets
+d'entrée de chaque enregistrement, relus dans `policy_reference.bin`, pas retirés), répondues avec
+les deux `.bin16` de l'artefact épinglé (`models/release_pin.json`, format
+`docs/specs/format-bgn6-spec.md`) ; mêmes conditions par ailleurs. Généré par
+`tools/policy_corpus.py --fp16`, rejoué octet pour octet par `tests/test_policy.py`. Un portage qui
+charge les `.bin16` se compare à ce fichier, jamais à celui du float32 : ce serait mesurer
+l'arrondi des poids, pas le portage. `data/policy_reference16.json` donne les empreintes, la
+release, et l'écart au float32 — sur la v1.8.1 : **aucune action déplacée sur 1 411 décisions**,
+équités à 6,3e-4 au plus (mesure ; un corpus de contrat, pas un volume qui mesure une force).
 
 Petit-boutiste, sans remplissage implicite :
 

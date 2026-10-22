@@ -22,6 +22,15 @@ Conditions : build natif par défaut (pas `NATIVE_FP`), AUCUNE table bilatérale
 installée — la politique suit alors le modèle partout.
 
     python tools/policy_corpus.py
+
+Et son pendant float16 (`--fp16`) : les MÊMES décisions, relues dans
+`data/policy_reference.bin` plutôt que retirées, répondues avec les deux `.bin16`
+de l'artefact épinglé (`models/release_pin.json`). Mêmes questions, nouvelles
+réponses : un portage qui charge les `.bin16` se compare à
+`data/policy_reference16.bin`, jamais au repère du float32 — ce serait tester
+l'arrondi, pas le portage.
+
+    python tools/policy_corpus.py --fp16
 """
 
 from __future__ import annotations
@@ -40,13 +49,16 @@ from gammonnet import bearoff  # noqa: E402
 from gammonnet.cube import CubeOwner  # noqa: E402
 from gammonnet.cubeful import play_cubeful_game  # noqa: E402
 from gammonnet.met import MatchState  # noqa: E402
-from gammonnet.policy import (LEVELS, REQUIRED_CATEGORIES, Decision, Pending,  # noqa: E402
-                              PolicyPlayer, answer, categories, unpack_decision,
-                              write_corpus)
+from gammonnet.policy import (_OUTPUT_TAIL, LEVELS, REQUIRED_CATEGORIES, Decision, Pending,  # noqa: E402
+                              PolicyPlayer, answer, categories, read_corpus,
+                              unpack_decision, write_corpus)
 from gammonnet.rules import WHITE, Position  # noqa: E402
 
 OUT = ROOT / "data" / "policy_reference.bin"
 META = ROOT / "data" / "policy_reference.json"
+OUT16 = ROOT / "data" / "policy_reference16.bin"
+META16 = ROOT / "data" / "policy_reference16.json"
+PIN = ROOT / "models" / "release_pin.json"
 SEED = 20261005
 
 #: Combien de décisions de chaque niveau. `instant` les prend toutes.
@@ -216,7 +228,77 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.resolve().read_bytes()).hexdigest()
 
 
+def fp16_models() -> tuple[str, str]:
+    """Les deux `.bin16` de l'artefact épinglé, vérifiés contre leur SHA-256."""
+    pin = json.loads(PIN.read_text())
+    paths = []
+    for key in ("network_fp16", "prune_fp16"):
+        path = Path("models") / pin[key]["filename"]
+        if not (ROOT / path).exists():
+            raise SystemExit(f"{path} absent : python tools/fetch_release.py")
+        if sha256(ROOT / path) != pin[key]["sha256"]:
+            raise SystemExit(f"{path} ne correspond pas à son SHA-256 épinglé")
+        paths.append(str(path))
+    return paths[0], paths[1]
+
+
+def main_fp16() -> int:
+    if bearoff._shared is not None:
+        raise SystemExit("une table bilatérale est installée : le corpus se génère sans")
+    model, prune_model = fp16_models()
+    player = PolicyPlayer(level="instant", model=model, prune_model=prune_model)
+    network = player._load()
+    reference = read_corpus(OUT)
+    tail = _OUTPUT_TAIL.size
+    records, counts, moved, delta = [], Counter(), Counter(), 0.0
+    for i, old in enumerate(reference):
+        level, d = unpack_decision(old)
+        record = answer(network, player._prune, level, d)
+        records.append(record)
+        refused = record[80:84] == b"\xff\xff\xff\xff"
+        counts[f"{level}/{d.pending.name}{'/refus' if refused else ''}"] += 1
+        # Les équités bougent presque partout (l'arrondi des poids) ; ce qui
+        # compte est l'action rendue — tout l'enregistrement sauf elles.
+        if record[:-tail] != old[:-tail]:
+            moved[level] += 1
+        elif record[80:84] != b"\xff\xff\xff\xff":
+            delta = max(delta, *(abs(a - b) for a, b in zip(
+                _OUTPUT_TAIL.unpack(record[-tail:]),
+                _OUTPUT_TAIL.unpack(old[-tail:]))))
+        if i % 100 == 0:
+            print(f"  {i}/{len(reference)}", flush=True)
+    write_corpus(OUT16, records)
+    pin = json.loads(PIN.read_text())
+    META16.write_text(json.dumps({
+        "_comment": ("Corpus de référence de la politique sans état, poids float16 "
+                     "(docs/specs/politique-spec.md §8, docs/specs/format-bgn6-spec.md). "
+                     "Les décisions de data/policy_reference.bin, répondues avec les "
+                     ".bin16 de l'artefact épinglé. Généré par "
+                     "tools/policy_corpus.py --fp16 ; ne pas éditer à la main."),
+        "format": "GNPL v1, enregistrements de 160 octets, petit-boutiste",
+        "questions": {"path": "data/policy_reference.bin", "sha256": sha256(OUT)},
+        "count": len(records),
+        "levels": list(LEVELS),
+        "by_level_and_pending": dict(sorted(counts.items())),
+        "action_differs_from_float32_by_level": {k: moved[k] for k in LEVELS},
+        "max_equity_delta_where_action_agrees": delta,
+        "models": {
+            "release": pin["version"],
+            "network": {"path": model, "sha256": sha256(ROOT / model)},
+            "prune": {"path": prune_model, "sha256": sha256(ROOT / prune_model)},
+        },
+        "conditions": ("build natif par défaut (pas NATIVE_FP) ; aucune table "
+                       "bilatérale installée ; cache d'évaluation indifférent"),
+    }, indent=2, ensure_ascii=False) + "\n")
+    print(f"→ {OUT16} : {len(records)} décisions, "
+          f"action différente du float32 : {dict(moved)}, "
+          f"max|Δéquité| ailleurs {delta:.3e}")
+    return 0
+
+
 def main() -> int:
+    if "--fp16" in sys.argv[1:]:
+        return main_fp16()
     if bearoff._shared is not None:
         raise SystemExit("une table bilatérale est installée : le corpus se génère sans")
     played = played_decisions()
