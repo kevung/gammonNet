@@ -1,0 +1,77 @@
+{
+  "candidate": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      1
+    ],
+    "filter_extra": [
+      0,
+      0,
+      2
+    ],
+    "filter_threshold": [
+      0.0,
+      0.0,
+      0.04
+    ],
+    "header": true,
+    "label": "fp16-normal",
+    "model": "strehl-prob5-512-512-256-256_v1.8.0_2026-10-15.bin16",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "registre-money.jsonl"
+  },
+  "changed": 32,
+  "ci95": [
+    -1.6331882038998623e-05,
+    5.735048942279175e-06
+  ],
+  "cost": {
+    "evals": {
+      "candidate": 118615531,
+      "reference": 118618386
+    },
+    "prune_evals": {
+      "candidate": 343059355,
+      "reference": 343026504
+    },
+    "seconds": {
+      "candidate": 15189.281181123573,
+      "reference": 15201.02676358074
+    }
+  },
+  "delta": -4.891405872455939e-06,
+  "margin": 0.001,
+  "non_inferior": true,
+  "outside": 214,
+  "paired": 9786,
+  "reference": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      1
+    ],
+    "filter_extra": [
+      0,
+      0,
+      2
+    ],
+    "filter_threshold": [
+      0.0,
+      0.0,
+      0.04
+    ],
+    "header": true,
+    "label": "fp32-normal",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "registre-money.jsonl"
+  },
+  "z": -0.9233145356531899
+}

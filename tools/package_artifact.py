@@ -526,8 +526,11 @@ Fiche : `docs/mesures/2026-08-27-T3C-analyse-de-match.md`.
 {listing}
 
 **Les deux formats de poids sont le MÊME réseau.** `.bin` est en float32,
-`.bin16` en float16 — moitié moins lourd à télécharger, pour 0,015 % des
-décisions déplacées et ~1e-9 d'équité (`docs/mesures/2026-08-04-quantification.md`).
+`.bin16` en float16 — moitié moins lourd à télécharger, pour une perte en jeu
+indiscernable de zéro au réglage servi : −0,0000049 [−0,000016 ; +0,000006] par
+décision disputée, le coup changeant dans 0,33 % d'entre elles
+(`docs/mesures/2026-10-22-float16-reseau-servi.md`). Chaque format a son repère
+de parité ; le format est décrit dans `docs/specs/format-bgn6-spec.md`.
 Une quantification ne produit pas un réseau nouveau (`BRIEF.md` §8).
 
 **Le réseau d'élagage** accompagne le réseau principal : il trie les coups

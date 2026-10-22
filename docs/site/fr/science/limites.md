@@ -34,8 +34,10 @@ ne serait pas une preuve.
   par décision de bearoff** — mesuré, là où GNU Backgammon consulte la sienne et n'y perd rien.
   Le pire cas mesuré vaut 0,0919 sur une seule décision : **c'est la queue, pas la moyenne, qui
   coûte**.
-- **Les poids sont en float16 dans la variante légère**, ce qui déplace 0,015 % des décisions —
-  mesuré, ~1e-9 d'équité, « 1/100 000 du bruit ».
+- **Les poids sont en float16 dans la variante légère.** Au réglage servi, la perte est
+  indiscernable de zéro : −0,0000049 [−0,000016 ; +0,000006] d'équité par décision disputée, sur
+  9 786 décisions arbitrées ; le coup change dans 0,33 % d'entre elles, entre deux coups d'équité
+  quasi égale. L'équité d'une position, elle, bouge d'environ 10⁻⁴.
 - **L'élagage est actif par défaut à `k = 12`**, ce qui coûte +0,00023 d'équité par décision. Le
   désactiver rend la recherche d'avant, bit pour bit.
 
