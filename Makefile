@@ -198,12 +198,17 @@ $(LIBRARY): $(OBJECTS) $(VENDOR_OBJECTS)
 # ── Modèle ───────────────────────────────────────────────────────────
 
 MODEL := models/cubeless_prob5_512_512_256_256.bin
+# Le même réseau, au format de distribution `BGN6` (docs/specs/format-bgn6-spec.md).
+MODEL16 := models/cubeless_prob5_512_512_256_256.bin16
 PRUNE_MODEL := models/prune_32.bin
 
 model: $(MODEL)
 
 $(MODEL):
 	$(PYTHON) tools/export_model.py
+
+$(MODEL16): $(MODEL)
+	$(PYTHON) tools/pack_fp16.py $(MODEL) $@
 
 corpus: corpus-t01 corpus-t12
 
@@ -370,8 +375,9 @@ $(WASM_BUILD)/gammonnet-simd-mt.mjs: $(WASM_SOURCES) $(HEADERS) $(WASM_DIR)/noti
 	@stat -c '→ SIMD multi-fils : %s octets  %n' $(WASM_BUILD)/gammonnet-simd-mt.wasm
 
 # Parité WebAssembly <-> natif, sur le repère figé produit par le côté natif.
-wasm-parity: wasm $(MODEL)
+wasm-parity: wasm $(MODEL) $(MODEL16)
 	$(PYTHON) tools/dump_reference.py
+	$(PYTHON) tools/dump_reference.py --model $(MODEL16) --out $(BUILD)/reference16.bin
 	node $(WASM_DIR)/parity.mjs
 
 # Les invariants de l'API JavaScript. La parité vérifie que le module CALCULE
