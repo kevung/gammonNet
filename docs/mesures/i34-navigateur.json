@@ -1,0 +1,175 @@
+{
+ "task": "#34 étape 3",
+ "date": "2026-10-27",
+ "machine": "mochy (charge étrangère 3 à 6 cœurs sur 32 fils : rapports seuls)",
+ "protocol": "bench/browser_kernel.mjs --widths 16 --kernels intrin --reps 3 --decisions 3 --models I,A,B ×3 alternés ; 2-ply (0,1,3) k=12, prune_32.bin",
+ "versions": {
+  "chromium": "131.0.6778.33 (Playwright chromium-1148)",
+  "firefox": "140.17.0esr",
+  "emcc": "6.0.5"
+ },
+ "rows": [
+  {
+   "browser": "chromium",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_512_512_256_256.bin",
+   "rate": 39689.9,
+   "decision": 0.3997,
+   "maxDelta": 0
+  },
+  {
+   "browser": "chromium",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_768_256_256_256.bin",
+   "rate": 20507.3,
+   "decision": 0.7313,
+   "maxDelta": 0
+  },
+  {
+   "browser": "chromium",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_512_256_256_256.bin",
+   "rate": 28764,
+   "decision": 0.5493,
+   "maxDelta": 0
+  },
+  {
+   "browser": "chromium",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_512_512_256_256.bin",
+   "rate": 39792.7,
+   "decision": 0.4,
+   "maxDelta": 0
+  },
+  {
+   "browser": "chromium",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_768_256_256_256.bin",
+   "rate": 20534.8,
+   "decision": 0.7135,
+   "maxDelta": 0
+  },
+  {
+   "browser": "chromium",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_512_256_256_256.bin",
+   "rate": 28131.9,
+   "decision": 0.5473,
+   "maxDelta": 0
+  },
+  {
+   "browser": "chromium",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_512_512_256_256.bin",
+   "rate": 39587.6,
+   "decision": 0.39,
+   "maxDelta": 0
+  },
+  {
+   "browser": "chromium",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_768_256_256_256.bin",
+   "rate": 21127.9,
+   "decision": 0.73,
+   "maxDelta": 0
+  },
+  {
+   "browser": "chromium",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_512_256_256_256.bin",
+   "rate": 28183.5,
+   "decision": 0.5346,
+   "maxDelta": 0
+  },
+  {
+   "browser": "firefox",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_512_512_256_256.bin",
+   "rate": 20210.5,
+   "decision": 0.7177,
+   "maxDelta": 0
+  },
+  {
+   "browser": "firefox",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_768_256_256_256.bin",
+   "rate": 10741.3,
+   "decision": 1.357,
+   "maxDelta": 0
+  },
+  {
+   "browser": "firefox",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_512_256_256_256.bin",
+   "rate": 14222.2,
+   "decision": 0.9807,
+   "maxDelta": 0
+  },
+  {
+   "browser": "firefox",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_512_512_256_256.bin",
+   "rate": 20210.5,
+   "decision": 0.7033,
+   "maxDelta": 0
+  },
+  {
+   "browser": "firefox",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_768_256_256_256.bin",
+   "rate": 10449,
+   "decision": 1.3583,
+   "maxDelta": 0
+  },
+  {
+   "browser": "firefox",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_512_256_256_256.bin",
+   "rate": 14355.1,
+   "decision": 0.9803,
+   "maxDelta": 0
+  },
+  {
+   "browser": "firefox",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_512_512_256_256.bin",
+   "rate": 20756.8,
+   "decision": 0.719,
+   "maxDelta": 0
+  },
+  {
+   "browser": "firefox",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_768_256_256_256.bin",
+   "rate": 10593.1,
+   "decision": 1.3263,
+   "maxDelta": 0
+  },
+  {
+   "browser": "firefox",
+   "width": 16,
+   "kernel": "intrin",
+   "model": "cubeless_prob5_768_512_256_256_256.bin",
+   "rate": 14222.2,
+   "decision": 0.9863,
+   "maxDelta": 0
+  }
+ ]
+}
