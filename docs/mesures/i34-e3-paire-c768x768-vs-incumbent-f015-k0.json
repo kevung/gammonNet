@@ -1,0 +1,77 @@
+{
+  "candidate": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      1
+    ],
+    "filter_extra": [
+      0,
+      0,
+      2
+    ],
+    "filter_threshold": [
+      0.0,
+      0.0,
+      0.04
+    ],
+    "header": true,
+    "label": "c768x768-normal",
+    "model": "cubeless_prob5_768_768_256_256_256.bin",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "registre-money.jsonl"
+  },
+  "changed": 2338,
+  "ci95": [
+    4.943349797268993e-06,
+    0.00023586722183306189
+  ],
+  "cost": {
+    "evals": {
+      "candidate": 119197460,
+      "reference": 643025501
+    },
+    "prune_evals": {
+      "candidate": 343775977,
+      "reference": 0
+    },
+    "seconds": {
+      "candidate": 9158.897848243825,
+      "reference": 35409.2030253429
+    }
+  },
+  "delta": 0.00011931495030921107,
+  "margin": 0.001,
+  "non_inferior": true,
+  "outside": 304,
+  "paired": 9696,
+  "reference": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      5
+    ],
+    "filter_extra": [
+      0,
+      0,
+      0
+    ],
+    "filter_threshold": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "header": true,
+    "label": "incumbent-f015-k0",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "ply": 2,
+    "prune_k": 0,
+    "registry": "registre-money.jsonl"
+  },
+  "z": 1.9740289331927126
+}

@@ -683,7 +683,7 @@ WASM_KERNEL_SOURCES := bench/bench_kernel.c \
   src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
   src/gn_infer_reference.c src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
   src/gn_search.c src/gn_met.c src/gn_choose.c src/gn_gemm_int8.c \
-  src/gn_int8_model.c src/gn_rollout.c \
+  src/gn_int8_model.c src/gn_rollout.c src/gn_parallel.c \
   $(REFERENCE)/c_engine/bg_engine.c $(REFERENCE)/c_inference/nn_eval.c
 
 .PHONY: bench-width-wasm wasm-kernel-variants
