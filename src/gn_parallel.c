@@ -16,17 +16,82 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* A thread can only exit where threads exist: everywhere but a WebAssembly
+ * build without `-pthread`. */
+#if !(defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__))
+#define GN_SCRATCH_RELEASE_AT_EXIT 1
+#include <pthread.h>
+#endif
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define GN_PARALLEL_TLS _Thread_local
+#else
+#define GN_PARALLEL_TLS __thread
+#endif
+
+/*
+ * Every scratch block of a thread, chained through a 64-byte header that
+ * keeps the block itself 64-byte aligned. The pool's own threads live as long
+ * as the process and keep their blocks; but a caller may evaluate from
+ * short-lived threads -- a server running each request on a new one is the
+ * case that made this matter (issue #35: ~1 MB lost per request) -- so the
+ * chain is freed when its thread exits, by a pthread key destructor. The
+ * `_Thread_local` pointers that hold these blocks vanish with the same
+ * thread; only another key destructor re-entering the engine on that dying
+ * thread could still read one, and nothing here does.
+ */
+typedef union GnScratchHeader {
+    union GnScratchHeader *next;
+    unsigned char pad[64];
+} GnScratchHeader;
+
+static GN_PARALLEL_TLS GnScratchHeader *t_scratch = NULL;
+
+#ifdef GN_SCRATCH_RELEASE_AT_EXIT
+static pthread_key_t g_scratch_key;
+static pthread_once_t g_scratch_once = PTHREAD_ONCE_INIT;
+static int g_scratch_key_ok = 0;
+
+static void release_scratch(void *chain)
+{
+    GnScratchHeader *h = chain;
+    while (h != NULL) {
+        GnScratchHeader *const next = h->next;
+        free(h);
+        h = next;
+    }
+    t_scratch = NULL;
+}
+
+static void create_scratch_key(void)
+{
+    g_scratch_key_ok = (pthread_key_create(&g_scratch_key, release_scratch) == 0);
+}
+#endif
+
 void *gn_parallel_scratch(size_t size)
 {
     const size_t rounded = (size + 63) & ~(size_t)63;
-    void *block = aligned_alloc(64, rounded == 0 ? 64 : rounded);
-    if (block == NULL) {
+    const size_t total = sizeof(GnScratchHeader) + (rounded == 0 ? 64 : rounded);
+    GnScratchHeader *h = aligned_alloc(64, total);
+    if (h == NULL) {
         fprintf(stderr, "gammonnet: mémoire de travail indisponible (%zu octets)\n",
                 size);
         abort();
     }
-    memset(block, 0, rounded == 0 ? 64 : rounded);
-    return block;
+    memset(h, 0, total);
+    h->next = t_scratch;
+    t_scratch = h;
+#ifdef GN_SCRATCH_RELEASE_AT_EXIT
+    pthread_once(&g_scratch_once, create_scratch_key);
+    if (!g_scratch_key_ok || pthread_setspecific(g_scratch_key, t_scratch) != 0) {
+        /* Without the key every exiting thread would leak its blocks: a slow
+         * failure no caller would see. Stop now instead. */
+        fprintf(stderr, "gammonnet: libération de la mémoire de travail impossible\n");
+        abort();
+    }
+#endif
+    return h + 1;
 }
 
 /* WebAssembly runs this pool only when the module is built with `-pthread`

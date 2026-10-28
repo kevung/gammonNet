@@ -393,49 +393,45 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.8.0 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.8.1 — À LIRE AVANT DE METTRE À JOUR
 
-**Les poids ne changent pas, ni aucun résultat.** `strehl-prob5-512-512-256-256`
-et `strehl-prune-32` sont ceux de v1.6.0, au bit près, dans les deux formats ;
-toute décision rend le même coup et les mêmes équités qu'en v1.8.0. Ce qui
-change est ce que l'archive donne pour **vérifier** le `.bin16`, et ce qu'on
-sait de son coût.
+**Version corrective. Les poids ne changent pas, ni aucun résultat.**
+`strehl-prob5-512-512-256-256` et `strehl-prune-32` sont ceux de v1.6.0, au bit
+près, dans les deux formats ; toute décision rend le même coup et les mêmes
+équités qu'en v1.8.1.
 
-### 1. Le `.bin16` a son propre repère de parité
+### 1. Corrigé : la mémoire d'un fil mort n'était jamais rendue (issue #35)
 
-`verify/reference16.bin` : les mêmes 2 000 positions que `verify/reference.bin`,
-avec les sorties que le moteur natif calcule depuis le `.bin16`.
-`node verify/parity.mjs` vérifie désormais **chaque format contre son propre
-repère** — comparer le `.bin16` au repère du float32 testerait l'arrondi des
-poids, pas le lecteur. Mesuré : `max|Δ| = 0` en scalaire et en SIMD, pour les
-deux formats.
+Depuis v1.8.0, chaque fil qui évalue reçoit ses tampons de travail (près d'un
+mégaoctet pour le noyau par lot), et ces tampons n'étaient jamais libérés. Les
+fils du pool vivent autant que le processus : pour eux, rien ne fuyait. Mais un
+appelant qui évalue depuis des **fils éphémères** — `serve`, qui traite chaque
+requête sur un fil neuf, en est le cas — perdait un jeu de tampons par fil :
+~0,3 Mo par `/v1/cube`, ~1 Mo par `/v1/eval`, jusqu'à ce que le noyau tue le
+processus. Les tampons d'un fil sont désormais libérés quand il se termine.
 
-Le format est décrit pour une réimplémentation du lecteur dans
-`docs/specs/format-bgn6-spec.md` (disposition, conversion exacte, et les 631
-poids sous-normaux qu'un lecteur *flush-to-zero* perdrait).
+Mesuré (`tools/serve.py`, épingle v1.8.1, RSS du processus) :
 
-### 2. Ce que le float16 coûte, remesuré sur le réseau actuel
+| 500 `/v1/cube` puis 500 `/v1/eval` | v1.8.1 | v1.8.2 |
+|---|---|---|
+| mémoire résidente | 31 → 698 Mo | 30 → 30 Mo |
 
-Le chiffre publié jusqu'ici (0,015 % des décisions) venait du réseau précédent.
-Sur le réseau actuel, les deux réseaux en `.bin16`
-(`docs/mesures/2026-10-22-float16-reseau-servi.md`) :
+`tests/test_thread_scratch.py` tient la correction : 200 fils neufs, pool à 1
+et à 4 fils, +206 Mo en v1.8.1, moins d'un mégaoctet en v1.8.2.
 
-| | valeur |
-|---|---|
-| perte en jeu, niveau `normal`, Δ apparié float16 − float32 (registre T70, 9 786 décisions) | **−0,0000049** [−0,000016 ; +0,000006] |
-| décisions où le coup change, même instrument | 0,33 % |
-| écart d'équité d'une position, moyen / p99,9 / maximal (9,6 M positions) | 1,3×10⁻⁴ / 7,0×10⁻⁴ / 8,6×10⁻³ |
-
-En jeu, le float16 est **indiscernable de zéro**. Une équité stockée sous l'un
-des formats et recalculée sous l'autre change pourtant de valeur, de l'ordre de
-10⁻⁴ : qui compare des analyses entre elles doit traiter un changement de format
-comme un changement de moteur.
+**Qui doit mettre à jour** : tout appelant de la bibliothèque native ou de
+`serve`. Les modules WebAssembly calculent exactement la même chose (parité
+`max|Δ| = 0`, 1 411 décisions de politique sans écart, à 1 fil et multi-fils) ;
+leurs Web Workers vivent aussi longtemps que le pool, la fuite ne les touchait
+pas en pratique.
 
 ### Ce qui ne change pas
 
 Les poids, l'équité de match (Kazaross-XG2 par défaut), le videau, les niveaux
-nommés, les trois modules WebAssembly (scalaire, SIMD, SIMD multi-fils) dans ce
-qu'ils calculent, et `serve`.
+nommés, la recherche sur plusieurs fils (`--threads`, `gn_parallel_set_threads`,
+même résultat au bit près quel que soit le nombre de fils), les trois modules
+WebAssembly dans ce qu'ils calculent, et le contrat de `serve`. Mesuré sur
+`tests/test_search.py` en alternance A/B : aucun coût de temps décelable (+0,3 %).
 
 ### La force publiée ci-dessous
 

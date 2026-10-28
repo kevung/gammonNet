@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "gn_gemm_int8.h"
+#include "gn_parallel.h"
 #include "gn_tile.h"
 
 /* The chunk width this file forwards the kernel at. Not a kernel limit
@@ -52,9 +53,10 @@ GN_STATIC_ASSERT(GN_INT8_CHUNK >= 1 && GN_INT8_CHUNK <= 256,
 #define GN_INT8_TLS
 #endif
 
-/* One block per thread, allocated on first use -- the reason it is not four
- * `_Thread_local` arrays is in gn_infer_reference.c (`InferScratch`): under
- * WebAssembly their zeros would ship inside the module. */
+/* One block per thread, allocated on first use and freed at thread exit
+ * (gn_parallel_scratch) -- the reason it is not four `_Thread_local` arrays
+ * is in gn_infer_reference.c (`InferScratch`): under WebAssembly their zeros
+ * would ship inside the module. */
 typedef struct {
     uint8_t quantised[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
     uint8_t scratch_a[GN_INT8_MAX_WIDTH * GN_INT8_CHUNK];
@@ -67,13 +69,7 @@ static GN_INT8_TLS Int8Scratch *g_int8 = NULL;
 static Int8Scratch *int8_scratch(void)
 {
     if (g_int8 == NULL) {
-        const size_t size = (sizeof(Int8Scratch) + 63) & ~(size_t)63;
-        g_int8 = aligned_alloc(64, size);
-        if (g_int8 == NULL) {
-            fprintf(stderr, "gammonnet: mémoire de travail int8 indisponible\n");
-            abort();
-        }
-        memset(g_int8, 0, size);
+        g_int8 = gn_parallel_scratch(sizeof(Int8Scratch));
     }
     return g_int8;
 }

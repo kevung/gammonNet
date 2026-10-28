@@ -41,8 +41,8 @@
  * the initial image of thread-local storage is shipped in the module, and
  * these zeros alone weighed 1.19 MB of a 122 KB module. A thread-local
  * POINTER costs eight bytes of that image instead. 64-byte aligned, at least
- * what any kernel load here asks for. Never freed: search threads live as long
- * as the process (gn_parallel.c), and the calling thread reuses its block.
+ * what any kernel load here asks for. Freed when its thread exits
+ * (gn_parallel_scratch); until then every evaluation reuses it.
  */
 typedef struct {
     float batch_a[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
@@ -58,15 +58,7 @@ static GN_INFER_TLS InferScratch *g_scratch = NULL;
 static InferScratch *infer_scratch(void)
 {
     if (g_scratch == NULL) {
-        const size_t size = (sizeof(InferScratch) + 63) & ~(size_t)63;
-        g_scratch = aligned_alloc(64, size);
-        if (g_scratch == NULL) {
-            /* No scratch, no forward pass: stopping here is the only answer
-             * that is not a plausible wrong one. */
-            fprintf(stderr, "gammonnet: mémoire de travail indisponible\n");
-            abort();
-        }
-        memset(g_scratch, 0, size);
+        g_scratch = gn_parallel_scratch(sizeof(InferScratch));
     }
     return g_scratch;
 }

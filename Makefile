@@ -429,7 +429,7 @@ wasm-codec: wasm build
 DUMP_INT8 := $(BUILD)/dump_reference_int8
 $(DUMP_INT8): tools/dump_reference_int8.c src/gn_gemm_int8.c $(HEADERS)
 	@mkdir -p $(BUILD)
-	$(CC) $(CFLAGS) -Isrc -o $@ tools/dump_reference_int8.c src/gn_gemm_int8.c src/gn_int8_model.c -lm
+	$(CC) $(CFLAGS) -Isrc -o $@ tools/dump_reference_int8.c src/gn_gemm_int8.c src/gn_int8_model.c src/gn_parallel.c -lm
 
 # Parité du chemin int8 DÉTERMINISTE (gn_gemm_int8) : le repère est produit par
 # le noyau natif dispatché sur cette machine (scalaire/SSE2/AVX2), rejoué au
