@@ -69,8 +69,10 @@ void gn_parallel_for(int n, GnParallelTask fn, void *ctx);
  * thread-local storage ships inside the module, and the scratch arrays of
  * this library weighed 1.19 MB of zeros there. Never returns NULL: out of
  * memory it stops the process with a message, the only answer that is not a
- * plausible wrong one. The block is never freed (threads live as long as the
- * process; see gn_parallel.c).
+ * plausible wrong one. The block is freed when its thread exits, not before:
+ * the pool's threads keep theirs for the life of the process, and a caller
+ * evaluating from short-lived threads loses nothing per thread (issue #35).
+ * Hold it only through a `_Thread_local` pointer of the allocating thread.
  */
 void *gn_parallel_scratch(size_t size);
 
