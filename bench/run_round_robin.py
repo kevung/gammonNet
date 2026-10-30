@@ -40,6 +40,9 @@ from gammonnet.arena import (  # noqa: E402
 #: plus rien. Les deux lignes ci-dessous ne diffèrent que par ce fichier — c'est
 #: la condition pour que le tête-à-tête mesure le réseau et rien d'autre.
 CANDIDATE = "models/cubeless_prob5_512_512_256_256.bin"
+#: Issue #34 : le 768×768 de l'amont (`18b0a80`, md5 `b3fad4eb`), lu dans le
+#: commit et exporté par l'`export_weights.py` de l'épingle, pas installé.
+WIDE = "models/cubeless_prob5_768_768_256_256_256.bin"
 
 AVAILABLE = {
     "random": lambda: RandomEngine(name="random"),
@@ -54,6 +57,8 @@ AVAILABLE = {
     "prob5-256-2ply": lambda: SearchEngine(
         ply=2, filter=(0, 1, 3), prune_k=12, model=CANDIDATE,
         name="prob5-512-512-256-256-2ply-f0/1/3-k12"),
+    "prob5-768x768-0ply": lambda: SearchEngine(
+        ply=0, model=WIDE, name="prob5-768-768-256-256-256-0ply"),
     "sage-0ply": lambda: SageEngine(level="1ply"),
     "sage-1ply": lambda: SageEngine(level="2ply"),
     "sage-2ply": lambda: SageEngine(level="3ply"),

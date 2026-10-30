@@ -333,13 +333,23 @@ def main() -> int:
         other_prune = args.theirs_prune_model or ours_prune
         same = (other_k == args.ours_prune_k and other_model == ours.model
                 and other_prune == ours_prune)
-        theirs = GammonNetCubePlayer(ply=args.ours_ply,
-                                     filter=parse_filter(args.ours_filter),
-                                     cube_ply=ours_cube,
-                                     prune_k=other_k,
-                                     model=other_model,
-                                     prune_model=other_prune,
-                                     name=(ours.name + "-bis") if same else None)
+        if args.ours_policy:
+            # The served level on BOTH sides: the second player gets the same
+            # stateless policy, differing only by its weights.
+            from gammonnet.policy import PolicyPlayer
+
+            theirs = PolicyPlayer(level=args.ours_policy, model=other_model,
+                                  prune_model=other_prune,
+                                  name=(ours.name + "-bis") if same else "")
+            theirs.ply, theirs.filter, theirs.cube_ply = ours.ply, ours.filter, ours.cube_ply
+        else:
+            theirs = GammonNetCubePlayer(ply=args.ours_ply,
+                                         filter=parse_filter(args.ours_filter),
+                                         cube_ply=ours_cube,
+                                         prune_k=other_k,
+                                         model=other_model,
+                                         prune_model=other_prune,
+                                         name=(ours.name + "-bis") if same else None)
         # Different weights never share a name: the dice key derives from it.
         if other_model != ours.model:
             theirs.name += "@" + Path(other_model).stem
