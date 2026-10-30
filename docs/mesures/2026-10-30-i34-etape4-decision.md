@@ -46,6 +46,11 @@ bootstrap sur les paires (`bench/report_t35.py`).
 - **money**, trois journaux indépendants (graines 20261031, 20261032 et 20261033 — le troisième
   ajouté le même jour, avant toute lecture, quand une troisième machine s'est libérée), 200 000,
   150 000 et 100 000 paires visées, lus en commun : borne basse **≥ −0,010 ppg**.
+  **Volume révisé le même jour à 15 h 45, avant toute lecture du money**, parce que les machines
+  ont été réduites (l'une rendue, l'autre plafonnée à 15 processus) : le journal de graine
+  20261031 est abandonné, celui de graine 20261033 va à 100 000 paires et celui de graine
+  20261032 s'arrête à 50 000 — **150 000 paires lues en commun**. Le seuil ne change pas ; la
+  demi-largeur attendue passe d'environ 0,005 à 0,008 ppg.
 
 Un intervalle entièrement positif serait en plus un gain **en jeu**, sous recherche, videau et
 score compris. Ce n'est pas le critère : le critère est la non-régression.
