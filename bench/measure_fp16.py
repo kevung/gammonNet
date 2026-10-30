@@ -18,7 +18,7 @@ Deux familles de grandeurs, et seule la seconde coûte quelque chose en jeu :
 La perte à 2-ply au réglage servi se mesure ailleurs, contre les rollouts du
 registre de T70 (`bench/measure_t70.py` + `bench/paired_dumps_t70.py`).
 
-    python bench/measure_fp16.py --fp32 models/cubeless_prob5_512_512_256_256.bin \\
+    python bench/measure_fp16.py --fp32 models/cubeless_prob5_768_768_256_256_256.bin \\
         --fp16 models/strehl-prob5-512-512-256-256_v1.8.0_2026-10-15.bin16 \\
         --positions 20000 --workers 30 --out docs/mesures/t32-fp16-positions.json
 """

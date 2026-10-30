@@ -49,7 +49,7 @@ from gammonnet.search import (  # noqa: E402
     threads,
 )
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 PRUNE = ROOT / "models" / "prune_32.bin"
 needs_models = pytest.mark.skipif(
     not (MODEL.exists() and PRUNE.exists()), reason="modèles absents"

@@ -20,7 +20,7 @@ que d'en produire un qui aurait l'air fini.
 `BRIEF.md` §8 : **un réseau ne devient un autre réseau que si ses poids changent.**
 Ni le couplage à une table de fin de partie, ni la compilation en WebAssembly, ni
 une conversion de format n'en produisent un nouveau. Le fichier de poids porte
-donc `strehl-prob5-512-512-256-256` — la paternité d'Alexander Strehl — et c'est
+donc `strehl-prob5-768-768-256-256-256` — la paternité d'Alexander Strehl — et c'est
 la **configuration** qui s'appelle gammonNet. Rebaptiser les poids reviendrait à
 s'attribuer ce qu'on n'a pas produit, et coûterait la provenance traçable que le
 critère de succès exige.
@@ -52,7 +52,7 @@ from gammonnet.search import search_level  # noqa: E402
 #: Le nom du réseau garde la paternité de son auteur (BRIEF §8). Le nôtre est
 #: celui de la CONFIGURATION, pas des poids.
 NETWORKS = {
-    "strehl-prob5-512-512-256-256": ROOT / "models" / "cubeless_prob5_512_512_256_256.bin",
+    "strehl-prob5-768-768-256-256-256": ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin",
     "strehl-prune-32": ROOT / "models" / "prune_32.bin",
 }
 
@@ -110,7 +110,7 @@ VERIFY = [
     ROOT / "build" / "reference16.bin",
     ROOT / "wasm" / "parity.mjs",
     ROOT / "wasm" / "api_invariants.mjs",
-    ROOT / "models" / "cubeless_prob5_512_512_256_256.provenance.json",
+    ROOT / "models" / "cubeless_prob5_768_768_256_256_256.provenance.json",
     ROOT / "models" / "prune_32.provenance.json",
 ]
 
@@ -164,15 +164,15 @@ def retarget_check(source: Path, destination: Path, weights_name: str,
         "parity.mjs": [
             ('join(ROOT, "build", "reference.bin")', 'join(HERE, "reference.bin")'),
             ('join(ROOT, "build", "reference16.bin")', 'join(HERE, "reference16.bin")'),
-            ('join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin")',
+            ('join(ROOT, "models", "cubeless_prob5_768_768_256_256_256.bin")',
              f'join(ROOT, "{weights_name}")'),
-            ('join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin16")',
+            ('join(ROOT, "models", "cubeless_prob5_768_768_256_256_256.bin16")',
              f'join(ROOT, "{weights_name}16")'),
             ('"../build/wasm/gammonnet.mjs"', '"../gammonnet.mjs"'),
             ('"../build/wasm/gammonnet-simd.mjs"', '"../gammonnet-simd.mjs"'),
         ],
         "api_invariants.mjs": [
-            ('join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin")',
+            ('join(ROOT, "models", "cubeless_prob5_768_768_256_256_256.bin")',
              f'join(ROOT, "{weights_name}")'),
             ('join(ROOT, "models", "prune_32.bin")', f'join(ROOT, "{prune_name}")'),
             ('join(ROOT, "build", "wasm", "gammonnet-simd.mjs")',
@@ -357,7 +357,9 @@ the Software ». L'inventaire complet, avec ce qui est effectivement utilisé de
 chaque brique, est dans THIRD-PARTY.md.
 
 ── Poids du réseau et moteur d'inférence ──────────────────────────────────
-backgammon-ai-engine — Copyright (c) 2026 alexstrehl — licence MIT
+backgammon-ai-engine — Copyright (c) 2026 Alex Strehl — licence MIT
+(poids, commit 18b0a80 ; les sources compilées, commit 7184e2f, portent
+« Copyright (c) 2026 alexstrehl », le même auteur)
 https://github.com/alexstrehl/backgammon-ai-engine
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -393,57 +395,32 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: utilisateur qui met à jour deviner ce qui a bougé sous ses pieds. Quand ce
 #: qui bouge est le SENS de cinq nombres, deviner est exactement ce qu'il ne
 #: faut pas lui demander.
-CHANGES = """## Ce qui change depuis v1.8.1 — À LIRE AVANT DE METTRE À JOUR
+CHANGES = """## Ce qui change depuis v1.8.2 — À LIRE AVANT DE METTRE À JOUR
 
-**Version corrective. Les poids ne changent pas, ni aucun résultat.**
-`strehl-prob5-512-512-256-256` et `strehl-prune-32` sont ceux de v1.6.0, au bit
-près, dans les deux formats ; toute décision rend le même coup et les mêmes
-équités qu'en v1.8.1.
+**Le réseau change.** `strehl-prob5-768-768-256-256-256` (deux couches de 768,
+trois de 256, 1 071 621 paramètres, Alex Strehl, MIT) remplace
+`strehl-prob5-512-512-256-256`. Mêmes 196 entrées, mêmes cinq sorties : aucune
+convention ne bouge, mais **les nombres bougent** — toute décision peut rendre
+un autre coup et d'autres équités qu'en v1.8.2. Un appelant qui a figé des
+résultats les verra changer, et c'est voulu. L'élagueur `strehl-prune-32`
+ne change pas (redistillé du nouveau réseau sur trois graines, il n'a pas fait
+mieux).
 
-### 1. Corrigé : la mémoire d'un fil mort n'était jamais rendue (issue #35)
+### 1. Ce que vaut le nouveau réseau — mesures (issue #34)
 
-Depuis v1.8.0, chaque fil qui évalue reçoit ses tampons de travail (près d'un
-mégaoctet pour le noyau par lot), et ces tampons n'étaient jamais libérés. Les
-fils du pool vivent autant que le processus : pour eux, rien ne fuyait. Mais un
-appelant qui évalue depuis des **fils éphémères** — `serve`, qui traite chaque
-requête sur un fil neuf, en est le cas — perdait un jeu de tampons par fil :
-~0,3 Mo par `/v1/cube`, ~1 Mo par `/v1/eval`, jusqu'à ce que le noyau tue le
-processus. Les tampons d'un fil sont désormais libérés quand il se termine.
+Registre arbitré de T70, 10 000 décisions money, niveau `normal` servi :
+perte par décision −0,00033 [−0,00044 ; −0,00023] contre l'ancien réseau, et
+encore −0,00017 [−0,00028 ; −0,00005] contre l'ancien avec une recherche élargie
+à ×1,5 de son coût. Tête-à-tête et non-régression au videau et en match : voir
+la fiche de décision de l'étape 4.
 
-Mesuré (`tools/serve.py`, épingle v1.8.1, RSS du processus) :
+### 2. Ce qu'il coûte — le noyau par lot devient plus rapide pour tous
 
-| 500 `/v1/cube` puis 500 `/v1/eval` | v1.8.1 | v1.8.2 |
-|---|---|---|
-| mémoire résidente | 31 → 698 Mo | 30 → 30 Mo |
-
-`tests/test_thread_scratch.py` tient la correction : 200 fils neufs, pool à 1
-et à 4 fils, +206 Mo en v1.8.1, moins d'un mégaoctet en v1.8.2.
-
-**Qui doit mettre à jour** : tout appelant de la bibliothèque native ou de
-`serve`. Les modules WebAssembly calculent exactement la même chose (parité
-`max|Δ| = 0`, 1 411 décisions de politique sans écart, à 1 fil et multi-fils) ;
-leurs Web Workers vivent aussi longtemps que le pool, la fuite ne les touchait
-pas en pratique.
-
-### Ce qui ne change pas
-
-Les poids, l'équité de match (Kazaross-XG2 par défaut), le videau, les niveaux
-nommés, la recherche sur plusieurs fils (`--threads`, `gn_parallel_set_threads`,
-même résultat au bit près quel que soit le nombre de fils), les trois modules
-WebAssembly dans ce qu'ils calculent, et le contrat de `serve`. Mesuré sur
-`tests/test_search.py` en alternance A/B : aucun coût de temps décelable (+0,3 %).
-
-### La force publiée ci-dessous
-
-Les sections « La force », « Le taux d'erreur » et « Ce que l'analyse d'un vrai
-match montre » ont été **mesurées avec le réseau précédent**
-`strehl-prob5-512-512-256-128`. Le réseau actuel a été comparé à celui-là en
-tête-à-tête, 2-ply des deux côtés, dés dupliqués
-(`docs/mesures/2026-10-05-T98-non-regression.md`) : **match 7 points 50,05 %**
-[49,81 ; 50,29] sur 35 000 paires, **money +0,0056 ppg** [−0,0010 ; +0,0121]
-sur 201 000 paires. Aucune régression, et aucun gain résolu : les chiffres
-ci-dessous restent ceux qu'il faut lire.
-
+Le noyau saute désormais les unités qu'une ReLU laisse à zéro, et le noyau écrit
+à la main lit ses poids en place. Les résultats sont identiques au bit près.
+Sur une décision 2-ply `(0,1,3)` `k=12`, au repos, le nouveau réseau sur le
+nouveau noyau coûte ×1,11 de l'ancien réseau sur l'ancien noyau dans Chromium
+131 et ×0,53 dans Firefox 140. Mobile : non mesuré.
 """
 
 
@@ -592,7 +569,7 @@ def main() -> int:
         stem = f"{name}_{args.version}_{date}"
         if name == "strehl-prune-32":
             prune_name = f"{stem}.bin"
-        if name == "strehl-prob5-512-512-256-256":
+        if name == "strehl-prob5-768-768-256-256-256":
             #: `verify/parity.mjs` doit charger CES poids-là, sous le nom
             #: qu'ils portent dans l'archive — pas celui du dépôt.
             big_name = f"{stem}.bin"
@@ -657,8 +634,8 @@ def main() -> int:
     manifest = {
         "version": args.version,
         "date": date,
-        "network": f"strehl-prob5-512-512-256-256_{args.version}_{date}.bin",
-        "network_fp16": f"strehl-prob5-512-512-256-256_{args.version}_{date}.bin16",
+        "network": f"strehl-prob5-768-768-256-256-256_{args.version}_{date}.bin",
+        "network_fp16": f"strehl-prob5-768-768-256-256-256_{args.version}_{date}.bin16",
         "prune": f"strehl-prune-32_{args.version}_{date}.bin",
         "prune_fp16": f"strehl-prune-32_{args.version}_{date}.bin16",
         # La forme canonique "normal" (issue #25) : `gn_search_level`

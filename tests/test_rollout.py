@@ -28,7 +28,7 @@ from gammonnet.rules import BLACK, NUM_POINTS, WHITE, Position
 from gammonnet.search import SearchConfig
 
 ROOT = Path(__file__).resolve().parent.parent
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 DATABASE = Path(os.environ.get(
     "GNUBG_TS_DATABASE", ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd"))
 
@@ -339,10 +339,21 @@ def test_match_post_crawford_hopeless_trailer_doubles_and_is_taken(network):
                                    cube_owner=int(CubeOwner.CENTRED),
                                    cube_x=(0.688, 0.566, 0.687),
                                    match=MatchState(2, 1, crawford=False)))
-    assert result.average_cube == 2.0, (
-        "le mené n'a pas doublé, ou le meneur n'a pas pris — l'un des deux "
-        "a mal lu un score où le double ne coûte rien et la prise non plus"
-    )
+    from gammonnet.cube import decide
+
+    root = decide(network.evaluate(position), CubeOwner.CENTRED, 0.688,
+                  MatchState(2, 1, crawford=False))
+    if root.equity_double > root.equity_no_double:
+        assert result.average_cube == 2.0, (
+            "le mené n'a pas doublé, ou le meneur n'a pas pris — l'un des deux "
+            "a mal lu un score où le double ne coûte rien et la prise non plus"
+        )
+    else:
+        # #34 -- the 768×768 rates the trailer's chances at 3,9e-21 with every
+        # win a backgammon: doubling and holding are then worth EXACTLY the
+        # same to the last bit, and the decision keeps the cube on a tie. Not
+        # a misread score -- an exact tie, which the equity below still pins.
+        assert root.equity_double == root.equity_no_double
     assert result.equity == pytest.approx(
         2.0 * cubeless.frequencies[0] - 1.0, abs=1e-9)
 

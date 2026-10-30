@@ -75,7 +75,7 @@ from gammonnet.infer import Network  # noqa: E402
 from gammonnet.rules import Position  # noqa: E402
 from gammonnet.search import SearchConfig, search_plays  # noqa: E402
 
-DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+DEFAULT_MODEL = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 MAX_PLIES_PER_GAME = 300
 
 

@@ -45,7 +45,7 @@ from gammonnet.search import (  # noqa: E402
     search_plays,
 )
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 PRUNE = ROOT / "models" / "prune_32.bin"
 needs_models = pytest.mark.skipif(
     not (MODEL.exists() and PRUNE.exists()), reason="modèles absents"
@@ -113,50 +113,52 @@ COUNT_SHAPES = {
 }
 
 #: Produced by the search code from BEFORE the triplet existed (count-only
-#: filter), with MODEL and PRUNE, at the COUNT_SHAPES above: (position id,
+#: filter), with MODEL and PRUNE, at the COUNT_SHAPES above -- and re-recorded
+#: for the 768×768 (#34) by today's code at `filter_extra = 0`, which
+#: `test_extra_zero_is_the_count_filter` above holds to the count filter: (position id,
 #: turn, dice, shape) -> best play id and the bits of the first three equities. If one of these moves, the count
 #: filter -- the triplet's `extra = 0` case -- changed what the engine plays.
 GOLD = [
     ('ABJLVzOAowlqOg', 1, (3, 1), 'thorough',
-     'gGMDaToAEktXMw', ['abf961d14550b93f', '66e0e9e680aab83f', '6a7e58047fc7b73f']),
+     'gGMDZjoAEktXMw', ['1778ba85c780b63f', 'dd9a1f16073cb13f', 'c3226520252ab03f']),
     ('ABJLVzOAowlqOg', 1, (3, 1), 'normal',
-     'EKMFajoAgqXTbA', ['c5711c3ff85ac53f', '64e0e99688d4b73f', 'a40c3c0d3e73b63f']),
+     'gGMDajYAEktXMw', ['ef746b7e7835b13f', '353f2c921448b03f', '8de338ce5adaa03f']),
     ('d18AAgz9ExgBYA', 0, (6, 5), 'thorough',
-     '/RMYgQJ3XwACDA', ['f512dad5d169e2bf']),
+     '/RMYgQJ3XwACDA', ['d05e420554cee2bf']),
     ('d18AAgz9ExgBYA', 0, (6, 5), 'normal',
-     '/RMYgQJ3XwACDA', ['a30c3cc7de69e2bf']),
+     '/RMYgQJ3XwACDA', ['9032f03611cfe2bf']),
     ('GQsQ42HXuQ8AAA', 0, (2, 2), 'thorough',
-     '58cHAICMBYjxMA', ['5bf3c3329d14f93f', 'd5adf910e969f83f', '80a75bed49eef63f']),
+     '58cHAICMBYjxMA', ['8c9481b77e8bf83f', '81a75b2b06f7f73f', 'f7619113775af63f']),
     ('GQsQ42HXuQ8AAA', 0, (2, 2), 'normal',
-     '58cHAICMBYjxMA', ['5bf3c3329d14f93f', '54069eab276af83f', 'c5711c9144eef63f']),
+     '58cHAICMBYjxMA', ['8c94816f788bf83f', '81a75b2b06f7f73f', '4db7e62c735af63f']),
     ('ShdFigO/BwAAAA', 0, (5, 3), 'thorough',
-     'vwEAAJQuihQHAA', ['b248190800000040']),
+     'vwEAAJQuihQHAA', ['b1f961f5ffffff3f']),
     ('ShdFigO/BwAAAA', 0, (5, 3), 'normal',
-     'vwEAAJQuihQHAA', ['99d05e0800000040']),
+     'vwEAAJQuihQHAA', ['00b148fdffffff3f']),
     ('++4AAEBvB4dAAA', 0, (6, 4), 'thorough',
-     'vV0yAAH77gAAAA', ['f96191bec641f0bf', 'b497d0d83444f0bf', 'd05e42f9034af0bf']),
+     'vV0yAAH77gAAAA', ['aef96119bc41f0bf', '7b09ed5f6744f0bf', 'a30c3cd3e847f0bf']),
     ('++4AAEBvB4dAAA', 0, (6, 4), 'normal',
-     'vV0yAAH77gAAAA', ['9132f0b0e641f0bf', 'd84b68558444f0bf', 'd6fcb05e074af0bf']),
+     'vV0yAAH77gAAAA', ['8845cad8d641f0bf', '388ee3dabb44f0bf', 'a30c3cd3e847f0bf']),
     ('JmfwCSDC5+AFCA', 1, (4, 4), 'thorough',
-     'Zp7EAwgmZ/ABUA', ['1a78badd9ad8e23f', 'cf0f8b80142edf3f', '6ecd0ff30067d93f']),
+     'Zp7EAwgmZ/ABUA', ['fdb048d312d2e23f', '51069e6e51c9de3f', 'ffffffd76924d93f']),
     ('JmfwCSDC5+AFCA', 1, (4, 4), 'normal',
-     'Zp7EAwgmZ/ABUA', ['52069e1a8cd8e23f', 'cf0f8b80142edf3f', '711cc7e9d07ed93f']),
+     'Zp7EAwgmZ/ABUA', ['aef9618532d1e23f', '51069e6e51c9de3f', 'f86191e6ee39d93f']),
     ('sGfhCQI5HuEAMg', 1, (2, 1), 'thorough',
-     'Mx3hADKwZ+EJQA', ['682fa12556cdccbf', '51069e6e5d15debf', 'ba353feca96ee0bf']),
+     'Mx3hADKwZ+EJQA', ['58a40c8c40e1cdbf', '5bf3c3522c7edebf', '4c682f1f375ae0bf']),
     ('sGfhCQI5HuEAMg', 1, (2, 1), 'normal',
-     'Mx3hADKwZ+EJQA', ['682fa12556cdccbf', 'e3388e93ab15debf', '0f8b9451476fe0bf']),
+     'Mx3hADKwZ+EJQA', ['58a40c8c40e1cdbf', 'd3adf941867edebf', '682fa1db935ae0bf']),
     ('1xIEGxjzexUAAA', 1, (6, 6), 'thorough',
-     '53cAAOBagmADAw', ['cf5e422deeb4fb3f']),
+     '53cAAOBagmADAw', ['f2c322bdcfb8fb3f']),
     ('1xIEGxjzexUAAA', 1, (6, 6), 'normal',
-     '53cAAOBagmADAw', ['1bc77166d7bbfb3f']),
+     '53cAAOBagmADAw', ['da4b687948cdfb3f']),
     ('3hDygQTtgSKMMA', 0, (5, 1), 'thorough',
-     '7UEDjDDeEPKBBA', ['8a9481cf39e6c9bf', '1978bafd704dd2bf', '4eb7e61f03d9d5bf']),
+     '3QUijDDeEPKBQA', ['3bdd9a5f1486d0bf', '9481a72b28dad1bf', '25b497607fe5d3bf']),
     ('3hDygQTtgSKMMA', 0, (5, 1), 'normal',
-     '7UEDjDDeEPKBBA', ['f86191cad6fbc9bf', 'da4b68a7d953d2bf', '4eb7e61f03d9d5bf']),
+     '3QUijDDeEPKBQA', ['ef746b26f88ed0bf', '9481a72b28dad1bf', '25b497607fe5d3bf']),
     ('76cWAABbf4EgAA', 0, (4, 3), 'thorough',
-     'W38hAQDvpxYAAA', ['1a78ba093026e8bf', '5f427b857f3fe8bf', 'ce5e42df7dc1e8bf']),
+     'W38hAQDvpxYAAA', ['1978ba85184ee8bf', 'e2388e0fbf5ee8bf', '1e16296bca1ce9bf']),
     ('76cWAABbf4EgAA', 0, (4, 3), 'normal',
-     'W38hAQDvpxYAAA', ['acaaaac23326e8bf', 'b7e687d1b03fe8bf', 'ce5e42df7dc1e8bf']),
+     'W38hAQDvpxYAAA', ['c9c0d395564ee8bf', 'ef746b923b5fe8bf', '1e16296bca1ce9bf']),
 ]
 
 
@@ -184,26 +186,26 @@ def test_count_filter_reproduces_the_pre_triplet_gold(nets, entry):
 #: JmfwCSDC5+AFCA 4-4, sGfhCQI5HuEAMg 2-1) the 2nd/3rd candidates lie outside
 #: the 0.04 band, are no longer deepened, and keep their shallow equity.
 NORMAL_TRIPLET_GOLD = [
-    ('ABJLVzOAowlqOg', 1, (3, 1), 'EKMFajoAgqXTbA',
-     ['c5711c3ff85ac53f', '64e0e99688d4b73f', 'a40c3c0d3e73b63f']),
+    ('ABJLVzOAowlqOg', 1, (3, 1), 'gGMDajYAEktXMw',
+     ['ef746b7e7835b13f', '353f2c921448b03f', '8de338ce5adaa03f']),
     ('d18AAgz9ExgBYA', 0, (6, 5), '/RMYgQJ3XwACDA',
-     ['a30c3cc7de69e2bf']),
+     ['9032f03611cfe2bf']),
     ('GQsQ42HXuQ8AAA', 0, (2, 2), '58cHAICMBYjxMA',
-     ['5bf3c3329d14f93f', '54069eab276af83f', '00000040630bf73f']),
+     ['8c94816f788bf83f', '81a75b2b06f7f73f', '000000004564f63f']),
     ('ShdFigO/BwAAAA', 0, (5, 3), 'vwEAAJQuihQHAA',
-     ['99d05e0800000040']),
+     ['00b148fdffffff3f']),
     ('++4AAEBvB4dAAA', 0, (6, 4), 'vV0yAAH77gAAAA',
-     ['9132f0b0e641f0bf', 'd84b68558444f0bf', 'd6fcb05e074af0bf']),
+     ['8845cad8d641f0bf', '388ee3dabb44f0bf', 'a30c3cd3e847f0bf']),
     ('JmfwCSDC5+AFCA', 1, (4, 4), 'Zp7EAwgmZ/ABUA',
-     ['52069e1a8cd8e23f', '000000408b35df3f', '000000004cf0d93f']),
+     ['aef9618532d1e23f', '00000040d0d0de3f', '000000004ad0d93f']),
     ('sGfhCQI5HuEAMg', 1, (2, 1), 'Mx3hADKwZ+EJQA',
-     ['682fa12556cdccbf', '00000000feb1ddbf', '0000008016e3dfbf']),
+     ['58a40c8c40e1cdbf', '000000002baddebf', '000000008ebee0bf']),
     ('1xIEGxjzexUAAA', 1, (6, 6), '53cAAOBagmADAw',
-     ['1bc77166d7bbfb3f']),
-    ('3hDygQTtgSKMMA', 0, (5, 1), '7UEDjDDeEPKBBA',
-     ['f86191cad6fbc9bf', 'da4b68a7d953d2bf', '4eb7e61f03d9d5bf']),
+     ['da4b687948cdfb3f']),
+    ('3hDygQTtgSKMMA', 0, (5, 1), '3QUijDDeEPKBQA',
+     ['ef746b26f88ed0bf', '9481a72b28dad1bf', '25b497607fe5d3bf']),
     ('76cWAABbf4EgAA', 0, (4, 3), 'W38hAQDvpxYAAA',
-     ['acaaaac23326e8bf', 'b7e687d1b03fe8bf', 'ce5e42df7dc1e8bf']),
+     ['c9c0d395564ee8bf', 'ef746b923b5fe8bf', '1e16296bca1ce9bf']),
 ]
 
 

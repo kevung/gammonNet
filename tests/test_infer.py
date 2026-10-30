@@ -42,10 +42,11 @@ REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
 # into a habit.
 MODEL_PT = Path(os.environ.get(
     "GN_MODEL_PT",
-    REFERENCE / "best_models" / "cubeless_prob5_512_512_256_256.pt"))
+    # Not in the pinned tree (#34): staged by `tools/export_model.py`.
+    ROOT / "build" / "weights" / "cubeless_prob5_768_768_256_256_256.pt"))
 MODEL_BIN = Path(os.environ.get(
     "GN_MODEL_BIN",
-    ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"))
+    ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"))
 
 SEED = 20260803
 CORPUS_SIZE = 2_000
@@ -369,5 +370,5 @@ def test_the_header_says_what_we_expect(network):
     assert input_size == codec.NUM_FEATURES == 196
     assert output_mode == 2, "mode de sortie prob5 attendu"
     assert activation == 0, "relu attendu"
-    assert list(hidden) == [512, 512, 256, 256]
+    assert list(hidden) == [768, 768, 256, 256, 256]
     assert network.input_size == 196

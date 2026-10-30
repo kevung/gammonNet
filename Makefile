@@ -197,9 +197,9 @@ $(LIBRARY): $(OBJECTS) $(VENDOR_OBJECTS)
 
 # ── Modèle ───────────────────────────────────────────────────────────
 
-MODEL := models/cubeless_prob5_512_512_256_256.bin
+MODEL := models/cubeless_prob5_768_768_256_256_256.bin
 # Le même réseau, au format de distribution `BGN6` (docs/specs/format-bgn6-spec.md).
-MODEL16 := models/cubeless_prob5_512_512_256_256.bin16
+MODEL16 := models/cubeless_prob5_768_768_256_256_256.bin16
 PRUNE_MODEL := models/prune_32.bin
 
 model: $(MODEL)

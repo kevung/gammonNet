@@ -5,8 +5,8 @@
 | Fichier | Ce que c'est |
 |---|---|
 | `manifest.json` | Les noms de fichiers de cette version — lisez-le plutôt que de les recopier |
-| `strehl-prob5-512-512-256-256_v1_….bin` | Les poids du réseau, **float32** — 2,1 Mio |
-| `…​.bin16` | Les mêmes, **float16** — 1,06 Mio. Préférez celui-ci pour le web |
+| `strehl-prob5-768-768-256-256-256_v1_….bin` | Les poids du réseau, **float32** — 4,1 Mio |
+| `…​.bin16` | Les mêmes, **float16** — 2,05 Mio. Préférez celui-ci pour le web |
 | `strehl-prune-32_v1_….bin` / `.bin16` | Le **réseau d'élagage** : il trie les coups pour que le grand n'en note qu'une poignée |
 | `bearoff_one_sided.bin` | La table **exacte** de fin de partie — 6,9 Mio |
 | `gammonnet-simd.mjs` + `.wasm` | Le moteur WebAssembly, version SIMD |
@@ -120,7 +120,7 @@ from gammonnet.infer import Network
 from gammonnet.rules import WHITE
 from gammonnet.search import SearchConfig, search_plays
 
-net = Network.load("models/cubeless_prob5_512_512_256_256.bin")
+net = Network.load("models/cubeless_prob5_768_768_256_256_256.bin")
 small = Network.load("models/prune_32.bin")
 position = position_from_id("4HPwATDgc/ABMA", WHITE)
 

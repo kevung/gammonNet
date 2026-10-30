@@ -29,8 +29,8 @@ const REFERENCE = join(ROOT, "build", "reference.bin");
 const REFERENCE16 = join(ROOT, "build", "reference16.bin");
 /* GN_MODEL_BIN retargets the check at another network, as in tests/test_infer.py;
  * the float16 pair is then skipped, its reference belonging to the default one. */
-const MODEL = process.env.GN_MODEL_BIN || join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin");
-const MODEL16 = join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin16");
+const MODEL = process.env.GN_MODEL_BIN || join(ROOT, "models", "cubeless_prob5_768_768_256_256_256.bin");
+const MODEL16 = join(ROOT, "models", "cubeless_prob5_768_768_256_256_256.bin16");
 const PAIRS = [
   { format: "float32", reference: REFERENCE, model: MODEL },
   ...(process.env.GN_MODEL_BIN ? [] : [{ format: "float16", reference: REFERENCE16, model: MODEL16 }]),

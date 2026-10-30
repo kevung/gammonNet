@@ -65,7 +65,7 @@ from gammonnet.search import (  # noqa: E402
     terminal_equity,
 )
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 PRUNE = ROOT / "models" / "prune_32.bin"
 CORPUS = ROOT / "docs" / "mesures" / "deep-root-test-sgf.jsonl"
 PRUNE_K = 12

@@ -258,7 +258,7 @@ et les régimes money, match, Crawford, Jacoby et refus. Le verdict se relit dan
 recalcul (`categories`) ; un test échoue si une catégorie manque.
 
 **Conditions de génération** (et donc de rejeu) : build natif par défaut (pas `NATIVE_FP`),
-poids `models/cubeless_prob5_512_512_256_256.bin` et `models/prune_32.bin` — leurs empreintes
+poids `models/cubeless_prob5_768_768_256_256_256.bin` et `models/prune_32.bin` — leurs empreintes
 SHA-256 sont dans `data/policy_reference.json` —, **aucune table bilatérale installée** (la
 politique suit alors le modèle partout, ce qu'un portage sans la table de 1,2 Gio reproduit).
 
