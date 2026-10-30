@@ -400,6 +400,19 @@ wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
 wasm-policy: wasm $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/policy_parity.mjs --all
 
+# La décision DÉCOUPÉE en tâches contre la même décision en un bloc, au bit
+# près (docs/specs/decision-decomposee-spec.md §6) : le corpus de la
+# politique à ses niveaux, puis les 2 050 positions de T12. Mono-fil par
+# processus, donc réparti en DECISION_SHARDS processus ; xargs échoue si un
+# seul morceau trouve un écart.
+DECISION_SHARDS ?= 24
+.PHONY: wasm-decision
+wasm-decision: wasm $(MODEL) $(PRUNE_MODEL)
+	seq 0 $$(($(DECISION_SHARDS) - 1)) | xargs -P $(DECISION_SHARDS) -I{} \
+	    node $(WASM_DIR)/decision_parity.mjs --shard {}/$(DECISION_SHARDS)
+	seq 0 $$(($(DECISION_SHARDS) - 1)) | xargs -P $(DECISION_SHARDS) -I{} \
+	    node $(WASM_DIR)/decision_parity.mjs --corpus t12 --shard {}/$(DECISION_SHARDS)
+
 # Le même corpus sur le module MULTI-FILS, à 16 fils : c'est là qu'un fil de
 # recherche fait grandir la mémoire et qu'une vue du tas gardée par le fil
 # principal devient périmée (Evaluator#views). Avant le correctif, chaque
