@@ -1,0 +1,482 @@
+[
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 80000,
+  "decision": 0.2302,
+  "maxDelta": 0,
+  "file": "i34-nav-1-intrinnew-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 40851.1,
+  "decision": 0.4302,
+  "maxDelta": 0,
+  "file": "i34-nav-1-intrinnew-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 42666.7,
+  "decision": 0.3837,
+  "maxDelta": 0,
+  "file": "i34-nav-1-intrinnew-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 21333.3,
+  "decision": 0.752,
+  "maxDelta": 0,
+  "file": "i34-nav-1-intrinnew-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 49389.1,
+  "decision": 0.3296,
+  "maxDelta": 0,
+  "file": "i34-nav-1-intrinold-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 25472.6,
+  "decision": 0.607,
+  "maxDelta": 0,
+  "file": "i34-nav-1-intrinold-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 21333.3,
+  "decision": 0.688,
+  "maxDelta": 0,
+  "file": "i34-nav-1-intrinold-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 10971.4,
+  "decision": 1.3057,
+  "maxDelta": 0,
+  "file": "i34-nav-1-intrinold-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 80000,
+  "decision": 0.2305,
+  "maxDelta": 0,
+  "file": "i34-nav-2-intrinnew-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 40742.7,
+  "decision": 0.4301,
+  "maxDelta": 0,
+  "file": "i34-nav-2-intrinnew-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 42666.7,
+  "decision": 0.3847,
+  "maxDelta": 0,
+  "file": "i34-nav-2-intrinnew-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 21333.3,
+  "decision": 0.7513,
+  "maxDelta": 0,
+  "file": "i34-nav-2-intrinnew-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 49389.1,
+  "decision": 0.3301,
+  "maxDelta": 0,
+  "file": "i34-nav-2-intrinold-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 25557.4,
+  "decision": 0.6069,
+  "maxDelta": 0,
+  "file": "i34-nav-2-intrinold-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 21333.3,
+  "decision": 0.6887,
+  "maxDelta": 0,
+  "file": "i34-nav-2-intrinold-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 10971.4,
+  "decision": 1.303,
+  "maxDelta": 0,
+  "file": "i34-nav-2-intrinold-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 80418.8,
+  "decision": 0.2303,
+  "maxDelta": 0,
+  "file": "i34-nav-3-intrinnew-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 40851.1,
+  "decision": 0.4296,
+  "maxDelta": 0,
+  "file": "i34-nav-3-intrinnew-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 42666.7,
+  "decision": 0.3843,
+  "maxDelta": 0,
+  "file": "i34-nav-3-intrinnew-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 21333.3,
+  "decision": 0.7533,
+  "maxDelta": 0,
+  "file": "i34-nav-3-intrinnew-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 50032.6,
+  "decision": 0.33,
+  "maxDelta": 0,
+  "file": "i34-nav-3-intrinold-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 25515,
+  "decision": 0.6068,
+  "maxDelta": 0,
+  "file": "i34-nav-3-intrinold-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 21333.3,
+  "decision": 0.688,
+  "maxDelta": 0,
+  "file": "i34-nav-3-intrinold-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinold",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 10893.6,
+  "decision": 1.3013,
+  "maxDelta": 0,
+  "file": "i34-nav-3-intrinold-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 80000,
+  "decision": 0.2307,
+  "maxDelta": 0,
+  "file": "i34-nav2-1-intrinnew-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 40742.7,
+  "decision": 0.4308,
+  "maxDelta": 0,
+  "file": "i34-nav2-1-intrinnew-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 42666.7,
+  "decision": 0.385,
+  "maxDelta": 0,
+  "file": "i34-nav2-1-intrinnew-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 21633.8,
+  "decision": 0.7553,
+  "maxDelta": 0,
+  "file": "i34-nav2-1-intrinnew-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 94233.1,
+  "decision": 0.206,
+  "maxDelta": 0,
+  "file": "i34-nav2-1-intrintile-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 49548.4,
+  "decision": 0.3674,
+  "maxDelta": 0,
+  "file": "i34-nav2-1-intrintile-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 96000,
+  "decision": 0.2047,
+  "maxDelta": 0,
+  "file": "i34-nav2-1-intrintile-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 52965.5,
+  "decision": 0.3653,
+  "maxDelta": 0,
+  "file": "i34-nav2-1-intrintile-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 80418.8,
+  "decision": 0.2307,
+  "maxDelta": 0,
+  "file": "i34-nav2-2-intrinnew-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 40851.1,
+  "decision": 0.4306,
+  "maxDelta": 0,
+  "file": "i34-nav2-2-intrinnew-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 42666.7,
+  "decision": 0.3867,
+  "maxDelta": 0,
+  "file": "i34-nav2-2-intrinnew-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 21333.3,
+  "decision": 0.7513,
+  "maxDelta": 0,
+  "file": "i34-nav2-2-intrinnew-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 94814.8,
+  "decision": 0.2053,
+  "maxDelta": 0,
+  "file": "i34-nav2-2-intrintile-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 49708.7,
+  "decision": 0.3677,
+  "maxDelta": 0,
+  "file": "i34-nav2-2-intrintile-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 96000,
+  "decision": 0.205,
+  "maxDelta": 0,
+  "file": "i34-nav2-2-intrintile-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 51200,
+  "decision": 0.3657,
+  "maxDelta": 0,
+  "file": "i34-nav2-2-intrintile-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 80418.8,
+  "decision": 0.2304,
+  "maxDelta": 0,
+  "file": "i34-nav2-3-intrinnew-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 40634.9,
+  "decision": 0.4295,
+  "maxDelta": 0,
+  "file": "i34-nav2-3-intrinnew-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 42666.7,
+  "decision": 0.3843,
+  "maxDelta": 0,
+  "file": "i34-nav2-3-intrinnew-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrinnew",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 21633.8,
+  "decision": 0.7597,
+  "maxDelta": 0,
+  "file": "i34-nav2-3-intrinnew-firefox.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 93658.5,
+  "decision": 0.2057,
+  "maxDelta": 0,
+  "file": "i34-nav2-3-intrintile-chrome.json"
+ },
+ {
+  "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 49870.1,
+  "decision": 0.3683,
+  "maxDelta": 0,
+  "file": "i34-nav2-3-intrintile-chrome.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_512_512_256_256.bin",
+  "rate": 96000,
+  "decision": 0.205,
+  "maxDelta": 0,
+  "file": "i34-nav2-3-intrintile-firefox.json"
+ },
+ {
+  "browser": "firefox",
+  "width": 16,
+  "kernel": "intrintile",
+  "model": "cubeless_prob5_768_768_256_256_256.bin",
+  "rate": 51200,
+  "decision": 0.3657,
+  "maxDelta": 0,
+  "file": "i34-nav2-3-intrintile-firefox.json"
+ }
+]

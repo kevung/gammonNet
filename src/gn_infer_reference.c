@@ -49,6 +49,13 @@ typedef struct {
     float batch_b[BATCH_MAX_WIDTH * GN_EVAL_BATCH];
     float batch_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
     float packed_in[GN_NUM_FEATURES * GN_EVAL_BATCH];
+    /* The weights of the live columns, gathered per row tile (eight rows at
+     * most, the widest tile gn_kernel_f32.h compiles). In the scratch rather
+     * than on the stack: a hidden layer can be 1024 wide, and 32 KB of stack
+     * per call is more than a WebAssembly thread is given. */
+    float packed_w[8 * BATCH_MAX_WIDTH];
+    /* Which columns of the previous layer's output are live (#34). */
+    int live_units[BATCH_MAX_WIDTH];
     float scalar_a[SCALAR_MAX_WIDTH];
     float scalar_b[SCALAR_MAX_WIDTH];
 } InferScratch;
@@ -83,6 +90,12 @@ struct GnNetwork {
     enum GnNetworkFormat format;
     NNModel model;          /* valid when format == GN_NETWORK_FLOAT */
     GnInt8Model int8_model; /* valid when format == GN_NETWORK_INT8 */
+#ifdef GN_KERNEL_INTRINSICS
+    /* #34 -- each layer's weights again, tile-transposed for
+     * `gn_kernel_block_tiled`: built once at load, read by every batch. NULL
+     * where the batch kernel does not apply. */
+    float *tiled[NN_MAX_LAYERS];
+#endif
 #ifdef GN_BATCH_SPARSITY_SWITCH
     /* T89 ONLY. Compiled out of the shipped library, exactly like
      * GN_BATCH_FILL_STATS: the layer-1 sparsity is not a run-time choice, it
@@ -276,6 +289,46 @@ static int is_fp16(const char *path)
     return read == 4 && memcmp(magic, "BGN6", 4) == 0;
 }
 
+static int batch_kernel_applies(const NNModel *model);
+
+#ifdef GN_KERNEL_INTRINSICS
+/* #34 -- the tile-transposed copy `gn_kernel_block_tiled` reads: for the row
+ * tile starting at row i, `tiled[L][(i / R) * cols * R + j * R + r]` is
+ * `W[(i + r) * cols + j]`. The rows past the last whole tile (the five-row
+ * output layer leaves one) keep the row-major path. Only where the batch
+ * kernel applies: elsewhere nothing reads it. */
+static int build_tiles(GnNetwork *net)
+{
+    const NNModel *model = &net->model;
+    if (!batch_kernel_applies(model)) {
+        return 0;
+    }
+    const int R = GN_KERNEL_ROWS;
+    for (int L = 0; L <= model->num_hidden; L++) {
+        const int rows = model->layer_out[L];
+        const int cols = model->layer_in[L];
+        const int tiles = rows / R;
+        if (tiles == 0) {
+            continue;
+        }
+        float *t = malloc(sizeof(float) * (size_t)tiles * R * cols);
+        if (t == NULL) {
+            return -1;
+        }
+        const float *W = model->weight[L];
+        for (int b = 0; b < tiles; b++) {
+            for (int j = 0; j < cols; j++) {
+                for (int r = 0; r < R; r++) {
+                    t[((size_t)b * cols + j) * R + r] = W[(size_t)(b * R + r) * cols + j];
+                }
+            }
+        }
+        net->tiled[L] = t;
+    }
+    return 0;
+}
+#endif
+
 GnNetwork *gn_network_load(const char *path)
 {
     if (path == NULL) {
@@ -333,6 +386,12 @@ GnNetwork *gn_network_load(const char *path)
         return NULL;
     }
 
+#ifdef GN_KERNEL_INTRINSICS
+    if (build_tiles(net) != 0) {
+        gn_network_free(net);
+        return NULL;
+    }
+#endif
     return net;
 }
 
@@ -344,6 +403,11 @@ void gn_network_free(GnNetwork *net)
     if (net->format == GN_NETWORK_INT8) {
         gn_int8_model_free(&net->int8_model);
     } else {
+#ifdef GN_KERNEL_INTRINSICS
+        for (int L = 0; L < NN_MAX_LAYERS; L++) {
+            free(net->tiled[L]);
+        }
+#endif
         nn_free(&net->model);
     }
     free(net);
@@ -490,10 +554,11 @@ static float batch_sigmoid(float x) { return 1.0f / (1.0f + expf(-x)); }
  * before this shape and forbids since. One compiled path, one summation
  * order, whatever the chunk.
  */
-static void forward_batch(const NNModel *model, const float *in, int live,
+static void forward_batch(const GnNetwork *net, const float *in, int live,
                           const int *nonzero, int n_nonzero,
                           float (*out)[GN_NUM_OUTPUTS])
 {
+    const NNModel *const model = &net->model;
     InferScratch *const scratch = infer_scratch();
     float *const packed_in = scratch->packed_in;
     const float *current = in;
@@ -511,6 +576,12 @@ static void forward_batch(const NNModel *model, const float *in, int live,
         }
     }
 
+    /* The live columns of the layer about to be read: the input features at
+     * layer 0, then the units the previous ReLU left non-zero (#34). NULL means
+     * every column, dense. */
+    const int *index = nonzero;
+    int n_index = n_nonzero;
+
     for (int L = 0; L < total_layers; L++) {
         const int rows = model->layer_out[L];
         const int cols = model->layer_in[L];
@@ -518,12 +589,14 @@ static void forward_batch(const NNModel *model, const float *in, int live,
         const float *bias = model->bias[L];
         const int is_output = (L == model->num_hidden);
 
-        /* The live source for this layer: compacted at layer 0 when the
-         * sparsity applies, dense otherwise. Choosing it ONCE per layer rather
-         * than per row keeps the two kernels below reading the same thing. */
-        const int packed = (L == 0 && nonzero != NULL);
-        const float *source = packed ? packed_in : current;
-        const int count = packed ? n_nonzero : cols;
+        /* The live source for this layer, chosen ONCE per layer rather than
+         * per row so that the two kernels below read the same thing. At layer
+         * 0 the live columns were gathered into `packed_in`; deeper, the
+         * previous layer compacted its own output in place (below). */
+        const int packed = (index != NULL);
+        const float *source = (L == 0 && packed) ? packed_in : current;
+        const int count = packed ? n_index : cols;
+        float *const packed_w = scratch->packed_w;
 
 #ifdef GN_KERNEL_INTRINSICS
         /* T84: the hand-written kernel, tiled over GN_KERNEL_ROWS output rows
@@ -538,12 +611,15 @@ static void forward_batch(const NNModel *model, const float *in, int live,
                     acc[r * GN_EVAL_BATCH + n] = bias[i + r];
                 }
             }
-            if (packed) {
-                float packed_w[GN_KERNEL_ROWS * GN_NUM_FEATURES];
+            if (net->tiled[L] != NULL) {
+                /* The weights where they are: no gather, live or dense. */
+                gn_kernel_block_tiled(acc, net->tiled[L] + (size_t)i * cols,
+                                      packed ? index : NULL, source, count);
+            } else if (packed) {
                 for (int r = 0; r < GN_KERNEL_ROWS; r++) {
                     const float *w_row = W + (size_t)(i + r) * cols;
-                    for (int idx = 0; idx < n_nonzero; idx++) {
-                        packed_w[r * n_nonzero + idx] = w_row[nonzero[idx]];
+                    for (int idx = 0; idx < n_index; idx++) {
+                        packed_w[r * n_index + idx] = w_row[index[idx]];
                     }
                 }
                 gn_kernel_block(acc, packed_w, source, count);
@@ -566,9 +642,8 @@ static void forward_batch(const NNModel *model, const float *in, int live,
             }
             const float *w_row = W + (size_t)i * cols;
             if (packed) {
-                float packed_w[GN_NUM_FEATURES];
-                for (int idx = 0; idx < n_nonzero; idx++) {
-                    packed_w[idx] = w_row[nonzero[idx]];
+                for (int idx = 0; idx < n_index; idx++) {
+                    packed_w[idx] = w_row[index[idx]];
                 }
                 gn_kernel_row(acc, packed_w, source, count);
             } else {
@@ -591,15 +666,14 @@ static void forward_batch(const NNModel *model, const float *in, int live,
              * over j, per (i, n), is unchanged. */
             const float *w_row = W + (size_t)i * cols;
             if (packed) {
-                /* Compacted: the weights of the live features gathered once
+                /* Compacted: the weights of the live columns gathered once
                  * into a contiguous row, so the inner loop streams instead of
                  * jumping. The first attempt indexed `w_row[nonzero[idx]]`
                  * directly and was SLOWER than the dense loop despite doing a
                  * fifth of the multiplications -- the access pattern beat the
                  * operation count. */
-                float packed_w[GN_NUM_FEATURES];
-                for (int idx = 0; idx < n_nonzero; idx++) {
-                    packed_w[idx] = w_row[nonzero[idx]];
+                for (int idx = 0; idx < n_index; idx++) {
+                    packed_w[idx] = w_row[index[idx]];
                 }
                 for (int idx = 0; idx < count; idx++) {
                     const float w = packed_w[idx];
@@ -624,6 +698,47 @@ static void forward_batch(const NNModel *model, const float *in, int live,
             }
         }
 #endif
+
+        /* #34 -- the units this ReLU left at zero in every LIVE lane, dropped
+         * from the next layer's sum. A ReLU network leaves most of them there:
+         * 26 % of a 768-wide layer fires per position, 42 % over a batch of
+         * siblings, so the next layer's sum was mostly `w * 0`.
+         *
+         * Dropping those terms is EXACT, not approximate. The activations are
+         * `+0.0f` or positive (batch_relu returns the literal), so a dropped
+         * term is `w * +0.0f`, a signed zero; adding a signed zero leaves any
+         * non-zero accumulator unchanged, and can only flip the sign of a zero
+         * one -- which the next ReLU (`x > 0 ? x : 0.0f`) and the sigmoid
+         * (`expf(-0.0f) == expf(+0.0f)`) both erase. The order of the terms
+         * that remain is the order they had. tests/test_batch.py holds the
+         * batched path to the scalar one bit for bit, and the golds hold it to
+         * what shipped.
+         *
+         * The dead lanes (n >= live) do not vote: they were fed zeros, so
+         * their units carry relu(bias) and would keep columns alive that no
+         * position needs. Their outputs are discarded.
+         *
+         * Compacted IN PLACE: column `j` moves to slot `n_index <= j`, and a
+         * slot is only ever written after it was read. */
+        if (!is_output) {
+            int n_live = 0;
+            for (int j = 0; j < rows; j++) {
+                const float *column = next + (size_t)j * GN_EVAL_BATCH;
+                int fires = 0;
+                for (int n = 0; n < live; n++) {
+                    fires |= (column[n] != 0.0f);
+                }
+                if (fires) {
+                    if (n_live != j) {
+                        memcpy(next + (size_t)n_live * GN_EVAL_BATCH, column,
+                               sizeof(float) * GN_EVAL_BATCH);
+                    }
+                    scratch->live_units[n_live++] = j;
+                }
+            }
+            index = scratch->live_units;
+            n_index = n_live;
+        }
 
         current = next;
         next = (next == scratch->batch_a) ? scratch->batch_b : scratch->batch_a;
@@ -700,10 +815,10 @@ static void forward_feature_rows(const GnNetwork *net, const float *rows,
     if ((unsigned long)n_nonzero > gn_sparsity_widest[net->slot]) {
         gn_sparsity_widest[net->slot] = (unsigned long)n_nonzero;
     }
-    forward_batch(&net->model, batch_in, chunk,
+    forward_batch(net, batch_in, chunk,
                   net->sparsity ? nonzero : NULL, n_nonzero, probs);
 #else
-    forward_batch(&net->model, batch_in, chunk, nonzero, n_nonzero, probs);
+    forward_batch(net, batch_in, chunk, nonzero, n_nonzero, probs);
 #endif
 }
 
