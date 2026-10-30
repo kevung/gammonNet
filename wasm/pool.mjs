@@ -508,6 +508,54 @@ export class EvaluatorPool {
     return { done, cancel, schedule: report };
   }
 
+  /**
+   * UNE décision, répartie sur le pool (issue #36).
+   *
+   * `decide()` met une position par worker : une décision isolée reste sur
+   * un seul. Ici la décision elle-même est découpée
+   * (`Evaluator.planDecision`, docs/specs/decision-decomposee-spec.md) : un
+   * worker planifie, les tâches de chaque vague se répartissent sur tous,
+   * un worker recombine — et le résultat est celui de l'appel en un bloc,
+   * AU BIT PRÈS, quel que soit l'ordre dans lequel les workers finissent.
+   * Aucun worker ne garde d'état : chaque message porte tout son contexte.
+   *
+   * `kind` et les arguments sont ceux de `planDecision` ("move", "cube",
+   * "policy", "position"). `tasksPerMessage` regroupe les tâches par
+   * message (1 par défaut : les tâches d'une décision 2-ply sont assez
+   * grosses pour que le message ne pèse rien, et une par message équilibre
+   * le mieux — un défaut de départ, NON mesuré).
+   *
+   * Rend `{ done, schedule }` : `done` résout sur la décision, sous la forme
+   * exacte de `bestPlay` / `cubeDecision` / `policy` /
+   * `evaluatePositionAtPly` ; `schedule` relève chaque message.
+   */
+  decideSplit(kind, positionId, turn, d1 = 0, d2 = 0, options = {}, {
+    tasksPerMessage = 1,
+  } = {}) {
+    const report = new ScheduleReport(this.size);
+    const send = (request, label) => new Promise((resolve, reject) => {
+      this.#queue.push({ decision: true, report, label, request, resolve, reject });
+      this.#pump();
+    });
+    const done = (async () => {
+      let step = await send({ type: "planDecision", kind, positionId, turn, d1, d2, options }, "plan");
+      if (step === null) return null;
+      while (!step.done) {
+        const parts = [];
+        for (let i = 0; i < step.stage.length; i += tasksPerMessage) {
+          parts.push(send({ type: "runTasks", tasks: step.stage.slice(i, i + tasksPerMessage) },
+                          `tâches ${i}`));
+        }
+        const results = await Promise.all(parts);
+        if (results.some((r) => r === null)) return null;
+        step = await send({ type: "advance", plan: step.plan, results: results.flat() }, "avance");
+        if (step === null) return null;
+      }
+      return send({ type: "combineDecision", plan: step.plan }, "conclusion");
+    })();
+    return { done, schedule: report };
+  }
+
   destroy() {
     for (const worker of this.#workers) worker.terminate();
     this.#workers = [];

@@ -354,18 +354,21 @@ export class Evaluator {
         throw new Error("décision de videau refusée : position illisible, ou " +
                         "score hors de la table d'équité de match");
       }
-      const v = this.#views().HEAPF64.subarray(outPtr >> 3, (outPtr >> 3) + 9);
-      const ACTIONS = ["no-double", "double-take", "double-pass", "too-good"];
-      return {
-        action: ACTIONS[v[0]] ?? String(v[0]),
-        equityNoDouble: v[1],
-        equityDouble: v[2],
-        takePoint: v[3],
-        probs: Array.from(v.subarray(4, 9)),
-      };
+      return this.#cubeResult(this.#views().HEAPF64.subarray(outPtr >> 3, (outPtr >> 3) + 9));
     } finally {
       m._free(outPtr);
     }
+  }
+
+  #cubeResult(v) {
+    const ACTIONS = ["no-double", "double-take", "double-pass", "too-good"];
+    return {
+      action: ACTIONS[v[0]] ?? String(v[0]),
+      equityNoDouble: v[1],
+      equityDouble: v[2],
+      takePoint: v[3],
+      probs: Array.from(v.subarray(4, 9)),
+    };
   }
 
   /**
@@ -389,60 +392,79 @@ export class Evaluator {
    * Rend `{ action, resignValue, searched, equityA, equityB, play }` —
    * `play` : `{ moves, board, notation }` pour "move", sinon `null`.
    */
-  policy(board, {
+  policy(board, options = {}) {
+    const m = this.#module;
+    const fields = this.#policyFields(options);
+    return this.#withBoard(board, (boardPtr) => {
+      const fieldsPtr = m._malloc(11 * 4);
+      try {
+        this.#views().HEAP32.set(fields.values, fieldsPtr >> 2);
+        return this.#policyResult((intsPtr, eqPtr, notationPtr) => m.ccall(
+          "gnw_policy_decide", "number",
+          ["number", "number", "string", "number", "number", "number"],
+          [boardPtr, fieldsPtr, fields.level, intsPtr, eqPtr, notationPtr]));
+      } finally {
+        m._free(fieldsPtr);
+      }
+    });
+  }
+
+  /* The eleven decision fields of `gnw_policy_decide` -- one reading for
+   * `policy` and for `planDecision("policy")`. */
+  #policyFields({
     pending, level = "normal", d1 = 0, d2 = 0, cube = 1, cubeOwner = 0,
     jacoby = false, useMatch = false, awayOnRoll = 0, awayOpponent = 0,
     crawford = false, resignValue = 0,
   } = {}) {
-    const m = this.#module;
     const PENDING = { move: 0, cube: 1, take: 2, resign: 3 };
-    const ACTIONS = ["move", "roll", "double", "resign", "take", "pass",
-                     "accept", "reject"];
     if (!(pending in PENDING)) {
       throw new Error(`décision inconnue : ${pending} (move, cube, take, resign)`);
     }
-    const fields = [PENDING[pending], d1, d2, cube, cubeOwner, jacoby ? 1 : 0,
-                    useMatch ? 1 : 0, awayOnRoll, awayOpponent, crawford ? 1 : 0,
-                    resignValue];
-    return this.#withBoard(board, (boardPtr) => {
-      const fieldsPtr = m._malloc(11 * 4);
-      const intsPtr = m._malloc(41 * 4);
-      const eqPtr = m._malloc(2 * 8);
-      const notationPtr = m._malloc(64);
-      try {
-        this.#views().HEAP32.set(fields, fieldsPtr >> 2);
-        const status = m.ccall(
-          "gnw_policy_decide", "number",
-          ["number", "number", "string", "number", "number", "number"],
-          [boardPtr, fieldsPtr, level, intsPtr, eqPtr, notationPtr]);
-        if (status !== 0) {
-          throw new Error("décision refusée : entrée incohérente, niveau inconnu, " +
-                          "élagage absent, ou score hors de la table");
-        }
-        const v = Array.from(this.#views().HEAP32.subarray(intsPtr >> 2, (intsPtr >> 2) + 41));
-        const e = this.#views().HEAPF64.subarray(eqPtr >> 3, (eqPtr >> 3) + 2);
-        const action = ACTIONS[v[0]];
-        let play = null;
-        if (action === "move") {
-          const moves = [];
-          for (let i = 0; i < v[3]; i++) moves.push([v[4 + 2 * i], v[5 + 2 * i]]);
-          const b = v.slice(12, 41);
-          play = {
-            moves,
-            board: { points: b.slice(0, 24), bar: [b[24], b[25]], off: [b[26], b[27]],
-                     turn: b[28] },
-            notation: m.UTF8ToString(notationPtr),
-          };
-        }
-        return { action, resignValue: v[1], searched: v[2] === 1,
-                 equityA: e[0], equityB: e[1], play };
-      } finally {
-        m._free(fieldsPtr);
-        m._free(intsPtr);
-        m._free(eqPtr);
-        m._free(notationPtr);
+    return {
+      level,
+      values: [PENDING[pending], d1, d2, cube, cubeOwner, jacoby ? 1 : 0,
+               useMatch ? 1 : 0, awayOnRoll, awayOpponent, crawford ? 1 : 0,
+               resignValue],
+    };
+  }
+
+  /* `policy`'s answer read back -- from the decision in one piece or from a
+   * settled plan, `call(intsPtr, eqPtr, notationPtr)` filling the buffers. */
+  #policyResult(call) {
+    const m = this.#module;
+    const ACTIONS = ["move", "roll", "double", "resign", "take", "pass",
+                     "accept", "reject"];
+    const intsPtr = m._malloc(41 * 4);
+    const eqPtr = m._malloc(2 * 8);
+    const notationPtr = m._malloc(64);
+    try {
+      const status = call(intsPtr, eqPtr, notationPtr);
+      if (status !== 0) {
+        throw new Error("décision refusée : entrée incohérente, niveau inconnu, " +
+                        "élagage absent, ou score hors de la table");
       }
-    });
+      const v = Array.from(this.#views().HEAP32.subarray(intsPtr >> 2, (intsPtr >> 2) + 41));
+      const e = this.#views().HEAPF64.subarray(eqPtr >> 3, (eqPtr >> 3) + 2);
+      const action = ACTIONS[v[0]];
+      let play = null;
+      if (action === "move") {
+        const moves = [];
+        for (let i = 0; i < v[3]; i++) moves.push([v[4 + 2 * i], v[5 + 2 * i]]);
+        const b = v.slice(12, 41);
+        play = {
+          moves,
+          board: { points: b.slice(0, 24), bar: [b[24], b[25]], off: [b[26], b[27]],
+                   turn: b[28] },
+          notation: m.UTF8ToString(notationPtr),
+        };
+      }
+      return { action, resignValue: v[1], searched: v[2] === 1,
+               equityA: e[0], equityB: e[1], play };
+    } finally {
+      m._free(intsPtr);
+      m._free(eqPtr);
+      m._free(notationPtr);
+    }
   }
 
   /**
@@ -686,6 +708,327 @@ export class Evaluator {
       m._free(idPtr);
       m._free(countPtr);
       m._free(notationPtr);
+    }
+  }
+
+  /**
+   * LA VALEUR D'UNE POSITION AVANT LE JET, à N-ply — la récursion scalaire
+   * et la distribution, au même réglage, du côté du joueur au trait.
+   *
+   * À 0-ply, l'évaluation statique. Au-delà, la moyenne sur les 21 jets des
+   * meilleures réponses cherchées à (N−1)-ply ; un jet sans coup légal est la
+   * position où l'on passe, cherchée à (N−1)-ply elle aussi — la passe forcée
+   * fait partie de la réponse, jamais un `null`.
+   *
+   * `equity` vient de la récursion scalaire (cubeless money, ou équité de
+   * match `2·MWC−1` sous `useMatch`, ou cubeful aux feuilles si `cubeOwner`
+   * est donné), `probs` de la récursion de distribution qui suit les mêmes
+   * coups. Les deux sont deux parcours : à 0-ply, `equity` est la projection
+   * de `probs` ; au-delà, l'identité n'est pas promise au dernier bit.
+   *
+   * Options : celles de `bestPlay` (`ply`, `filterTop`, `filterInner`,
+   * `filterExtra`, `filterThreshold`, `match`), plus `cubeOwner` et
+   * `efficiency` pour les feuilles cubeful, comme `rankPlays`. L'élagage
+   * chargé par `loadPrune` s'applique.
+   *
+   * @returns {{ equity: number, probs: number[] }}
+   */
+  evaluatePositionAtPly(positionId, turn, options = {}) {
+    const m = this.#module;
+    const args = this.#positionArgs(options);
+    const outPtr = m._malloc(8 * 6);
+    try {
+      const status = m.ccall(
+        "gnw_position_at_ply", "number",
+        ["string", "number", ...args.map(() => "number"), "number"],
+        [positionId, turn, ...args, outPtr]);
+      if (status !== 0) {
+        throw new Error("évaluation refusée : position illisible, ou score " +
+                        "hors de la table d'équité de match");
+      }
+      const v = this.#views().HEAPF64.subarray(outPtr >> 3, (outPtr >> 3) + 6);
+      return { equity: v[0], probs: Array.from(v.subarray(1, 6)) };
+    } finally {
+      m._free(outPtr);
+    }
+  }
+
+  #positionArgs({
+    ply = 0, filterTop = 0, filterInner = 0, filterExtra = 0, filterThreshold = 0,
+    match = null, cubeOwner = null, efficiency = null,
+  } = {}) {
+    const x = cubeOwner === null
+      ? 0.0
+      : requireEfficiency(efficiency, cubeOwner, "evaluatePositionAtPly");
+    return [ply, filterTop, filterInner, filterExtra, filterThreshold,
+            match ? 1 : 0, match ? match.awayOnRoll : 0, match ? match.awayOpponent : 0,
+            match ? (match.cube ?? 1) : 1, match ? (match.crawford ? 1 : 0) : 0,
+            cubeOwner === null ? -1 : cubeOwner, x];
+  }
+
+  /* ── LA DÉCISION DÉCOUPÉE EN TÂCHES (issue #36) ─────────────────────
+   *
+   * docs/specs/decision-decomposee-spec.md. Une décision isolée se répartit
+   * entre plusieurs instances MONO-FIL qui ne partagent aucune mémoire —
+   * des Web Workers qui s'échangent des messages — et le résultat est
+   * IDENTIQUE AU BIT PRÈS à l'appel en un bloc :
+   *
+   *     planDecision → { plan, stage }        sur une instance (le planificateur)
+   *     runTask(t)   → résultat               sur N'IMPORTE quelle instance
+   *     advance(plan, résultats) → { plan, stage } | { done: true, plan }
+   *     combineDecision(plan) → l'objet de bestPlay / cubeDecision / policy /
+   *                             evaluatePositionAtPly
+   *
+   * Plans, tâches et résultats sont des objets simples (un `Uint8Array` et
+   * des nombres) : `structuredClone` et `postMessage` les transportent tels
+   * quels. Rien n'est gardé dans un module entre deux appels — une instance
+   * qui n'a jamais vu le plan exécute ses tâches.
+   *
+   * Une tâche porte l'empreinte du réseau, de l'élagueur et de la table de
+   * fin de partie du planificateur : une instance qui en porte d'autres la
+   * REFUSE, plutôt que de rendre une réponse plausible à une autre question.
+   * Les résultats reviennent dans n'importe quel ordre ; `advance` refuse un
+   * manquant, un doublon, ou un résultat d'une autre vague.
+   *
+   * `kind` :
+   *   "move"     — `bestPlay(positionId, turn, d1, d2, options)`
+   *   "cube"     — `cubeDecision(positionId, turn, options)` (d1, d2 ignorés)
+   *   "policy"   — `policy(board, { ...options, d1, d2 })` ; `positionId`
+   *                peut être un plateau (`{points, bar, off, turn}`) ; le
+   *                NIVEAU nommé (`level`) fixe tous les réglages internes
+   *   "position" — `evaluatePositionAtPly(positionId, turn, options)`
+   */
+  planDecision(kind, positionId, turn, d1 = 0, d2 = 0, options = {}) {
+    const m = this.#module;
+    const outPtr = m._malloc(4);
+    try {
+      let size;
+      if (kind === "move") {
+        const { ply = 0, filterTop = 0, filterInner = 0, filterExtra = 0,
+                filterThreshold = 0, match = null } = options;
+        size = m.ccall(
+          "gnw_plan_move", "number",
+          ["string", ...Array(14).fill("number")],
+          [positionId, turn, d1, d2, ply, filterTop, filterInner, filterExtra,
+           filterThreshold, match ? 1 : 0, match ? match.awayOnRoll : 0,
+           match ? match.awayOpponent : 0, match ? (match.cube ?? 1) : 1,
+           match ? (match.crawford ? 1 : 0) : 0, outPtr]);
+      } else if (kind === "cube") {
+        const { owner = 0, useMatch = false, awayOnRoll = 0, awayOpponent = 0,
+                cube = 1, crawford = false, efficiency = null, jacoby = true,
+                ply = 0, filterTop = 0, filterInner = 0, filterExtra = 0,
+                filterThreshold = 0 } = options;
+        const x = requireEfficiency(efficiency, owner, "planDecision(\"cube\")");
+        size = m.ccall(
+          "gnw_plan_cube", "number",
+          ["string", ...Array(15).fill("number")],
+          [positionId, turn, owner, useMatch ? 1 : 0, awayOnRoll, awayOpponent,
+           cube, crawford ? 1 : 0, x, jacoby ? 1 : 0, ply, filterTop,
+           filterInner, filterExtra, filterThreshold, outPtr]);
+      } else if (kind === "position") {
+        const args = this.#positionArgs(options);
+        size = m.ccall(
+          "gnw_plan_position", "number",
+          ["string", "number", ...args.map(() => "number"), "number"],
+          [positionId, turn, ...args, outPtr]);
+      } else if (kind === "policy") {
+        const board = typeof positionId === "string"
+          ? this.positionFromId(positionId, turn) : positionId;
+        const fields = this.#policyFields({ ...options, d1, d2 });
+        size = this.#withBoard(board, (boardPtr) => {
+          const fieldsPtr = m._malloc(11 * 4);
+          try {
+            this.#views().HEAP32.set(fields.values, fieldsPtr >> 2);
+            return m.ccall("gnw_plan_policy", "number",
+                           ["number", "number", "string", "number"],
+                           [boardPtr, fieldsPtr, fields.level, outPtr]);
+          } finally {
+            m._free(fieldsPtr);
+          }
+        });
+      } else {
+        throw new Error(`planDecision : genre inconnu ${kind} (move, cube, policy, position)`);
+      }
+      if (size < 0) {
+        throw new Error("planification refusée : position illisible, score hors " +
+                        "table, niveau inconnu, ou élagage absent");
+      }
+      return this.#staged(this.#takePlan(size, outPtr, kind));
+    } finally {
+      m._free(outPtr);
+    }
+  }
+
+  /** Une tâche, sur les réseaux de CETTE instance. */
+  runTask(task) {
+    const m = this.#module;
+    if (!(task?.bytes instanceof Uint8Array)) {
+      throw new Error("runTask : tâche illisible");
+    }
+    return this.#withBytes(task.bytes, (ptr, length) => {
+      const outPtr = m._malloc(8 * 10);
+      try {
+        const status = m._gnw_plan_run_task(ptr, length, outPtr);
+        if (status === -2) {
+          throw new Error("tâche refusée : elle a été planifiée avec un autre réseau, " +
+                          "un autre élagueur ou une autre table de fin de partie");
+        }
+        if (status !== 0) throw new Error("tâche refusée ou en échec");
+        const v = this.#views().HEAPF64.slice(outPtr >> 3, (outPtr >> 3) + 10);
+        return { index: v[0], key: [v[1], v[2]], value: v[3],
+                 probs: Array.from(v.subarray(4, 9)), evaluations: v[9] };
+      } finally {
+        m._free(outPtr);
+      }
+    });
+  }
+
+  /** Recombine une vague — résultats dans n'importe quel ordre. */
+  advance(plan, results) {
+    const m = this.#module;
+    const packed = new Float64Array(10 * results.length);
+    results.forEach((r, i) => {
+      packed.set([r.index, r.key[0], r.key[1], r.value, ...r.probs, r.evaluations], 10 * i);
+    });
+    return this.#withBytes(plan.bytes, (ptr, length) => {
+      const resultsPtr = m._malloc(Math.max(8, packed.byteLength));
+      const outPtr = m._malloc(4);
+      try {
+        this.#views().HEAPF64.set(packed, resultsPtr >> 3);
+        const size = m._gnw_plan_advance(ptr, length, resultsPtr, results.length, outPtr);
+        if (size < 0) {
+          throw new Error("vague refusée : résultat manquant, en double, d'une autre " +
+                          "vague, ou tâche en échec");
+        }
+        return this.#staged(this.#takePlan(size, outPtr, plan.kind));
+      } finally {
+        m._free(resultsPtr);
+        m._free(outPtr);
+      }
+    });
+  }
+
+  /** La décision conclue, sous la forme exacte de l'appel en un bloc. */
+  combineDecision(plan) {
+    const m = this.#module;
+    if (!plan?.done) throw new Error("combineDecision : le plan n'est pas conclu");
+    return this.#withBytes(plan.bytes, (ptr, length) => {
+      if (plan.kind === "move") {
+        const idPtr = m._malloc(16);
+        const countPtr = m._malloc(4);
+        const notationPtr = m._malloc(NOTATION_LENGTH);
+        try {
+          const equity = m._gnw_plan_best_play(ptr, length, idPtr, countPtr, notationPtr);
+          if (equity <= -99.0) return null;
+          return {
+            equity,
+            resultId: m.UTF8ToString(idPtr),
+            notation: m.UTF8ToString(notationPtr),
+            // Le total du planificateur et des tâches : pas celui du bloc,
+            // qui groupe ses lots autrement (spec, « ce qui n'est pas promis »).
+            evaluations: this.#views().HEAP32[countPtr >> 2],
+          };
+        } finally {
+          m._free(idPtr); m._free(countPtr); m._free(notationPtr);
+        }
+      }
+      if (plan.kind === "cube") {
+        const outPtr = m._malloc(8 * 9);
+        try {
+          if (m._gnw_plan_cube_result(ptr, length, outPtr) !== 0) {
+            throw new Error("décision de videau refusée");
+          }
+          return this.#cubeResult(this.#views().HEAPF64.subarray(outPtr >> 3, (outPtr >> 3) + 9));
+        } finally {
+          m._free(outPtr);
+        }
+      }
+      if (plan.kind === "position") {
+        const outPtr = m._malloc(8 * 6);
+        try {
+          if (m._gnw_plan_position_result(ptr, length, outPtr) !== 0) {
+            throw new Error("évaluation refusée");
+          }
+          const v = this.#views().HEAPF64.subarray(outPtr >> 3, (outPtr >> 3) + 6);
+          return { equity: v[0], probs: Array.from(v.subarray(1, 6)) };
+        } finally {
+          m._free(outPtr);
+        }
+      }
+      return this.#policyResult((intsPtr, eqPtr, notationPtr) =>
+        m._gnw_plan_policy_result(ptr, length, intsPtr, eqPtr, notationPtr));
+    });
+  }
+
+  /**
+   * Mener un plan à son terme sur CETTE instance — chaque vague exécutée
+   * dans l'ordre de `order(tasks)` si elle est donnée. Ce que fait un pool
+   * de workers, sans les workers : c'est l'outil de la vérification.
+   */
+  decideInTasks(kind, positionId, turn, d1 = 0, d2 = 0, options = {}, { order = null } = {}) {
+    let step = this.planDecision(kind, positionId, turn, d1, d2, options);
+    const counts = [];
+    while (!step.done) {
+      const stage = order ? order(step.stage) : step.stage;
+      counts.push(stage.length);
+      step = this.advance(step.plan, stage.map((t) => this.runTask(t)));
+    }
+    return { decision: this.combineDecision(step.plan), waves: counts };
+  }
+
+  #takePlan(size, outPtr, kind) {
+    const m = this.#module;
+    const ptr = this.#views().HEAP32[outPtr >> 2] >>> 0;
+    try {
+      return { version: 1, kind, bytes: this.#views().HEAPU8.slice(ptr, ptr + size) };
+    } finally {
+      m._gnw_plan_free(ptr);
+    }
+  }
+
+  /* Le plan complété de son état, et sa vague de tâches. */
+  #staged(plan) {
+    const m = this.#module;
+    return this.#withBytes(plan.bytes, (ptr, length) => {
+      const infoPtr = m._malloc(6 * 4);
+      try {
+        if (m._gnw_plan_info(ptr, length, infoPtr) !== 0) throw new Error("plan illisible");
+        const info = this.#views().HEAP32.slice(infoPtr >> 2, (infoPtr >> 2) + 6);
+        plan.done = info[1] === 1;
+        plan.wave = info[4];
+        const count = info[2];
+        const size = m._gnw_plan_task_bytes();
+        const stage = [];
+        if (count > 0) {
+          const tasksPtr = m._malloc(count * size);
+          try {
+            if (m._gnw_plan_tasks(ptr, length, tasksPtr, count) !== count) {
+              throw new Error("tâches illisibles");
+            }
+            for (let i = 0; i < count; i++) {
+              stage.push({ index: i, wave: plan.wave,
+                           bytes: this.#views().HEAPU8.slice(tasksPtr + i * size,
+                                                             tasksPtr + (i + 1) * size) });
+            }
+          } finally {
+            m._free(tasksPtr);
+          }
+        }
+        return plan.done ? { done: true, plan, stage } : { done: false, plan, stage };
+      } finally {
+        m._free(infoPtr);
+      }
+    });
+  }
+
+  #withBytes(bytes, use) {
+    const m = this.#module;
+    const ptr = m._malloc(Math.max(1, bytes.length));
+    try {
+      this.#views().HEAPU8.set(bytes, ptr);
+      return use(ptr, bytes.length);
+    } finally {
+      m._free(ptr);
     }
   }
 
