@@ -224,7 +224,7 @@ bad parameters) — never a 200 with an error disguised as a result:
 | Route | Request | Response |
 |---|---|---|
 | `POST /v1/eval` | `{xgid, ply}` | `{best_move, equity, candidates: [{move, equity, probs}], ply, probs}` |
-| `POST /v1/cube` | `{xgid, kind: "double"\|"take"\|"equity", decider_away, opponent_away, cube, decider_on_roll, jacoby, cube_owner, crawford}` | `{should_double, too_good, no_double, double_take, double_pass, should_take, take, pass, probs}`, plus `equity` for kind `"equity"` |
+| `POST /v1/cube` | `{xgid, kind: "double"\|"take"\|"equity", decider_away, opponent_away, cube, decider_on_roll, jacoby, cube_owner, crawford, ply}` | `{should_double, too_good, no_double, double_take, double_pass, should_take, take, pass, probs}`, plus `equity` for kind `"equity"`, plus `ply` when the request sent one |
 | `POST /v1/rollout` | `{xgid, trials, max_depth, seed}` | `{trials, equity, std_err, win_prob}` |
 
 The contract, in the places it is easy to get wrong:
@@ -263,7 +263,21 @@ The contract, in the places it is easy to get wrong:
   2026-10-05 (Jacoby on and off, cube owned and opponent's, money and 5-away/7-away, two Crawford
   games) they agree to |Δ| = 0 once converted. The module does not refuse the impossible states
   listed above: it evaluates them as given.
-- The response's `Server` header names the contract: `gammonNet-serve/3` since these fields.
+- **`/v1/cube` at depth** ([#37](https://github.com/kevung/gammonNet/issues/37)): `ply` (optional,
+  default static) takes the pre-roll distribution from the search instead of the network alone —
+  the roll-weighted average over the 21 rolls of the best reply's distribution, searched one ply
+  shallower, the best reply chosen by the match table in a match and by cubeless money otherwise,
+  with the server's pruning network. The cube model is then applied to that vector exactly as to
+  the static one (the WebAssembly `cubeDecision` does the same with its `ply`). Same ceiling as
+  `/v1/eval` (`--max-ply`); the response's `ply` is the depth actually applied. A request without
+  `ply` gets the same bytes as before, with no `ply` key; with it (`0` included), `ply` comes back.
+  With `kind: "equity"`, this is the cubeful equity of a position before the roll, at depth; its
+  cubeless money equity is the identity on `probs` below. When the decider is not on roll, at
+  `ply >= 1` `probs` is the mirror of the roller's searched distribution — the vector the
+  decision was computed from — while static requests keep what they always reported, the
+  network's evaluation of the board with the decider on roll.
+- The response's `Server` header names the contract: `gammonNet-serve/3` since these fields,
+  `gammonNet-serve/4` since `ply` on `/v1/cube`.
 - `/v1/rollout` ignores any dice the XGID carries — a rollout answers for the position *before* a
   roll. `max_depth: 0` plays every trial to completion, the only case where `win_prob` is an
   observed frequency rather than the honest `0.0` a truncated trial reports: it ends on an

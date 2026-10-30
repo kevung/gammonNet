@@ -42,7 +42,10 @@ listening — never a server that started anyway on the wrong weights.
   * `/v1/cube`    — a cube decision, "double" or "take", or the cubeful
                     "equity" of the position, given explicit away scores (0
                     on either side means money, not "match not started").
-                    Static (0-ply) always. The cube state is carried by the
+                    Static (0-ply) by default; `ply` (#37) takes the
+                    pre-roll distribution from the search at that depth
+                    instead, under the same ceiling as /v1/eval. The cube
+                    state is carried by the
                     request (#26): `jacoby`, `cube_owner` and `crawford`,
                     each defaulting to what the route assumed before it
                     could be told — Jacoby on, owner deduced from the cube's
@@ -84,7 +87,9 @@ from gammonnet.infer import Evaluation, Network  # noqa: E402
 from gammonnet.met import MatchState  # noqa: E402
 from gammonnet.rollout import RolloutConfig, rollout as run_rollout  # noqa: E402
 from gammonnet.notation import play_notation  # noqa: E402
-from gammonnet.search import Candidate, SearchConfig, search_plays, set_threads  # noqa: E402
+from gammonnet.search import (  # noqa: E402
+    Candidate, SearchConfig, match_config, position_probs, search_plays, set_threads,
+)
 
 DEFAULT_PIN = ROOT / "models" / "release_pin.json"
 DEFAULT_EFFICIENCY_FILE = ROOT / "docs" / "mesures" / "t34-efficacite.json"
@@ -229,6 +234,22 @@ def load_efficiency(path: Path) -> dict[CubeOwner, float]:
 # ── /v1/eval ─────────────────────────────────────────────────────────────
 
 
+def _applied_ply(engine: Engine, requested_ply: int) -> int:
+    """The depth a request actually gets: the one asked, under the operator's
+    ceiling and the C search's own. Shared by /v1/eval and /v1/cube, so the
+    two routes can never apply two different ceilings."""
+    return min(requested_ply, engine.max_ply, MAX_SEARCH_PLY)
+
+
+def _with_prune(engine: Engine, config: SearchConfig) -> SearchConfig:
+    """The server's pruning network and `k`, wherever there is a search to
+    prune (ply >= 1). At 0-ply there is nothing to prune and the config stays
+    exactly as given."""
+    if config.ply >= 1 and engine.prune_network is not None:
+        return replace(config, prune_net=engine.prune_network, prune_k=engine.prune_k)
+    return config
+
+
 def handle_eval(engine: Engine, body: dict) -> dict:
     xgid = body.get("xgid")
     require(isinstance(xgid, str) and xgid, "xgid manquant ou invalide")
@@ -246,10 +267,8 @@ def handle_eval(engine: Engine, body: dict) -> dict:
         "xgid sans dés : rien à rechercher (une position à décider n'a pas encore de coup)",
     )
 
-    applied_ply = min(requested_ply, engine.max_ply, MAX_SEARCH_PLY)
-    config = SearchConfig(ply=applied_ply)
-    if applied_ply >= 1 and engine.prune_network is not None:
-        config = replace(config, prune_net=engine.prune_network, prune_k=engine.prune_k)
+    applied_ply = _applied_ply(engine, requested_ply)
+    config = _with_prune(engine, SearchConfig(ply=applied_ply))
 
     candidates = search_plays(engine.network, position, fields.die1, fields.die2, config)
 
@@ -494,7 +513,61 @@ def _equity_response(
     }
 
 
+# #37 — `ply`: the depth of the pre-roll distribution the cube model reads.
+#
+# Absent, the route is static (0-ply) and answers the same bytes as before it
+# existed — no `ply` key comes back either, since one more key is one more
+# byte (`tests/test_serve_cube_compat.py`). Present (0 included), the response
+# carries `ply`, the depth ACTUALLY applied under the same ceiling as
+# /v1/eval: read it back rather than assume the request was honoured.
+#
+# At ply >= 1 the distribution is `gn_search_probs` — the roll-weighted
+# average of the best play's distribution, the best play chosen by the
+# search's own valuation (the match table when the state is a match, money
+# cubeless otherwise), with the server's pruning network. The cube model is
+# then applied to that vector exactly as it is to the static one; this is
+# what the WebAssembly `cubeDecision` does with its `ply` (`gnw_cube_decide`).
+#
+# The DECIDER's reported distribution, when the decider is not on roll:
+#   * 0-ply keeps what the route always did — the static evaluation of the
+#     same board with the decider on roll (recorded answers depend on it);
+#   * ply >= 1 reports the MIRROR of the roller's searched distribution: the
+#     very vector the cube equities were computed from, seen from the other
+#     side. Searching `swapped_turn()` instead would value a different game —
+#     the decider rolling first — at the cost of a second search, and its
+#     probabilities would no longer be those of the decision beside them.
+
+
+def _cube_distributions(
+    engine: Engine, position, state: MatchState | None, ply: int, decider_on_roll: bool,
+) -> tuple[Evaluation, Evaluation]:
+    """(roller's distribution, decider's distribution) at depth `ply`."""
+    if ply == 0:
+        roller_eval = engine.network.evaluate(position)
+        decider_eval = roller_eval if decider_on_roll else engine.network.evaluate(position.swapped_turn())
+        return roller_eval, decider_eval
+    config = match_config(ply, state) if state is not None else SearchConfig(ply=ply)
+    # Refused, never degraded: `match_config` answers a 0-ply money config
+    # for a score it cannot represent, and a search silently fallen back to
+    # money would be wrong in a match and say nothing.
+    if config.ply != ply or (state is not None and not config.use_match):
+        raise ApiError(422, f"état de match non évaluable en recherche : {state}")
+    roller_eval = position_probs(engine.network, position, _with_prune(engine, config))
+    return roller_eval, (roller_eval if decider_on_roll else roller_eval.mirrored())
+
+
 def handle_cube(engine: Engine, body: dict) -> dict:
+    ply_requested = "ply" in body
+    requested_ply = body.get("ply", 0)
+    require(is_int(requested_ply) and requested_ply >= 0, "ply doit être un entier >= 0")
+    applied_ply = _applied_ply(engine, requested_ply)
+    result = _handle_cube(engine, body, applied_ply)
+    if ply_requested:
+        result["ply"] = applied_ply
+    return result
+
+
+def _handle_cube(engine: Engine, body: dict, ply: int) -> dict:
     xgid = body.get("xgid")
     kind = body.get("kind")
     require(isinstance(xgid, str) and xgid, "xgid manquant ou invalide")
@@ -576,8 +649,7 @@ def handle_cube(engine: Engine, body: dict) -> dict:
                       "pas de videau en jeu dans la partie Crawford : rien à doubler ni à prendre "
                       "(kind='equity' rend la valeur de la position)")
 
-    roller_eval = engine.network.evaluate(position)
-    decider_eval = roller_eval if decider_on_roll else engine.network.evaluate(position.swapped_turn())
+    roller_eval, decider_eval = _cube_distributions(engine, position, state, ply, decider_on_roll)
 
     if kind == "equity":
         return _equity_response(engine, roller_eval, decider_eval, owner, cube, state, jacoby,
@@ -671,7 +743,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
     #: SOME way to know whether the server it reached understands the new
     #: fields before relying on them, and this header is the one the
     #: contract already has.
-    server_version = "gammonNet-serve/3"
+    #:
+    #: /4 (#37): `/v1/cube` learnt `ply`. Additive in the same way: a request
+    #: without it gets the same body back.
+    server_version = "gammonNet-serve/4"
 
     def log_message(self, fmt: str, *args) -> None:  # quieter, structured-ish
         sys.stderr.write(f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {self.address_string()} {fmt % args}\n")
@@ -742,7 +817,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--prune-k", type=int, default=None, help="candidats survivants à l'élagage (défaut : celui de l'épingle)")
     parser.add_argument(
         "--max-ply", type=int, default=MAX_SEARCH_PLY,
-        help=f"plafond de profondeur pour /v1/eval, <= {MAX_SEARCH_PLY} (défaut : {MAX_SEARCH_PLY})",
+        help=f"plafond de profondeur pour /v1/eval et /v1/cube, <= {MAX_SEARCH_PLY} (défaut : {MAX_SEARCH_PLY})",
     )
     parser.add_argument("--efficiency-file", type=Path, default=DEFAULT_EFFICIENCY_FILE)
     parser.add_argument(
