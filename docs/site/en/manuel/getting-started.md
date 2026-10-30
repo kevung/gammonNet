@@ -93,6 +93,27 @@ capped at 4 on iOS whatever the phone. `schedule.toJSON()` reports each job's id
 what settles the question, on the machine that matters.
 ```
 
+## One decision, spread over several workers
+
+`decide()` puts **one decision per worker**: a single analysis (a move, a cube) stays on one.
+`decideSplit()` cuts the decision itself into stateless tasks — one roll of one chance node each —,
+spreads them over every worker, and returns **bit for bit** what the call in one piece would have.
+The workers need no shared memory, hence no COOP/COEP headers.
+
+```javascript
+const { done } = pool.decideSplit(
+  "move", "4HPwATDgc/ABMA", 0, 3, 1,      // "move", "cube", "policy" or "position"
+  Evaluator.level("normal"));
+const best = await done;                 // the same object as bestPlay, the same bits
+```
+
+Without a pool, the four steps are exposed by `Evaluator` — `planDecision`, `runTask`, `advance`,
+`combineDecision` — and their plans, tasks and results cross `postMessage` as they are.
+`evaluatePositionAtPly(positionId, turn, options)` returns, in one piece, the value of a position
+before the roll at N-ply (equity and five probabilities, a forced pass included). The contract is
+`docs/specs/decision-decomposee-spec.md`. **The time saved is not measured**: it depends on what a
+message costs on your device.
+
 ## Position identifiers, and a deliberate boundary
 
 gammonNet does **not** read match files — that is a deliberate boundary of the project. It consumes
