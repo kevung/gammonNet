@@ -106,13 +106,13 @@ SOURCES := src/gn_rules_reference.c src/gn_encoding.c src/gn_position_id.c \
            src/gn_search.c \
            src/gn_infer_reference.c src/gn_choose.c src/gn_met.c src/gn_cube.c \
            src/gn_gemm_int8.c src/gn_int8_model.c src/gn_policy.c \
-           src/gn_parallel.c
+           src/gn_parallel.c src/gn_plan.c
 HEADERS := src/gn_rules.h src/gn_encoding.h src/gn_position_id.h src/gn_infer.h \
            src/gn_notation.h \
            src/gn_rollout.h src/gn_bearoff.h src/gn_evalcache.h \
            src/gn_choose.h src/gn_search.h src/gn_met.h src/gn_met_table.h \
            src/gn_cube.h src/gn_gemm_int8.h src/gn_int8_model.h src/gn_policy.h \
-           src/gn_parallel.h
+           src/gn_parallel.h src/gn_plan.h
 OBJECTS := $(patsubst src/%.c,$(BUILD)/%.o,$(SOURCES))
 
 # Sources vendorées, compilées telles quelles — voir VENDOR_CFLAGS.
@@ -244,7 +244,7 @@ WASM_SOURCES := $(WASM_DIR)/gn_wasm.c \
                 src/gn_bearoff.c src/gn_evalcache.c src/gn_cube.c \
                 src/gn_search.c src/gn_met.c src/gn_choose.c \
                 src/gn_gemm_int8.c src/gn_int8_model.c src/gn_policy.c \
-                src/gn_parallel.c \
+                src/gn_parallel.c src/gn_plan.c \
                 $(REFERENCE)/c_engine/bg_engine.c \
                 $(REFERENCE)/c_inference/nn_eval.c
 
@@ -337,7 +337,7 @@ WASM_FLAGS := $(WASM_CFLAGS) \
   -sALLOW_MEMORY_GROWTH=1 \
   -sSTACK_SIZE=4194304 \
   -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,wasmMemory,HEAPF32,HEAPF64,HEAP8,HEAPU8,HEAP32,UTF8ToString \
-  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw,_gnw_position_encode,_gnw_position_decode,_gnw_xgid_encode,_gnw_xgid_decode,_gnw_pip_count,_gnw_search_level,_gnw_policy_decide,_gnw_set_threads \
+  -sEXPORTED_FUNCTIONS=_malloc,_free,_gnw_load_model,_gnw_free_model,_gnw_is_loaded,_gnw_num_features,_gnw_num_outputs,_gnw_evaluate_features,_gnw_evaluate_batch,_gnw_money_equity,_gnw_has_simd,_gnw_best_play,_gnw_load_prune,_gnw_prune_k,_gnw_rank_plays,_gnw_cube_decide,_gnw_load_bearoff,_gnw_enable_cache,_gnw_gemm_int8_relu,_gnw_gemm_int8_raw,_gnw_position_encode,_gnw_position_decode,_gnw_xgid_encode,_gnw_xgid_decode,_gnw_pip_count,_gnw_search_level,_gnw_policy_decide,_gnw_set_threads,_gnw_plan_free,_gnw_plan_move,_gnw_plan_cube,_gnw_plan_position,_gnw_position_at_ply,_gnw_plan_policy,_gnw_plan_info,_gnw_plan_tasks,_gnw_plan_task_bytes,_gnw_plan_run_task,_gnw_plan_advance,_gnw_plan_best_play,_gnw_plan_cube_result,_gnw_plan_policy_result,_gnw_plan_position_result \
   --extern-pre-js $(WASM_DIR)/notice.js
 
 .PHONY: wasm wasm-simd wasm-scalar wasm-threads wasm-parity wasm-parity-int8 wasm-codec
