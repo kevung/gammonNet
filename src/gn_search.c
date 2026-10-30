@@ -1180,30 +1180,78 @@ static int root_stage_active(const GnSearchConfig *config, int depth)
  *   2. the stage's triplet over that 0-ply ranking; its survivors are scored
  *      at `root_stage_ply` plies, exactly as a decision at that depth scores
  *      its deepened plays, and re-sorted among themselves;
- *   3. `rank_plays_deepen` at `config->ply` over the STAGE's survivors only,
- *      so `filter[ply]` reads the stage's ranking, not the 0-ply one.
+ *   3. the deep pass at `config->ply` over the STAGE's survivors only, so
+ *      `filter[ply]` reads the stage's ranking, not the 0-ply one.
  *
  * Every candidate keeps the equity of the deepest pass it reached, as the
  * unstaged deep pass already leaves the 0-ply tail behind its prefix.
+ *
+ * WRITTEN AS WAVES (issue #36). Steps 2 and 3 -- or the single deep pass of
+ * an unstaged root -- are each "pick a prefix of the ranking, score it at a
+ * depth, re-sort it". `gn_search_root_begin` does step 1 and picks the first
+ * wave, `gn_search_root_next` sorts a scored wave and picks the next one.
+ * `rank_root` below scores each wave itself (`deepen_candidates`); a
+ * decomposed decision (`gn_plan.h`) scores it through tasks run elsewhere.
+ * The cuts, the sorts and the order of the waves are therefore the SAME
+ * code on both paths -- only who computes `-V(result, depth)` differs.
  */
-static int rank_root(const GnNetwork *net, const GnPosition *pos, int d1,
-                     int d2, const GnSearchConfig *config, GnCandidate *out,
-                     int max_out)
+
+/* Pick wave `w->wave` over the current ranking: sets `w->depth` and
+ * `w->count` and returns 1, or returns 0 when the root has no such wave. */
+static int root_pick_wave(const GnSearchConfig *config, GnCandidate *out,
+                          GnRootWaves *w)
 {
+    const int depth = config->ply;
+    const int staged = root_stage_active(config, depth);
+
+    if (w->wave == 0 && staged) {
+        const int n = band_survivors(config->root_stage_filter,
+                                     config->root_stage_filter_extra,
+                                     config->root_stage_filter_threshold,
+                                     out, w->written);
+        if (n < w->written) {
+            tie_census_cut(out, w->written, n);
+        }
+        w->depth = config->root_stage_ply;
+        w->count = n;
+        return 1;
+    }
+    if (w->wave == (staged ? 1 : 0)) {
+        if (depth <= 0) {
+            return 0;
+        }
+        /* Over the stage's survivors when there was a stage -- the count the
+         * previous wave scored -- and over the whole ranking otherwise. */
+        int searched = staged ? w->count : w->written;
+        const int keep = filter_survivors(config, depth, out, searched);
+        if (keep < searched) {
+            tie_census_cut(out, searched, keep);
+            searched = keep;
+        }
+        w->depth = depth;
+        w->count = searched;
+        return 1;
+    }
+    return 0;
+}
+
+int gn_search_root_begin(const GnNetwork *net, const GnPosition *pos, int d1,
+                         int d2, const GnSearchConfig *config,
+                         GnCandidate *out, int max_out, GnRootWaves *w)
+{
+    if (w == NULL) {
+        return -1;
+    }
+    memset(w, 0, sizeof(*w));
+    if (net == NULL || config == NULL) {
+        return -1;
+    }
     const int depth = config->ply;
     const GnMatchState state = config->match;
     const int owner = config->cube_owner;
 
-    if (!root_stage_active(config, depth)) {
-        return rank_plays(net, pos, d1, d2, config, depth, state, owner, out,
-                          max_out);
-    }
-    if (net == NULL) {
-        return -1;
-    }
-
     int keep = prune_keep(config, depth);
-    if (keep > 0) {
+    if (keep > 0 && root_stage_active(config, depth)) {
         const int accept = (config->root_stage_filter > 0)
                                ? config->root_stage_filter : 0;
         const int extra = (config->root_stage_filter_extra > 0)
@@ -1220,20 +1268,36 @@ static int rank_root(const GnNetwork *net, const GnPosition *pos, int d1,
     if (rank_plays_shallow(net, config, state, owner, out, written) != 0) {
         return -1;
     }
+    w->written = written;
+    w->active = root_pick_wave(config, out, w);
+    return written;
+}
 
-    const int stage = config->root_stage_ply;
-    const int staged = band_survivors(config->root_stage_filter,
-                                      config->root_stage_filter_extra,
-                                      config->root_stage_filter_threshold,
-                                      out, written);
-    if (staged < written) {
-        tie_census_cut(out, written, staged);
+int gn_search_root_next(const GnSearchConfig *config, GnCandidate *out,
+                        GnRootWaves *w)
+{
+    if (config == NULL || out == NULL || w == NULL || !w->active) {
+        return 0;
     }
-    deepen_candidates(net, config, stage, state, owner, out, staged);
-    sort_candidates(out, staged);
+    /* Re-rank: the deep pass is allowed to disagree with the shallow one, and
+     * if it never did, the deep pass would be pointless. */
+    sort_candidates(out, w->count);
+    w->wave++;
+    w->active = root_pick_wave(config, out, w);
+    return w->active;
+}
 
-    if (rank_plays_deepen(net, config, depth, state, owner, out, staged) < 0) {
-        return -1;
+static int rank_root(const GnNetwork *net, const GnPosition *pos, int d1,
+                     int d2, const GnSearchConfig *config, GnCandidate *out,
+                     int max_out)
+{
+    GnRootWaves w;
+    const int written = gn_search_root_begin(net, pos, d1, d2, config, out,
+                                             max_out, &w);
+    while (written > 0 && w.active) {
+        deepen_candidates(net, config, w.depth, config->match,
+                          config->cube_owner, out, w.count);
+        gn_search_root_next(config, out, &w);
     }
     return written;
 }
@@ -1317,10 +1381,12 @@ typedef struct {
     GnCounts counts_delta[GN_NUM_ROLLS];
 } GroupedRolls;
 
-static void grouped_roll(GroupedRolls *job, int r)
+/* One roll's survivors `slot[0 .. count)`, their probabilities in place.
+ * Split from `grouped_roll` so a decomposed decision (`gn_search_task_run`)
+ * finishes a roll it filled alone through the very same lines. */
+static void grouped_roll_slot(GroupedRolls *job, int r, GnCandidate *slot,
+                              int count)
 {
-    GnCandidate *slot = job->grouped + (size_t)r * job->keep;
-    const int count = job->counts[r];
     if (count > 0) {
         /* The probabilities are already in place; only the valuation, the
          * ranking and the deep pass remain. */
@@ -1343,12 +1409,46 @@ static void grouped_roll(GroupedRolls *job, int r)
     }
 }
 
+static void grouped_roll(GroupedRolls *job, int r)
+{
+    grouped_roll_slot(job, r, job->grouped + (size_t)r * job->keep,
+                      job->counts[r]);
+}
+
 static void grouped_roll_task(void *ctx, int r)
 {
     GroupedRolls *job = ctx;
     const GnCounts before = counts_now();
     grouped_roll(job, r);
     job->counts_delta[r] = counts_take(before);
+}
+
+/*
+ * THE SUM OF A CHANCE NODE, in the fixed order of the rolls (r = 0 .. 20) --
+ * recherche-parallele-spec §1: floating-point addition is not associative,
+ * so this order is part of the result. One function for the grouped and
+ * ungrouped nodes alike, and for a decomposed decision recombining values
+ * that came back from elsewhere (`gn_search_chance_equity`).
+ */
+static double chance_sum(const double best[GN_NUM_ROLLS],
+                         const int failed[GN_NUM_ROLLS], int *any_failed)
+{
+    double sum = 0.0;
+    int bad = 0;
+    for (int r = 0; r < GN_NUM_ROLLS; r++) {
+        bad |= (failed != NULL) ? failed[r] : 0;
+        sum += g_rolls[r].weight * best[r];
+    }
+    if (any_failed != NULL) {
+        *any_failed = bad;
+    }
+    return sum;
+}
+
+double gn_search_chance_equity(const double best[GN_NUM_ROLLS])
+{
+    build_rolls();
+    return chance_sum(best, NULL, NULL);
 }
 
 static double position_equity(const GnNetwork *net, const GnPosition *pos,
@@ -1474,12 +1574,8 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
             }
         }
 
-        double sum = 0.0;
         int failed = 0;
-        for (int r = 0; r < GN_NUM_ROLLS; r++) {
-            failed |= job.failed[r];
-            sum += g_rolls[r].weight * job.best[r];
-        }
+        const double sum = chance_sum(job.best, job.failed, &failed);
 
         free(grouped);
         free(counts);
@@ -1501,12 +1597,8 @@ static double position_equity(const GnNetwork *net, const GnPosition *pos,
         }
     }
 
-    double total = 0.0;
     int failed = 0;
-    for (int r = 0; r < GN_NUM_ROLLS; r++) {
-        failed |= job.failed[r];
-        total += g_rolls[r].weight * job.best[r];
-    }
+    const double total = chance_sum(job.best, job.failed, &failed);
 
     free(candidates);
     return failed ? 0.0 : total;
@@ -1635,6 +1727,30 @@ static int run_roll_probs(RollJob *job, int parallel, GnCandidate *candidates)
     return 0;
 }
 
+/* The distribution of a chance node: the weighted mean of the rolls', summed
+ * in `double` in roll order, then rounded once -- for `position_probs` and
+ * for a decomposed decision alike (`gn_search_chance_probs`). */
+static void chance_probs(const float mine[GN_NUM_ROLLS][GN_NUM_OUTPUTS],
+                         float out[GN_NUM_OUTPUTS])
+{
+    double total[GN_NUM_OUTPUTS] = {0.0, 0.0, 0.0, 0.0, 0.0};
+    for (int r = 0; r < GN_NUM_ROLLS; r++) {
+        for (int i = 0; i < GN_NUM_OUTPUTS; i++) {
+            total[i] += g_rolls[r].weight * (double)mine[r][i];
+        }
+    }
+    for (int i = 0; i < GN_NUM_OUTPUTS; i++) {
+        out[i] = (float)total[i];
+    }
+}
+
+void gn_search_chance_probs(const float mine[GN_NUM_ROLLS][GN_NUM_OUTPUTS],
+                            float out[GN_NUM_OUTPUTS])
+{
+    build_rolls();
+    chance_probs(mine, out);
+}
+
 static int position_probs(const GnNetwork *net, const GnPosition *pos,
                           const GnSearchConfig *config, int depth,
                           GnMatchState state, int owner,
@@ -1664,17 +1780,8 @@ static int position_probs(const GnNetwork *net, const GnPosition *pos,
         return -1;
     }
 
-    double total[GN_NUM_OUTPUTS] = {0.0, 0.0, 0.0, 0.0, 0.0};
-    for (int r = 0; r < GN_NUM_ROLLS; r++) {
-        for (int i = 0; i < GN_NUM_OUTPUTS; i++) {
-            total[i] += g_rolls[r].weight * (double)job.mine[r][i];
-        }
-    }
-
     free(candidates);
-    for (int i = 0; i < GN_NUM_OUTPUTS; i++) {
-        out[i] = (float)total[i];
-    }
+    chance_probs(job.mine, out);
     return 0;
 }
 
@@ -1716,6 +1823,145 @@ static int probs_by_roll(const GnNetwork *net, const GnPosition *pos,
 
     free(candidates);
     return 0;
+}
+
+/* ── The decomposed search (issue #36, docs/specs/decision-decomposee-spec.md)
+ *
+ * One task is ONE ROLL OF ONE CHANCE NODE: the slot `r` that the node's own
+ * loop writes -- `best[r]` of `position_equity`, `mine[r]` of
+ * `position_probs`. Each is computed below by the functions that node calls
+ * for that slot, never by a copy of them, and recombined by `chance_sum` /
+ * `chance_probs`, the node's own sums.
+ *
+ * The one step that is NOT literally shared is the grouped node's shallow
+ * pass: the whole search forwards the twenty-one rolls' survivors to the big
+ * network together, a task forwards its own roll's survivors alone. That
+ * these give the same bits rests on `gn_evaluate_batch` being bit-identical
+ * per item whatever it travels with (gn_infer.h, tests/test_batch.py) -- the
+ * same property the grouping itself rests on -- and the parity checks hold it
+ * rather than this comment.
+ */
+
+int gn_search_roll_dice(int r, int *d1, int *d2)
+{
+    if (r < 0 || r >= GN_NUM_ROLLS) {
+        return -1;
+    }
+    build_rolls();
+    if (d1 != NULL) *d1 = g_rolls[r].d1;
+    if (d2 != NULL) *d2 = g_rolls[r].d2;
+    return 0;
+}
+
+int gn_search_task_run(const GnNetwork *net, const GnSearchConfig *config,
+                       const GnSearchTask *task, double *value,
+                       float probs[GN_NUM_OUTPUTS])
+{
+    if (net == NULL || config == NULL || task == NULL || value == NULL
+        || probs == NULL) {
+        return -1;
+    }
+    const int r = task->roll;
+    if (r < 0 || r >= GN_NUM_ROLLS || task->depth < 1
+        || task->depth > GN_MAX_PLY || !gn_position_is_valid(&task->pos)
+        || gn_position_is_over(&task->pos)
+        || task->owner < GN_CUBE_CENTRED || task->owner > GN_CUBE_OPPONENT) {
+        return -1;
+    }
+    build_rolls();
+    *value = 0.0;
+    memset(probs, 0, sizeof(float) * GN_NUM_OUTPUTS);
+
+    GnCandidate *candidates = malloc(sizeof(GnCandidate) * MAX_PLAYS);
+    if (candidates == NULL) {
+        return -1;
+    }
+    int failed = 0;
+
+    if (task->kind == GN_TASK_ROLL_EQUITY) {
+        /* The same switch as `position_equity`: grouped when the replies are
+         * pruned, ungrouped otherwise. */
+        const int keep = prune_keep(config, task->depth - 1);
+        if (keep > 0) {
+            const int n = rank_plays_prune(&task->pos, g_rolls[r].d1,
+                                           g_rolls[r].d2, config,
+                                           task->depth - 1, task->state,
+                                           task->owner, candidates, MAX_PLAYS);
+            /* As the node does: an unreadable roll counts no survivor. */
+            const int count = (n < 0) ? 0 : ((n > keep) ? keep : n);
+            if (count > 0 && shallow_fill(net, candidates, count, 0) != 0) {
+                failed = 1;
+            } else {
+                GroupedRolls job = {net, &task->pos, config, task->depth,
+                                    task->state, task->owner, keep, NULL,
+                                    NULL, {0.0}, {0}, {{0, 0, 0}}};
+                grouped_roll_slot(&job, r, candidates, count);
+                failed = job.failed[r];
+                *value = job.best[r];
+            }
+        } else {
+            RollJob job = {net, &task->pos, config, task->depth, task->state,
+                           task->owner, {0.0}, {0}, {{0, 0, 0}}, {{0.0f}}};
+            roll_equity(&job, r, candidates);
+            failed = job.failed[r];
+            *value = job.best[r];
+        }
+    } else if (task->kind == GN_TASK_NODE_EQUITY) {
+        /* `deepen_one`'s own call, whole. */
+        *value = position_equity(net, &task->pos, config, task->depth,
+                                 task->state, task->owner);
+    } else if (task->kind == GN_TASK_ROLL_PROBS) {
+        /* `position_probs`'s RollJob sits one ply below its node. */
+        RollJob job = {net, &task->pos, config, task->depth - 1, task->state,
+                       task->owner, {0.0}, {0}, {{0, 0, 0}}, {{0.0f}}};
+        roll_probs(&job, r, candidates);
+        failed = job.failed[r];
+        memcpy(probs, job.mine[r], sizeof(float) * GN_NUM_OUTPUTS);
+    } else {
+        failed = 1;
+    }
+
+    free(candidates);
+    return failed ? -1 : 0;
+}
+
+int gn_search_root_task(const GnSearchConfig *config, const GnCandidate *out,
+                        const GnRootWaves *w, int i, int r, GnSearchTask *task)
+{
+    if (config == NULL || out == NULL || w == NULL || task == NULL
+        || !w->active || i < 0 || i >= w->count || r < 0
+        || r >= GN_NUM_ROLLS) {
+        return -1;
+    }
+    const GnPosition *result = &out[i].play.result;
+    if (gn_position_is_over(result)) {
+        return 1; /* already exact: `deepen_one` skips it too */
+    }
+    /* `deepen_one`'s call, one roll at a time: the result's chance node at the
+     * wave's depth, seen from the opponent. */
+    memset(task, 0, sizeof(*task));
+    task->kind = (w->depth >= gn_search_root_split_depth())
+                     ? GN_TASK_ROLL_EQUITY : GN_TASK_NODE_EQUITY;
+    task->pos = *result;
+    task->depth = w->depth;
+    task->state = swap_sides(config->match);
+    task->owner = mirror_owner(config->cube_owner);
+    task->roll = r;
+    return 0;
+}
+
+int gn_search_root_split_depth(void)
+{
+    /* The threshold the threads use for the same loop: below it a node is
+     * twenty-one passes of a dozen evaluations, cheaper whole than cut. */
+    return PARALLEL_MIN_DEPTH;
+}
+
+void gn_search_root_settle(GnCandidate *out, int i,
+                           const double best[GN_NUM_ROLLS])
+{
+    /* The negation of `deepen_one`: the value was the opponent's. */
+    out[i].equity = -gn_search_chance_equity(best);
 }
 
 int gn_search_probs_by_roll(const GnNetwork *net, const GnPosition *pos,

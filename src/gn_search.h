@@ -360,6 +360,100 @@ int gn_search_probs_by_roll(const GnNetwork *net, const GnPosition *pos,
                             float out[GN_NUM_ROLLS][GN_NUM_OUTPUTS],
                             double weights[GN_NUM_ROLLS]);
 
+/* ── THE DECOMPOSED SEARCH (issue #36) ──────────────────────────────────
+ *
+ * docs/specs/decision-decomposee-spec.md is the contract. A decision is cut
+ * into TASKS that share no memory and can run on any instance holding the
+ * same networks, then recombined with the BIT-FOR-BIT guarantee: the same
+ * candidates, equities and distributions as the search run in one piece, in
+ * any order of execution. `gn_plan.h` drives it; these are its bricks.
+ *
+ * A task is one roll of one chance node -- the slot a chance node's loop
+ * writes, computed by the functions that loop calls.
+ */
+
+typedef enum {
+    /* `best[roll]` of the pre-roll equity recursion at `pos`, `depth`:
+     * the best reply's value (or the passed turn's), from `pos->turn`. */
+    GN_TASK_ROLL_EQUITY = 1,
+    /* `mine[roll]` of the pre-roll distribution backup at `pos`, `depth`:
+     * the best reply's distribution, from `pos->turn`. */
+    GN_TASK_ROLL_PROBS = 2,
+    /* The whole pre-roll equity `V(pos, depth)` -- one task for a node too
+     * small to be worth twenty-one (a 1-ply wave: `roll` is ignored). */
+    GN_TASK_NODE_EQUITY = 3
+} GnSearchTaskKind;
+
+typedef struct {
+    int kind;             /* GnSearchTaskKind */
+    GnPosition pos;       /* the chance node, `pos->turn` about to roll */
+    int depth;            /* the node's depth, 1 .. GN_MAX_PLY */
+    GnMatchState state;   /* seen from `pos->turn` (ignored in money) */
+    int owner;            /* GnCubeOwner seen from `pos->turn` (cubeful only) */
+    int roll;             /* 0 .. 20, the search's roll order */
+} GnSearchTask;
+
+/* The dice of roll `r` in the search's own order. Returns 0, or -1. */
+int gn_search_roll_dice(int r, int *d1, int *d2);
+
+/* Run one task under `config` (the DECISION's config, pruning network
+ * included). Writes `*value` for GN_TASK_ROLL_EQUITY, `probs` for
+ * GN_TASK_ROLL_PROBS (the other is zeroed). Returns 0, or -1 for a refused
+ * task or a failed search -- refused, never a plausible zero. */
+int gn_search_task_run(const GnNetwork *net, const GnSearchConfig *config,
+                       const GnSearchTask *task, double *value,
+                       float probs[GN_NUM_OUTPUTS]);
+
+/* The chance node's own recombinations, in roll order: the equity
+ * `SUM w(r) * best[r]`, and the distribution summed in double then rounded
+ * once. */
+double gn_search_chance_equity(const double best[GN_NUM_ROLLS]);
+void gn_search_chance_probs(const float mine[GN_NUM_ROLLS][GN_NUM_OUTPUTS],
+                            float out[GN_NUM_OUTPUTS]);
+
+/*
+ * The root of a move decision, as WAVES. A wave deepens the prefix
+ * `out[0 .. count)` of the current ranking to `depth` plies; an unstaged root
+ * has one wave (none at 0-ply), a staged root two. `gn_search_plays` itself
+ * runs through these functions, so the cuts, sorts and order of the waves are
+ * the same code whoever scores the candidates.
+ */
+typedef struct {
+    int written;   /* candidates ranked in `out` */
+    int active;    /* 1 while a wave awaits its scores */
+    int wave;      /* index of that wave */
+    int depth;     /* its depth */
+    int count;     /* its prefix */
+} GnRootWaves;
+
+/* Phase one and the shallow pass, then the first wave picked. Returns the
+ * number of candidates written (0: no legal play, -1: error), as
+ * `gn_search_plays` does. */
+int gn_search_root_begin(const GnNetwork *net, const GnPosition *pos, int d1,
+                         int d2, const GnSearchConfig *config,
+                         GnCandidate *out, int max_out, GnRootWaves *w);
+
+/* The task for candidate `i` of the active wave and roll `r`. Returns 0 with
+ * `task` written, 1 when the candidate needs none (its result ends the game,
+ * its equity is already exact), or -1. Below `gn_search_root_split_depth()`
+ * the task is the candidate's whole node (GN_TASK_NODE_EQUITY, `r` ignored):
+ * the caller emits one per candidate instead of twenty-one. */
+int gn_search_root_task(const GnSearchConfig *config, const GnCandidate *out,
+                        const GnRootWaves *w, int i, int r, GnSearchTask *task);
+
+/* Candidate `i`'s equity from its twenty-one task values. */
+void gn_search_root_settle(GnCandidate *out, int i,
+                           const double best[GN_NUM_ROLLS]);
+
+/* The shallowest wave cut into one task per roll; shallower waves get one
+ * task per candidate. */
+int gn_search_root_split_depth(void);
+
+/* Once every candidate of the active wave is settled: re-sort it and pick
+ * the next wave. Returns 1 if there is one, 0 when the ranking is final. */
+int gn_search_root_next(const GnSearchConfig *config, GnCandidate *out,
+                        GnRootWaves *w);
+
 /*
  * Exact equity of a finished game, from `pos->turn`'s point of view.
  *
