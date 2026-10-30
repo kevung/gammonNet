@@ -167,6 +167,48 @@ static inline void gn_kernel_block(float *acc, const float *weights,
     }
 }
 
+/*
+ * The same sum, reading the weights from a TILE-TRANSPOSED copy (#34):
+ * `tile[j * GN_KERNEL_ROWS + r]` is row r's weight for column j, so the
+ * GN_KERNEL_ROWS weights a column needs sit side by side. `index` names the
+ * live columns (NULL: all `count` of them, in order). This is what lets a
+ * compacted layer skip the per-call gather of its weights: the kernel reads
+ * them where they are. The order of the sum per (r, n) is unchanged -- over k,
+ * ascending -- so it is bit-identical to `gn_kernel_block` on gathered weights.
+ */
+static inline void gn_kernel_block_tiled(float *acc, const float *tile,
+                                         const int *index,
+                                         const float *columns, int count)
+{
+    gnv a[GN_KERNEL_ROWS][GN_KERNEL_VECS];
+    for (int r = 0; r < GN_KERNEL_ROWS; r++) {
+        for (int v = 0; v < GN_KERNEL_VECS; v++) {
+            a[r][v] = gnv_load(acc + r * GN_EVAL_BATCH + v * GN_VEC_LANES);
+        }
+    }
+
+    for (int k = 0; k < count; k++) {
+        const float *column = columns + (size_t)k * GN_EVAL_BATCH;
+        const float *w = tile + (size_t)(index != NULL ? index[k] : k) * GN_KERNEL_ROWS;
+        gnv col[GN_KERNEL_VECS];
+        for (int v = 0; v < GN_KERNEL_VECS; v++) {
+            col[v] = gnv_load(column + v * GN_VEC_LANES);
+        }
+        for (int r = 0; r < GN_KERNEL_ROWS; r++) {
+            const gnv wr = gnv_splat(w[r]);
+            for (int v = 0; v < GN_KERNEL_VECS; v++) {
+                a[r][v] = gnv_add(a[r][v], gnv_mul(wr, col[v]));
+            }
+        }
+    }
+
+    for (int r = 0; r < GN_KERNEL_ROWS; r++) {
+        for (int v = 0; v < GN_KERNEL_VECS; v++) {
+            gnv_store(acc + r * GN_EVAL_BATCH + v * GN_VEC_LANES, a[r][v]);
+        }
+    }
+}
+
 /* The same for a single row: the tail of a layer whose row count is not a
  * multiple of the tile (the output layer has five). */
 static inline void gn_kernel_row(float *acc, const float *weights,

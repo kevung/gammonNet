@@ -90,6 +90,12 @@ struct GnNetwork {
     enum GnNetworkFormat format;
     NNModel model;          /* valid when format == GN_NETWORK_FLOAT */
     GnInt8Model int8_model; /* valid when format == GN_NETWORK_INT8 */
+#ifdef GN_KERNEL_INTRINSICS
+    /* #34 -- each layer's weights again, tile-transposed for
+     * `gn_kernel_block_tiled`: built once at load, read by every batch. NULL
+     * where the batch kernel does not apply. */
+    float *tiled[NN_MAX_LAYERS];
+#endif
 #ifdef GN_BATCH_SPARSITY_SWITCH
     /* T89 ONLY. Compiled out of the shipped library, exactly like
      * GN_BATCH_FILL_STATS: the layer-1 sparsity is not a run-time choice, it
@@ -283,6 +289,46 @@ static int is_fp16(const char *path)
     return read == 4 && memcmp(magic, "BGN6", 4) == 0;
 }
 
+static int batch_kernel_applies(const NNModel *model);
+
+#ifdef GN_KERNEL_INTRINSICS
+/* #34 -- the tile-transposed copy `gn_kernel_block_tiled` reads: for the row
+ * tile starting at row i, `tiled[L][(i / R) * cols * R + j * R + r]` is
+ * `W[(i + r) * cols + j]`. The rows past the last whole tile (the five-row
+ * output layer leaves one) keep the row-major path. Only where the batch
+ * kernel applies: elsewhere nothing reads it. */
+static int build_tiles(GnNetwork *net)
+{
+    const NNModel *model = &net->model;
+    if (!batch_kernel_applies(model)) {
+        return 0;
+    }
+    const int R = GN_KERNEL_ROWS;
+    for (int L = 0; L <= model->num_hidden; L++) {
+        const int rows = model->layer_out[L];
+        const int cols = model->layer_in[L];
+        const int tiles = rows / R;
+        if (tiles == 0) {
+            continue;
+        }
+        float *t = malloc(sizeof(float) * (size_t)tiles * R * cols);
+        if (t == NULL) {
+            return -1;
+        }
+        const float *W = model->weight[L];
+        for (int b = 0; b < tiles; b++) {
+            for (int j = 0; j < cols; j++) {
+                for (int r = 0; r < R; r++) {
+                    t[((size_t)b * cols + j) * R + r] = W[(size_t)(b * R + r) * cols + j];
+                }
+            }
+        }
+        net->tiled[L] = t;
+    }
+    return 0;
+}
+#endif
+
 GnNetwork *gn_network_load(const char *path)
 {
     if (path == NULL) {
@@ -340,6 +386,12 @@ GnNetwork *gn_network_load(const char *path)
         return NULL;
     }
 
+#ifdef GN_KERNEL_INTRINSICS
+    if (build_tiles(net) != 0) {
+        gn_network_free(net);
+        return NULL;
+    }
+#endif
     return net;
 }
 
@@ -351,6 +403,11 @@ void gn_network_free(GnNetwork *net)
     if (net->format == GN_NETWORK_INT8) {
         gn_int8_model_free(&net->int8_model);
     } else {
+#ifdef GN_KERNEL_INTRINSICS
+        for (int L = 0; L < NN_MAX_LAYERS; L++) {
+            free(net->tiled[L]);
+        }
+#endif
         nn_free(&net->model);
     }
     free(net);
@@ -497,10 +554,11 @@ static float batch_sigmoid(float x) { return 1.0f / (1.0f + expf(-x)); }
  * before this shape and forbids since. One compiled path, one summation
  * order, whatever the chunk.
  */
-static void forward_batch(const NNModel *model, const float *in, int live,
+static void forward_batch(const GnNetwork *net, const float *in, int live,
                           const int *nonzero, int n_nonzero,
                           float (*out)[GN_NUM_OUTPUTS])
 {
+    const NNModel *const model = &net->model;
     InferScratch *const scratch = infer_scratch();
     float *const packed_in = scratch->packed_in;
     const float *current = in;
@@ -553,7 +611,11 @@ static void forward_batch(const NNModel *model, const float *in, int live,
                     acc[r * GN_EVAL_BATCH + n] = bias[i + r];
                 }
             }
-            if (packed) {
+            if (net->tiled[L] != NULL) {
+                /* The weights where they are: no gather, live or dense. */
+                gn_kernel_block_tiled(acc, net->tiled[L] + (size_t)i * cols,
+                                      packed ? index : NULL, source, count);
+            } else if (packed) {
                 for (int r = 0; r < GN_KERNEL_ROWS; r++) {
                     const float *w_row = W + (size_t)(i + r) * cols;
                     for (int idx = 0; idx < n_index; idx++) {
@@ -753,10 +815,10 @@ static void forward_feature_rows(const GnNetwork *net, const float *rows,
     if ((unsigned long)n_nonzero > gn_sparsity_widest[net->slot]) {
         gn_sparsity_widest[net->slot] = (unsigned long)n_nonzero;
     }
-    forward_batch(&net->model, batch_in, chunk,
+    forward_batch(net, batch_in, chunk,
                   net->sparsity ? nonzero : NULL, n_nonzero, probs);
 #else
-    forward_batch(&net->model, batch_in, chunk, nonzero, n_nonzero, probs);
+    forward_batch(net, batch_in, chunk, nonzero, n_nonzero, probs);
 #endif
 }
 
