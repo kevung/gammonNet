@@ -43,8 +43,9 @@ bootstrap sur les paires (`bench/report_t35.py`).
 
 - **match** 7 points, scores tirés comme T35, graine 20261030, 35 000 paires : borne basse de la
   MWC du 768×768 **≥ 49,5 %** ;
-- **money**, deux journaux indépendants (graines 20261031 et 20261032), 200 000 et 150 000 paires
-  visées, lus en commun : borne basse **≥ −0,010 ppg**.
+- **money**, trois journaux indépendants (graines 20261031, 20261032 et 20261033 — le troisième
+  ajouté le même jour, avant toute lecture, quand une troisième machine s'est libérée), 200 000,
+  150 000 et 100 000 paires visées, lus en commun : borne basse **≥ −0,010 ppg**.
 
 Un intervalle entièrement positif serait en plus un gain **en jeu**, sous recherche, videau et
 score compris. Ce n'est pas le critère : le critère est la non-régression.
