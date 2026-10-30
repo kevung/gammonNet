@@ -1,0 +1,70 @@
+{
+ "protocol": "build/bench_decision <réseau> 20 models/prune_32.bin 12 --level=normal, 1 fil, smith (2x EPYC 9254) au repos (campagne suspendue par SIGSTOP), trois passes alternées",
+ "fingerprints": {
+  "512": "d7cb6b29f6683278",
+  "768": "7bb3e97d641cfe68"
+ },
+ "s_per_decision": {
+  "old_default": {
+   "512": [
+    0.3496,
+    0.349,
+    0.3483
+   ],
+   "768": [
+    0.6608,
+    0.664,
+    0.6611
+   ]
+  },
+  "compaction_default": {
+   "512": [
+    0.1817,
+    0.1815,
+    0.1821
+   ],
+   "768": [
+    0.336,
+    0.3362,
+    0.3358
+   ]
+  },
+  "tiles_sse2_intrinsics": {
+   "512": [
+    0.1375,
+    0.1381,
+    0.1376
+   ],
+   "768": [
+    0.2502,
+    0.2503,
+    0.2507
+   ]
+  },
+  "old_avx_intrinsics": {
+   "512": [
+    0.1483,
+    0.1485,
+    0.1488
+   ],
+   "768": [
+    0.2586,
+    0.2588,
+    0.2597
+   ]
+  },
+  "tiles_avx_intrinsics": {
+   "512": [
+    0.0935,
+    0.0933,
+    0.0933
+   ],
+   "768": [
+    0.1513,
+    0.1515,
+    0.1514
+   ]
+  }
+ },
+ "note": "compaction_default = les unités nulles sautées, chemin auto-vectorisé (build par défaut) ; tiles_* = compaction + poids transposés par tuile, noyau écrit à la main ; sse2 = KERNEL_INTRINSICS=1 KERNEL_ARCH= (x86-64 de base, portable) ; avx = -march=native"
+}

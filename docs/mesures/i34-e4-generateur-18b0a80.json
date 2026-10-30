@@ -1,0 +1,13 @@
+{
+ "protocol": "tools/scan_movegen.py, 26 graines 20260917+i, 20 000 positions chacune ; 'new' = moteur de règles de l'amont à 18b0a80 croisé avec gnubg_nn ; 'old' = épingle 7184e2f, empreinte seule",
+ "pairs": 10920000,
+ "plays_new": 242791638,
+ "plays_old": 242791638,
+ "disagreements_vs_gnubg": 0,
+ "ragged_lists": [
+  0,
+  0
+ ],
+ "digests_differing": 0,
+ "seeds": 26
+}
