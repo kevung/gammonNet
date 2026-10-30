@@ -9,6 +9,20 @@ et 2) et de [`2026-10-27-i34-etape3-cout.md`](2026-10-27-i34-etape3-cout.md) (é
 > journaux. Les seuils du tête-à-tête cubeful (§1.3) sont écrits ici **avant** toute lecture du
 > signe, comme en T98.
 
+## État et reprise (2026-10-30, 16 h)
+
+| où | quoi | journal | script |
+|---|---|---|---|
+| smith, 15 processus | match 7 points (graine 20261030, 35 000 paires), puis money graine 20261033 jusqu'à 100 000 ; le money graine 20261031 qui suit dans le script est coupé dès son départ (volume révisé, §1.3) | `~/gn34e4/journaux/i34-h2h-match.jsonl`, `i34-h2h-money-c.jsonl` | [`bench/campagnes/i34-campagne-smith15.sh`](../../bench/campagnes/i34-campagne-smith15.sh) |
+| mochy, 26 processus | round-robin 0-ply (graine 20261030, 500 000 paires par sens), puis money graine 20261032 jusqu'à 50 000 | `build/i34e4/journaux/i34-tete-a-tete-0ply.json`, `i34-h2h-money-b.jsonl` | [`bench/campagnes/i34-campagne-mochy.sh`](../../bench/campagnes/i34-campagne-mochy.sh) |
+
+**Reprise** : relancer le même script, détaché (`setsid nohup <script> > /dev/null 2>&1 &`),
+**après** avoir vérifié qu'aucune instance ne tourne (`pgrep -af 'run_t3[5].py|run_round_robi[n].py'`).
+Les journaux `run_t35.py` sautent les paires faites ; le round-robin 0-ply ne sait pas reprendre
+et repart de zéro. Les money-c joués sur mochy (24 552 paires) ont été copiés sur smith, md5
+vérifié, avant la reprise. Dépouillement : `python bench/report_t35.py --journal <match>` et
+`python bench/report_t35.py --journal <money-b> --journal <money-c>`.
+
 ---
 
 ## 1. Est-il vraiment plus fort ?
