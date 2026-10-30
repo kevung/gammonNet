@@ -333,7 +333,78 @@ static int validate(const GnDecision *d)
     return 0;
 }
 
-static int decide_move(const GnNetwork *net, const GnSearchLevel *level,
+/*
+ * WHO RUNS THE ONE SEARCH A DECISION NEEDS (issue #36).
+ *
+ * Every decision below needs at most one search -- a best play, or a
+ * pre-roll distribution. `Searcher` is how it gets it: the whole policy runs
+ * it on the spot (`direct`), a decomposed decision (`gn_policy_decide_split`)
+ * first RECORDS the request and stops, then -- once the search has been run
+ * elsewhere, in tasks -- REPLAYS the decision with the answer. Same lines of
+ * policy both times, so the composition cannot drift between the two paths.
+ */
+#define SEARCH_DEFERRED 1   /* not an error: "the answer is not here yet" */
+
+typedef struct {
+    const GnNetwork *net;
+    const GnPolicyAnswer *answer;   /* NULL: run the search directly */
+    GnPolicyNeed *need;             /* where a deferred request is recorded */
+} Searcher;
+
+static int same_request(const GnPolicyNeed *a, const GnPolicyNeed *b)
+{
+    return a->kind == b->kind && a->d1 == b->d1 && a->d2 == b->d2
+        && memcmp(&a->position, &b->position, sizeof(a->position)) == 0;
+}
+
+static int search_best_play(const Searcher *s, const GnSearchConfig *config,
+                            const GnPosition *pos, int d1, int d2,
+                            GnCandidate *best)
+{
+    if (s->need == NULL) {
+        return gn_best_play(s->net, pos, d1, d2, config, best);
+    }
+    GnPolicyNeed request;
+    memset(&request, 0, sizeof(request));
+    request.kind = GN_POLICY_NEED_BEST_PLAY;
+    request.position = *pos;
+    request.d1 = d1;
+    request.d2 = d2;
+    request.config = *config;
+    if (s->answer == NULL) {
+        *s->need = request;
+        return SEARCH_DEFERRED;
+    }
+    if (!same_request(&request, &s->answer->request))
+        return -1;   /* an answer to another question */
+    if (!s->answer->found)
+        return -1;   /* `gn_best_play`'s own refusal */
+    *best = s->answer->best;
+    return 0;
+}
+
+static int search_probs(const Searcher *s, const GnSearchConfig *config,
+                        const GnPosition *pos, float probs[GN_NUM_OUTPUTS])
+{
+    if (s->need == NULL) {
+        return gn_search_probs(s->net, pos, config, probs);
+    }
+    GnPolicyNeed request;
+    memset(&request, 0, sizeof(request));
+    request.kind = GN_POLICY_NEED_PROBS;
+    request.position = *pos;
+    request.config = *config;
+    if (s->answer == NULL) {
+        *s->need = request;
+        return SEARCH_DEFERRED;
+    }
+    if (!same_request(&request, &s->answer->request))
+        return -1;
+    memcpy(probs, s->answer->probs, sizeof(float) * GN_NUM_OUTPUTS);
+    return 0;
+}
+
+static int decide_move(const Searcher *s, const GnSearchLevel *level,
                        const GnNetwork *prune_net, const GnDecision *d,
                        GnAction *out)
 {
@@ -364,8 +435,9 @@ static int decide_move(const GnNetwork *net, const GnSearchLevel *level,
     if (level_config(level, prune_net, d, &config) != 0)
         return -1;
     GnCandidate best;
-    if (gn_best_play(net, &d->position, d->d1, d->d2, &config, &best) != 0)
-        return -1;
+    const int rc = search_best_play(s, &config, &d->position, d->d1, d->d2, &best);
+    if (rc != 0)
+        return rc;
     out->play = best.play;
     out->searched = 1;
     out->equity_a = best.equity;
@@ -373,14 +445,14 @@ static int decide_move(const GnNetwork *net, const GnSearchLevel *level,
 }
 
 /* The pre-roll distribution at the level, from the player on roll's side. */
-static int pre_roll_probs(const GnNetwork *net, const GnSearchLevel *level,
+static int pre_roll_probs(const Searcher *s, const GnSearchLevel *level,
                           const GnNetwork *prune_net, const GnDecision *d,
                           float probs[GN_NUM_OUTPUTS])
 {
     GnSearchConfig config;
     if (level_config(level, prune_net, d, &config) != 0)
         return -1;
-    return gn_search_probs(net, &d->position, &config, probs);
+    return search_probs(s, &config, &d->position, probs);
 }
 
 /* The money exact table, when one is installed and knows the position. */
@@ -397,7 +469,7 @@ static int exact_equities(const GnDecision *d, double equities[4])
     return gn_bearoff_equities(table, &d->position, equities);
 }
 
-static int decide_cube(const GnNetwork *net, const GnSearchLevel *level,
+static int decide_cube(const Searcher *s, const GnSearchLevel *level,
                        const GnNetwork *prune_net, const GnDecision *d,
                        GnAction *out)
 {
@@ -433,8 +505,9 @@ static int decide_cube(const GnNetwork *net, const GnSearchLevel *level,
         out->equity_b = (e_dt < e_dp) ? e_dt : e_dp;
     } else {
         float probs[GN_NUM_OUTPUTS];
-        if (pre_roll_probs(net, level, prune_net, d, probs) != 0)
-            return -1;
+        const int rc = pre_roll_probs(s, level, prune_net, d, probs);
+        if (rc != 0)
+            return rc;
         const GnMatchState state = {d->away_on_roll, d->away_opponent, d->cube,
                                     d->crawford};
         GnCubeDecision decision;
@@ -456,7 +529,7 @@ static int decide_cube(const GnNetwork *net, const GnSearchLevel *level,
     return 0;
 }
 
-static int decide_take(const GnNetwork *net, const GnSearchLevel *level,
+static int decide_take(const Searcher *s, const GnSearchLevel *level,
                        const GnNetwork *prune_net, const GnDecision *d,
                        GnAction *out)
 {
@@ -473,8 +546,9 @@ static int decide_take(const GnNetwork *net, const GnSearchLevel *level,
         e_dp = 1.0;
     } else {
         float probs[GN_NUM_OUTPUTS];
-        if (pre_roll_probs(net, level, prune_net, d, probs) != 0)
-            return -1;
+        const int rc = pre_roll_probs(s, level, prune_net, d, probs);
+        if (rc != 0)
+            return rc;
         if (d->use_match) {
             const GnMatchState state = {d->away_on_roll, d->away_opponent,
                                         d->cube, d->crawford};
@@ -513,13 +587,14 @@ static int decide_take(const GnNetwork *net, const GnSearchLevel *level,
     return 0;
 }
 
-static int decide_resign_offer(const GnNetwork *net, const GnSearchLevel *level,
+static int decide_resign_offer(const Searcher *s, const GnSearchLevel *level,
                                const GnNetwork *prune_net, const GnDecision *d,
                                GnAction *out)
 {
     float resigner[GN_NUM_OUTPUTS], mine[GN_NUM_OUTPUTS];
-    if (pre_roll_probs(net, level, prune_net, d, resigner) != 0)
-        return -1;
+    const int rc = pre_roll_probs(s, level, prune_net, d, resigner);
+    if (rc != 0)
+        return rc;
     invert(resigner, mine);
 
     double accept, play_on;
@@ -544,34 +619,73 @@ static int decide_resign_offer(const GnNetwork *net, const GnSearchLevel *level,
     return 0;
 }
 
-int gn_policy_decide_level(const GnNetwork *net, const GnNetwork *prune_net,
-                           const GnSearchLevel *level,
-                           const GnDecision *decision, GnAction *out)
+static int decide_with(const Searcher *s, const GnNetwork *prune_net,
+                       const GnSearchLevel *level, const GnDecision *decision,
+                       GnAction *out)
 {
     if (out == NULL)
         return -1;
     memset(out, 0, sizeof(*out));
-    if (net == NULL || level == NULL || decision == NULL || validate(decision) != 0)
+    if (s->net == NULL || level == NULL || decision == NULL
+        || validate(decision) != 0)
         return -1;
 
     int rc = -1;
     switch (decision->pending) {
     case GN_PENDING_MOVE:
-        rc = decide_move(net, level, prune_net, decision, out);
+        rc = decide_move(s, level, prune_net, decision, out);
         break;
     case GN_PENDING_CUBE:
-        rc = decide_cube(net, level, prune_net, decision, out);
+        rc = decide_cube(s, level, prune_net, decision, out);
         break;
     case GN_PENDING_TAKE:
-        rc = decide_take(net, level, prune_net, decision, out);
+        rc = decide_take(s, level, prune_net, decision, out);
         break;
     case GN_PENDING_RESIGN:
-        rc = decide_resign_offer(net, level, prune_net, decision, out);
+        rc = decide_resign_offer(s, level, prune_net, decision, out);
         break;
     }
     if (rc != 0)
         memset(out, 0, sizeof(*out));
     return rc;
+}
+
+int gn_policy_decide_level(const GnNetwork *net, const GnNetwork *prune_net,
+                           const GnSearchLevel *level,
+                           const GnDecision *decision, GnAction *out)
+{
+    const Searcher direct = {net, NULL, NULL};
+    const int rc = decide_with(&direct, prune_net, level, decision, out);
+    return (rc == 0) ? 0 : -1;
+}
+
+int gn_policy_decide_split(const GnNetwork *net, const GnNetwork *prune_net,
+                           const char *level, const GnDecision *decision,
+                           const GnPolicyAnswer *answer, GnPolicyNeed *need,
+                           GnAction *out)
+{
+    if (need == NULL) {
+        if (out != NULL)
+            memset(out, 0, sizeof(*out));
+        return -1;
+    }
+    memset(need, 0, sizeof(*need));
+    const GnSearchLevel *shape = (level != NULL) ? gn_search_level(level) : NULL;
+    if (shape == NULL) {
+        if (out != NULL)
+            memset(out, 0, sizeof(*out));
+        return -1;
+    }
+    const Searcher split = {net, answer, need};
+    const int rc = decide_with(&split, prune_net, shape, decision, out);
+    if (rc == SEARCH_DEFERRED && answer == NULL)
+        return 1;
+    if (rc != 0) {
+        memset(need, 0, sizeof(*need));
+        return -1;
+    }
+    memset(need, 0, sizeof(*need));
+    return 0;
 }
 
 int gn_policy_decide(const GnNetwork *net, const GnNetwork *prune_net,

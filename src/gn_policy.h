@@ -125,6 +125,44 @@ int gn_policy_decide_level(const GnNetwork *net, const GnNetwork *prune_net,
                            const GnDecision *decision, GnAction *out);
 
 /*
+ * THE SAME DECISION, IN TWO CALLS (issue #36, decision-decomposee-spec §5).
+ *
+ * A decision needs at most ONE search -- the best play, or the pre-roll
+ * distribution. Called with `answer == NULL`, this returns 1 and records that
+ * search in `need` (its position, dice and the level's own config), or
+ * returns 0 when the decision needs none (a shortcut: one legal play, a
+ * certain loss, a cube the player cannot turn...). The caller runs `need`
+ * however it likes -- `gn_plan.h` cuts it into tasks -- and calls again with
+ * the answer: the same policy lines then finish, and the action is the one
+ * `gn_policy_decide` returns, bit for bit. An answer to another request is
+ * refused (-1). `config.prune_net` in `need` is `prune_net` as passed here.
+ */
+typedef enum {
+    GN_POLICY_NEED_NONE = 0,
+    GN_POLICY_NEED_BEST_PLAY = 1,   /* gn_best_play(position, d1, d2, config) */
+    GN_POLICY_NEED_PROBS = 2        /* gn_search_probs(position, config) */
+} GnPolicyNeedKind;
+
+typedef struct {
+    GnPolicyNeedKind kind;
+    GnPosition position;
+    int d1, d2;
+    GnSearchConfig config;
+} GnPolicyNeed;
+
+typedef struct {
+    GnPolicyNeed request;           /* the need this answers */
+    int found;                      /* BEST_PLAY: 0 when there was no play */
+    GnCandidate best;               /* BEST_PLAY */
+    float probs[GN_NUM_OUTPUTS];    /* PROBS */
+} GnPolicyAnswer;
+
+int gn_policy_decide_split(const GnNetwork *net, const GnNetwork *prune_net,
+                           const char *level, const GnDecision *decision,
+                           const GnPolicyAnswer *answer, GnPolicyNeed *need,
+                           GnAction *out);
+
+/*
  * The exact certain-loss reading on its own (spec §5.5), from `pos->turn`'s
  * side, `pos->turn` about to roll. Returns the certain value of the loss --
  * 1, 2 or 3 -- or 0 when the loss is not certain, or its value is not, within
