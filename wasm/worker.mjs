@@ -222,6 +222,31 @@ async function runAnalysis(message, mine) {
   return { outcome: outcomes };
 }
 
+/*
+ * LA DÉCISION DÉCOUPÉE (issue #36) — quatre messages, chacun un appel
+ * d'`Evaluator` sans état : n'importe quel worker du pool peut planifier,
+ * exécuter des tâches, faire avancer ou conclure, puisqu'aucun ne garde rien
+ * entre deux messages. Les tâches arrivent par paquets (`runTasks`) pour
+ * qu'un seul message porte plusieurs tâches quand elles sont petites.
+ */
+function runSplit(message) {
+  const ev = requireEvaluator();
+  switch (message.type) {
+    case "planDecision": {
+      const { kind, positionId, turn, d1 = 0, d2 = 0, options = {} } = message;
+      return { outcome: timed(() => ev.planDecision(kind, positionId, turn, d1, d2, options)) };
+    }
+    case "runTasks":
+      return { outcome: timed(() => message.tasks.map((t) => ev.runTask(t))) };
+    case "advance":
+      return { outcome: timed(() => ev.advance(message.plan, message.results)) };
+    default:
+      return { outcome: timed(() => ev.combineDecision(message.plan)) };
+  }
+}
+
+const SPLIT_MESSAGES = ["planDecision", "runTasks", "advance", "combineDecision"];
+
 async function serve(message, mine) {
   switch (message.type) {
     case "bestPlay":
@@ -230,6 +255,11 @@ async function serve(message, mine) {
       return runDecision(message.type, message, mine);
     case "analyze":
       return runAnalysis(message, mine);
+    case "planDecision":
+    case "runTasks":
+    case "advance":
+    case "combineDecision":
+      return runSplit(message);
     default:
       throw new Error(`message inconnu : ${message.type}`);
   }
@@ -332,7 +362,7 @@ self.onmessage = async (event) => {
     }
 
     if (type === "bestPlay" || type === "rankPlays" || type === "cubeDecision"
-        || type === "analyze") {
+        || type === "analyze" || SPLIT_MESSAGES.includes(type)) {
       requireEvaluator();
       queue.push({ message: { ...event.data, requestId: id }, mine: generation });
       pump();

@@ -185,6 +185,37 @@ check("`evaluate` répond comme avant",
  * l'appelant qui n'a rien demandé reçoit la vitesse que la page isolée lui
  * permet, au même résultat près au bit. Un `threads` explicite l'emporte. */
 check("module série, sans `threads` : un fil", ready.threads === 1, `${ready.threads}`);
+/* LA DÉCISION DÉCOUPÉE (issue #36) traverse le protocole : planifier,
+ * exécuter les tâches par paquets, avancer, conclure — quatre messages sans
+ * état, et le résultat est celui de `bestPlay` en un bloc, au bit près. */
+{
+  const normal = Evaluator.level("normal");
+  send({ type: "bestPlay", id: 20, positionId: POSITION, turn: 0, d1: 3, d2: 1, options: normal });
+  const bloc = (await next((m) => m.id === 20, "bestPlay normal")).outcome;
+  send({ type: "planDecision", id: 21, kind: "move", positionId: POSITION, turn: 0, d1: 3, d2: 1,
+         options: normal });
+  let step = (await next((m) => m.id === 21, "planDecision")).outcome;
+  let id = 22;
+  const counts = [];
+  while (!step.done) {
+    counts.push(step.stage.length);
+    const half = Math.ceil(step.stage.length / 2);
+    send({ type: "runTasks", id: id, tasks: step.stage.slice(half) });
+    send({ type: "runTasks", id: id + 1, tasks: step.stage.slice(0, half) });
+    const late = (await next((m) => m.id === id, "runTasks")).outcome;
+    const early = (await next((m) => m.id === id + 1, "runTasks")).outcome;
+    send({ type: "advance", id: id + 2, plan: step.plan, results: [...late, ...early] });
+    step = (await next((m) => m.id === id + 2, "advance")).outcome;
+    id += 3;
+  }
+  send({ type: "combineDecision", id, plan: step.plan });
+  const split = (await next((m) => m.id === id, "combineDecision")).outcome;
+  check("la décision découpée traverse le protocole, au bit près",
+        Object.is(split.equity, bloc.equity) && split.resultId === bloc.resultId
+        && split.notation === bloc.notation,
+        `${counts.join("+")} tâches, ${split.notation} ${split.equity} contre ${bloc.equity}`);
+}
+
 /* Node 18 n'a pas de `navigator` : on annonce quatre fils, comme un
  * navigateur le ferait, avant que le module ne dimensionne son pool. */
 if (globalThis.navigator?.hardwareConcurrency === undefined) {

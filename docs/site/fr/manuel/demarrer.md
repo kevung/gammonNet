@@ -97,6 +97,28 @@ est plafonné à 4 sur iOS quel que soit le téléphone. `schedule.toJSON()` ren
 chaque travail — c'est avec elle qu'on tranche, sur la machine qui compte.
 ```
 
+## Une seule décision, répartie sur plusieurs workers
+
+`decide()` met **une décision par worker** : une analyse isolée (un coup, un videau) reste sur un
+seul. `decideSplit()` découpe la décision elle-même en tâches sans état — un jet d'un nœud de
+hasard chacune —, les répartit sur tous les workers, et rend **au bit près** ce que l'appel en un
+bloc aurait rendu. Les workers n'ont besoin d'aucune mémoire partagée, donc d'aucun en-tête
+COOP/COEP.
+
+```javascript
+const { done } = pool.decideSplit(
+  "move", "4HPwATDgc/ABMA", 0, 3, 1,      // "move", "cube", "policy" ou "position"
+  Evaluator.level("normal"));
+const best = await done;                 // le même objet que bestPlay, aux mêmes bits
+```
+
+Sans pool, les quatre étapes sont exposées par `Evaluator` — `planDecision`, `runTask`, `advance`,
+`combineDecision` — et leurs plans, tâches et résultats passent tels quels par `postMessage`.
+`evaluatePositionAtPly(positionId, turn, options)` rend en un bloc la valeur d'une position avant
+le jet à N-ply (équité et cinq probabilités, passe forcée comprise). Le contrat est
+`docs/specs/decision-decomposee-spec.md`. **Le gain de temps n'est pas mesuré** : il dépend du
+coût d'un message sur votre appareil.
+
 ## Les identifiants de position
 
 gammonNet ne lit **pas** de fichiers de match — c'est une frontière volontaire du projet. Il

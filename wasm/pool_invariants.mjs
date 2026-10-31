@@ -40,6 +40,30 @@ const NUM_FEATURES = 4;
 let costOf = () => 1;
 let liveWorkers = [];
 
+/*
+ * LA DÉCISION DÉCOUPÉE, simulée (issue #36) : deux vagues de 5 puis 3
+ * tâches ; une tâche rend son indice et le worker qui l'a faite ; `advance`
+ * vérifie qu'il a reçu chaque tâche UNE fois. Ce qui est testé est la
+ * distribution — pas le calcul, que `decision_parity.mjs` tient au bit.
+ */
+const splitLog = { ran: [], advances: [] };
+const SPLIT = {
+  planDecision: () => ({ done: false, plan: { wave: 0 },
+                         stage: [0, 1, 2, 3, 4].map((index) => ({ index, wave: 0 })) }),
+  runTasks: (data, worker) => data.tasks.map((t) => {
+    splitLog.ran.push({ wave: t.wave, index: t.index, worker: liveWorkers.indexOf(worker) });
+    return { index: t.index, wave: t.wave };
+  }),
+  advance: (data) => {
+    const seen = data.results.map((r) => r.index).sort((a, b) => a - b);
+    splitLog.advances.push({ wave: data.plan.wave, seen });
+    return data.plan.wave === 0
+      ? { done: false, plan: { wave: 1 }, stage: [0, 1, 2].map((index) => ({ index, wave: 1 })) }
+      : { done: true, plan: { wave: 2 }, stage: [] };
+  },
+  combineDecision: (data) => ({ equity: data.plan.wave, resultId: "découpée" }),
+};
+
 class FakeWorker {
   constructor() {
     this.onmessage = null;
@@ -97,6 +121,11 @@ class FakeWorker {
         }
         this.onmessage?.({
           data: { type: "result", id: data.id, outputs, count: data.count, computeMs },
+        });
+      } else if (SPLIT[type]) {
+        this.onmessage?.({
+          data: { type: "result", id: data.id, kind: type, computeMs,
+                  outcome: SPLIT[type](data, this) },
         });
       } else {
         this.onmessage?.({
@@ -236,6 +265,27 @@ function makeFeatures(count) {
           >= report.computeMs.reduce((a, b) => a + b, 0) - 1e-6,
         "le protocole ne peut pas coûter un temps négatif");
   check("le temps mural n'est pas nul", report.wallMs > 0, `${report.wallMs} ms`);
+  pool.destroy();
+}
+
+/* ── 7. Une décision découpée sur le pool (issue #36) ─────────────────── */
+{
+  /* Des coûts inégaux : les réponses reviennent dans le désordre. */
+  costOf = (data) => (data.type === "runTasks" ? 1 + ((data.tasks[0].index * 7) % 5) : 1);
+  const pool = await makePool(3);
+  const job = pool.decideSplit("move", "x", 0, 3, 1, {});
+  const decision = await job.done;
+  check("decideSplit rend la conclusion du plan", decision?.resultId === "découpée"
+        && decision.equity === 2, JSON.stringify(decision));
+  check("chaque vague arrive entière et sans doublon à `advance`",
+        JSON.stringify(splitLog.advances)
+          === JSON.stringify([{ wave: 0, seen: [0, 1, 2, 3, 4] }, { wave: 1, seen: [0, 1, 2] }]),
+        JSON.stringify(splitLog.advances));
+  check("chaque tâche n'est exécutée qu'une fois", splitLog.ran.length === 8,
+        `${splitLog.ran.length} exécutions`);
+  const workers = new Set(splitLog.ran.map((r) => r.worker));
+  check("les tâches d'une décision se répartissent sur plusieurs workers", workers.size > 1,
+        `${workers.size} workers`);
   pool.destroy();
 }
 
