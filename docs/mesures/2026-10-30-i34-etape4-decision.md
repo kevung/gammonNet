@@ -5,11 +5,18 @@ actuel sans perdre sa force ? Suite de
 [`2026-10-27-i34-prob5-elargis-registre.md`](2026-10-27-i34-prob5-elargis-registre.md) (étapes 0
 et 2) et de [`2026-10-27-i34-etape3-cout.md`](2026-10-27-i34-etape3-cout.md) (étape 3).*
 
-> **EN COURS DE RÉDACTION.** Les sections marquées « campagne en cours » attendent leurs
-> journaux. Les seuils du tête-à-tête cubeful (§1.3) sont écrits ici **avant** toute lecture du
-> signe, comme en T98.
+> **Le 768×768 est plus fort, et il ne coûte plus rien de plus que le réseau d'aujourd'hui.**
+> Sans arbitre, au 0-ply, il gagne **+0,0096 ppg** [+0,0074 ; +0,0117] sur un million de parties
+> par sens, exactement le +9,7 mEq de l'amont. Sous recherche 2-ply, au niveau servi, il perd
+> **−0,00033** [−0,00044 ; −0,00023] de moins par décision. En jeu cubeful, il ne fait rien
+> régresser : MWC **50,08 %** [49,85 ; 50,30] sur 35 000 paires de match, **−0,0011 ppg**
+> [−0,0076 ; +0,0055] sur 150 000 paires money — deux seuils tenus, aucun gain résolu à ce
+> volume. Deux changements de noyau exacts au bit (§3) divisent le coût de **tous** les réseaux ;
+> sur le nouveau noyau, le 768×768 coûte ×0,96 du réseau d'aujourd'hui en natif, ×1,11 dans
+> Chromium, ×0,53 dans Firefox. **Recommandation : l'adopter** (§6). Le mobile n'est pas mesuré.
+> Les seuils du tête-à-tête cubeful (§1.3) ont été écrits avant toute lecture du signe.
 
-## État et reprise (2026-10-30, 16 h)
+## État et reprise — **campagnes terminées le 2026-10-31** (archivé)
 
 | où | quoi | journal | script |
 |---|---|---|---|
@@ -27,11 +34,20 @@ vérifié, avant la reprise. Dépouillement : `python bench/report_t35.py --jour
 
 ## 1. Est-il vraiment plus fort ?
 
-### 1.1 Le tête-à-tête 0-ply sans arbitre (étape 1) — *campagne en cours*
+### 1.1 Le tête-à-tête 0-ply sans arbitre (étape 1) — **mesure**
 
 `bench/run_round_robin.py --engines gammonnet-0ply,prob5-768x768-0ply --pairs 500000 --seed
 20261030`, dés dupliqués, sièges échangés, un million de parties par sens, bootstrap sur les
 paires. Le chiffre de l'amont est +9,7 mEq/partie [+8,9 ; +10,6] sur 10 M parties.
+
+| | volume | 768×768 − réseau actuel |
+|---|---|---|
+| **0-ply, cubeless money** | 500 000 paires — **1 000 000 de parties** par sens | **+0,0096 ppg** [+0,0074 ; +0,0117] |
+
+**Résidu d'antisymétrie exactement 0**, aucune partie bloquée, 2 000 000 de parties en 8 193 s.
+Relevé : [`i34-e4-tete-a-tete-0ply.json`](i34-e4-tete-a-tete-0ply.json). Le chiffre de l'amont
+se transporte ici, à la différence de T96 : c'est le même ordre que ce que T96 avait gagné en
+passant au réseau actuel (+0,0092 ppg).
 
 ### 1.2 Le registre arbitré de T70, sous recherche — rappel des étapes 2 et 3
 
@@ -46,7 +62,7 @@ Le 768×768 rejoué aujourd'hui au niveau `normal` retrouve **au chiffre près**
 l'étape 3 : 0,0025564 [0,00243 ; 0,00268], 249 décisions hors registre, 119 197 460
 évaluations.
 
-### 1.3 Le tête-à-tête cubeful au niveau servi — *campagne en cours*
+### 1.3 Le tête-à-tête cubeful au niveau servi — **mesure : pas de régression, pas de gain résolu**
 
 768×768 contre le réseau actuel, **la politique `normal` des deux côtés** (`bench/run_t35.py
 --theirs self --ours-policy normal`, qui donne désormais au second joueur la même politique,
@@ -68,6 +84,30 @@ bootstrap sur les paires (`bench/report_t35.py`).
 
 Un intervalle entièrement positif serait en plus un gain **en jeu**, sous recherche, videau et
 score compris. Ce n'est pas le critère : le critère est la non-régression.
+
+| | volume | 768×768 contre réseau actuel | seuil | verdict |
+|---|---|---|---|---|
+| **match** 7 points, graine 20261030 | 35 000 paires (70 000 matchs) | MWC **50,08 %** [49,85 ; 50,30] | ≥ 49,5 % | **tenu** |
+| money, graine 20261032 | 50 000 paires | −0,0052 ppg [−0,0164 ; +0,0056] | — | — |
+| money, graine 20261033 | 100 000 paires | +0,0009 ppg [−0,0070 ; +0,0089] | — | — |
+| **money en commun** | **150 000 paires** (300 000 parties) | **−0,0011 ppg** [−0,0076 ; +0,0055] | ≥ −0,010 | **tenu** |
+
+**Lecture.** Les deux bornes basses passent leur seuil, de 0,35 point en match et de 0,0024 ppg
+en money : **changer de réseau ne fait rien régresser de ce qui est joué**, videau et score
+compris. **Aucun gain n'est résolu** : les deux intervalles contiennent zéro. Ce n'est pas
+contradictoire avec §1.2 : un gain de 0,00033 par décision, sur la quarantaine de décisions
+disputées d'une partie, se chiffre en millièmes de ppg, sous la demi-largeur (0,0066) que ce
+volume permet ; T98 avait la même lecture pour le passage précédent. Les deux moitiés money sont
+compatibles (écart 0,0061, erreur-type ≈ 0,0069).
+
+Le match a été joué en deux temps (35 processus, puis 15 après réduction de la machine), money
+graine 20261033 sur deux machines successives (les 24 552 premières paires copiées, md5 vérifié)
+: l'en-tête, empreintes d'évaluation comprises (`30fe2b96…` / `c9c11f1c…`), a été accepté à
+chaque reprise, ce qui est la preuve que les morceaux mesurent la même chose. Journaux :
+[`i34-e4-h2h-match.jsonl.gz`](i34-e4-h2h-match.jsonl.gz),
+[`i34-e4-h2h-money-b.jsonl.gz`](i34-e4-h2h-money-b.jsonl.gz),
+[`i34-e4-h2h-money-c.jsonl.gz`](i34-e4-h2h-money-c.jsonl.gz). Le journal money graine
+20261031 (340 paires, coupé au départ) n'est pas lu.
 
 ---
 
@@ -260,7 +300,35 @@ positions, 2 037 sorties bougent), corpus de politique régénéré, golds du fi
 
 ---
 
-## 6. La recommandation — *à compléter avec §1.1 et §1.3*
+## 6. La recommandation — **adopter le 768×768**, sur la branche `adoption/i34-768`
+
+**Est-il vraiment plus fort ?** Oui, sur deux instruments indépendants qui disent la même chose :
++0,0096 ppg sans arbitre au 0-ply (§1.1), −0,00033 par décision sous recherche au réglage servi,
+et encore devant à temps égal contre le réseau actuel doté de ×1,5 de recherche (§1.2). En jeu
+cubeful, la non-régression est établie et le gain n'est pas résolu (§1.3) — c'est la limite du
+volume, pas un signe contraire. Il ne perd sur aucune classe de position (étape 2).
+
+**Combien ?** Modestement : le même ordre que le passage précédent (T96), soit à peu près un
+quart de l'écart qui nous sépare de gnubg 0-ply.
+
+**Cela vaut-il le coup ?** Jusqu'ici, la réponse dépendait d'un prix : ×1,9 de temps partout. Ce
+prix a disparu (§3). Sur le nouveau noyau, servir le 768×768 coûte à l'appelant **ce que lui coûte
+aujourd'hui** le réseau actuel (×0,96 en natif par défaut, ×1,11 dans Chromium, ×0,53 dans
+Firefox). L'autre usage du même gain — garder le réseau actuel et empocher ×1,6 à ×3,4 de
+vitesse — reste possible, mais il échange une force mesurée contre une vitesse dont le 2-ply
+n'a plus besoin sur ordinateur. Je recommande donc d'**adopter**, et de livrer le noyau dans la
+même version.
+
+**Ce qui reste au propriétaire, et qui pourrait faire pencher l'autre côté :**
+- **le mobile n'est pas mesuré**. À noyau égal le 768×768 coûte ×1,8 le réseau actuel ; si un
+  téléphone était déjà à la limite du 2-ply, il le resterait sur le nouveau noyau seulement si
+  son moteur SIMD gagne autant que ceux des ordinateurs, ce qui n'est pas mesuré ;
+- **le téléchargement double** : 4,1 Mio en float32, 2,05 Mio en float16 (contre 1,06) ;
+- l'épingle des sources ne bouge pas (§4) : le format `BGNV` de l'amont reste un chantier à part.
+
+**Si l'adoption est retenue** : fusionner `adoption/i34-768`, puis publier (tag, release, épingle
+de `serve`, corpus `policy_reference16` régénéré sur les `.bin16` publiés) — étape de publication,
+non faite ici.
 
 ---
 
