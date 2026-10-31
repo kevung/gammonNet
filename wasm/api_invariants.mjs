@@ -372,6 +372,31 @@ check("les sous-coups répétés sont regroupés",
   raw._free(qualityPtr);
 }
 
+/* ── evaluatePositionAtPly : la valeur avant le jet (issue #36) ──────────
+ *
+ * À 0-ply, `equity` est la projection money de `probs` — la même fonction,
+ * au bit. Et une position dont le joueur au trait ne peut jamais bouger (sur
+ * la barre devant un jan fermé) a une valeur À 1-ply : chacun des 21 jets
+ * est la passe forcée, et la réponse n'est ni `null` ni un zéro. */
+{
+  const at0 = evaluator.evaluatePositionAtPly("4HPwATDgc/ABMA", 0, { ply: 0 });
+  check("evaluatePositionAtPly à 0-ply : equity est la projection de probs, au bit",
+        Object.is(at0.equity, evaluator.moneyEquity(new Float32Array(at0.probs))),
+        `${at0.equity}`);
+  const points = new Array(24).fill(0);
+  for (let i = 18; i < 24; i++) points[i] = -2;
+  points[0] = 14;
+  const closed = evaluator.positionId({ points, bar: [1, 0], off: [0, 3], turn: 0 });
+  const passed = evaluator.evaluatePositionAtPly(closed, 0, { ply: 1 });
+  /* L'identifiant se lit du côté du joueur au trait : la position où l'on
+   * passe, Noir au trait, a le sien. */
+  const theirs = evaluator.positionId({ points, bar: [1, 0], off: [0, 3], turn: 1 });
+  const replied = evaluator.evaluatePositionAtPly(theirs, 1, { ply: 0 });
+  check("passe forcée à chaque jet : la valeur est celle de la position où l'on passe",
+        Number.isFinite(passed.equity) && Math.abs(passed.equity + replied.equity) < 1e-6,
+        `${passed.equity} contre −${replied.equity}`);
+}
+
 console.log(failures === 0
   ? "\n✅ invariants de l'API tenus"
   : `\n❌ ${failures} invariant(s) rompu(s)`);

@@ -44,12 +44,18 @@
 #include "gn_gemm_int8.h"
 #include "gn_infer.h"
 #include "gn_parallel.h"
+#include "gn_plan.h"
 
 static GnNetwork *g_network = NULL;
 static GnNetwork *g_prune = NULL;
 static int g_prune_k = 0;
 static GnBearoff *g_bearoff = NULL;
 static GnEvalCache *g_cache = NULL;
+
+/* What a task's answer depends on, as `gn_plan.h` checks it: the bytes of the
+ * model, of the pruning network and of the exact table this instance holds
+ * (0 for none). Set where each is loaded, cleared where each goes. */
+static GnPlanFingerprint g_fp = {0, 0, 0};
 
 /* MEMFS, not a real path: RAM that `fopen` happens to understand. */
 static const char *MODEL_PATH = "/gammonnet-model.bin";
@@ -91,6 +97,8 @@ int gnw_load_model(const unsigned char *bytes, int length)
     g_network = gn_network_load(MODEL_PATH);
     remove(MODEL_PATH);
 
+    g_fp.model = (g_network == NULL)
+        ? 0 : gn_plan_fingerprint_bytes(bytes, (size_t)length);
     return (g_network == NULL) ? -2 : 0;
 }
 
@@ -115,6 +123,7 @@ int gnw_load_prune(const unsigned char *bytes, int length, int k)
         g_prune = NULL;
     }
     g_prune_k = 0;
+    g_fp.prune = 0;
 
     if (bytes == NULL || length <= 0 || k <= 0) {
         return (k <= 0) ? 0 : -1;   /* k nul : extinction demandée, pas une faute */
@@ -137,6 +146,7 @@ int gnw_load_prune(const unsigned char *bytes, int length, int k)
         return -2;
     }
     g_prune_k = k;
+    g_fp.prune = gn_plan_fingerprint_bytes(bytes, (size_t)length);
     return 0;
 }
 
@@ -225,6 +235,8 @@ void gnw_free_model(void)
         g_prune = NULL;
     }
     g_prune_k = 0;
+    g_fp.model = 0;
+    g_fp.prune = 0;
 }
 
 /*
@@ -320,6 +332,7 @@ int gnw_load_bearoff(const unsigned char *bytes, int length)
         gn_bearoff_close(g_bearoff);
         g_bearoff = NULL;
     }
+    g_fp.bearoff = 0;
     if (bytes == NULL || length <= 0) {
         return 0;                     /* retrait demandé, pas une faute */
     }
@@ -339,7 +352,12 @@ int gnw_load_bearoff(const unsigned char *bytes, int length)
     /* Le fichier N'EST PAS retiré : la table est lue à la demande, pas
      * chargée d'un bloc — 6,9 Mio qu'on ne veut pas voir deux fois en
      * mémoire. */
-    return (g_bearoff == NULL) ? -2 : (gn_bearoff_set_shared(g_bearoff), 0);
+    if (g_bearoff == NULL) {
+        return -2;
+    }
+    gn_bearoff_set_shared(g_bearoff);
+    g_fp.bearoff = gn_plan_fingerprint_bytes(bytes, (size_t)length);
+    return 0;
 }
 
 /*
@@ -392,6 +410,43 @@ static int root_band(GnSearchConfig *config, int ply, int filter_extra,
     }
     return gn_search_set_filter(config, ply, config->filter[ply], filter_extra,
                                 filter_threshold);
+}
+
+/*
+ * The config of `bestPlay` and `cubeDecision` -- and of their decomposed
+ * forms (issue #36), which must search EXACTLY what they search: one builder,
+ * so the two cannot drift. Depth, the two filters, the root triplet, the
+ * score, and the pruning network if one is loaded. Returns 0, or -1 for a
+ * score outside the table or an incoherent triplet.
+ */
+static int wasm_search_config(int ply, int filter_top, int filter_inner,
+                              int filter_extra, double filter_threshold,
+                              int use_match, int away_on_roll,
+                              int away_opponent, int cube, int crawford,
+                              GnSearchConfig *config)
+{
+    if (use_match) {
+        const GnMatchState state = {away_on_roll, away_opponent, cube, crawford};
+        *config = gn_search_config_match(ply, &state);
+        if (!config->use_match) {
+            return -1;   /* score hors table : refusé, pas rabattu en money */
+        }
+    } else {
+        *config = gn_search_config(ply);
+    }
+    if (filter_top > 0 && ply >= 1) {
+        config->filter[ply] = filter_top;
+    }
+    if (filter_inner > 0 && ply >= 2) {
+        config->filter[ply - 1] = filter_inner;
+    }
+    if (root_band(config, ply, filter_extra, filter_threshold) != 0) {
+        return -1;
+    }
+    /* L'élagage, s'il a été chargé. `gn_search_use_prune` refuse un k nul ou
+     * un réseau absent, donc l'appel est sûr dans tous les cas. */
+    gn_search_use_prune(config, g_prune, g_prune_k);
+    return 0;
 }
 
 /*
@@ -578,6 +633,20 @@ int gnw_rank_plays(const char *position_id, int turn, int d1, int d2,
  * (`bench/fit_efficiency.py`), jamais empruntée à une constante publiée ;
  * l'appelant doit passer celle de son état de videau.
  */
+/* `cubeDecision`'s nine numbers -- one writer for the search in one piece
+ * and for its decomposed form. */
+static void write_cube(const GnCubeDecision *decision,
+                       const float probs[GN_NUM_OUTPUTS], double *out)
+{
+    out[0] = (double)decision->action;
+    out[1] = decision->equity_no_double;
+    out[2] = decision->equity_double;
+    out[3] = decision->take_point;
+    for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
+        out[4 + k] = probs[k];
+    }
+}
+
 EMSCRIPTEN_KEEPALIVE
 int gnw_cube_decide(const char *position_id, int turn, int owner,
                     int use_match, int away_on_roll, int away_opponent,
@@ -596,24 +665,11 @@ int gnw_cube_decide(const char *position_id, int turn, int owner,
 
     GnSearchConfig config;
     GnMatchState state = {away_on_roll, away_opponent, cube, crawford};
-    if (use_match) {
-        config = gn_search_config_match(ply, &state);
-        if (!config.use_match) {
-            return -1;
-        }
-    } else {
-        config = gn_search_config(ply);
-    }
-    if (filter_top > 0 && ply >= 1) {
-        config.filter[ply] = filter_top;
-    }
-    if (filter_inner > 0 && ply >= 2) {
-        config.filter[ply - 1] = filter_inner;
-    }
-    if (root_band(&config, ply, filter_extra, filter_threshold) != 0) {
+    if (wasm_search_config(ply, filter_top, filter_inner, filter_extra,
+                           filter_threshold, use_match, away_on_roll,
+                           away_opponent, cube, crawford, &config) != 0) {
         return -1;
     }
-    gn_search_use_prune(&config, g_prune, g_prune_k);
 
     /* La distribution AVANT le jet — ce dont une décision de videau a besoin,
      * et non celle d'après un dé particulier (gn_search.h, gn_search_probs). */
@@ -628,13 +684,7 @@ int gnw_cube_decide(const char *position_id, int turn, int owner,
         return -1;
     }
 
-    out[0] = (double)decision.action;
-    out[1] = decision.equity_no_double;
-    out[2] = decision.equity_double;
-    out[3] = decision.take_point;
-    for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
-        out[4 + k] = probs[k];
-    }
+    write_cube(&decision, probs, out);
     return 0;
 }
 
@@ -656,27 +706,11 @@ double gnw_best_play(const char *position_id, int turn, int d1, int d2,
     }
 
     GnSearchConfig config;
-    if (use_match) {
-        const GnMatchState state = {away_on_roll, away_opponent, cube, crawford};
-        config = gn_search_config_match(ply, &state);
-        if (!config.use_match) {
-            return -99.0;   /* score hors table : refusé, pas rabattu en money */
-        }
-    } else {
-        config = gn_search_config(ply);
-    }
-    if (filter_top > 0 && ply >= 1) {
-        config.filter[ply] = filter_top;
-    }
-    if (filter_inner > 0 && ply >= 2) {
-        config.filter[ply - 1] = filter_inner;
-    }
-    if (root_band(&config, ply, filter_extra, filter_threshold) != 0) {
+    if (wasm_search_config(ply, filter_top, filter_inner, filter_extra,
+                           filter_threshold, use_match, away_on_roll,
+                           away_opponent, cube, crawford, &config) != 0) {
         return -99.0;
     }
-    /* L'élagage, s'il a été chargé. `gn_search_use_prune` refuse un k nul ou
-     * un réseau absent, donc l'appel est sûr dans tous les cas. */
-    gn_search_use_prune(&config, g_prune, g_prune_k);
 
     gn_search_reset_evaluations();
 
@@ -1003,6 +1037,11 @@ int gnw_search_level(const char *name, int *out, double *out_quality)
 #define GNW_POLICY_FIELDS 11
 #define GNW_POLICY_OUT_INTS 41
 
+static int decision_from_fields(const int *board, const int *fields,
+                                GnDecision *decision);
+static int write_action(int rc, const GnAction *a, const GnDecision *decision,
+                        int *out_ints, double *out_equities, char *out_notation);
+
 EMSCRIPTEN_KEEPALIVE
 int gnw_policy_decide(const int *board, const int *fields, const char *level,
                       int *out_ints, double *out_equities, char *out_notation)
@@ -1012,24 +1051,43 @@ int gnw_policy_decide(const int *board, const int *fields, const char *level,
         return -1;
     }
     GnDecision decision;
-    memset(&decision, 0, sizeof(decision));
-    if (gnw_board_to_position(board, &decision.position) != 0) {
+    if (decision_from_fields(board, fields, &decision) != 0) {
         return -1;
     }
-    decision.pending = (GnPending)fields[0];
-    decision.d1 = fields[1];
-    decision.d2 = fields[2];
-    decision.cube = fields[3];
-    decision.cube_owner = fields[4];
-    decision.jacoby = fields[5];
-    decision.use_match = fields[6];
-    decision.away_on_roll = fields[7];
-    decision.away_opponent = fields[8];
-    decision.crawford = fields[9];
-    decision.resign_value = fields[10];
 
     GnAction action;
     const int rc = gn_policy_decide(g_network, g_prune, level, &decision, &action);
+    return write_action(rc, &action, &decision, out_ints, out_equities,
+                        out_notation);
+}
+
+static int decision_from_fields(const int *board, const int *fields,
+                                GnDecision *decision)
+{
+    memset(decision, 0, sizeof(*decision));
+    if (fields == NULL || gnw_board_to_position(board, &decision->position) != 0) {
+        return -1;
+    }
+    decision->pending = (GnPending)fields[0];
+    decision->d1 = fields[1];
+    decision->d2 = fields[2];
+    decision->cube = fields[3];
+    decision->cube_owner = fields[4];
+    decision->jacoby = fields[5];
+    decision->use_match = fields[6];
+    decision->away_on_roll = fields[7];
+    decision->away_opponent = fields[8];
+    decision->crawford = fields[9];
+    decision->resign_value = fields[10];
+    return 0;
+}
+
+/* `policy`'s answer, from `gn_policy_decide` or from a decomposed plan --
+ * one writer for both. */
+static int write_action(int rc, const GnAction *a, const GnDecision *decision,
+                        int *out_ints, double *out_equities, char *out_notation)
+{
+    const GnAction action = *a;
     memset(out_ints, 0, sizeof(int) * GNW_POLICY_OUT_INTS);
     out_equities[0] = 0.0;
     out_equities[1] = 0.0;
@@ -1050,11 +1108,344 @@ int gnw_policy_decide(const int *board, const int *fields, const char *level,
         }
         gnw_position_to_board(&action.play.result, out_ints + 12);
         if (out_notation != NULL) {
-            gn_play_notation(&action.play, (int)decision.position.turn,
+            gn_play_notation(&action.play, (int)decision->position.turn,
                              out_notation);
         }
     }
     out_equities[0] = action.equity_a;
     out_equities[1] = action.equity_b;
+    return 0;
+}
+
+/* ── La décision découpée en tâches (issue #36) ─────────────────────────
+ *
+ * docs/specs/decision-decomposee-spec.md. Une décision — un coup comme
+ * `gnw_best_play`, un videau comme `gnw_cube_decide`, une politique comme
+ * `gnw_policy_decide`, ou la valeur d'une position avant le jet — est
+ * PLANIFIÉE ici, ses tâches exécutées sur n'importe quelle instance qui porte
+ * les mêmes réseaux, puis recombinée ici : au bit près ce que l'appel en un
+ * bloc rend (`src/gn_plan.h`).
+ *
+ * Aucun état n'est gardé dans le module entre deux appels : un plan entre en
+ * octets et ressort en octets. Ceux qu'une fonction rend dans `*out` sont
+ * alloués ici et rendus par `gnw_plan_free`.
+ *
+ * Un RÉSULTAT de tâche traverse en 10 doubles : [indice, clé basse, clé haute,
+ * valeur, p0..p4, évaluations] — tous exacts en double (la clé de vague est
+ * coupée en deux moitiés de 32 bits, les probabilités sont des float).
+ */
+
+#define GNW_RESULT_DOUBLES 10
+
+EMSCRIPTEN_KEEPALIVE
+void gnw_plan_free(unsigned char *plan)
+{
+    gn_plan_bytes_free(plan);
+}
+
+EMSCRIPTEN_KEEPALIVE
+long gnw_plan_move(const char *position_id, int turn, int d1, int d2,
+                   int ply, int filter_top, int filter_inner,
+                   int filter_extra, double filter_threshold,
+                   int use_match, int away_on_roll, int away_opponent,
+                   int cube, int crawford, unsigned char **out)
+{
+    GnPosition position;
+    GnSearchConfig config;
+    if (g_network == NULL || position_id == NULL || out == NULL
+        || gn_position_from_id(position_id, turn, &position) != 0
+        || wasm_search_config(ply, filter_top, filter_inner, filter_extra,
+                              filter_threshold, use_match, away_on_roll,
+                              away_opponent, cube, crawford, &config) != 0) {
+        return -1;
+    }
+    return gn_plan_bytes_move(g_network, g_prune, &g_fp, &position, d1, d2,
+                              &config, out);
+}
+
+EMSCRIPTEN_KEEPALIVE
+long gnw_plan_cube(const char *position_id, int turn, int owner,
+                   int use_match, int away_on_roll, int away_opponent,
+                   int cube, int crawford, double efficiency, int jacoby,
+                   int ply, int filter_top, int filter_inner,
+                   int filter_extra, double filter_threshold,
+                   unsigned char **out)
+{
+    GnPosition position;
+    GnSearchConfig config;
+    if (g_network == NULL || position_id == NULL || out == NULL
+        || gn_position_from_id(position_id, turn, &position) != 0
+        || wasm_search_config(ply, filter_top, filter_inner, filter_extra,
+                              filter_threshold, use_match, away_on_roll,
+                              away_opponent, cube, crawford, &config) != 0) {
+        return -1;
+    }
+    const GnPlanCube params = {owner, use_match,
+                               {away_on_roll, away_opponent, cube, crawford},
+                               efficiency, jacoby};
+    return gn_plan_bytes_cube(g_network, g_prune, &g_fp, &position, &config,
+                              &params, out);
+}
+
+/* The config of `evaluatePositionAtPly`: `bestPlay`'s, plus the cubeful
+ * leaves when `cube_owner >= 0` -- as `gnw_rank_plays` turns them on. */
+static int position_config(int ply, int filter_top, int filter_inner,
+                           int filter_extra, double filter_threshold,
+                           int use_match, int away_on_roll, int away_opponent,
+                           int cube, int crawford, int cube_owner,
+                           double efficiency, GnSearchConfig *config)
+{
+    if (wasm_search_config(ply, filter_top, filter_inner, filter_extra,
+                           filter_threshold, use_match, away_on_roll,
+                           away_opponent, cube, crawford, config) != 0) {
+        return -1;
+    }
+    if (cube_owner >= 0) {
+        gn_search_use_cube(config, cube_owner, efficiency);
+    }
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+long gnw_plan_position(const char *position_id, int turn,
+                       int ply, int filter_top, int filter_inner,
+                       int filter_extra, double filter_threshold,
+                       int use_match, int away_on_roll, int away_opponent,
+                       int cube, int crawford, int cube_owner,
+                       double efficiency, unsigned char **out)
+{
+    GnPosition position;
+    GnSearchConfig config;
+    if (g_network == NULL || position_id == NULL || out == NULL
+        || gn_position_from_id(position_id, turn, &position) != 0
+        || position_config(ply, filter_top, filter_inner, filter_extra,
+                           filter_threshold, use_match, away_on_roll,
+                           away_opponent, cube, crawford, cube_owner,
+                           efficiency, &config) != 0) {
+        return -1;
+    }
+    return gn_plan_bytes_position(g_network, g_prune, &g_fp, &position,
+                                  &config, out);
+}
+
+/*
+ * LA VALEUR D'UNE POSITION AVANT LE JET, en un bloc : la récursion scalaire
+ * (`gn_search_equity`) et la distribution (`gn_search_probs`) au même
+ * réglage, passe forcée comprise — elle est un jet de la récursion comme un
+ * autre. `out` reçoit [équité, p0..p4], du côté du joueur au trait.
+ */
+EMSCRIPTEN_KEEPALIVE
+int gnw_position_at_ply(const char *position_id, int turn,
+                        int ply, int filter_top, int filter_inner,
+                        int filter_extra, double filter_threshold,
+                        int use_match, int away_on_roll, int away_opponent,
+                        int cube, int crawford, int cube_owner,
+                        double efficiency, double *out)
+{
+    GnPosition position;
+    GnSearchConfig config;
+    if (g_network == NULL || position_id == NULL || out == NULL
+        || gn_position_from_id(position_id, turn, &position) != 0
+        || position_config(ply, filter_top, filter_inner, filter_extra,
+                           filter_threshold, use_match, away_on_roll,
+                           away_opponent, cube, crawford, cube_owner,
+                           efficiency, &config) != 0) {
+        return -1;
+    }
+    float probs[GN_NUM_OUTPUTS];
+    if (gn_search_probs(g_network, &position, &config, probs) != 0) {
+        return -1;
+    }
+    out[0] = gn_search_equity(g_network, &position, &config);
+    for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
+        out[1 + k] = probs[k];
+    }
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+long gnw_plan_policy(const int *board, const int *fields, const char *level,
+                     unsigned char **out)
+{
+    GnDecision decision;
+    if (g_network == NULL || out == NULL || level == NULL
+        || decision_from_fields(board, fields, &decision) != 0) {
+        return -1;
+    }
+    return gn_plan_bytes_policy(g_network, g_prune, &g_fp, level, &decision,
+                                out);
+}
+
+/* [kind, done, tasks, evaluations, wave, policy need] */
+EMSCRIPTEN_KEEPALIVE
+int gnw_plan_info(const unsigned char *plan, int length, int *out)
+{
+    if (plan == NULL || length <= 0 || out == NULL) {
+        return -1;
+    }
+    return gn_plan_bytes_info(plan, (size_t)length, out);
+}
+
+/* Every task of the current wave, GN_PLAN_TASK_BYTES each. */
+EMSCRIPTEN_KEEPALIVE
+int gnw_plan_tasks(const unsigned char *plan, int length, unsigned char *out,
+                   int max)
+{
+    if (plan == NULL || length <= 0) {
+        return -1;
+    }
+    return gn_plan_bytes_tasks(plan, (size_t)length, out, max);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int gnw_plan_task_bytes(void)
+{
+    return GN_PLAN_TASK_BYTES;
+}
+
+/* One task, on THIS instance's networks. Returns 0, -1 (malformed or failed),
+ * or -2 (the plan was made with other networks or another table). */
+EMSCRIPTEN_KEEPALIVE
+int gnw_plan_run_task(const unsigned char *task, int length, double *out)
+{
+    if (g_network == NULL || task == NULL || out == NULL || length <= 0) {
+        return -1;
+    }
+    GnPlanResult result;
+    const int rc = gn_plan_run_encoded(g_network, g_prune, &g_fp, task,
+                                       (size_t)length, &result);
+    if (rc != 0) {
+        return rc;
+    }
+    out[0] = (double)result.index;
+    out[1] = (double)(uint32_t)(result.wave_key & 0xffffffffULL);
+    out[2] = (double)(uint32_t)(result.wave_key >> 32);
+    out[3] = result.value;
+    for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
+        out[4 + k] = (double)result.probs[k];
+    }
+    out[9] = (double)result.evaluations;
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+long gnw_plan_advance(const unsigned char *plan, int length,
+                      const double *results, int count, unsigned char **out)
+{
+    if (g_network == NULL || plan == NULL || length <= 0 || out == NULL
+        || count < 0 || (count > 0 && results == NULL)) {
+        return -1;
+    }
+    GnPlanResult *parsed = calloc((size_t)(count > 0 ? count : 1),
+                                  sizeof(GnPlanResult));
+    if (parsed == NULL) {
+        return -1;
+    }
+    for (int i = 0; i < count; i++) {
+        const double *v = results + (size_t)i * GNW_RESULT_DOUBLES;
+        parsed[i].index = (int)v[0];
+        parsed[i].wave_key = (uint64_t)(uint32_t)v[1]
+                             | ((uint64_t)(uint32_t)v[2] << 32);
+        parsed[i].value = v[3];
+        for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
+            parsed[i].probs[k] = (float)v[4 + k];
+        }
+        parsed[i].evaluations = (unsigned long)v[9];
+    }
+    const long size = gn_plan_bytes_advance(g_network, g_prune, plan,
+                                            (size_t)length, parsed, count, out);
+    free(parsed);
+    return size;
+}
+
+/* `bestPlay`'s answer from a settled move plan: returns the equity -- or
+ * -99.0 when there is no play, exactly as `gnw_best_play` -- with the result's
+ * id, the notation and the evaluation total. */
+EMSCRIPTEN_KEEPALIVE
+double gnw_plan_best_play(const unsigned char *plan, int length,
+                          char *out_id, int *out_evaluations,
+                          char *out_notation)
+{
+    if (plan == NULL || length <= 0) {
+        return -99.0;
+    }
+    GnPlan decoded;
+    if (gn_plan_decode(plan, (size_t)length, &decoded) != 0 || !decoded.done
+        || decoded.kind != GN_PLAN_MOVE) {
+        gn_plan_free(&decoded);
+        return -99.0;
+    }
+    if (out_evaluations != NULL) {
+        *out_evaluations = (int)decoded.evaluations;
+    }
+    if (decoded.written <= 0) {
+        gn_plan_free(&decoded);
+        return -99.0;
+    }
+    const GnCandidate *best = &decoded.candidates[0];
+    if (out_id != NULL) {
+        gn_position_id(&best->play.result, out_id);
+    }
+    if (out_notation != NULL) {
+        gn_play_notation(&best->play, (int)decoded.position.turn, out_notation);
+    }
+    const double equity = best->equity;
+    gn_plan_free(&decoded);
+    return equity;
+}
+
+/* `cubeDecision`'s nine numbers from a settled cube plan. */
+EMSCRIPTEN_KEEPALIVE
+int gnw_plan_cube_result(const unsigned char *plan, int length, double *out)
+{
+    if (plan == NULL || length <= 0 || out == NULL) {
+        return -1;
+    }
+    GnCubeDecision decision;
+    float probs[GN_NUM_OUTPUTS];
+    if (gn_plan_bytes_cube_decision(plan, (size_t)length, &decision, probs) != 0) {
+        return -1;
+    }
+    write_cube(&decision, probs, out);
+    return 0;
+}
+
+/* `policy`'s answer from a settled policy plan. */
+EMSCRIPTEN_KEEPALIVE
+int gnw_plan_policy_result(const unsigned char *plan, int length, int *out_ints,
+                           double *out_equities, char *out_notation)
+{
+    if (plan == NULL || length <= 0 || out_ints == NULL || out_equities == NULL) {
+        return -1;
+    }
+    GnPlan decoded;
+    GnAction action;
+    memset(&action, 0, sizeof(action));
+    int rc = -1;
+    if (gn_plan_decode(plan, (size_t)length, &decoded) == 0) {
+        rc = gn_plan_policy_action(&decoded, &action);
+    }
+    const int written = write_action(rc, &action, &decoded.decision, out_ints,
+                                     out_equities, out_notation);
+    gn_plan_free(&decoded);
+    return written;
+}
+
+/* [équité, p0..p4] from a settled position plan. */
+EMSCRIPTEN_KEEPALIVE
+int gnw_plan_position_result(const unsigned char *plan, int length, double *out)
+{
+    if (plan == NULL || length <= 0 || out == NULL) {
+        return -1;
+    }
+    double equity;
+    float probs[GN_NUM_OUTPUTS];
+    if (gn_plan_bytes_position_value(plan, (size_t)length, &equity, probs) != 0) {
+        return -1;
+    }
+    out[0] = equity;
+    for (int k = 0; k < GN_NUM_OUTPUTS; k++) {
+        out[1 + k] = probs[k];
+    }
     return 0;
 }
