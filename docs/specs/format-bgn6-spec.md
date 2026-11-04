@@ -127,6 +127,13 @@ Pour situer : l'int8 entraîné pour la quantification coûte +0,00060 sur le m�
 (`2026-09-02-T73-int8-arbitre-t70.md`), et le changement de poids de T98 a rapporté −0,00067.
 Le float16 est **indiscernable de zéro** à cette échelle.
 
+**Refait le 2026-11-04 sur les poids rafraîchis de l'amont** (`c373141`, même nom, poids 2,4 fois
+plus grands, `docs/mesures/2026-11-04-poids-c373141.md`) : perte en jeu au réglage `normal`
+**−0,00001** [−0,00003 ; +0,00000] par décision disputée, 28 coups différents sur 9 763 ; à 0-ply,
+0,080 % [0,071 ; 0,090] de coups différents et 6,0×10⁻⁸ par décision ; écart d'équité par position
+résultante moyen / p99,9 / maximal 6,8×10⁻⁴ / 2,7×10⁻³ / 2,2×10⁻¹ (un seul enfant, non localisé) ;
+écart maximal sur une sortie 1,1×10⁻¹. **Le tableau ci-dessus décrit les poids précédents.**
+
 ## 6. Ce qui est garanti, et ce qui ne l'est pas
 
 **Garanti, par le repère** : un lecteur qui passe §4 rend, à 1e-6 près, ce que le moteur natif
@@ -141,9 +148,12 @@ travers cinq couches dépend de la position. Ce qu'on peut écrire, c'est ce qui
 > s'écarte de celle du `.bin` de 1,3×10⁻⁴ en moyenne, de moins de 7×10⁻⁴ dans 99,9 % des cas, et
 > de 8,6×10⁻³ au plus.** En jeu, au réglage servi, la perte est indiscernable de zéro
 > (§5).
+>
+> Ces chiffres sont ceux des poids du 2026-10-22. Sur ceux de `c373141`, ils deviennent 6,8×10⁻⁴ en
+> moyenne, moins de 2,7×10⁻³ dans 99,9 % des cas, 2,2×10⁻¹ au plus (§5).
 
 Une analyse stockée sous le `.bin` et recalculée sous le `.bin16` **change donc de valeur** — de
-l'ordre de 10⁻⁴, rarement plus — et peut, dans environ 0,3 % des décisions disputées, désigner
+l'ordre de 10⁻⁴ à 10⁻³ selon les poids, rarement plus — et peut, dans environ 0,3 % des décisions disputées, désigner
 un autre meilleur coup, d'équité quasi égale. Un appelant qui compare des analyses entre elles
 doit traiter le passage d'un format à l'autre comme un changement de moteur, pas comme un
 changement de transport.

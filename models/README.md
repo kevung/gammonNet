@@ -5,9 +5,10 @@ artefacts effectivement publiés (T50).
 
 ## Pourquoi gitignoré
 
-Les poids du modèle de référence vivent déjà dans `vendor/backgammon-ai-engine/best_models/`,
-récupérés à un commit épinglé par `tools/fetch_vendor.py`. Les recopier ici ferait deux
-copies dont une finirait par mentir sur sa provenance.
+Les poids du modèle de référence vivent déjà dans l'historique de
+`vendor/backgammon-ai-engine/`, à un commit nommé par `tools/export_model.py`
+(`WEIGHTS_COMMIT`), postérieur à l'épingle des sources de `tools/fetch_vendor.py`. Les recopier
+ici ferait deux copies dont une finirait par mentir sur sa provenance.
 
 Ce qui atterrit ici est **produit** : un `.bin` exporté par `export_weights.py`, ou un modèle
 entraîné par nos soins (phase 4, conditionnelle).
