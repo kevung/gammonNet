@@ -72,6 +72,10 @@ Depuis v1.6.0, le réseau publié est son successeur au même commit amont `7184
 adopté sur mesure (`docs/mesures/2026-09-17-T96-poids-amont.md`,
 `docs/mesures/2026-10-05-T97-adoption-256.md`).
 
+Ses poids ont été rafraîchis par l'amont **sous le même nom** à `c373141` (md5 `84b2293e`) : ils
+sont lus à ce commit, l'arbre épinglé à `7184e2f` portant encore les précédents sous ce nom
+(`docs/mesures/2026-11-04-poids-c373141.md`).
+
 ### 3.2 Le moteur d'inférence — écrit ici
 
 > **Tranché en T22 le 2026-08-03.** Un moteur d'inférence tiers a été évalué comme candidat, puis

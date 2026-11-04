@@ -51,6 +51,11 @@ commit `7184e2f`, last hidden layer 256 wide), measured paired against its prede
 A resolved gain of the static evaluation; under search, non-regression without a resolved gain.
 ([T96](docs/mesures/2026-09-17-T96-poids-amont.md), [T97](docs/mesures/2026-10-05-T97-adoption-256.md))
 
+Upstream refreshed these weights under the same name in `c373141` (md5 `84b2293e`). Paired against
+the previous ones on 9 717 decisions of the T70 registry, 2-ply at the `normal` level, they lose
+**−0.00011** per decision [−0.00021 ; −0.00001]. Everything else above was measured on earlier weights
+and has not been re-run. ([fiche](docs/mesures/2026-11-04-poids-c373141.md))
+
 ### Performance rating
 
 600 contact decisions, arbiter GNU Backgammon at 3-ply over every legal move. The figures
