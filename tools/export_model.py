@@ -31,6 +31,18 @@ REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
 # emit an aggregated money equity, which match play cannot use.
 DEFAULT_MODEL = "cubeless_prob5_512_512_256_256.pt"
 DEFAULT_OUT = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+#: The weights live in an upstream commit LATER than the source pin
+#: (`tools/fetch_vendor.py`). `c373141` refreshes this network under the SAME
+#: file name, so the pinned tree holds a file of that name with the PREVIOUS
+#: weights: a listed model is always read out of WEIGHTS_COMMIT, never from the
+#: working tree. Moving the pin would change the exporter's own format (`BGNV`,
+#: format 2) and every `.bin` byte with it -- a separate change. The weights are
+#: read with `git show`, md5-checked against the upstream table, and exported
+#: by the PINNED `export_weights.py`.
+WEIGHTS_COMMIT = "c373141"
+WEIGHTS_MD5 = {
+    "cubeless_prob5_512_512_256_256.pt": "84b2293e",
+}
 
 
 def sha256(path: Path) -> str:
@@ -59,6 +71,25 @@ def main() -> int:
     args = parser.parse_args()
 
     source = REFERENCE / "best_models" / args.model
+    weights_commit = None
+    if args.model in WEIGHTS_MD5:
+        weights_commit = WEIGHTS_COMMIT
+        staged = ROOT / "build" / "weights" / Path(args.model).name
+        staged.parent.mkdir(parents=True, exist_ok=True)
+        blob = subprocess.run(
+            ["git", "-C", str(REFERENCE), "show", f"{WEIGHTS_COMMIT}:best_models/{args.model}"],
+            capture_output=True, check=False,
+        )
+        if blob.returncode != 0:
+            print(f"modèle introuvable dans {WEIGHTS_COMMIT} : {args.model}", file=sys.stderr)
+            print("lancer d'abord `make vendor` (le clone porte l'historique)", file=sys.stderr)
+            return 1
+        md5 = hashlib.md5(blob.stdout).hexdigest()
+        if not md5.startswith(WEIGHTS_MD5[args.model]):
+            print(f"md5 {md5[:8]} au lieu de {WEIGHTS_MD5[args.model]} : refus", file=sys.stderr)
+            return 1
+        staged.write_bytes(blob.stdout)
+        source = staged
     if not source.is_file():
         print(f"modèle introuvable : {source}", file=sys.stderr)
         print("lancer d'abord `make vendor`", file=sys.stderr)
@@ -82,6 +113,7 @@ def main() -> int:
         "source": "alexstrehl/backgammon-ai-engine",
         "license": "MIT",
         "pinned_commit": pinned_commit(),
+        **({"weights_commit": weights_commit} if weights_commit else {}),
         "artifact": args.out.name,
         "sha256": sha256(args.out),
         "bytes": args.out.stat().st_size,

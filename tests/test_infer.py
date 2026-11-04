@@ -42,7 +42,9 @@ REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
 # into a habit.
 MODEL_PT = Path(os.environ.get(
     "GN_MODEL_PT",
-    REFERENCE / "best_models" / "cubeless_prob5_512_512_256_256.pt"))
+    # The pinned tree holds the previous weights under this name: this copy is
+    # staged out of the weights commit by `tools/export_model.py`.
+    ROOT / "build" / "weights" / "cubeless_prob5_512_512_256_256.pt"))
 MODEL_BIN = Path(os.environ.get(
     "GN_MODEL_BIN",
     ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"))
