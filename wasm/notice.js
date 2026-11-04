@@ -8,7 +8,7 @@
  *
  * ── Poids du réseau et moteur d'inférence ───────────────────────────────
  * backgammon-ai-engine — Copyright (c) 2026 Alex Strehl — licence MIT
- * (poids, commit 18b0a80 ; les sources compilées, commit 7184e2f, portent
+ * (poids, commit c373141 ; les sources compilées, commit 7184e2f, portent
  * « Copyright (c) 2026 alexstrehl », le même auteur)
  * https://github.com/alexstrehl/backgammon-ai-engine
  * Réseau : cubeless_prob5_768_768_256_256_256

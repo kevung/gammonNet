@@ -53,6 +53,9 @@ from gammonnet.search import search_level  # noqa: E402
 #: celui de la CONFIGURATION, pas des poids.
 NETWORKS = {
     "strehl-prob5-768-768-256-256-256": ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin",
+    # Le réseau d'avant, à ses poids rafraîchis : publié à côté, il est le chemin de
+    # retour de l'appelant et son repère de coût. Jamais le défaut.
+    "strehl-prob5-512-512-256-256": ROOT / "models" / "cubeless_prob5_512_512_256_256.bin",
     "strehl-prune-32": ROOT / "models" / "prune_32.bin",
 }
 
@@ -111,6 +114,7 @@ VERIFY = [
     ROOT / "wasm" / "parity.mjs",
     ROOT / "wasm" / "api_invariants.mjs",
     ROOT / "models" / "cubeless_prob5_768_768_256_256_256.provenance.json",
+    ROOT / "models" / "cubeless_prob5_512_512_256_256.provenance.json",
     ROOT / "models" / "prune_32.provenance.json",
 ]
 
@@ -251,7 +255,8 @@ def quickstart() -> str:
 
 | | |
 |---|---|
-| `strehl-prob5-…​.bin` / `.bin16` | les poids du réseau, en float32 et en float16 (moitié moins lourd) |
+| `strehl-prob5-768-…​.bin` / `.bin16` | les poids du réseau par défaut, en float32 et en float16 (moitié moins lourd) |
+| `strehl-prob5-512-…​.bin` / `.bin16` | le réseau publié à côté : même interface, le choix revient à l'appelant (`alternate_network` dans `manifest.json`) ; ses équités ne se comparent pas à celles de l'autre |
 | `strehl-prune-32_…​.bin` / `.bin16` | le réseau d'élagage : il trie les coups pour que le grand n'en note qu'une poignée |
 | `gammonnet-simd.mjs` / `.wasm` | le moteur WebAssembly (préférez la version SIMD) |
 | `gammonnet-simd-mt.mjs` / `.wasm` | le même moteur sur plusieurs cœurs, pour une page isolée (voir plus bas) |
@@ -358,7 +363,7 @@ chaque brique, est dans THIRD-PARTY.md.
 
 ── Poids du réseau et moteur d'inférence ──────────────────────────────────
 backgammon-ai-engine — Copyright (c) 2026 Alex Strehl — licence MIT
-(poids, commit 18b0a80 ; les sources compilées, commit 7184e2f, portent
+(poids, commit c373141 ; les sources compilées, commit 7184e2f, portent
 « Copyright (c) 2026 alexstrehl », le même auteur)
 https://github.com/alexstrehl/backgammon-ai-engine
 
@@ -636,6 +641,8 @@ def main() -> int:
         "date": date,
         "network": f"strehl-prob5-768-768-256-256-256_{args.version}_{date}.bin",
         "network_fp16": f"strehl-prob5-768-768-256-256-256_{args.version}_{date}.bin16",
+        "alternate_network": f"strehl-prob5-512-512-256-256_{args.version}_{date}.bin",
+        "alternate_network_fp16": f"strehl-prob5-512-512-256-256_{args.version}_{date}.bin16",
         "prune": f"strehl-prune-32_{args.version}_{date}.bin",
         "prune_fp16": f"strehl-prune-32_{args.version}_{date}.bin16",
         # La forme canonique "normal" (issue #25) : `gn_search_level`
@@ -649,7 +656,8 @@ def main() -> int:
         "api": "api/gammonnet.mjs",
         "pool": "api/pool.mjs",
     }
-    for key in ("network", "network_fp16", "prune", "prune_fp16", "wasm", "wasm_scalar",
+    for key in ("network", "network_fp16", "alternate_network", "alternate_network_fp16",
+                "prune", "prune_fp16", "wasm", "wasm_scalar",
                 "wasm_threads", "api", "pool"):
         if not (target / manifest[key]).exists():
             raise SystemExit(

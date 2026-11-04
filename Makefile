@@ -200,15 +200,24 @@ $(LIBRARY): $(OBJECTS) $(VENDOR_OBJECTS)
 MODEL := models/cubeless_prob5_768_768_256_256_256.bin
 # Le même réseau, au format de distribution `BGN6` (docs/specs/format-bgn6-spec.md).
 MODEL16 := models/cubeless_prob5_768_768_256_256_256.bin16
+# Le réseau publié à côté du réseau par défaut : le chemin de retour de l'appelant.
+ALT_MODEL := models/cubeless_prob5_512_512_256_256.bin
+ALT_MODEL16 := models/cubeless_prob5_512_512_256_256.bin16
 PRUNE_MODEL := models/prune_32.bin
 
-model: $(MODEL)
+model: $(MODEL) $(ALT_MODEL)
 
 $(MODEL):
 	$(PYTHON) tools/export_model.py
 
 $(MODEL16): $(MODEL)
 	$(PYTHON) tools/pack_fp16.py $(MODEL) $@
+
+$(ALT_MODEL):
+	$(PYTHON) tools/export_model.py --model cubeless_prob5_512_512_256_256.pt --out $@
+
+$(ALT_MODEL16): $(ALT_MODEL)
+	$(PYTHON) tools/pack_fp16.py $(ALT_MODEL) $@
 
 corpus: corpus-t01 corpus-t12
 
@@ -379,6 +388,15 @@ wasm-parity: wasm $(MODEL) $(MODEL16)
 	$(PYTHON) tools/dump_reference.py
 	$(PYTHON) tools/dump_reference.py --model $(MODEL16) --out $(BUILD)/reference16.bin
 	node $(WASM_DIR)/parity.mjs
+
+# La même parité sur le réseau publié à côté : un réseau livré est un réseau gardé.
+.PHONY: wasm-parity-alt
+wasm-parity-alt: wasm $(ALT_MODEL) $(ALT_MODEL16)
+	$(PYTHON) tools/dump_reference.py --model $(ALT_MODEL) --out $(BUILD)/reference_alt.bin
+	$(PYTHON) tools/dump_reference.py --model $(ALT_MODEL16) --out $(BUILD)/reference_alt16.bin
+	GN_PARITY_MODEL=$(ALT_MODEL) GN_PARITY_MODEL16=$(ALT_MODEL16) \
+	    GN_PARITY_REFERENCE=$(BUILD)/reference_alt.bin GN_PARITY_REFERENCE16=$(BUILD)/reference_alt16.bin \
+	    node $(WASM_DIR)/parity.mjs
 
 # Les invariants de l'API JavaScript. La parité vérifie que le module CALCULE
 # comme le natif ; ceci vérifie qu'il RÉPOND ce qu'il promet — le classement des

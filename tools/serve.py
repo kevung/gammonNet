@@ -218,6 +218,8 @@ class Engine:
     #: operator who wants a stricter bound on a shared or latency-sensitive
     #: deployment sets `--max-ply` down, never by editing this file.
     max_ply: int = MAX_SEARCH_PLY
+    network_name: str = ""
+    network_sha256: str = ""
 
 
 def load_efficiency(path: Path) -> dict[CubeOwner, float]:
@@ -746,7 +748,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
     #:
     #: /4 (#37): `/v1/cube` learnt `ply`. Additive in the same way: a request
     #: without it gets the same body back.
-    server_version = "gammonNet-serve/4"
+    #:
+    #: /5: `/healthz` names the network it serves (`network`, `sha256`), and
+    #: `--alternate` serves the network published alongside the default. A
+    #: caller that keeps results needs to key them on this: two networks'
+    #: equities do not compare. Additive for every /v1 route.
+    server_version = "gammonNet-serve/5"
 
     def log_message(self, fmt: str, *args) -> None:  # quieter, structured-ish
         sys.stderr.write(f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {self.address_string()} {fmt % args}\n")
@@ -761,7 +768,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         if self.path == "/healthz":
-            self._write_json(200, {"status": "ok"})
+            self._write_json(200, {"status": "ok", "network": self.engine.network_name,
+                                   "sha256": self.engine.network_sha256})
             return
         self._write_json(404, {"error": "not found"})
 
@@ -812,6 +820,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--pin", type=Path, default=DEFAULT_PIN, help="fichier d'épingle {version, sha256}")
     parser.add_argument("--weights", type=Path, default=None, help="surcharge le chemin du grand réseau")
+    parser.add_argument("--alternate", action="store_true", help="sert le réseau publié à côté du défaut (`alternate_fp16` de l'épingle)")
     parser.add_argument("--prune", type=Path, default=None, help="surcharge le chemin du réseau d'élagage")
     parser.add_argument("--no-prune", action="store_true", help="désactive l'élagage même si le réseau est présent")
     parser.add_argument("--prune-k", type=int, default=None, help="candidats survivants à l'élagage (défaut : celui de l'épingle)")
@@ -832,11 +841,14 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"REFUS DE DÉMARRER : --threads {args.threads} refusé par le moteur")
 
     pin = json.loads(args.pin.read_text())
-    weights_path = args.weights or (args.pin.parent / pin["network_fp16"]["filename"])
+    network_key = "alternate_fp16" if args.alternate else "network_fp16"
+    if network_key not in pin:
+        raise SystemExit(f"REFUS DE DÉMARRER : l'épingle {args.pin} ne porte pas `{network_key}`")
+    weights_path = args.weights or (args.pin.parent / pin[network_key]["filename"])
     prune_path = args.prune or (args.pin.parent / pin["prune_fp16"]["filename"])
     prune_k = args.prune_k if args.prune_k is not None else pin.get("prune_k", 12)
 
-    verify_pinned(weights_path, pin["network_fp16"]["sha256"], "réseau principal (network_fp16)")
+    verify_pinned(weights_path, pin[network_key]["sha256"], f"réseau principal ({network_key})")
     print(f"==> réseau principal conforme à l'épingle {pin['version']} : {weights_path}")
 
     prune_network: Network | None = None
@@ -855,6 +867,8 @@ def main(argv: list[str] | None = None) -> int:
     engine = Engine(
         network=network, prune_network=prune_network, prune_k=prune_k,
         efficiency=efficiency, max_ply=max_ply,
+        network_name=pin[network_key]["filename"],
+        network_sha256=pin[network_key]["sha256"],
     )
     Handler.engine = engine
 

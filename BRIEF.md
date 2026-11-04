@@ -72,11 +72,16 @@ Depuis v1.6.0, le réseau publié est son successeur au même commit amont `7184
 adopté sur mesure (`docs/mesures/2026-09-17-T96-poids-amont.md`,
 `docs/mesures/2026-10-05-T97-adoption-256.md`).
 
-Depuis l'adoption de l'issue #34, le réseau publié est
-`best_models/experimental/cubeless_prob5_768_768_256_256_256.pt`, lu au commit amont `18b0a80`
-(md5 `b3fad4eb`) et exporté par l'`export_weights.py` de l'épingle `7184e2f`, qui ne bouge pas :
+Le réseau publié par défaut est
+`best_models/experimental/cubeless_prob5_768_768_256_256_256.pt`, lu au commit amont `c373141`
+(md5 `9ecbc3ee`) et exporté par l'`export_weights.py` de l'épingle `7184e2f`, qui ne bouge pas :
 mêmes 196 entrées, mêmes cinq sorties, deux couches de 768 et trois de 256 (1 071 621
-paramètres). Mesures : `docs/mesures/2026-10-27-i34-*.md` et la fiche de décision de l'étape 4.
+paramètres). Mesures : `docs/mesures/2026-10-27-i34-*.md`, la fiche de décision de l'étape 4 (sur
+les poids précédents) et `docs/mesures/2026-11-04-poids-768-c373141.md`.
+
+Le réseau `512-512-256-256` est publié à côté, rafraîchi lui aussi à `c373141` (md5 `84b2293e`) :
+l'arbre épinglé en porte encore les poids précédents sous ce nom, ils sont donc lus au commit
+(`docs/mesures/2026-11-04-poids-c373141.md`). Il reste le chemin de retour de l'appelant.
 
 ### 3.2 Le moteur d'inférence — écrit ici
 

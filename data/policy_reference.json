@@ -2,20 +2,20 @@
   "_comment": "Corpus de référence de la politique sans état (docs/specs/politique-spec.md §8). Généré par tools/policy_corpus.py ; ne pas éditer à la main.",
   "format": "GNPL v1, enregistrements de 160 octets, petit-boutiste",
   "seed": 20261005,
-  "count": 1495,
+  "count": 1409,
   "levels": [
     "instant",
     "normal",
     "thorough"
   ],
   "by_level_and_pending": {
-    "instant/CUBE": 420,
+    "instant/CUBE": 405,
     "instant/CUBE/refus": 3,
-    "instant/MOVE": 867,
+    "instant/MOVE": 800,
     "instant/MOVE/refus": 1,
-    "instant/RESIGN": 58,
+    "instant/RESIGN": 56,
     "instant/RESIGN/refus": 1,
-    "instant/TAKE": 21,
+    "instant/TAKE": 19,
     "instant/TAKE/refus": 2,
     "normal/CUBE": 25,
     "normal/MOVE": 23,
@@ -29,7 +29,7 @@
   "models": {
     "network": {
       "path": "models/cubeless_prob5_768_768_256_256_256.bin",
-      "sha256": "d78a54cfecead58c7bb22c41ded67f1f423a53e1bd2891ffd44109c84f8e8295"
+      "sha256": "7b93aca2bb06577bf228401195a708932e0befbcb85754a2ebbcf52c3f8079e2"
     },
     "prune": {
       "path": "models/prune_32.bin",

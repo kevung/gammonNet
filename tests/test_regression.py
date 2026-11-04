@@ -12,6 +12,7 @@ texte décimal arrondirait, et un corpus incapable de distinguer `0,5214856` de
 from __future__ import annotations
 
 import json
+import os
 import struct
 from pathlib import Path
 
@@ -221,3 +222,28 @@ def test_a_perturbed_encoding_is_detected():
     features[0] = struct.unpack(">f", struct.pack(">f", features[0] + 1e-6))[0]
 
     assert features_digest(features) != record["features_digest"]
+
+
+# ── Le réseau publié à côté ──────────────────────────────────────────
+
+ALT_MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+ALT_CORPUS = ROOT / "tests" / "data" / "corpus_t12_512.jsonl"
+
+
+@pytest.mark.skipif(not ALT_MODEL.is_file(), reason=f"{ALT_MODEL.name} absent — lancer `make model`")
+def test_the_alternate_network_replays_its_own_corpus():
+    """Un réseau livré est un réseau gardé : mêmes positions, ses propres sorties."""
+    from gammonnet.infer import Network
+
+    tolerance = float(os.environ.get("GN_REGRESSION_TOLERANCE", "0"))
+    records = [json.loads(line) for line in ALT_CORPUS.read_text().splitlines()]
+    assert [(r["position_id"], r["turn"], r["features_digest"]) for r in records] == [
+        (r["position_id"], r["turn"], r["features_digest"]) for r in CORPUS_RECORDS]
+    worst = 0.0
+    with Network.load(ALT_MODEL) as net:
+        for record in records:
+            position = codec.position_from_id(record["position_id"], record["turn"])
+            produced = net.evaluate(position).as_tuple()
+            expected = [hex_f32(h) for h in record["outputs_hex"]]
+            worst = max(worst, max(abs(a - b) for a, b in zip(produced, expected)))
+    assert worst <= tolerance, f"max|Δ| = {worst:.3e}, toléré {tolerance:.3e}"

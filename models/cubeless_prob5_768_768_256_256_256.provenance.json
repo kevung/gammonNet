@@ -3,8 +3,8 @@
   "source": "alexstrehl/backgammon-ai-engine",
   "license": "MIT",
   "pinned_commit": "7184e2f",
-  "weights_commit": "18b0a80",
+  "weights_commit": "c373141",
   "artifact": "cubeless_prob5_768_768_256_256_256.bin",
-  "sha256": "d78a54cfecead58c7bb22c41ded67f1f423a53e1bd2891ffd44109c84f8e8295",
+  "sha256": "7b93aca2bb06577bf228401195a708932e0befbcb85754a2ebbcf52c3f8079e2",
   "bytes": 4286524
 }

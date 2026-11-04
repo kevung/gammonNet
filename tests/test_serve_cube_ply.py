@@ -181,7 +181,7 @@ def test_a_malformed_ply_is_a_400(server, bad):
     assert "ply" in body["error"]
 
 
-def test_server_names_contract_4(server):
+def test_server_names_contract_5(server):
     import urllib.request
     with urllib.request.urlopen(f"{server}/healthz", timeout=5) as resp:
-        assert resp.headers["Server"].startswith("gammonNet-serve/4")
+        assert resp.headers["Server"].startswith("gammonNet-serve/5")

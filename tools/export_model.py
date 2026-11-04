@@ -31,16 +31,18 @@ REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
 # emit an aggregated money equity, which match play cannot use.
 DEFAULT_MODEL = "experimental/cubeless_prob5_768_768_256_256_256.pt"
 DEFAULT_OUT = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
-#: #34 -- the weights live in an upstream commit LATER than the source pin
-#: (`tools/fetch_vendor.py`): `18b0a80` publishes the 768×768, while the
-#: compiled sources and the exporter stay at the pin. Moving the pin would
-#: change the exporter's own format (`BGNV`, format 2) and every `.bin` byte
-#: with it -- a separate change, measured separately. The weights are read out
-#: of that commit with `git show`, md5-checked against the upstream table, and
+#: The weights live in an upstream commit LATER than the source pin
+#: (`tools/fetch_vendor.py`). `c373141` refreshes both networks under the SAME
+#: file names, and the pinned tree holds a file of the 512's name with its
+#: PREVIOUS weights: a listed model is always read out of WEIGHTS_COMMIT, never
+#: from the working tree. Moving the pin would change the exporter's own format
+#: (`BGNV`, format 2) and every `.bin` byte with it -- a separate change. The
+#: weights are read with `git show`, md5-checked against the upstream table, and
 #: exported by the PINNED `export_weights.py`.
-WEIGHTS_COMMIT = "18b0a80"
+WEIGHTS_COMMIT = "c373141"
 WEIGHTS_MD5 = {
-    "experimental/cubeless_prob5_768_768_256_256_256.pt": "b3fad4eb",
+    "experimental/cubeless_prob5_768_768_256_256_256.pt": "9ecbc3ee",
+    "cubeless_prob5_512_512_256_256.pt": "84b2293e",
 }
 
 
@@ -71,9 +73,7 @@ def main() -> int:
 
     source = REFERENCE / "best_models" / args.model
     weights_commit = None
-    if not source.is_file() and args.model in WEIGHTS_MD5:
-        # Not in the pinned tree: read it out of the weights commit, into
-        # build/, and refuse it unless its md5 is the upstream one.
+    if args.model in WEIGHTS_MD5:
         weights_commit = WEIGHTS_COMMIT
         staged = ROOT / "build" / "weights" / Path(args.model).name
         staged.parent.mkdir(parents=True, exist_ok=True)
