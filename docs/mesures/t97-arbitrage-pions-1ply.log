@@ -1,0 +1,16 @@
+table de départ : « gammonnet-t97-v1 », 5832000 parties — ses cellules servent de dépendances et ne sont pas rejouées
+T97 — 10 cellules, 4000 parties par cellule (4000 au-delà de a+b=10), 35 ouvriers, profondeur 1 (videau 1)
+  [1/10] pre[14][21] = 0.74667 ± 0.00165   2 parties/s
+  [2/10] pre[16][23] = 0.73282 ± 0.00164   2 parties/s
+  [3/10] pre[16][25] = 0.78334 ± 0.00147   2 parties/s
+  [4/10] pre[14][25] = 0.83987 ± 0.00121   2 parties/s
+  [5/10] pre[12][22] = 0.83355 ± 0.00135   2 parties/s
+  [6/10] pre[13][21] = 0.77982 ± 0.00160   2 parties/s
+  [7/10] pre[2][3] = 0.59527 ± 0.00604   1 parties/s
+  [8/10] pre[3][5] = 0.64591 ± 0.00406   2 parties/s
+  [9/10] pre[4][7] = 0.69998 ± 0.00328   2 parties/s
+  [10/10] pre[5][5] = 0.49660 ± 0.00412   2 parties/s
+
+40000 parties en 26332 s (2 parties/s), 0 bloquées
+→ /home/kunger/t97-plypions.json
+FINI 2026-10-05T18:07:13+02:00
