@@ -22,9 +22,22 @@ Coverage is not left to chance. `PLAN.md` requires contact, race, bearoff, bar
 **and backgame**, and a random walk produces the first three in abundance and
 the last one almost never — so backgames are constructed.
 
+**The positions are frozen; the outputs are recomputed.** The 2 050 positions
+were drawn once, by a random walk over the legal plays (seed 20260804, vendor
+pin `b2750df`). That walk picks a play by its *index* in the generator's list,
+and the generator's order is the upstream engine's: when the pin moved to
+`7184e2f` (v1.6.0), the same plays came back in another order and the same seed
+walked to 1 899 different positions. Nothing was wrong with the plays -- T96
+found zero disagreement -- but a corpus that silently changes its positions
+when someone rebuilds it is no longer a reference. So the default and `--check`
+read the positions from the committed file and never walk; only `--walk` draws
+new ones, and it now sorts the plays canonically first, so that a future walk
+no longer depends on the generator's order.
+
 Usage:
-    python tools/build_corpus_t12.py            # write tests/data/corpus_t12.jsonl
-    python tools/build_corpus_t12.py --check    # verify the committed file
+    python tools/build_corpus_t12.py            # recompute outputs of the frozen positions
+    python tools/build_corpus_t12.py --check    # verify the committed file, bit for bit
+    python tools/build_corpus_t12.py --walk     # draw NEW positions (changes the corpus)
 """
 
 from __future__ import annotations
@@ -228,6 +241,9 @@ def collect(rng: random.Random) -> dict[str, list[Position]]:
                 seen.add(fingerprint)
 
             plays = position.legal_plays(rng.randint(1, 6), rng.randint(1, 6))
+            # Canonical order: the walk must not depend on the order in which
+            # the engine happens to list its plays (see the module docstring).
+            plays.sort(key=lambda play: codec.position_id(play.result))
             position = rng.choice(plays).result if plays else position.swapped_turn()
 
     return found
@@ -236,12 +252,32 @@ def collect(rng: random.Random) -> dict[str, list[Position]]:
 # ── Build ────────────────────────────────────────────────────────────
 
 
-def build() -> list[dict]:
+def walk() -> dict[str, list[Position]]:
+    """NEW positions, drawn from the seed. Changes the corpus."""
+    return collect(random.Random(SEED))
+
+
+def frozen() -> dict[str, list[Position]]:
+    """The committed positions, in the committed order, nothing drawn."""
+    if not CORPUS.is_file():
+        raise SystemExit(f"{CORPUS} absent — le produire avec --walk")
+    found: dict[str, list[Position]] = {}
+    for line in CORPUS.read_text().splitlines():
+        record = json.loads(line)
+        position = codec.position_from_id(record["position_id"], record["turn"])
+        category = classify(position)
+        if category != record["category"]:
+            raise SystemExit(
+                f"{record['id']} : classée {category!r} aujourd'hui, {record['category']!r} "
+                "dans le corpus — la classification a bougé"
+            )
+        found.setdefault(category, []).append(position)
+    return found
+
+
+def build(found: dict[str, list[Position]]) -> list[dict]:
     if not MODEL.is_file():
         raise SystemExit(f"{MODEL} absent — lancer `python tools/export_model.py`")
-
-    rng = random.Random(SEED)
-    found = collect(rng)
 
     records = []
     with Network.load(MODEL) as network:
@@ -263,10 +299,14 @@ def build() -> list[dict]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true",
+                      help="vérifier le fichier commité, au bit près, sur ses propres positions")
+    mode.add_argument("--walk", action="store_true",
+                      help="tirer de NOUVELLES positions depuis la graine (change le corpus)")
     args = parser.parse_args()
 
-    records = build()
+    records = build(walk() if args.walk else frozen())
     text = "".join(json.dumps(r, sort_keys=True) + "\n" for r in records)
 
     if args.check:
@@ -274,7 +314,8 @@ def main() -> int:
             print(f"{CORPUS} absent", file=sys.stderr)
             return 1
         if CORPUS.read_text() != text:
-            print(f"{CORPUS} diffère de ce que la graine {SEED} produit", file=sys.stderr)
+            print(f"{CORPUS} : les sorties recalculées sur ses positions diffèrent "
+                  "du fichier (poids, codec ou build par défaut ont bougé)", file=sys.stderr)
             return 1
         print(f"{CORPUS} : {len(records)} positions, reproductible")
         return 0
