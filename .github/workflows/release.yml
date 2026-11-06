@@ -98,8 +98,12 @@ jobs:
       # provenance. Ce n'était pas non plus une affaire de temps : le corpus
       # coûte ~50 s à deux ouvriers, mesuré.
 
-      - name: WebAssembly, scalaire et SIMD
-        run: make wasm
+      - name: WebAssembly, scalaire, SIMD et multi-fils
+        # Le multi-fils en fait partie : `worker_invariants.mjs` l'exige et
+        # `package_artifact.py` le publie. Absent, l'étape « Invariants »
+        # échouait sur un `threads` undefined, et les runs de v1.8.0 à v1.8.2
+        # sont rouges pour cette seule raison.
+        run: make wasm wasm-threads
 
       - name: Parité WebAssembly ↔ natif
         # AVANT tout le reste : un artefact dont le module ne répond pas comme

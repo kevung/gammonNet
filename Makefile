@@ -406,7 +406,7 @@ wasm-parity-alt: wasm $(ALT_MODEL) $(ALT_MODEL16)
 # `worker_invariants` interroge le PROTOCOLE DE WORKER, qui est la surface que
 # le navigateur voit réellement et qui, faute d'être testée, a laissé trois
 # points d'entrée exportés rester inatteignables (T86).
-wasm-api: wasm $(MODEL) $(PRUNE_MODEL)
+wasm-api: wasm wasm-threads $(MODEL) $(PRUNE_MODEL)
 	node $(WASM_DIR)/api_invariants.mjs
 	node $(WASM_DIR)/worker_invariants.mjs
 	node $(WASM_DIR)/pool_invariants.mjs
@@ -503,7 +503,7 @@ $(BENCH_ENCODING): bench/bench_encoding.c $(OBJECTS) $(VENDOR_OBJECTS)
 # T50 : l'artefact publiable. Refuse de se déclarer complet s'il manque une
 # pièce — notamment le WebAssembly, qui demande Emscripten.
 .PHONY: artifact
-artifact: build wasm
+artifact: build wasm wasm-threads
 	$(PYTHON) tools/package_artifact.py --version $(VERSION)
 
 VERSION ?= v1
