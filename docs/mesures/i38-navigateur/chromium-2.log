@@ -1,0 +1,12 @@
+/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome  largeur 16  auto       52423.2 éval/s  0.3193 s  max|Δ| 0.0e+0  cubeless_prob5_512_512_256_256.bin
+/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome  largeur 16  auto       27428.6 éval/s  0.6050 s  max|Δ| 0.0e+0  cubeless_prob5_768_768_256_256_256.bin
+/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome  largeur 16  intrin     81702.1 éval/s  0.2302 s  max|Δ| 0.0e+0  cubeless_prob5_512_512_256_256.bin
+/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome  largeur 16  intrin     43885.7 éval/s  0.4059 s  max|Δ| 0.0e+0  cubeless_prob5_768_768_256_256_256.bin
+
+(référence = 16/auto, PAS la configuration livrée)
+
+── T84 — /home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome : par largeur et par noyau ──
+     16  auto       52423.2 éval/s  1.00x   0.3193 s  1.00x
+     16  auto       27428.6 éval/s  0.52x   0.6050 s  0.53x
+     16  intrin     81702.1 éval/s  1.56x   0.2302 s  1.39x
+     16  intrin     43885.7 éval/s  0.84x   0.4059 s  0.79x

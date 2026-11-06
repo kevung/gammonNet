@@ -1,0 +1,38 @@
+[
+  {
+    "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+    "width": 16,
+    "kernel": "auto",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 52244.9,
+    "decision": 0.3246,
+    "maxDelta": 0
+  },
+  {
+    "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+    "width": 16,
+    "kernel": "auto",
+    "model": "cubeless_prob5_768_768_256_256_256.bin",
+    "rate": 27428.6,
+    "decision": 0.6055,
+    "maxDelta": 0
+  },
+  {
+    "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 83934.4,
+    "decision": 0.2256,
+    "maxDelta": 0
+  },
+  {
+    "browser": "/home/kunger/.cache/ms-playwright/chromium-1148/chrome-linux/chrome",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_768_768_256_256_256.bin",
+    "rate": 43885.7,
+    "decision": 0.4084,
+    "maxDelta": 0
+  }
+]
