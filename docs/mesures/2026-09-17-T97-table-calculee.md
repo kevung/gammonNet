@@ -191,8 +191,57 @@ Deux explications survivent, et la fiche ne choisit pas entre elles :
   exactement dans la région extrapolée.** C'est le fait le plus suggestif de la fiche — et il
   reste une coïncidence de localisation, pas une démonstration.
 - **La profondeur du jeu de pions.** L'arbitrage ci-dessus a fait varier le videau, jamais les
-  pions : `ply = 0` dans les deux colonnes. Une campagne à `ply = 1` tourne (smith, 2026-10-05)
-  et complétera cette fiche.
+  pions : `ply = 0` dans les deux colonnes. La campagne à `ply = 1` est rendue en §7.4 : elle
+  **réduit** le plateau d'environ un tiers sans le faire disparaître, et cet effet n'est pas
+  résolu (1,8 σ).
+
+### 7.4 La profondeur du jeu de pions ? **Elle entame le plateau, sans le résoudre**
+
+*Campagne de 2026-10-05 (smith, 35 processus, 26 332 s), rapatriée le 2026-11-06.* Les mêmes
+dix cellules qu'en §7.2, recalculées avec les **pions et le videau à 1-ply**, 4 000 parties par
+cellule, graine 20261005, depuis la même table réunie (SHA-256 `da5eb19b…` vérifiée identique à
+la table de départ de la campagne). **Réseau : `cubeless_prob5_512_512_256_128`**, celui de la
+table réunie — pas le réseau servi aujourd'hui. Erreurs-types de la campagne portées au facteur
+×1,145 de §5.
+
+| | écart à Kazaross, pions 0 / videau 0 | pions 0 / videau 1 | **pions 1 / videau 1** |
+|---|---|---|---|
+| plateau (6 cellules) | +0,00520 ± 0,00042 | +0,00478 ± 0,00051 | **+0,00323 ± 0,00070** |
+| témoins (4 cellules) | −0,00029 ± 0,00086 | −0,00021 ± 0,00184 | −0,00052 ± 0,00257 |
+
+Effet des pions à 1-ply, à videau 1-ply égal : **−0,00155 ± 0,00087** sur le plateau (1,8 σ),
+−0,00031 ± 0,00316 sur les témoins.
+
+Ce que ça dit, dans l'ordre de solidité :
+
+1. **Le plateau survit à la profondeur des pions** : +0,00323 ± 0,00070 reste à 4,6 σ de zéro,
+   et les six cellules restent toutes positives (de +0,00198 à +0,00401).
+2. **Il rapetisse**, d'environ un tiers, dans le sens d'un rapprochement de Kazaross — mais cet
+   effet est à 1,8 σ : il **n'est pas résolu** et ne sera pas présenté autrement. Aucune des six
+   cellules ne dépasserait plus, à 1-ply, le seuil absolu de 0,005 de §6 ; c'est une
+   observation, le seuil n'ayant pas été écrit pour cette comparaison.
+3. Les témoins ne bougent pas : la profondeur ne déplace pas *tout*.
+
+**Réserves nommées.** Comme en §7.2, seules les décisions de la cellule courante passent à
+1-ply ; ses dépendances restent celles de la table 0-ply. Les erreurs du plateau sont moyennées
+comme si les cellules étaient indépendantes, alors qu'elles partagent des dépendances — la
+covariance positive négligée rend la barre du plateau un peu optimiste ; celle de l'**effet**
+(différence de deux campagnes sur la même table de dépendances) est au contraire conservatrice,
+le terme hérité commun y étant compté deux fois.
+
+**Conséquence pour §7.3** : aucune des deux explications n'est écartée. La profondeur des pions
+explique peut-être une part du plateau, pas sa totalité ; la région extrapolée de leur table
+reste la candidate pour le reste. Trancher demanderait de recalculer **les dépendances** à
+1-ply, pas seulement la cellule — la récursion entière. Les débits relevés le disent cher :
+**2 parties/s** à 35 processus ici, contre **464–580** à 0-ply sur la même machine (§2), soit
+deux ordres de grandeur ; les deux relevés ne portent pas sur le même mélange de cellules, donc
+le rapport est un ordre de grandeur, pas un facteur. Le gain possible (quelques millièmes de MWC
+dans des matchs de plus de 12 points, §8 bornant déjà l'effet en force) ne le justifie pas.
+
+Relevés : [`t97-arbitrage-pions-1ply.json`](t97-arbitrage-pions-1ply.json),
+[`t97-arbitrage-pions-1ply.log`](t97-arbitrage-pions-1ply.log) ; script
+`bench/campagnes/t97-plypions-smith.sh` ; tableau reproductible par
+`python bench/compare_met_depth.py`.
 
 ## 8. La force : indistinguable, et c'est le résultat
 

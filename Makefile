@@ -131,30 +131,31 @@ ifeq ($(NATIVE_FP),1)
 BATCH_CFLAGS += -fassociative-math -fno-signed-zeros -fno-trapping-math -fno-math-errno
 endif
 
-# Le noyau de lot écrit à la main (T84) — OPT-IN, `make build KERNEL_INTRINSICS=1`.
+# Le noyau de lot écrit à la main (T84) — LE DÉFAUT EN NATIF depuis #34
+# (2026-11-06). `make build KERNEL_INTRINSICS=0` revient à l'auto-vectorisation.
 #
 # Mesuré le 2026-09-02 : ×2,17 sur le débit du noyau et ×1,81 sur une décision
 # 2-ply k=12, à largeur 32, contre l'auto-vectorisation — et BIT À BIT
 # (max|Δ| = 0 aux trois largeurs, `bench/bench_kernel.c` le vérifie avant de
-# chronométrer quoi que ce soit). Le gain n'est pas discutable et le résultat
-# ne bouge pas d'un bit.
+# chronométrer quoi que ce soit).
 #
-# Ce n'est PAS le défaut EN NATIF, et c'est délibéré, pour la même raison que
-# NATIVE_FP : le binaire livré cible le x86-64 DE BASE, sans AVX2. Les
-# intrinsèques demandent `-march=native` (ou au moins `-mavx`), donc un binaire
-# qui ne tournerait plus sur une machine sans AVX2 — ou une répartition à
-# l'exécution, qui est un autre chantier. La décision appartient à T50, pas à un
-# jeu de drapeaux.
+# Il est longtemps resté opt-in parce qu'il était compilé avec `-march=native`
+# (AVX), et que le binaire livré cible le x86-64 DE BASE. #34 a mesuré la
+# variante qui lève l'objection : les intrinsèques SSE2, que tout x86-64
+# possède, sans `-march`. Décision 2-ply `normal`, un fil, machine au repos,
+# poids lus en place (docs/mesures/2026-10-30-i34-etape4-decision.md §3.4) :
+# 0,182 s → 0,138 s sur le 4 couches, 0,336 s → 0,250 s sur le 768×768 — et
+# les mêmes empreintes des classements. Hors x86-64, le même en-tête retombe
+# sur son chemin scalaire : `KERNEL_ARCH` vide ne suppose rien de la machine.
 #
-# La cible WebAssembly, elle, n'a pas cette contrainte : `gammonnet-simd.wasm`
-# assume déjà SIMD128, donc rien à répartir. T91 y a fait des intrinsèques LE
-# DÉFAUT — voir `WASM_KERNEL` plus bas, et
-# docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md.
+# `KERNEL_ARCH=-march=native` reste disponible pour un binaire qui ne sortira
+# pas de sa machine (AVX : 0,093 s / 0,151 s, mêmes bits).
 #
 # `-ffp-contract=off` accompagne obligatoirement : sans lui gcc contracte les
 # multiplications et additions ÉCRITES SÉPARÉMENT en FMA (un arrondi au lieu de
 # deux) et le bit à bit tombe.
-KERNEL_ARCH ?= -march=native
+KERNEL_INTRINSICS ?= 1
+KERNEL_ARCH ?=
 ifeq ($(KERNEL_INTRINSICS),1)
 BATCH_CFLAGS += -DGN_KERNEL_INTRINSICS -ffp-contract=off $(KERNEL_ARCH)
 endif
