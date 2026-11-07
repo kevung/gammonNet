@@ -111,7 +111,7 @@ def test_the_packed_model_is_close_to_the_original_but_not_equal(packed):
     # The bound follows the network. Upstream `c373141` has larger weights, so the
     # same relative rounding moves the outputs further, at no measurable cost in
     # play (docs/mesures/2026-11-04-poids-c373141.md,
-    # docs/mesures/2026-11-04-poids-768-c373141.md). A file left unconverted is
+    # docs/mesures/2026-11-06-i38-768-c373141.md). A file left unconverted is
     # caught by `differ > 0` above, not by this.
     assert worst < 5e-3, f"écart maximal {worst:.2e}, trop grand pour du float16"
 
