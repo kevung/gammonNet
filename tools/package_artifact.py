@@ -402,30 +402,93 @@ WebAssembly : écrits dans ce dépôt, licence MIT.
 #: faut pas lui demander.
 CHANGES = """## Ce qui change depuis v1.8.2 — À LIRE AVANT DE METTRE À JOUR
 
-**Le réseau change.** `strehl-prob5-768-768-256-256-256` (deux couches de 768,
-trois de 256, 1 071 621 paramètres, Alex Strehl, MIT) remplace
-`strehl-prob5-512-512-256-256`. Mêmes 196 entrées, mêmes cinq sorties : aucune
-convention ne bouge, mais **les nombres bougent** — toute décision peut rendre
-un autre coup et d'autres équités qu'en v1.8.2. Un appelant qui a figé des
-résultats les verra changer, et c'est voulu. L'élagueur `strehl-prune-32`
-ne change pas (redistillé du nouveau réseau sur trois graines, il n'a pas fait
-mieux).
+**Les deux réseaux changent, et le réseau par défaut aussi.** Toute décision peut
+rendre un autre coup et d'autres équités qu'en v1.8.2. Un appelant qui a figé des
+résultats les verra changer, et c'est voulu. Mêmes 196 entrées, mêmes cinq
+sorties : aucune convention ne bouge.
 
-### 1. Ce que vaut le nouveau réseau — mesures (issue #34)
+- **Par défaut** : `strehl-prob5-768-768-256-256-256` (deux couches de 768, trois
+  de 256, 1 071 621 paramètres), poids de l'amont au commit `c373141`.
+- **Publié à côté** : `strehl-prob5-512-512-256-256`, le réseau par défaut de
+  v1.8.2, **sur ses poids rafraîchis** par l'amont au même commit `c373141` —
+  ce n'est donc pas le fichier de v1.8.2. Même interface ; le choix revient à
+  l'appelant (`alternate_network` dans `manifest.json`, `serve --alternate`).
+  Les équités de deux réseaux ne se comparent pas : une clé de cache d'analyses
+  doit inclure le réseau, et `/healthz` le nomme (contrat `gammonNet-serve/5`).
+- **L'élagueur** `strehl-prune-32` ne change pas : redistillé du 768×768 sur trois
+  graines, il n'a pas fait mieux.
 
-Registre arbitré de T70, 10 000 décisions money, niveau `normal` servi :
-perte par décision −0,00033 [−0,00044 ; −0,00023] contre l'ancien réseau, et
-encore −0,00017 [−0,00028 ; −0,00005] contre l'ancien avec une recherche élargie
-à ×1,5 de son coût. Tête-à-tête et non-régression au videau et en match : voir
-la fiche de décision de l'étape 4.
+Poids d'Alex Strehl, MIT (« Copyright (c) 2026 Alex Strehl », licence relue à
+`c373141`).
 
-### 2. Ce qu'il coûte — le noyau par lot devient plus rapide pour tous
+### 1. Ce que vaut le réseau par défaut — mesures (issues #34 et #38)
 
-Le noyau saute désormais les unités qu'une ReLU laisse à zéro, et le noyau écrit
-à la main lit ses poids en place. Les résultats sont identiques au bit près.
-Sur une décision 2-ply `(0,1,3)` `k=12`, au repos, le nouveau réseau sur le
-nouveau noyau coûte ×1,11 de l'ancien réseau sur l'ancien noyau dans Chromium
-131 et ×0,53 dans Firefox 140. Mobile : non mesuré.
+768×768 contre 4 couches, poids `c373141` des deux côtés :
+
+| mesure | volume | 768×768 − 4 couches | IC 95 % |
+|---|---|---|---|
+| tête-à-tête 0-ply sans arbitre, cubeless money | 1 000 000 de parties | **+0,0059 ppg** | [+0,0038 ; +0,0080] |
+| registre arbitré T70, 2-ply niveau `normal` | 9 698 décisions appariées | **−0,00026** de perte par décision | [−0,00035 ; −0,00016] |
+| cubeful match 7 points, `normal` des deux côtés | 35 000 paires | MWC 49,92 % | [49,70 ; 50,13] |
+| cubeful money, `normal` des deux côtés | 150 000 paires | +0,0009 ppg | [−0,0047 ; +0,0065] |
+
+**Plus fort sur les décisions, et sans régression en jeu.** Sous recherche, la
+perte par décision passe de 0,00277 à 0,00252. En partie complète avec videau,
+les seuils de non-régression fixés avant lecture (MWC ≥ 49,5 %, money ≥ −0,010)
+sont tenus, mais **aucun gain n'est résolu** à ce volume : un gain de cet ordre
+par décision se chiffre en millièmes de ppg, sous la précision de 150 000 paires.
+Le 4 couches rafraîchi, lui, fait −0,00011 [−0,00021 ; −0,00001] contre ses
+anciens poids. Fiches : `docs/mesures/2026-11-06-i38-768-c373141.md`,
+`docs/mesures/2026-11-04-poids-c373141.md`,
+`docs/mesures/2026-10-30-i34-etape4-decision.md`.
+
+### 2. Ce qu'il coûte — et le noyau qui le paie
+
+Le noyau par lot saute désormais les unités qu'une ReLU laisse à zéro, et le noyau
+écrit à la main lit ses poids en place : **résultats identiques au bit près**,
+pour les deux réseaux. Une décision 2-ply `(0,1,3)` `k=12`, noyau de l'artefact,
+même machine (Threadripper PRO 3955WX) :
+
+| navigateur | 4 couches | 768×768 | rapport |
+|---|---|---|---|
+| Chromium 131 | 0,230 s | 0,406 s | ×1,76 |
+| Firefox 140 | 0,245 s | 0,429 s | ×1,75 |
+
+Sur une autre machine (EPYC 9254), le gain du noyau seul, pour le 4 couches :
+0,330 → 0,206 s dans Chromium, 0,688 → 0,205 s dans Firefox. **Le 768×768 sur le
+nouveau noyau coûte donc à peu près ce que coûtait le 4 couches en v1.8.2.**
+Les temps ne se transportent pas d'une machine à l'autre ; seul le rapport ×1,75
+entre réseaux le fait. **Non mesurés : le mobile, et la mémoire dans un vrai
+navigateur.**
+
+**En natif, le noyau écrit à la main devient le build par défaut**, en SSE2 que
+tout x86-64 possède (aucune instruction AVX) : décision 2-ply `normal`, un fil,
+0,182 → 0,138 s (4 couches), 0,336 → 0,250 s (768×768), mêmes empreintes des
+classements. `make build KERNEL_INTRINSICS=0` revient à l'ancien.
+
+### 3. Nouveau : une décision découpée en tâches (issue #36)
+
+`planDecision`, `runTask`, `advance` et `combineDecision` découpent une décision
+(coup, videau, politique par niveau nommé, position avant le jet) en tâches sans
+état, exécutables sur des instances WebAssembly mono-fil qui ne partagent aucune
+mémoire. Recombinée, la décision est **égale au bit près** à l'appel en un bloc,
+quel que soit l'ordre d'exécution. `EvaluatorPool.decideSplit` la répartit sur un
+pool de workers ; `evaluatePositionAtPly` rend l'équité d'une position avant le
+jet, passe forcée comprise. Contrat : `docs/specs/decision-decomposee-spec.md`.
+Le gain de temps réel n'est **pas** chronométré.
+
+### 4. Nouveau : `/v1/cube` à N-ply (issue #37)
+
+`/v1/cube` accepte `ply` : la position avant le jet est évaluée par la recherche,
+puis le videau sur cette distribution, pour `double`, `take` et `equity`. Sans
+`ply`, la réponse est identique à v1.8.2 octet pour octet ; avec, elle rend le
+niveau réellement appliqué.
+
+### 5. Le format float16
+
+Le `.bin16` du 768×768 coûte en jeu −0,00000 [−0,00001 ; +0,00000] par décision
+au réglage servi ; le coup à 0-ply change dans 0,075 % [0,066 ; 0,084] des
+positions, sans écart isolé.
 """
 
 
@@ -452,7 +515,10 @@ videau 2-ply, `prune=1`.
 | match 7 points, MWC | 50 000 paires | **50,42 %** | [50,16 ; 50,69] |
 
 Dés communs, bootstrap sur les paires dupliquées. Graine 20260810.
-Fiche : `docs/mesures/2026-08-26-T35-verdict.md`.
+Fiche : `docs/mesures/2026-08-26-T35-verdict.md`. **Mesuré en août 2026 sur le
+réseau de l'époque**, pas rejoué sur ceux de cette version : chaque changement de
+réseau depuis a été mesuré contre son prédécesseur (§1), pas contre GNU
+Backgammon.
 
 **Le verdict, dans les termes exacts où il a été rendu** : *niveau équivalent à
 GNU Backgammon en 2-ply, confirmé*. « Supérieur » n'est **pas** établi.
@@ -497,9 +563,9 @@ Fiche : `docs/mesures/2026-08-27-T3C-analyse-de-match.md`.
 
 **Les deux formats de poids sont le MÊME réseau.** `.bin` est en float32,
 `.bin16` en float16 — moitié moins lourd à télécharger, pour une perte en jeu
-indiscernable de zéro au réglage servi : −0,0000049 [−0,000016 ; +0,000006] par
-décision disputée, le coup changeant dans 0,33 % d'entre elles
-(`docs/mesures/2026-10-22-float16-reseau-servi.md`). Chaque format a son repère
+indiscernable de zéro au réglage servi : −0,00000 [−0,00001 ; +0,00000] par
+décision pour le réseau par défaut, le coup à 0-ply changeant dans 0,075 % des
+positions (`docs/mesures/2026-11-06-i38-768-c373141.md`). Chaque format a son repère
 de parité ; le format est décrit dans `docs/specs/format-bgn6-spec.md`.
 Une quantification ne produit pas un réseau nouveau (`BRIEF.md` §8).
 
@@ -517,11 +583,11 @@ recherche, équité de match, fins de partie — pas celui des poids. `BRIEF.md`
 ## Ce que cette version ne promet pas
 
 - **Un seul budget de temps dans un navigateur, et sur une seule machine.** Une
-  décision 2-ply `(0,1,3)` `k=12` coûte **0,3343 s** dans Chromium 152 et
-  **0,6860 s** dans Firefox 154 sur un Ryzen 7 PRO 6850U — mesuré, pas déduit du
-  natif (`docs/mesures/2026-09-03-T91-wasm-noyau-par-defaut.md`). Le même fichier
-  vaut un facteur **2,7** d'écart entre les deux moteurs : ne transportez ce
-  chiffre ni vers un autre navigateur, ni vers une autre machine.
+  décision 2-ply `(0,1,3)` `k=12` du réseau par défaut coûte **0,406 s** dans
+  Chromium 131 et **0,429 s** dans Firefox 140 sur un Threadripper PRO 3955WX
+  — mesuré, pas déduit du natif (§2). Ne transportez ce chiffre ni vers un autre
+  navigateur, ni vers une autre machine : seul le rapport entre les deux réseaux
+  (×1,75) a été retrouvé d'une machine à l'autre.
 - **La table exacte de fin de partie n'est PAS incluse.** Celle que la recherche
   consulte pèse 1,2 Gio et ne se transporte pas dans un artefact web. Sans elle,
   la fin de partie retombe sur le réseau, ce qui coûte **0,00028 d'équité par
