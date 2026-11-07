@@ -30,19 +30,19 @@
     "thorough/TAKE": 7
   },
   "action_differs_from_float32_by_level": {
-    "instant": 101,
-    "normal": 2,
-    "thorough": 1
+    "instant": 0,
+    "normal": 0,
+    "thorough": 0
   },
-  "max_equity_delta_where_action_agrees": 0.10325952319055809,
+  "max_equity_delta_where_action_agrees": 0.0032768504681510713,
   "models": {
-    "release": "v1.8.2",
+    "release": "v1.9.0",
     "network": {
-      "path": "models/strehl-prob5-512-512-256-256_v1.8.2_2026-10-28.bin16",
-      "sha256": "79b27fb63c477ab8eccaa227b29f1e75580c6b7499433bf7e383685909d34954"
+      "path": "models/strehl-prob5-768-768-256-256-256_v1.9.0_2026-11-07.bin16",
+      "sha256": "b9471f3150933bd1b20507e3e00036496767e878101197f934ef7e11c05f5e6c"
     },
     "prune": {
-      "path": "models/strehl-prune-32_v1.8.2_2026-10-28.bin16",
+      "path": "models/strehl-prune-32_v1.9.0_2026-11-07.bin16",
       "sha256": "87c1986d30aae649a369d8f8fa9db8bab17197c69d66b24c926b93f29e847a70"
     }
   },
