@@ -18,7 +18,9 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
-MODEL = REFERENCE / "best_models" / "cubeless_prob5_512_512_256_256.pt"
+# #34 -- the network of record is not in the pinned tree: `tools/export_model.py`
+# reads it out of the upstream weights commit (md5-checked) into build/weights/.
+MODEL = ROOT / "build" / "weights" / "cubeless_prob5_768_768_256_256_256.pt"
 
 pytestmark = pytest.mark.skipif(
     not REFERENCE.is_dir(),
@@ -96,7 +98,7 @@ def test_rules_engine_loads_and_agrees_with_the_python_path(reference_on_path):
 
 
 def test_reference_model_is_present():
-    assert MODEL.is_file(), f"{MODEL} absent — lancer `make vendor`"
+    assert MODEL.is_file(), f"{MODEL} absent — lancer `make vendor` puis `make model`"
 
 
 def test_reference_model_produces_five_probabilities(reference_on_path):

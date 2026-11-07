@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT / "python"))
 
 import distill_rank_t72 as rank  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 needs_model = pytest.mark.skipif(not MODEL.is_file(), reason="réseau servi absent")
 
 

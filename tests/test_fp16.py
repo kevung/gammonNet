@@ -34,7 +34,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from gammonnet.infer import Network  # noqa: E402
 from gammonnet.rules import Position  # noqa: E402
 
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 needs_model = pytest.mark.skipif(not MODEL.exists(), reason="modèle absent")
 
 
@@ -108,12 +108,11 @@ def test_the_packed_model_is_close_to_the_original_but_not_equal(packed):
             differ += 1
         worst = max(worst, max(abs(x - y) for x, y in zip(a, b)))
     assert differ > 0, "aucune sortie déplacée : le fichier n'a pas été converti"
-    # The bound follows the network. Upstream `c373141` has weights 2.4 times
-    # larger (rms of the first layer 0.36 -> 0.85), so the same relative rounding
-    # moves the outputs further: at most 3.85e-3 over the 20 000 positions of
-    # `bench/measure_fp16.py`, 1.87e-3 on this small corpus, at no measurable
-    # cost in play (docs/mesures/2026-11-04-poids-c373141.md). A file left
-    # unconverted is caught by `differ > 0` above, not by this.
+    # The bound follows the network. Upstream `c373141` has larger weights, so the
+    # same relative rounding moves the outputs further, at no measurable cost in
+    # play (docs/mesures/2026-11-04-poids-c373141.md,
+    # docs/mesures/2026-11-06-i38-768-c373141.md). A file left unconverted is
+    # caught by `differ > 0` above, not by this.
     assert worst < 5e-3, f"écart maximal {worst:.2e}, trop grand pour du float16"
 
 

@@ -59,8 +59,13 @@ def download(url: str, dest: Path) -> None:
             out.write(chunk)
 
 
+def pinned_keys(pin: dict) -> tuple[str, ...]:
+    """The members to extract; `alternate_fp16` is absent from older pins."""
+    return tuple(k for k in ("network_fp16", "alternate_fp16", "prune_fp16") if k in pin)
+
+
 def already_satisfied(pin: dict, dest_dir: Path) -> bool:
-    for key in ("network_fp16", "prune_fp16"):
+    for key in pinned_keys(pin):
         target = dest_dir / pin[key]["filename"]
         if not target.is_file() or sha256_of(target) != pin[key]["sha256"].lower():
             return False
@@ -93,7 +98,7 @@ def fetch(pin_path: Path, dest_dir: Path, force: bool) -> None:
         print(f"    archive : sha256 conforme ({pin['archive']['url'].rsplit('/', 1)[-1]})")
 
         with tarfile.open(archive_path) as tar:
-            for key in ("network_fp16", "prune_fp16"):
+            for key in pinned_keys(pin):
                 entry = pin[key]
                 member = tar.getmember(entry["member"])
                 extracted = Path(tmp) / "extracted"

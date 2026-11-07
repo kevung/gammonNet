@@ -31,7 +31,7 @@ from gammonnet.rules import Position
 from gammonnet.search import SearchConfig, match_config
 
 ROOT = Path(__file__).resolve().parent.parent
-MODEL = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+MODEL = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 PRUNE = ROOT / "models" / "prune_32.bin"
 TABLE = ROOT / "gnu_bearoff_database" / "gnubg_ts6x11.bd"
 CORPUS = ROOT / "data" / "policy_reference.bin"

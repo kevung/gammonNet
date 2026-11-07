@@ -14,6 +14,7 @@ the well-established, non-controversial best play is `6/5 8/5` (making the
 
 from __future__ import annotations
 
+import hashlib
 import json
 import socket
 import subprocess
@@ -644,3 +645,47 @@ def test_refuses_to_start_on_a_tampered_weights_file(tmp_path):
     assert "SHA-256" in proc.stdout + proc.stderr or "SHA-256" in (proc.stdout or "")
     with pytest.raises((urllib.error.URLError, ConnectionError)):
         urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=1)
+
+
+def test_refuses_to_serve_an_alternate_its_pin_does_not_carry(tmp_path):
+    pin = json.loads(PIN.read_text())
+    pin.pop("alternate_fp16", None)
+    path = tmp_path / "pin.json"
+    path.write_text(json.dumps(pin))
+    proc = subprocess.run(
+        [sys.executable, str(SERVE), "--host", "127.0.0.1", "--port", str(_free_port()),
+         "--pin", str(path), "--alternate"],
+        cwd=ROOT, capture_output=True, text=True, timeout=15)
+    assert proc.returncode != 0
+    assert "alternate_fp16" in proc.stdout + proc.stderr
+
+
+ALT_FP16 = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin16"
+
+
+@needs_weights
+@pytest.mark.skipif(not ALT_FP16.is_file(), reason="réseau d'à côté absent : make models/cubeless_prob5_512_512_256_256.bin16")
+def test_alternate_is_served_verified_and_named(tmp_path):
+    """Two processes, two networks, one pin: /healthz says which one answers."""
+    pin = json.loads(PIN.read_text())
+    digest = hashlib.sha256(ALT_FP16.read_bytes()).hexdigest()
+    pin["alternate_fp16"] = {"member": "", "filename": ALT_FP16.name, "sha256": digest}
+    for key in ("network_fp16", "prune_fp16"):
+        (tmp_path / pin[key]["filename"]).symlink_to(PIN.parent / pin[key]["filename"])
+    (tmp_path / ALT_FP16.name).symlink_to(ALT_FP16)
+    path = tmp_path / "pin.json"
+    path.write_text(json.dumps(pin))
+    port = _free_port()
+    proc = subprocess.Popen(
+        [sys.executable, str(SERVE), "--host", "127.0.0.1", "--port", str(port),
+         "--pin", str(path), "--alternate"],
+        cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    try:
+        base = f"http://127.0.0.1:{port}"
+        _wait_healthy(base, proc)
+        with urllib.request.urlopen(f"{base}/healthz", timeout=5) as resp:
+            body = json.loads(resp.read())
+        assert body == {"status": "ok", "network": ALT_FP16.name, "sha256": digest}
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)

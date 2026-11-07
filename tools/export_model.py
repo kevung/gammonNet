@@ -29,18 +29,19 @@ REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
 
 # The only model this project retains. `BRIEF.md` §3.1: the cubeful variants
 # emit an aggregated money equity, which match play cannot use.
-DEFAULT_MODEL = "cubeless_prob5_512_512_256_256.pt"
-DEFAULT_OUT = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+DEFAULT_MODEL = "experimental/cubeless_prob5_768_768_256_256_256.pt"
+DEFAULT_OUT = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 #: The weights live in an upstream commit LATER than the source pin
-#: (`tools/fetch_vendor.py`). `c373141` refreshes this network under the SAME
-#: file name, so the pinned tree holds a file of that name with the PREVIOUS
-#: weights: a listed model is always read out of WEIGHTS_COMMIT, never from the
-#: working tree. Moving the pin would change the exporter's own format (`BGNV`,
-#: format 2) and every `.bin` byte with it -- a separate change. The weights are
-#: read with `git show`, md5-checked against the upstream table, and exported
-#: by the PINNED `export_weights.py`.
+#: (`tools/fetch_vendor.py`). `c373141` refreshes both networks under the SAME
+#: file names, and the pinned tree holds a file of the 512's name with its
+#: PREVIOUS weights: a listed model is always read out of WEIGHTS_COMMIT, never
+#: from the working tree. Moving the pin would change the exporter's own format
+#: (`BGNV`, format 2) and every `.bin` byte with it -- a separate change. The
+#: weights are read with `git show`, md5-checked against the upstream table, and
+#: exported by the PINNED `export_weights.py`.
 WEIGHTS_COMMIT = "c373141"
 WEIGHTS_MD5 = {
+    "experimental/cubeless_prob5_768_768_256_256_256.pt": "9ecbc3ee",
     "cubeless_prob5_512_512_256_256.pt": "84b2293e",
 }
 

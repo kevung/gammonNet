@@ -276,7 +276,7 @@ def main() -> int:
                         help="secondes au-delà desquelles une config du banc --cache est abandonnée")
     args = parser.parse_args()
 
-    network = Network.load(ROOT / "models" / "cubeless_prob5_512_512_256_256.bin")
+    network = Network.load(ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin")
 
     if args.cache:
         contact_count = max(args.positions, 40)

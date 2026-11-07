@@ -60,7 +60,7 @@ self.onmessage = async ({ data }) => {
     const { build, threadCounts, decisions, level } = data;
     const { default: factory } = await import(`../build/wasm/${build}`);
     const ev = await Evaluator.create(
-      factory, await bytes("../models/cubeless_prob5_512_512_256_256.bin"));
+      factory, await bytes("../models/cubeless_prob5_768_768_256_256_256.bin"));
     const options = Evaluator.level(level);
     ev.loadPrune(await bytes("../models/prune_32.bin"), options.pruneK ?? 12);
     const cases = walk(ev, decisions);

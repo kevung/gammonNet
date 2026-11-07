@@ -3,22 +3,22 @@
   "format": "GNPL v1, enregistrements de 160 octets, petit-boutiste",
   "questions": {
     "path": "data/policy_reference.bin",
-    "sha256": "eabe99972a48ae7008cbe83bd5fb4b94a4a5a778eb42e132fb15f087c5ee1bbf"
+    "sha256": "acdb496d3fc1d478b05c03be8bbf2c089a3ab69479f2105b0996fcbd62c5b19f"
   },
-  "count": 1448,
+  "count": 1409,
   "levels": [
     "instant",
     "normal",
     "thorough"
   ],
   "by_level_and_pending": {
-    "instant/CUBE": 419,
+    "instant/CUBE": 405,
     "instant/CUBE/refus": 3,
-    "instant/MOVE": 824,
+    "instant/MOVE": 800,
     "instant/MOVE/refus": 1,
-    "instant/RESIGN": 58,
+    "instant/RESIGN": 56,
     "instant/RESIGN/refus": 1,
-    "instant/TAKE": 18,
+    "instant/TAKE": 19,
     "instant/TAKE/refus": 2,
     "normal/CUBE": 25,
     "normal/MOVE": 23,
@@ -30,11 +30,11 @@
     "thorough/TAKE": 7
   },
   "action_differs_from_float32_by_level": {
-    "instant": 61,
-    "normal": 0,
-    "thorough": 0
+    "instant": 101,
+    "normal": 2,
+    "thorough": 1
   },
-  "max_equity_delta_where_action_agrees": 5.0,
+  "max_equity_delta_where_action_agrees": 0.10325952319055809,
   "models": {
     "release": "v1.8.2",
     "network": {

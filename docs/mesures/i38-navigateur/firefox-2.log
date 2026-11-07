@@ -1,0 +1,12 @@
+firefox  largeur 16  auto       26033.9 éval/s  0.5823 s  max|Δ| 0.0e+0  cubeless_prob5_512_512_256_256.bin
+firefox  largeur 16  auto       13128.2 éval/s  1.1540 s  max|Δ| 0.0e+0  cubeless_prob5_768_768_256_256_256.bin
+firefox  largeur 16  intrin     76800.0 éval/s  0.2453 s  max|Δ| 0.0e+0  cubeless_prob5_512_512_256_256.bin
+firefox  largeur 16  intrin     42666.7 éval/s  0.4290 s  max|Δ| 0.0e+0  cubeless_prob5_768_768_256_256_256.bin
+
+(référence = 16/auto, PAS la configuration livrée)
+
+── T84 — firefox : par largeur et par noyau ──
+     16  auto       26033.9 éval/s  1.00x   0.5823 s  1.00x
+     16  auto       13128.2 éval/s  0.50x   1.1540 s  0.50x
+     16  intrin     76800.0 éval/s  2.95x   0.2453 s  2.37x
+     16  intrin     42666.7 éval/s  1.64x   0.4290 s  1.36x

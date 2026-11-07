@@ -11,7 +11,7 @@
  * (poids, commit c373141 ; les sources compilées, commit 7184e2f, portent
  * « Copyright (c) 2026 alexstrehl », le même auteur)
  * https://github.com/alexstrehl/backgammon-ai-engine
- * Réseau : cubeless_prob5_512_512_256_256
+ * Réseau : cubeless_prob5_768_768_256_256_256
  *
  * ── gammonNet ──────────────────────────────────────────────────────────
  * Copyright (c) 2026 Kévin Unger — licence MIT

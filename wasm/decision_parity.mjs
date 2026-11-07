@@ -53,7 +53,7 @@ if (data.subarray(0, 4).toString("latin1") !== "GNPL" || view.getUint32(4, true)
 const count = view.getUint32(8, true);
 
 const factory = (await import(MODULE)).default;
-const model = new Uint8Array(readFileSync(join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin")));
+const model = new Uint8Array(readFileSync(join(ROOT, "models", "cubeless_prob5_768_768_256_256_256.bin")));
 const prune = new Uint8Array(readFileSync(join(ROOT, "models", "prune_32.bin")));
 /* Deux instances : le planificateur et l'exécutant. Mêmes réseaux — sinon
  * les tâches seraient refusées, et c'est vérifié plus bas. La table exacte

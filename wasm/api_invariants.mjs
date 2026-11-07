@@ -24,7 +24,7 @@ import { Evaluator, MEASURED_EFFICIENCY } from "./gammonnet.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const MODEL = join(ROOT, "models", "cubeless_prob5_512_512_256_256.bin");
+const MODEL = join(ROOT, "models", "cubeless_prob5_768_768_256_256_256.bin");
 const PRUNE = join(ROOT, "models", "prune_32.bin");
 const MODULE = join(ROOT, "build", "wasm", "gammonnet-simd.mjs");
 
@@ -194,14 +194,13 @@ check("ex æquo : le module rend l'ORDRE du natif, pas celui de sa libc",
  * Le cas ci-dessus documente la règle mais ne l'éprouve pas : le smoothsort de
  * musl est stable en pratique sur neuf éléments — vérifié, avant comme après
  * le correctif il rend le même ordre. Il faut un GROUPE, et le corpus T12 en
- * donne un : 226 des 231 coups légaux de cette position sur le 1-1 valent
+ * donne un : les 231 coups légaux de cette position sur le 1-1 valent
  * exactement −2 (gammon certain). La taille du groupe dépend du réseau : un
  * coup que le réseau ne juge pas perdu au gammon en sort, d'où un compte et une
  * empreinte à régénérer quand les poids changent.
  *
- * MESURÉ sur ce cas précis, sur des poids antérieurs dont le groupe comptait
- * les 231 coups : avant le tri stable, le module rendait 4 places sur 231
- * différentes du natif ; après, zéro.
+ * MESURÉ sur ce cas précis : avant le tri stable, le module rendait 4 places
+ * sur 231 différentes du natif ; après, zéro.
  *
  * L'élagage est éteint le temps de la mesure, et il le faut : à k=12 il ne
  * reste que douze survivants, taille à laquelle la libc ne permute plus rien —
@@ -214,13 +213,13 @@ check("ex æquo : le module rend l'ORDRE du natif, pas celui de sa libc",
  * `DwAA4FGYYQsAAA 1 1 1`. */
 const TIED_BIG = "DwAA4FGYYQsAAA";
 const TIED_BIG_DIGEST =
-  "7c959fe75374e88c2206d75d66d30a35c51f7a1590ddd66d7c33b03a01623c61";
+  "03bac9d863928b52a75dcd54dcee2fb28348d09b9a5469b9b92c23aab92ce6a0";
 evaluator.loadPrune(null, 0);
 const big = evaluator.rankPlays(TIED_BIG, 1, 1, 1, { ply: 0, max: 2048 });
 evaluator.loadPrune(new Uint8Array(readFileSync(PRUNE)), 12);
 const bigTies = big.filter((c, i) => i > 0 && c.equity === big[i - 1].equity).length;
-check("un groupe de 226 ex æquo sur 231 coups, assez gros pour que la libc les permute",
-      big.length === 231 && bigTies === 226,
+check("un groupe de 231 ex æquo, assez gros pour que la libc les permute",
+      big.length === 231 && bigTies === 230,
       `${big.length} coups, ${bigTies} paires égales`);
 const digest = createHash("sha256")
   .update(big.map((c) => c.resultId).join(" ")).digest("hex");

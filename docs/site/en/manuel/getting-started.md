@@ -5,8 +5,8 @@
 | File | What it is |
 |---|---|
 | `manifest.json` | The file names for this release — read it instead of copying them |
-| `strehl-prob5-512-512-256-256_v1_….bin` | Network weights, **float32** — 2.1 MiB |
-| `…​.bin16` | The same, **float16** — 1.06 MiB. Prefer this one on the web |
+| `strehl-prob5-768-768-256-256-256_v1_….bin` | Network weights, **float32** — 4.1 MiB |
+| `…​.bin16` | The same, **float16** — 2.05 MiB. Prefer this one on the web |
 | `strehl-prune-32_v1_….bin` / `.bin16` | The **pruning network**: it sorts moves so the big one only scores a handful |
 | `gammonnet-simd.mjs` + `.wasm` | The WebAssembly engine, SIMD build |
 | `gammonnet.mjs` + `.wasm` | The same, scalar, for environments without SIMD |

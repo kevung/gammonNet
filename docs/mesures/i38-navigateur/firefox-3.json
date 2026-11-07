@@ -1,0 +1,38 @@
+[
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "auto",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 26033.9,
+    "decision": 0.585,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "auto",
+    "model": "cubeless_prob5_768_768_256_256_256.bin",
+    "rate": 13356.5,
+    "decision": 1.1547,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_512_512_256_256.bin",
+    "rate": 76800,
+    "decision": 0.2453,
+    "maxDelta": 0
+  },
+  {
+    "browser": "firefox",
+    "width": 16,
+    "kernel": "intrin",
+    "model": "cubeless_prob5_768_768_256_256_256.bin",
+    "rate": 40421.1,
+    "decision": 0.4357,
+    "maxDelta": 0
+  }
+]

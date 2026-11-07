@@ -244,7 +244,7 @@ def main() -> int:
     held = [h for h in history if h[0] == best_epoch][0]
     summary = {
         "date": date.today().isoformat(), "tool": "tools/distill_volume_t72.py",
-        "teacher_labels": "0-ply, cubeless_prob5_512_512_256_256 (build_distill_corpus)",
+        "teacher_labels": "0-ply, cubeless_prob5_768_768_256_256_256 (build_distill_corpus)",
         "rows": int(x.shape[0]), "train_parts": [p.name for p in train_parts],
         "holdout_parts": [p.name for p in hold_parts], "holdout_rows": int(hx.shape[0]),
         "shape": shape, "macs": macs(shape), "seed": args.seed,
