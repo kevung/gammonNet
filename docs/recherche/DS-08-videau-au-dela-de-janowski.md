@@ -64,7 +64,7 @@ comparatives — et où la décision de videau de GNU Backgammon est-elle docume
 
 ### B. Les modèles appris
 
-5. **Le videau appris par renforcement.** Le dépôt `alexstrehl/backgammon-ai-engine` revendique
+5. **Le videau appris par renforcement.** Le dépôt `alexstrehl/puretd` revendique
    d'avoir appris la décision de videau **en money** sans aucune formule de point de prise —
    simplement en ajoutant les actions (doubler, prendre, passer) et quatre entrées binaires — et
    annonce battre gnubg de +78,8 mEq/partie au 0-ply. Vérifie cette revendication : quels sont les

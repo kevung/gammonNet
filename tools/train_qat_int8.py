@@ -48,10 +48,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
-sys.path.insert(0, str(ROOT / "vendor" / "backgammon-ai-engine"))
+sys.path.insert(0, str(ROOT / "vendor" / "puretd"))
 
 BENCH_RESULT = ROOT / "docs" / "mesures" / "t73-gemm-int8.json"
-DEFAULT_TEACHER = ROOT / "vendor" / "backgammon-ai-engine" / "best_models" / \
+DEFAULT_TEACHER = ROOT / "vendor" / "puretd" / "best_models" / \
     "cubeless_prob5_512_512_256_256.pt"
 
 

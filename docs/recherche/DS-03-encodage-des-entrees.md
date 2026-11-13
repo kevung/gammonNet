@@ -44,7 +44,7 @@ mesurément meilleures, et à quel coût par MAC ?**
 
 1. **L'inventaire des encodages publiés.** Tesauro (Neurogammon, TD-Gammon 1.0 puis 2.0/3.0 et
    ses « caractéristiques expertes »), GNU Backgammon, Berliner (BKG et ses fonctions
-   d'application floue), Snowie si documenté, `wildbg`, `alexstrehl/backgammon-ai-engine`,
+   d'application floue), Snowie si documenté, `wildbg`, `alexstrehl/puretd`,
    et tout autre. Pour chacun : le nombre d'entrées, leur nature, et **ce que l'auteur dit avoir
    gagné** en les ajoutant.
 2. **La preuve que les caractéristiques calculées valent le coup.** Tesauro rapporte que

@@ -6,7 +6,7 @@ produced a structurally malformed/mixed HTTP response — not merely a wrong
 number. Suspect: `ThreadingServer` dispatches
 each request onto its own thread, but the native inference library's forward
 pass writes into scratch buffers OWNED BY THE MODEL (`NNModel.buf_a`/`buf_b` in
-`vendor/backgammon-ai-engine/c_inference/nn_eval.c`, allocated once at load
+`vendor/puretd/c_inference/nn_eval.c`, allocated once at load
 time and reused — never per-call). `ctypes.CDLL` releases the GIL for the
 duration of a call, so two threads inside `nn_forward_prob5` at the same time
 race on those same buffers.

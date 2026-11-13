@@ -4,7 +4,7 @@
 `tests/test_rules.py` already crosses our generator against gnubg, but on a
 hand-built corpus of 204 positions — 4 284 (position, roll) pairs. The upstream
 rules engine we compile in has a defect whose announced incidence is at most
-1/3700 decisions (alexstrehl/backgammon-ai-engine, commit 5c9aa87: a shorter
+1/3700 decisions (alexstrehl/puretd, commit 5c9aa87: a shorter
 play shadows the maximal one in the dedup table, producing a false forced pass).
 A fixed corpus of that size can miss it, and ours does.
 

@@ -32,7 +32,7 @@ def gnubg_nn():
     return pytest.importorskip("gnubg_nn", reason="gnubg-nn absent — lancer `make venv`")
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
+REFERENCE = ROOT / "vendor" / "puretd"
 
 SEED = 20260803
 CORPUS_SIZE = 10_000
@@ -47,7 +47,7 @@ CANONICAL_OPENING_XGID = "XGID=-b----E-C---eE---c-e----B-:0:0:1:00:0:0:0:0:10"
 def reference_encoder():
     """`encoding.py` du dépôt de référence — celui qui a servi à entraîner le réseau."""
     if not REFERENCE.is_dir():
-        pytest.skip("vendor/backgammon-ai-engine absent — lancer `make vendor`")
+        pytest.skip("vendor/puretd absent — lancer `make vendor`")
 
     sys.path.insert(0, str(REFERENCE))
     try:

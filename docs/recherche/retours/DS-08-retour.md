@@ -26,7 +26,7 @@
 
 1. **[MESURE]** Le texte original de Janowski est intégralement disponible en source primaire (bkgm.com/articles/Janowski/cubeformulae.pdf, consulté le 26 août 2026), avec toutes les formules, les tables, et la correspondance avec Danny Kleinman en annexe.
 2. **[MESURE]** GNU Backgammon documente explicitement son mécanisme : E(cubeful) = E(dead)·(1−x) + E(live)·x, avec x fixé par classe (one-sided bearoff 0,6 ; crashed 0,68 ; contact 0,68 ; race interpolé 0,6–0,7). Ces coefficients sont sous GPL-3 et hors périmètre de reprise.
-3. **[MESURE]** Le dépôt alexstrehl/backgammon-ai-engine, sous licence **MIT**, revendique désormais **+57,8 mEq/partie** vs gnubg 0-ply (et non +78,8 comme dans la version antérieure), IC 95 % [+56,1 ; +59,6], sur 10 M parties, cube appris par RL sans aucune formule de point de prise. Le match n'est PAS fait (annoncé « future work »).
+3. **[MESURE]** Le dépôt alexstrehl/puretd, sous licence **MIT**, revendique désormais **+57,8 mEq/partie** vs gnubg 0-ply (et non +78,8 comme dans la version antérieure), IC 95 % [+56,1 ; +59,6], sur 10 M parties, cube appris par RL sans aucune formule de point de prise. Le match n'est PAS fait (annoncé « future work »).
 4. **[DÉCLARÉ]** Andrew Lin (TAAI 2020) est la première description de l'apprentissage du videau par RL, mais uniquement pour le match, sur de très petits réseaux, sans résultats chiffrés accessibles (péage IEEE).
 5. **[HYPOTHÈSE]** L'intuition « les cinq probabilités sont une moyenne, le videau dépend de la dispersion » est confirmée par la littérature (Janowski lui-même lie x inversement à la volatilité, Higgins la quantifie) mais n'a jamais reçu de définition opérationnelle mesurée reliant écart-type d'équité et efficacité de videau empirique position par position.
 

@@ -2,7 +2,7 @@
  * gn_rules.h -- gammonNet position representation and legal play generation.
  *
  * This is gammonNet's OWN interface. Its implementation currently delegates to
- * the rules engine of alexstrehl/backgammon-ai-engine (MIT, see THIRD-PARTY.md),
+ * the rules engine of alexstrehl/puretd (MIT, see THIRD-PARTY.md),
  * which is already in agreement with the encoding the network expects. Nothing
  * above this header knows that. Swapping the backend means rewriting one .c file.
  *

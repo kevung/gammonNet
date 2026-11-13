@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
+REFERENCE = ROOT / "vendor" / "puretd"
 
 # The only model this project retains. `BRIEF.md` §3.1: the cubeful variants
 # emit an aggregated money equity, which match play cannot use.
@@ -111,7 +111,7 @@ def main() -> int:
 
     provenance = {
         "network": args.model,
-        "source": "alexstrehl/backgammon-ai-engine",
+        "source": "alexstrehl/puretd",
         "license": "MIT",
         "pinned_commit": pinned_commit(),
         **({"weights_commit": weights_commit} if weights_commit else {}),

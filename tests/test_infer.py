@@ -34,7 +34,7 @@ from gammonnet.infer import NUM_OUTPUTS, Evaluation, Network, _f32
 torch = pytest.importorskip("torch", reason="PyTorch absent — lancer `make venv`")
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
+REFERENCE = ROOT / "vendor" / "puretd"
 # The network of record, and the two variables that aim this file at a
 # candidate instead. A weight update has to clear the same parity criterion the
 # incumbent cleared, on the same corpus: checking it by hand on the side would
@@ -109,7 +109,7 @@ def torch_forward():
     référence — c'est lui qui rend la sortie utilisable comme distribution.
     """
     if not MODEL_PT.is_file():
-        pytest.skip("vendor/backgammon-ai-engine absent — lancer `make vendor`")
+        pytest.skip("vendor/puretd absent — lancer `make vendor`")
 
     sys.path.insert(0, str(REFERENCE))
     try:

@@ -17,14 +17,14 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
+REFERENCE = ROOT / "vendor" / "puretd"
 # #34 -- the network of record is not in the pinned tree: `tools/export_model.py`
 # reads it out of the upstream weights commit (md5-checked) into build/weights/.
 MODEL = ROOT / "build" / "weights" / "cubeless_prob5_768_768_256_256_256.pt"
 
 pytestmark = pytest.mark.skipif(
     not REFERENCE.is_dir(),
-    reason="vendor/backgammon-ai-engine absent — lancer `make vendor`",
+    reason="vendor/puretd absent — lancer `make vendor`",
 )
 
 

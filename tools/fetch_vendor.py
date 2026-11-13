@@ -34,9 +34,7 @@ class Source:
 
 SOURCES = (
     Source(
-        name="backgammon-ai-engine",
-        # Upstream moved to `puretd` and rewrote the history of the old
-        # repository; the pinned commit only exists at the new address.
+        name="puretd",
         url="https://github.com/alexstrehl/puretd.git",
         commit="7184e2f",
         licence="MIT",
@@ -72,7 +70,7 @@ def fetch(source: Source) -> None:
 
 def build_reference_engine() -> None:
     """Build the reference C rules engine — ~20x faster than its pure-Python path."""
-    c_engine = VENDOR / "backgammon-ai-engine" / "c_engine"
+    c_engine = VENDOR / "puretd" / "c_engine"
     print("==> building the reference C rules engine")
     run(
         ["gcc", "-O2", "-shared", "-fPIC", "-o", "libbg_engine.so", "bg_engine.c", "-Wall"],

@@ -80,8 +80,8 @@ def test_a_width_that_is_not_a_whole_number_of_vectors_fails_the_build():
     done = subprocess.run(
         ["gcc", "-std=c11", "-O3", "-march=native", "-ffp-contract=off",
          "-DGN_EVAL_BATCH=12", "-DGN_KERNEL_INTRINSICS",
-         "-Isrc", "-Ivendor/backgammon-ai-engine/c_engine",
-         "-Ivendor/backgammon-ai-engine/c_inference",
+         "-Isrc", "-Ivendor/puretd/c_engine",
+         "-Ivendor/puretd/c_inference",
          "-c", "src/gn_infer_reference.c", "-o", "/dev/null"],
         cwd=ROOT, capture_output=True, text=True,
     )

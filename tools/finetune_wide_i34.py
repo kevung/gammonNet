@@ -33,7 +33,7 @@ import numpy as np
 import torch
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = ROOT / "vendor" / "backgammon-ai-engine"
+REFERENCE = ROOT / "vendor" / "puretd"
 sys.path.insert(0, str(REFERENCE))
 
 from model import ProbNetwork  # noqa: E402

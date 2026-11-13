@@ -37,8 +37,8 @@ est sous licence permissive, sans clause d'usage. Voir §3.
 python3.12 -m venv ~/venv-gammonnet && source ~/venv-gammonnet/bin/activate
 pip install --upgrade pip torch numpy gnubg-nn
 
-git clone https://github.com/alexstrehl/backgammon-ai-engine.git
-cd backgammon-ai-engine
+git clone https://github.com/alexstrehl/puretd.git
+cd puretd
 cd c_engine && bash build_unix.sh && cd ..      # ~20x plus rapide que le Python pur
 python play_models.py --model1 best_models/cubeless_prob5_512_512_256_128.pt \
     --gnubg --game-mode cubeless-money --games 1000
@@ -46,9 +46,9 @@ python play_models.py --model1 best_models/cubeless_prob5_512_512_256_128.pt \
 
 ## 3. Les sources, et ce qu'elles permettent
 
-### 3.1 Le modèle de référence — `alexstrehl/backgammon-ai-engine`
+### 3.1 Le modèle de référence — `alexstrehl/puretd`
 
-<https://github.com/alexstrehl/backgammon-ai-engine> — **licence MIT**, poids inclus dans le
+<https://github.com/alexstrehl/puretd> — **licence MIT**, poids inclus dans le
 dépôt, code d'entraînement complet, moteur d'inférence C fourni (`c_inference/nn_eval.c`).
 
 Entraîné **entièrement en self-play** ; GNU Backgammon n'y intervient que comme instrument de
@@ -151,7 +151,7 @@ pas.
 
 ## 4. La recette d'entraînement de référence
 
-Publiée dans le README de `backgammon-ai-engine`, reproductible :
+Publiée dans le README de `puretd`, reproductible :
 
 1. **TD(0) en ligne** sur un petit réseau (80 neurones cachés, 2 M épisodes), encodage Tesauro.
 2. **Expansion progressive**, chaque étape repartant des poids précédents :
@@ -426,7 +426,7 @@ le nôtre :
 
 ## 10. Sources
 
-- `alexstrehl/backgammon-ai-engine` — <https://github.com/alexstrehl/backgammon-ai-engine> (MIT)
+- `alexstrehl/puretd` — <https://github.com/alexstrehl/puretd> (MIT)
 - Manuel GNU Backgammon, réseaux d'élagage —
   <https://www.gnu.org/software/gnubg/manual/html_node/Pruning-neural-networks.html>
 - FSF, GPL FAQ, *output of a GPL program* —

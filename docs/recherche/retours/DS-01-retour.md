@@ -18,7 +18,7 @@
 # État de l'art des moteurs de backgammon en 2026 — rapport pour le projet gammonNet
 
 ## TL;DR
-- En 2026, **eXtreme Gammon (XG) reste la référence commerciale de facto**, mais la barre « qualité d'analyse » n'est plus tenue par XG seul : deux moteurs indépendants publient des mesures les plaçant **à parité, voire légèrement devant XG à niveaux de recherche appariés** — Open Sage (bgsage.ai) et, contre GNU Backgammon, le projet Backgammon-NN de Chris Whittington. La preuve la plus solide (protocole + volumes) vient de ces projets et de `alexstrehl/backgammon-ai-engine`, pas de XG lui-même.
+- En 2026, **eXtreme Gammon (XG) reste la référence commerciale de facto**, mais la barre « qualité d'analyse » n'est plus tenue par XG seul : deux moteurs indépendants publient des mesures les plaçant **à parité, voire légèrement devant XG à niveaux de recherche appariés** — Open Sage (bgsage.ai) et, contre GNU Backgammon, le projet Backgammon-NN de Chris Whittington. La preuve la plus solide (protocole + volumes) vient de ces projets et de `alexstrehl/puretd`, pas de XG lui-même.
 - La cause du plus grand écart **documenté et expliqué** entre deux moteurs neuronaux modernes n'est ni la taille du réseau, ni l'encodage, ni la profondeur : c'est la **qualité du signal d'entraînement** (labels de qualité rollout / distillation de la valeur d'une recherche plus profonde). Deux projets indépendants (Whittington, Strehl) y convergent — ce qui explique directement pourquoi ton avantage 0-ply (+0,00247) s'annule sous recherche (+0,00007).
 - « Quelqu'un a-t-il dépassé XG ? » : **oui, sur mesure publiée avec protocole** (Open Sage, à niveaux appariés), mais l'écart est petit (≈ 0,1–0,16 PR) et jugé partiellement contre les propres rollouts du challenger ; **non, sur un match direct à grand volume**, qui n'existe pour personne car XG n'expose aucune API.
 
@@ -69,8 +69,8 @@ Réseau de neurones en C ; auteurs principaux Joseph Heled, Øystein Johansen, J
 - 290 matchs réels : différence moyenne de PR **+0,002 (IC 95 % ±0,03, p = 0,90, r = 0,98)** — indiscernable de zéro.
 Qualité de preuve : protocole détaillé, volumes explicites, reproductible (scripts publics), biais de self-référence partiellement retiré par le miroir XG. Reste [MESURE] (fort), avec réserve : publié par le vendeur, et XG scoré via Batch Analysis (pas de vraies parties têtes-à-tête).
 
-**alexstrehl/backgammon-ai-engine (PureTD) — [MESURE], licence MIT.**
-Auteur Alexander Strehl. RL pur par self-play (TD, backups de Bellman échantillonnés puis exacts 1-ply). Chiffres (IC 95 % bootstrap ; github.com/alexstrehl/backgammon-ai-engine, consulté le 26 août 2026) :
+**alexstrehl/puretd (PureTD) — [MESURE], licence MIT.**
+Auteur Alexander Strehl. RL pur par self-play (TD, backups de Bellman échantillonnés puis exacts 1-ply). Chiffres (IC 95 % bootstrap ; github.com/alexstrehl/puretd, consulté le 26 août 2026) :
 - DMP, réseau 561k : **51,84 % vs gnubg 0-ply (10 M parties, IC [51,8 ; 51,9])** ; avantage **maintenu sous recherche** : 51,5 % @1-ply, 51,4 % @2-ply.
 - Money cubeful, 562k : **+57,8 mEq/partie (0,058 pt/partie, 10 M parties, IC [+56,1 ; +59,6])** ; PR XG++ 1,06 (1500 parties, IC [1,01 ; 1,11]).
 - Cubeful 1-ply vs 1-ply : +47,1 mEq/partie ; 2-ply vs 2-ply : +45,0 mEq/partie (l'avantage **se resserre** en profondeur).

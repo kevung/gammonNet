@@ -37,7 +37,7 @@ TORCH_INDEX := $(if $(filter-out 0,$(TORCH_CPU)),--index-url https://download.py
 ORACLE ?= 1
 
 VENDOR := vendor
-REFERENCE := $(VENDOR)/backgammon-ai-engine
+REFERENCE := $(VENDOR)/puretd
 
 .PHONY: all setup venv vendor build model corpus test bench wasm-api bench-infer bench-encoding bench-decision bench-batch bench-cube bench-sparsity bench-width bench-width-wasm bench-width-wasm-fp tie-census test-tile artifact env clean help
 

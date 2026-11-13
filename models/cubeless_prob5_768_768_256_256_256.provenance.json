@@ -1,6 +1,6 @@
 {
   "network": "experimental/cubeless_prob5_768_768_256_256_256.pt",
-  "source": "alexstrehl/backgammon-ai-engine",
+  "source": "alexstrehl/puretd",
   "license": "MIT",
   "pinned_commit": "7184e2f",
   "weights_commit": "c373141",
