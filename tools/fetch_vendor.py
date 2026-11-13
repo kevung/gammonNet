@@ -35,7 +35,9 @@ class Source:
 SOURCES = (
     Source(
         name="backgammon-ai-engine",
-        url="https://github.com/alexstrehl/backgammon-ai-engine.git",
+        # Upstream moved to `puretd` and rewrote the history of the old
+        # repository; the pinned commit only exists at the new address.
+        url="https://github.com/alexstrehl/puretd.git",
         commit="7184e2f",
         licence="MIT",
     ),
