@@ -1,5 +1,10 @@
 # 2026-10-22 — Le float16 en match play et au videau
 
+> **Réserve du 2026-11-26 (#40).** Les tête-à-tête de cette fiche (float16 contre float32, deux réseaux
+> chargés) ont été joués sur le cache d'évaluation qui les mêlait. Ils n'ont pas été rejoués ; le
+> float16 reste indécelable au registre T70 (#38, #39), qui est propre. Voir
+> `2026-11-26-i40-rejeu-cache-par-reseau.md`.
+
 **Question** (issue #33, point 2) : le constat de `2026-10-22-float16-reseau-servi.md` — le
 float16 ne coûte rien de mesurable — portait sur le **money sans videau** (registre T70, 9 786
 décisions). Tient-il **au score** et **avec le videau vivant** ?

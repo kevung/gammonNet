@@ -1,5 +1,9 @@
 # 2026-10-30 — Le 768×768 au bout du protocole de #34, et la décision
 
+> **Réserve du 2026-11-26 (#40).** Les tête-à-tête avec videau de cette fiche (768 contre 4 couches) ont
+> été joués sur le cache d'évaluation qui mêlait les deux réseaux. Rejoués sur les poids `c373141` et
+> le cache corrigé : `2026-11-26-i40-rejeu-cache-par-reseau.md` (money +0,0066 [+0,0031 ; +0,0101]).
+
 *Issue #34, étape 4, et la question posée en plus : peut-on le servir aussi vite que le réseau
 actuel sans perdre sa force ? Suite de
 [`2026-10-27-i34-prob5-elargis-registre.md`](2026-10-27-i34-prob5-elargis-registre.md) (étapes 0

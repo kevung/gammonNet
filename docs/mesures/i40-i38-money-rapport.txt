@@ -1,0 +1,28 @@
+── Protocole (en-tête du journal, verbatim) ──
+  task: T35
+  mode: money
+  seed: 20261107
+  jacoby: True
+  cube_cap: 64
+  ours: {'name': 'gammonnet-policy-normal', 'model': 'models/cubeless_prob5_768_768_256_256_256.bin', 'ply': 2, 'filter': [0, 1, 1, 0, 0], 'cube_ply': 2, 'policy_level': 'normal'}
+  eval_fingerprint: d46a1a10efd9cca2
+  theirs: {'name': 'gammonnet-policy-normal@cubeless_prob5_512_512_256_256', 'ply': 2, 'model': 'models/cubeless_prob5_512_512_256_256.bin', 'eval_fingerprint': '9e7566a6ffe6d9bc', 'filter': [0, 1, 1, 0, 0], 'cube_ply': 2, 'prune': None}
+  match_length: None
+  score_sampling: None
+  pairs_target: 30000
+  luck_reference: {'model': 'models/cubeless_prob5_768_768_256_256_256.bin', 'eval_fingerprint': 'd46a1a10efd9cca2', 'judge': '0-ply best play per roll minus the 21-roll mean, opening roll excluded (gammonnet/luck.py)'}
+  evalcache_key: position+network
+
+── MESURE COMPLÈTE ──
+  paires jouées : 30000 (2 parties chacune), graine 20261107
+  ppg cubeful (gammonnet-policy-normal vs gammonnet-policy-normal@cubeless_prob5_512_512_256_256) : +0.0123 [-0.0115 ; +0.0362] (IC 95 %, bootstrap sur les paires)
+
+── Colonne corrigée de la chance (juge models/cubeless_prob5_768_768_256_256_256.bin, empreinte d46a1a10efd9cca2) ──
+  ppg corrigé : +0.0066 [+0.0031 ; +0.0101] (IC 95 %, bootstrap sur les paires)
+  variance par paire : brute 4.36332, corrigée 0.09678 — divisée par 45.09
+  chance moyenne : +0.00568 (z = +0.52 ; centrée par construction, |z| > 3 dirait une correction cassée)
+  identité comptable : brute = corrigée + chance, écart 0.0e+00
+
+  videau : 90387 double(s) au total (3.01/paire), plus gros videau 64
+  parties encaissées sur pass : 19607 (32.7 %)
+  tours joués : 2737627

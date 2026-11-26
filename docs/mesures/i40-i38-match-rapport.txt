@@ -1,0 +1,91 @@
+── Protocole (en-tête du journal, verbatim) ──
+  task: T35
+  mode: match
+  seed: 20261106
+  jacoby: True
+  cube_cap: 64
+  ours: {'name': 'gammonnet-policy-normal', 'model': 'models/cubeless_prob5_768_768_256_256_256.bin', 'ply': 2, 'filter': [0, 1, 1, 0, 0], 'cube_ply': 2, 'policy_level': 'normal'}
+  eval_fingerprint: d46a1a10efd9cca2
+  theirs: {'name': 'gammonnet-policy-normal@cubeless_prob5_512_512_256_256', 'ply': 2, 'model': 'models/cubeless_prob5_512_512_256_256.bin', 'eval_fingerprint': '9e7566a6ffe6d9bc', 'filter': [0, 1, 1, 0, 0], 'cube_ply': 2, 'prune': None}
+  match_length: 7
+  score_sampling: uniforme sur (1..L)² ; Crawford joué/derrière à pile ou face quand un seul joueur est à 1-away ; dérivé de (seed, 'scores', index)
+  pairs_target: 10000
+  luck_reference: {'model': 'models/cubeless_prob5_768_768_256_256_256.bin', 'eval_fingerprint': 'd46a1a10efd9cca2', 'judge': '0-ply best play per roll minus the 21-roll mean, opening roll excluded (gammonnet/luck.py)'}
+  evalcache_key: position+network
+
+── MESURE COMPLÈTE ──
+  paires jouées : 10000 (2 matchs chacune), graine 20261106
+  MWC aux scores échantillonnés : 49.94 % [49.42 ; 50.45] (IC 95 %, bootstrap sur les paires)
+  (victoires nettes par paire : -0.0013 [-0.0116 ; +0.0090])
+
+  par score de départ (away_a, away_b, post-Crawford) :
+    (1, 1, False):   213 paires, victoires nettes +0.014
+    (1, 2, False):   103 paires, victoires nettes -0.049
+    (1, 2, True):   121 paires, victoires nettes +0.017
+    (1, 3, False):   115 paires, victoires nettes +0.043
+    (1, 3, True):   110 paires, victoires nettes +0.018
+    (1, 4, False):    88 paires, victoires nettes -0.045
+    (1, 4, True):   106 paires, victoires nettes +0.000
+    (1, 5, False):   111 paires, victoires nettes -0.072
+    (1, 5, True):   103 paires, victoires nettes +0.000
+    (1, 6, False):    96 paires, victoires nettes +0.000
+    (1, 6, True):   102 paires, victoires nettes -0.029
+    (1, 7, False):   102 paires, victoires nettes +0.039
+    (1, 7, True):   120 paires, victoires nettes -0.025
+    (2, 1, False):   119 paires, victoires nettes +0.017
+    (2, 1, True):   102 paires, victoires nettes +0.000
+    (2, 2, False):   192 paires, victoires nettes +0.031
+    (2, 3, False):   165 paires, victoires nettes -0.024
+    (2, 4, False):   181 paires, victoires nettes +0.017
+    (2, 5, False):   195 paires, victoires nettes +0.036
+    (2, 6, False):   218 paires, victoires nettes +0.032
+    (2, 7, False):   179 paires, victoires nettes +0.000
+    (3, 1, False):   103 paires, victoires nettes +0.068
+    (3, 1, True):    92 paires, victoires nettes +0.011
+    (3, 2, False):   213 paires, victoires nettes +0.033
+    (3, 3, False):   188 paires, victoires nettes -0.080
+    (3, 4, False):   189 paires, victoires nettes +0.000
+    (3, 5, False):   190 paires, victoires nettes +0.021
+    (3, 6, False):   190 paires, victoires nettes -0.032
+    (3, 7, False):   222 paires, victoires nettes -0.041
+    (4, 1, False):   104 paires, victoires nettes -0.038
+    (4, 1, True):   108 paires, victoires nettes +0.028
+    (4, 2, False):   194 paires, victoires nettes -0.021
+    (4, 3, False):   213 paires, victoires nettes -0.014
+    (4, 4, False):   215 paires, victoires nettes +0.023
+    (4, 5, False):   192 paires, victoires nettes +0.026
+    (4, 6, False):   190 paires, victoires nettes -0.047
+    (4, 7, False):   220 paires, victoires nettes +0.041
+    (5, 1, False):   108 paires, victoires nettes -0.046
+    (5, 1, True):   101 paires, victoires nettes +0.000
+    (5, 2, False):   230 paires, victoires nettes +0.013
+    (5, 3, False):   188 paires, victoires nettes +0.027
+    (5, 4, False):   225 paires, victoires nettes +0.022
+    (5, 5, False):   240 paires, victoires nettes +0.013
+    (5, 6, False):   206 paires, victoires nettes -0.039
+    (5, 7, False):   198 paires, victoires nettes +0.045
+    (6, 1, False):   103 paires, victoires nettes -0.097
+    (6, 1, True):   111 paires, victoires nettes +0.018
+    (6, 2, False):   179 paires, victoires nettes +0.011
+    (6, 3, False):   203 paires, victoires nettes -0.010
+    (6, 4, False):   215 paires, victoires nettes -0.060
+    (6, 5, False):   212 paires, victoires nettes +0.005
+    (6, 6, False):   198 paires, victoires nettes -0.045
+    (6, 7, False):   200 paires, victoires nettes -0.035
+    (7, 1, False):   108 paires, victoires nettes -0.074
+    (7, 1, True):    97 paires, victoires nettes +0.000
+    (7, 2, False):   215 paires, victoires nettes -0.005
+    (7, 3, False):   197 paires, victoires nettes +0.015
+    (7, 4, False):   196 paires, victoires nettes +0.092
+    (7, 5, False):   195 paires, victoires nettes +0.015
+    (7, 6, False):   214 paires, victoires nettes -0.009
+    (7, 7, False):   197 paires, victoires nettes -0.036
+
+── Colonne corrigée de la chance (juge models/cubeless_prob5_768_768_256_256_256.bin, empreinte d46a1a10efd9cca2) ──
+  MWC corrigée : 50.12 % [49.86 ; 50.39] (victoires nettes +0.0025 [-0.0028 ; +0.0078])
+  variance par paire : brute 0.27933, corrigée 0.07461 — divisée par 3.74
+  chance moyenne : -0.00379 (z = -0.59 ; centrée par construction, |z| > 3 dirait une correction cassée)
+  identité comptable : brute = corrigée + chance, écart 4.3e-19
+
+  videau : 44004 double(s) au total (4.40/paire), plus gros videau 8
+  tours joués : 2312777

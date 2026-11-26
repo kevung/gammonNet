@@ -1,0 +1,6 @@
+avant : docs/mesures/i39-h2h-money.jsonl.gz  (empreinte 0d69237ce87720aa)
+après : docs/mesures/i40-i39-money.jsonl.gz (décompressé)  (empreinte 0d69237ce87720aa, cache position+network)
+index communs : 30000, issue différente sur 8290 (27.6 %)
+moyenne avant : -0.0120 ppg
+moyenne après : -0.0026 ppg
+écart apparié avant − après : -0.0094 [-0.0283 ; +0.0097] (IC 95 %, bootstrap sur les paires)

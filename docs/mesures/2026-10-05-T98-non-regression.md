@@ -1,5 +1,9 @@
 # T98 — Changer de poids sans régression
 
+> **Réserve du 2026-11-26 (#40).** Les tête-à-tête avec videau de cette fiche ont été joués sur le
+> cache d'évaluation qui mêlait les deux réseaux d'un même worker. Ils n'ont pas été rejoués ; le
+> registre T70 et le 0-ply sans arbitre sont propres. Voir `2026-11-26-i40-rejeu-cache-par-reseau.md`.
+
 *2026-10-05, tête-à-tête dépouillé le 2026-10-15 · mochy (Threadripper PRO 3955WX, 16/32) et melbaa (Xeon E5-2683 v3, 14/28) ·
 candidat `cubeless_prob5_512_512_256_256` (sha256 `a84ff7b4…cfdd3`), incumbent
 `cubeless_prob5_512_512_256_128`*
