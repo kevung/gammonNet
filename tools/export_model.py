@@ -40,10 +40,21 @@ DEFAULT_OUT = ROOT / "models" / "cubeless_prob5_768_768_256_256_256.bin"
 #: weights are read with `git show`, md5-checked against the upstream table, and
 #: exported by the PINNED `export_weights.py`.
 WEIGHTS_COMMIT = "c373141"
-WEIGHTS_MD5 = {
-    "experimental/cubeless_prob5_768_768_256_256_256.pt": "9ecbc3ee",
-    "cubeless_prob5_512_512_256_256.pt": "84b2293e",
+#: Every upstream weights commit the exporter may read, with the md5 of each
+#: listed model at that commit. Only WEIGHTS_COMMIT feeds the default build; a
+#: later commit is exported under a candidate name, for measurement, with
+#: `--weights-commit` -- a listed commit and a listed md5, or a refusal.
+WEIGHTS_MD5_BY_COMMIT = {
+    "c373141": {
+        "experimental/cubeless_prob5_768_768_256_256_256.pt": "9ecbc3ee",
+        "cubeless_prob5_512_512_256_256.pt": "84b2293e",
+    },
+    "ea604e7": {
+        "experimental/cubeless_prob5_768_768_256_256_256.pt": "b8d4306c",
+        "cubeless_prob5_512_512_256_256.pt": "88b03c1c",
+    },
 }
+WEIGHTS_MD5 = WEIGHTS_MD5_BY_COMMIT[WEIGHTS_COMMIT]
 
 
 def sha256(path: Path) -> str:
@@ -69,25 +80,34 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    parser.add_argument("--weights-commit", default=WEIGHTS_COMMIT,
+                        choices=sorted(WEIGHTS_MD5_BY_COMMIT))
     args = parser.parse_args()
 
     source = REFERENCE / "best_models" / args.model
     weights_commit = None
-    if args.model in WEIGHTS_MD5:
-        weights_commit = WEIGHTS_COMMIT
-        staged = ROOT / "build" / "weights" / Path(args.model).name
+    expected_md5 = WEIGHTS_MD5_BY_COMMIT[args.weights_commit]
+    if args.weights_commit != WEIGHTS_COMMIT and args.model not in expected_md5:
+        print(f"{args.model} n'est pas listé à {args.weights_commit} : refus", file=sys.stderr)
+        return 1
+    if args.model in expected_md5:
+        weights_commit = args.weights_commit
+        staged = ROOT / "build" / "weights" / weights_commit / Path(args.model).name
+        if weights_commit == WEIGHTS_COMMIT:
+            # The path the parity test reads by default (`tests/test_infer.py`).
+            staged = ROOT / "build" / "weights" / Path(args.model).name
         staged.parent.mkdir(parents=True, exist_ok=True)
         blob = subprocess.run(
-            ["git", "-C", str(REFERENCE), "show", f"{WEIGHTS_COMMIT}:best_models/{args.model}"],
+            ["git", "-C", str(REFERENCE), "show", f"{weights_commit}:best_models/{args.model}"],
             capture_output=True, check=False,
         )
         if blob.returncode != 0:
-            print(f"modèle introuvable dans {WEIGHTS_COMMIT} : {args.model}", file=sys.stderr)
+            print(f"modèle introuvable dans {weights_commit} : {args.model}", file=sys.stderr)
             print("lancer d'abord `make vendor` (le clone porte l'historique)", file=sys.stderr)
             return 1
         md5 = hashlib.md5(blob.stdout).hexdigest()
-        if not md5.startswith(WEIGHTS_MD5[args.model]):
-            print(f"md5 {md5[:8]} au lieu de {WEIGHTS_MD5[args.model]} : refus", file=sys.stderr)
+        if not md5.startswith(expected_md5[args.model]):
+            print(f"md5 {md5[:8]} au lieu de {expected_md5[args.model]} : refus", file=sys.stderr)
             return 1
         staged.write_bytes(blob.stdout)
         source = staged

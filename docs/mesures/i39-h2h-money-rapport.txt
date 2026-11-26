@@ -1,0 +1,20 @@
+── Protocole (en-tête du journal, verbatim) ──
+  task: T35
+  mode: money
+  seed: 20261113
+  jacoby: True
+  cube_cap: 64
+  ours: {'name': 'gammonnet-policy-normal', 'model': 'models/candidate_ea604e7_768_768_256_256_256.bin', 'ply': 2, 'filter': [0, 1, 1, 0, 0], 'cube_ply': 2, 'policy_level': 'normal'}
+  eval_fingerprint: 0d69237ce87720aa
+  theirs: {'name': 'gammonnet-policy-normal@cubeless_prob5_768_768_256_256_256', 'ply': 2, 'model': 'models/cubeless_prob5_768_768_256_256_256.bin', 'eval_fingerprint': 'd46a1a10efd9cca2', 'filter': [0, 1, 1, 0, 0], 'cube_ply': 2, 'prune': None}
+  match_length: None
+  score_sampling: None
+  pairs_target: 150000
+
+── MESURE COMPLÈTE ──
+  paires jouées : 150000 (2 parties chacune), graine 20261113
+  ppg cubeful (gammonnet-policy-normal vs gammonnet-policy-normal@cubeless_prob5_768_768_256_256_256) : -0.0052 [-0.0097 ; -0.0007] (IC 95 %, bootstrap sur les paires)
+
+  videau : 451169 double(s) au total (3.01/paire), plus gros videau 64
+  parties encaissées sur pass : 98375 (32.8 %)
+  tours joués : 13682386

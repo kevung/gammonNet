@@ -43,6 +43,10 @@ CANDIDATE = "models/cubeless_prob5_512_512_256_256.bin"
 #: Issue #34 : le 768×768 de l'amont (`18b0a80`, md5 `b3fad4eb`), lu dans le
 #: commit et exporté par l'`export_weights.py` de l'épingle, pas installé.
 WIDE = "models/cubeless_prob5_768_768_256_256_256.bin"
+#: Issue #39 : les deux réseaux rafraîchis par l'amont à `ea604e7`, sous les mêmes
+#: noms de fichiers. Les lignes portent le md5 amont des poids, pas « le nouveau ».
+FRESH_WIDE = "models/candidate_ea604e7_768_768_256_256_256.bin"
+FRESH_CANDIDATE = "models/candidate_ea604e7_512_512_256_256.bin"
 
 AVAILABLE = {
     "random": lambda: RandomEngine(name="random"),
@@ -59,6 +63,10 @@ AVAILABLE = {
         name="prob5-512-512-256-256-2ply-f0/1/3-k12"),
     "prob5-768x768-0ply": lambda: SearchEngine(
         ply=0, model=WIDE, name="prob5-768-768-256-256-256-0ply"),
+    "prob5-768x768-b8d4306c-0ply": lambda: SearchEngine(
+        ply=0, model=FRESH_WIDE, name="prob5-768-768-256-256-256-b8d4306c-0ply"),
+    "prob5-256-88b03c1c-0ply": lambda: SearchEngine(
+        ply=0, model=FRESH_CANDIDATE, name="prob5-512-512-256-256-88b03c1c-0ply"),
     "sage-0ply": lambda: SageEngine(level="1ply"),
     "sage-1ply": lambda: SageEngine(level="2ply"),
     "sage-2ply": lambda: SageEngine(level="3ply"),
