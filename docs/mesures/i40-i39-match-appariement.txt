@@ -1,0 +1,6 @@
+avant : docs/mesures/i39-h2h-match.jsonl.gz  (empreinte 0d69237ce87720aa)
+après : docs/mesures/i40-i39-match.jsonl.gz (décompressé)  (empreinte 0d69237ce87720aa, cache position+network)
+index communs : 10000, issue différente sur 5535 (55.4 %)
+moyenne avant : +0.0055 victoires nettes / match
+moyenne après : +0.0019 victoires nettes / match
+écart apparié avant − après : +0.0036 [-0.0061 ; +0.0131] (IC 95 %, bootstrap sur les paires)
