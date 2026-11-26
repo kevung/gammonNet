@@ -1,0 +1,77 @@
+{
+  "candidate": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      1
+    ],
+    "filter_extra": [
+      0,
+      0,
+      2
+    ],
+    "filter_threshold": [
+      0.0,
+      0.0,
+      0.04
+    ],
+    "header": true,
+    "label": "candidate_ea604e7_768_768_256_256_256 2-ply",
+    "model": "candidate_ea604e7_768_768_256_256_256.bin16",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "registre-money.jsonl"
+  },
+  "changed": 23,
+  "ci95": [
+    -6.46850189167705e-06,
+    1.1077698920582971e-05
+  ],
+  "cost": {
+    "evals": {
+      "candidate": 119159868,
+      "reference": 119163138
+    },
+    "prune_evals": {
+      "candidate": 344382489,
+      "reference": 344396302
+    },
+    "seconds": {
+      "candidate": 3480.737098250538,
+      "reference": 3472.2671660436317
+    }
+  },
+  "delta": 2.3987524978959277e-06,
+  "margin": 0.001,
+  "non_inferior": true,
+  "outside": 241,
+  "paired": 9759,
+  "reference": {
+    "context": "money",
+    "decisions": 10000,
+    "filter": [
+      0,
+      1,
+      1
+    ],
+    "filter_extra": [
+      0,
+      0,
+      2
+    ],
+    "filter_threshold": [
+      0.0,
+      0.0,
+      0.04
+    ],
+    "header": true,
+    "label": "candidate_ea604e7_768_768_256_256_256 2-ply",
+    "model": "candidate_ea604e7_768_768_256_256_256.bin",
+    "ply": 2,
+    "prune_k": 12,
+    "registry": "registre-money.jsonl"
+  },
+  "z": 0.41608285230504394
+}
