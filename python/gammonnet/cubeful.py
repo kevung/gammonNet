@@ -335,6 +335,9 @@ class CubefulResult:
     doubles: int
     cashed: bool
     stalled: bool = False
+    #: Chance cumulée des jets, vue de WHITE, à l'échelle du résultat (points ×
+    #: videau en money ; victoires nettes de match sinon). 0 sans juge.
+    luck: float = 0.0
 
 
 def _mover_view(match, mover, cube):
@@ -350,7 +353,8 @@ def _mover_view(match, mover, cube):
 def play_cubeful_game(white, black, dice, white_rng, black_rng,
                       jacoby: bool = True, cap: int = CUBE_CAP,
                       match: tuple[int, int, bool] | None = None,
-                      start: Position | None = None) -> CubefulResult:
+                      start: Position | None = None,
+                      luck=None) -> CubefulResult:
     """Une partie avec videau vivant. `match` : None (money) ou
     `(away_white, away_black, crawford)`.
 
@@ -361,7 +365,15 @@ def play_cubeful_game(white, black, dice, white_rng, black_rng,
     `start` court-circuite le jet d'ouverture et fait démarrer la partie sur
     une position arbitraire, trait compris, fenêtre de double ouverte — ce
     dont les tests du protocole ont besoin pour placer une situation connue.
+
+    `luck` (un `luck.LuckReference`) cumule la chance de chaque jet tiré en
+    cours de partie — le jet d'ouverture n'en a pas — dans `CubefulResult.luck`.
+    Il ne tire aucun dé et ne touche aucun joueur : la partie est la même, bit
+    pour bit, avec ou sans lui (`tests/test_luck.py`).
     """
+    from .luck import match_scale
+
+    luck_sum = 0.0
     if start is None:
         first, d1, d2 = opening_roll(dice)
         position = Position.initial()
@@ -416,8 +428,13 @@ def play_cubeful_game(white, black, dice, white_rng, black_rng,
                     else:
                         points = cube if mover == WHITE else -cube
                         return CubefulResult(points, turns, cube, doubles,
-                                             cashed=True)
+                                             cashed=True, luck=luck_sum)
             pending = (dice.randint(1, 6), dice.randint(1, 6))
+            if luck is not None:
+                this = luck.luck(position, *pending)
+                state = _mover_view(match, mover, cube)
+                this *= cube if state is None else match_scale(state)
+                luck_sum += this if mover == WHITE else -this
 
         d1, d2 = pending
         pending = None
@@ -435,9 +452,11 @@ def play_cubeful_game(white, black, dice, white_rng, black_rng,
                 value_won = 1
             points = value_won * cube
             return CubefulResult(points if winner == WHITE else -points,
-                                 turns, cube, doubles, cashed=False)
+                                 turns, cube, doubles, cashed=False,
+                                 luck=luck_sum)
 
-    return CubefulResult(0, turns, cube, doubles, cashed=False, stalled=True)
+    return CubefulResult(0, turns, cube, doubles, cashed=False, stalled=True,
+                         luck=luck_sum)
 
 
 # ── Un match ─────────────────────────────────────────────────────────
@@ -453,10 +472,13 @@ class MatchResult:
     biggest_cube: int
     doubles: int
     stalled: bool = False
+    #: Chance cumulée sur toutes les parties du match, vue de WHITE, en victoires nettes.
+    luck: float = 0.0
 
 
 def play_match(white, black, away_white: int, away_black: int, dice,
-               white_rng, black_rng, crawford_done: bool = False) -> MatchResult:
+               white_rng, black_rng, crawford_done: bool = False,
+               luck=None) -> MatchResult:
     """Un match depuis un score arbitraire, joué jusqu'à son terme.
 
     La partie de Crawford est la première où exactement un joueur est à
@@ -465,11 +487,14 @@ def play_match(white, black, away_white: int, away_black: int, dice,
     """
     games = turns = doubles = 0
     biggest = 1
+    luck_sum = 0.0
 
     while away_white > 0 and away_black > 0:
         crawford_now = (not crawford_done) and ((away_white == 1) != (away_black == 1))
         result = play_cubeful_game(white, black, dice, white_rng, black_rng,
-                                   match=(away_white, away_black, crawford_now))
+                                   match=(away_white, away_black, crawford_now),
+                                   luck=luck)
+        luck_sum += result.luck
         if crawford_now:
             crawford_done = True
         games += 1
@@ -477,14 +502,15 @@ def play_match(white, black, away_white: int, away_black: int, dice,
         doubles += result.doubles
         biggest = max(biggest, result.cube)
         if result.stalled:
-            return MatchResult(0, games, turns, biggest, doubles, stalled=True)
+            return MatchResult(0, games, turns, biggest, doubles, stalled=True,
+                               luck=luck_sum)
         if result.points > 0:
             away_white = max(0, away_white - result.points)
         else:
             away_black = max(0, away_black - (-result.points))
 
     won = 1 if away_white <= 0 else -1
-    return MatchResult(won, games, turns, biggest, doubles)
+    return MatchResult(won, games, turns, biggest, doubles, luck=luck_sum)
 
 
 # ── Les paires dupliquées ────────────────────────────────────────────
@@ -492,7 +518,8 @@ def play_match(white, black, away_white: int, away_black: int, dice,
 
 def play_cubeful_duplicate(a, b, base_seed: int, index: int,
                            jacoby: bool = True, cap: int = CUBE_CAP,
-                           dice_key: str | None = None) -> tuple[int, dict]:
+                           dice_key: str | None = None,
+                           luck=None) -> tuple[int, dict]:
     """`arena.play_duplicate`, videau vivant. Rend (points nets de A, stats).
 
     Mêmes clés, mêmes graines, même bascule de sièges — donc même contrôle
@@ -504,6 +531,8 @@ def play_cubeful_duplicate(a, b, base_seed: int, index: int,
     total = 0
     stats = {"stalled": False, "cashed": 0, "doubles": 0, "biggest_cube": 1,
              "turns": 0}
+    if luck is not None:
+        stats["luck"] = 0.0
     for swapped in (False, True):
         dice = random.Random(seed)
         white_rng = random.Random(seed ^ 0x5741_4954)
@@ -511,9 +540,12 @@ def play_cubeful_duplicate(a, b, base_seed: int, index: int,
 
         white, black = (b, a) if swapped else (a, b)
         result = play_cubeful_game(white, black, dice, white_rng, black_rng,
-                                   jacoby=jacoby, cap=cap)
+                                   jacoby=jacoby, cap=cap, luck=luck)
 
         total += -result.points if swapped else result.points
+        if luck is not None:
+            # A's luck, like A's points: the correction is `net - luck`.
+            stats["luck"] += -result.luck if swapped else result.luck
         stats["stalled"] = stats["stalled"] or result.stalled
         stats["cashed"] += int(result.cashed)
         stats["doubles"] += result.doubles
@@ -525,7 +557,8 @@ def play_cubeful_duplicate(a, b, base_seed: int, index: int,
 
 def play_match_duplicate(a, b, away_a: int, away_b: int, base_seed: int,
                          index: int, crawford_done: bool = False,
-                         dice_key: str | None = None) -> tuple[int, dict]:
+                         dice_key: str | None = None,
+                         luck=None) -> tuple[int, dict]:
     """Une paire dupliquée de MATCHS sur la même situation de départ.
 
     Le score reste **collé au siège**, parce que les dés le sont : le siège
@@ -547,6 +580,8 @@ def play_match_duplicate(a, b, away_a: int, away_b: int, base_seed: int,
     total = 0
     stats = {"stalled": False, "games": 0, "doubles": 0, "biggest_cube": 1,
              "turns": 0}
+    if luck is not None:
+        stats["luck"] = 0.0
     for swapped in (False, True):
         dice = random.Random(seed)
         white_rng = random.Random(seed ^ 0x5741_4954)
@@ -554,9 +589,12 @@ def play_match_duplicate(a, b, away_a: int, away_b: int, base_seed: int,
 
         white, black = (b, a) if swapped else (a, b)
         result = play_match(white, black, away_a, away_b, dice,
-                            white_rng, black_rng, crawford_done=crawford_done)
+                            white_rng, black_rng, crawford_done=crawford_done,
+                            luck=luck)
 
         total += -result.won if swapped else result.won
+        if luck is not None:
+            stats["luck"] += -result.luck if swapped else result.luck
         stats["stalled"] = stats["stalled"] or result.stalled
         stats["games"] += result.games
         stats["doubles"] += result.doubles
