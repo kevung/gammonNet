@@ -51,17 +51,23 @@ _LIB.gn_evalcache_create.restype = ctypes.c_void_p
 _LIB.gn_evalcache_free.argtypes = [ctypes.c_void_p]
 _LIB.gn_evalcache_free.restype = None
 _LIB.gn_evalcache_lookup.argtypes = [
-    ctypes.c_void_p, ctypes.POINTER(_CPosition), ctypes.POINTER(ctypes.c_float),
+    ctypes.c_void_p, ctypes.c_uint, ctypes.POINTER(_CPosition),
+    ctypes.POINTER(ctypes.c_float),
 ]
 _LIB.gn_evalcache_lookup.restype = ctypes.c_int
 _LIB.gn_evalcache_store.argtypes = [
-    ctypes.c_void_p, ctypes.POINTER(_CPosition), ctypes.POINTER(ctypes.c_float),
+    ctypes.c_void_p, ctypes.c_uint, ctypes.POINTER(_CPosition),
+    ctypes.POINTER(ctypes.c_float),
 ]
 _LIB.gn_evalcache_store.restype = None
 _LIB.gn_evalcache_capacity.argtypes = [ctypes.c_void_p]
 _LIB.gn_evalcache_capacity.restype = ctypes.c_ulong
 
 _ProbArray = ctypes.c_float * NUM_OUTPUTS
+
+#: The serial under which the direct-table tests store and read: any non-zero
+#: value names "one network" for a table no search touches.
+OWNER = 1
 
 
 def _fnv1a(data: bytes) -> int:
@@ -74,14 +80,17 @@ def _fnv1a(data: bytes) -> int:
     return h
 
 
-def _bucket(position, mask: int) -> int:
+def _bucket(position, mask: int, owner: int = OWNER) -> int:
     """Le seau qu'occuperait `position` dans une table de `mask + 1` entrées.
 
     `bytes(position._to_c())` rend les 29 octets bruts de la structure C --
     exactement ce que `gn_evalcache.c` hache -- donc ce calcul, fait en Python
     à côté, est un second témoin de l'index, pas une supposition sur lui.
     """
-    return _fnv1a(bytes(position._to_c())) & mask
+    h = _fnv1a(bytes(position._to_c()))
+    h ^= (owner * 0x9E3779B97F4A7C15) & 0xFFFFFFFFFFFFFFFF
+    h = (h * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
+    return h & mask
 
 
 @pytest.fixture(autouse=True)
@@ -331,25 +340,25 @@ def test_bucket_collision_resolves_to_the_right_position(network):
         out = _ProbArray()
 
         # A seul dans le seau : un hit, sa propre réponse.
-        _LIB.gn_evalcache_store(handle, ctypes.byref(pos_a._to_c()), c_probs_a)
-        hit = _LIB.gn_evalcache_lookup(handle, ctypes.byref(pos_a._to_c()), out)
+        _LIB.gn_evalcache_store(handle, OWNER, ctypes.byref(pos_a._to_c()), c_probs_a)
+        hit = _LIB.gn_evalcache_lookup(handle, OWNER, ctypes.byref(pos_a._to_c()), out)
         assert hit == 1
         assert tuple(out) == pytest.approx(probs_a.as_tuple(), abs=0.0)
 
         # B, même seau, clé différente : PAS un faux hit sur les octets de A.
-        miss = _LIB.gn_evalcache_lookup(handle, ctypes.byref(pos_b._to_c()), out)
+        miss = _LIB.gn_evalcache_lookup(handle, OWNER, ctypes.byref(pos_b._to_c()), out)
         assert miss == 0, "B a fait un hit sur l'entrée de A -- la clé n'a pas départagé"
 
         # B expulse A (remplacement direct, sans chaînage).
-        _LIB.gn_evalcache_store(handle, ctypes.byref(pos_b._to_c()), c_probs_b)
+        _LIB.gn_evalcache_store(handle, OWNER, ctypes.byref(pos_b._to_c()), c_probs_b)
 
         # B : hit, sa propre réponse.
-        hit_b = _LIB.gn_evalcache_lookup(handle, ctypes.byref(pos_b._to_c()), out)
+        hit_b = _LIB.gn_evalcache_lookup(handle, OWNER, ctypes.byref(pos_b._to_c()), out)
         assert hit_b == 1
         assert tuple(out) == pytest.approx(probs_b.as_tuple(), abs=0.0)
 
         # A : rate proprement -- jamais la réponse (fausse) de B.
-        miss_a = _LIB.gn_evalcache_lookup(handle, ctypes.byref(pos_a._to_c()), out)
+        miss_a = _LIB.gn_evalcache_lookup(handle, OWNER, ctypes.byref(pos_a._to_c()), out)
         assert miss_a == 0, (
             "A a reçu un hit après avoir été expulsé par B -- "
             "la table a rendu la réponse de la mauvaise position"
@@ -382,3 +391,55 @@ def test_cache_hits_do_not_count_as_network_evaluations(network):
         "premier -- le cache ne réduit rien"
     )
     print(f"\névaluations réseau : {cold_evals} froid, {warm_evals} chaud")
+
+
+# ── Deux réseaux, un cache : chacun ne lit que ses propres réponses ────
+
+
+SECOND_BIN = ROOT / "models" / "cubeless_prob5_512_512_256_256.bin"
+
+
+def test_two_networks_never_read_each_other(network):
+    """Régression du 2026-11-26 : la clé était la position seule, et un second
+    réseau chargé dans le même processus lisait les réponses du premier — le
+    4 couches rendait +0,079391 à l'ouverture (1-ply) après le 768×768, au lieu
+    de son +0,077467 ; le 768×768 vaut +0,079505. C'est ce que fait un
+    tête-à-tête entre deux jeux de poids (`bench/run_t35.py --theirs-model`).
+    """
+    if not SECOND_BIN.is_file():
+        pytest.skip(f"{SECOND_BIN} absent — lancer `make model`")
+    from gammonnet.rules import Position
+    from gammonnet.search import position_equity
+
+    other = Network.load(SECOND_BIN)
+    config = SearchConfig(ply=1)
+    positions = [Position.initial()] + list(CORPUS)[:6]
+    alone = [position_equity(other, p, config) for p in positions]
+    first_alone = [position_equity(network, p, config) for p in positions]
+    assert alone != first_alone, "les deux réseaux devraient différer"
+
+    evalcache.enable(16)
+    for p in positions:
+        position_equity(network, p, config)           # the first fills the cache
+    mixed = [position_equity(other, p, config) for p in positions]
+    again = [position_equity(network, p, config) for p in positions]
+    assert mixed == alone, "le second réseau a lu des réponses du premier"
+    assert again == first_alone, "le premier réseau a lu des réponses du second"
+
+
+def test_a_serial_is_never_reused():
+    """Un réseau libéré puis rechargé — ce que fait le module WebAssembly quand
+    l'appelant change de modèle — reçoit une identité neuve : l'adresse peut
+    revenir de l'allocateur, le numéro non."""
+    if not MODEL_BIN.is_file():
+        pytest.skip(f"{MODEL_BIN} absent — lancer `make model`")
+    _LIB.gn_network_serial.argtypes = [ctypes.c_void_p]
+    _LIB.gn_network_serial.restype = ctypes.c_uint
+    seen = set()
+    for _ in range(4):
+        net = Network.load(MODEL_BIN)
+        serial = _LIB.gn_network_serial(net._handle)
+        assert serial != 0
+        assert serial not in seen
+        seen.add(serial)
+        net.close()

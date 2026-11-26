@@ -54,6 +54,47 @@ def comparable(header: dict) -> dict:
     return out
 
 
+def print_luck_adjusted(header: dict, rows: list[dict], raw: list[float],
+                        bootstrap: int) -> None:
+    """La colonne corrigée de la chance : `(net − luck)` par paire, même unité
+    que la brute. La chance a une espérance nulle par construction ; sa moyenne
+    est imprimée avec son z, parce qu'un z loin de zéro dirait que la
+    correction est cassée — c'est le garde-fou de T39, `average_luck`."""
+    if any("luck" not in r for r in rows):
+        raise SystemExit("en-tête avec juge de la chance, mais des paires sans "
+                         "chance : journal mêlé — refus")
+    luck = [r["luck"] / 2.0 for r in rows]
+    adjusted = [a - b for a, b in zip(raw, luck)]
+    n = len(adjusted)
+
+    def var(xs):
+        m = sum(xs) / len(xs)
+        return sum((x - m) ** 2 for x in xs) / (len(xs) - 1) if len(xs) > 1 else 0.0
+
+    mean_adj = sum(adjusted) / n
+    low, high = bootstrap_ci(adjusted, bootstrap, seed=header["seed"])
+    v_raw, v_adj, v_luck = var(raw), var(adjusted), var(luck)
+    mean_luck = sum(luck) / n
+    z_luck = mean_luck / (v_luck / n) ** 0.5 if v_luck > 0 else 0.0
+    ref = header["luck_reference"]
+    print(f"\n── Colonne corrigée de la chance (juge {ref['model']}, "
+          f"empreinte {ref['eval_fingerprint']}) ──")
+    if header["mode"] == "money":
+        print(f"  ppg corrigé : {mean_adj:+.4f} [{low:+.4f} ; {high:+.4f}] "
+              f"(IC 95 %, bootstrap sur les paires)")
+    else:
+        print(f"  MWC corrigée : {(mean_adj + 1) / 2 * 100:.2f} % "
+              f"[{(low + 1) / 2 * 100:.2f} ; {(high + 1) / 2 * 100:.2f}] "
+              f"(victoires nettes {mean_adj:+.4f} [{low:+.4f} ; {high:+.4f}])")
+    ratio = v_raw / v_adj if v_adj > 0 else float("inf")
+    print(f"  variance par paire : brute {v_raw:.5f}, corrigée {v_adj:.5f} "
+          f"— divisée par {ratio:.2f}")
+    print(f"  chance moyenne : {mean_luck:+.5f} (z = {z_luck:+.2f} ; "
+          f"centrée par construction, |z| > 3 dirait une correction cassée)")
+    print(f"  identité comptable : brute = corrigée + chance, écart "
+          f"{abs(sum(raw) / n - mean_adj - mean_luck):.1e}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--journal", type=Path, required=True, action="append",
@@ -142,6 +183,10 @@ def main() -> int:
             mean = sum(cell_nets) / (2.0 * len(cell_nets))
             print(f"    {cell}: {len(cell_nets):5d} paires, "
                   f"victoires nettes {mean:+.3f}")
+
+    if "luck_reference" in header:
+        print_luck_adjusted(header, [rows[i] for i in present], samples,
+                            args.bootstrap)
 
     stalled = sum(1 for i in present if rows[i]["stalled"])
     doubles = sum(rows[i]["doubles"] for i in present)

@@ -109,7 +109,9 @@ int gn_best_play_0ply(const GnNetwork *net, const GnPosition *pos,
             GnEvalCache *cache = gn_evalcache_shared();
             if (table != NULL && gn_bearoff_probs(table, result, probs)) {
                 equity = gn_money_equity(probs);
-            } else if (cache != NULL && gn_evalcache_lookup(cache, result, probs)) {
+            } else if (cache != NULL &&
+                       gn_evalcache_lookup(cache, gn_network_serial(net),
+                                           result, probs)) {
                 equity = gn_money_equity(probs);
             } else {
                 if (gn_encode(result, features) != 0)
@@ -117,7 +119,7 @@ int gn_best_play_0ply(const GnNetwork *net, const GnPosition *pos,
                 if (gn_evaluate_features(net, features, probs) != 0)
                     return -1;
                 if (cache != NULL) {
-                    gn_evalcache_store(cache, result, probs);
+                    gn_evalcache_store(cache, gn_network_serial(net), result, probs);
                 }
                 equity = gn_money_equity(probs);
             }

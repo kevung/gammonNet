@@ -17,6 +17,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdatomic.h>
 #include <string.h>
 
 #include "nn_eval.h"
@@ -108,7 +109,18 @@ struct GnNetwork {
     int sparsity;   /* 1 = compact the live columns (the shipped behaviour) */
     int slot;       /* 0 = big, 1 = small; a label for the counters below */
 #endif
+    /* Who this network is, for the evaluation cache (gn_evalcache.h): unique
+     * per load within the process, never 0, never reused -- a freed network's
+     * address can come back from the allocator, its serial cannot. */
+    unsigned serial;
 };
+
+static atomic_uint g_next_serial = 1;
+
+unsigned gn_network_serial(const GnNetwork *net)
+{
+    return (net != NULL) ? net->serial : 0u;
+}
 
 #ifdef GN_BATCH_SPARSITY_SWITCH
 unsigned long gn_sparsity_calls[2] = {0, 0};
@@ -339,6 +351,7 @@ GnNetwork *gn_network_load(const char *path)
     if (net == NULL) {
         return NULL;
     }
+    net->serial = atomic_fetch_add(&g_next_serial, 1u);
 #ifdef GN_BATCH_SPARSITY_SWITCH
     net->sparsity = 1;   /* the shipped behaviour is the default */
     net->slot = 0;

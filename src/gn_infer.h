@@ -76,6 +76,15 @@ GnNetwork *gn_network_load(const char *path);
 
 void gn_network_free(GnNetwork *net);
 
+/*
+ * The network's identity within this process: a serial drawn at load, unique,
+ * never 0, never reused. The evaluation cache (gn_evalcache.h) keys on it next
+ * to the position, so that two networks loaded side by side -- a head-to-head
+ * between two weight sets, or a model reloaded in place -- never read each
+ * other's answers. Returns 0 for NULL.
+ */
+unsigned gn_network_serial(const GnNetwork *net);
+
 /* Number of input features the network expects. Must equal GN_NUM_FEATURES
  * for any model this project uses; checked at load time. */
 int gn_network_input_size(const GnNetwork *net);

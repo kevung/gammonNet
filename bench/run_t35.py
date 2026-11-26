@@ -153,11 +153,16 @@ def sampled_score(seed: int, index: int, length: int) -> tuple[int, int, bool]:
 _A = None
 _B = None
 _KEY = None
+_LUCK = None
 
 
-def _install(a, b, evalcache_log2, dice_key=None):
-    global _A, _B, _KEY
+def _install(a, b, evalcache_log2, dice_key=None, luck_model=None):
+    global _A, _B, _KEY, _LUCK
     _A, _B, _KEY = a, b, dice_key
+    if luck_model:
+        from gammonnet.luck import LuckReference
+
+        _LUCK = LuckReference(luck_model)
     if evalcache_log2:
         # ×3,41 mesuré sur une paire identique (2026-08-09), résultats
         # vérifiés bit à bit : le cache rejoue les mêmes évaluations, il n'en
@@ -171,11 +176,13 @@ def _install(a, b, evalcache_log2, dice_key=None):
 def _play(payload):
     mode, seed, index, length = payload
     if mode == "money":
-        net, stats = play_cubeful_duplicate(_A, _B, seed, index, dice_key=_KEY)
+        net, stats = play_cubeful_duplicate(_A, _B, seed, index, dice_key=_KEY,
+                                            luck=_LUCK)
         return {"i": index, "net": net, **stats}
     away_a, away_b, crawford_done = sampled_score(seed, index, length)
     net, stats = play_match_duplicate(_A, _B, away_a, away_b, seed, index,
-                                      crawford_done=crawford_done, dice_key=_KEY)
+                                      crawford_done=crawford_done, dice_key=_KEY,
+                                      luck=_LUCK)
     return {"i": index, "net": net, "away_a": away_a, "away_b": away_b,
             "post_crawford": crawford_done, **stats}
 
@@ -245,6 +252,12 @@ def main() -> int:
     parser.add_argument("--evalcache-log2", type=int, default=21,
                         help="taille du cache d'évaluation par ouvrier "
                              "(2^n entrées ; 0 = désactivé)")
+    # The luck-adjusted column (gammonnet/luck.py): each pair also records its
+    # dice luck as judged by this FIXED network, and report_t35.py prints
+    # `net - luck` beside the raw result. Plays nothing differently.
+    parser.add_argument("--luck-model", default=None,
+                        help="réseau juge de la chance (colonne corrigée ; "
+                             "défaut : aucune)")
     parser.add_argument("--limit", type=int, default=0,
                         help="taille du lot en paires (0 = jusqu'au bout)")
     # A slice of the indices, to split one campaign across machines: each plays
@@ -391,6 +404,17 @@ def main() -> int:
         wanted_header["ours"]["policy_level"] = args.ours_policy
     if dice_key is not None:
         wanted_header["dice_key"] = dice_key
+    if args.luck_model:
+        wanted_header["luck_reference"] = {
+            "model": args.luck_model,
+            "eval_fingerprint": eval_fingerprint(args.luck_model),
+            "judge": "0-ply best play per roll minus the 21-roll mean, "
+                     "opening roll excluded (gammonnet/luck.py)"}
+    if args.evalcache_log2 and "model" in wanted_header["theirs"]:
+        # Before 2026-11-26 the cache was keyed on the position alone, and two
+        # networks in one worker read each other's answers (gn_evalcache.h).
+        # A journal without this mark was played that way: never extend it.
+        wanted_header["evalcache_key"] = "position+network"
 
     header, rows = read_journal(args.journal)
     if header is not None:
@@ -435,7 +459,7 @@ def main() -> int:
         with ProcessPoolExecutor(args.workers, initializer=_install,
                                  initargs=(ours, theirs,
                                            args.evalcache_log2,
-                                           dice_key)) as pool:
+                                           dice_key, args.luck_model)) as pool:
             try:
                 refill(pool)
                 while pending:
