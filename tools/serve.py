@@ -707,7 +707,7 @@ ROUTES = {
 #: library (`gn_search_plays`, `gn_rollout`, ...). `ctypes.CDLL` releases the
 #: GIL for the duration of such a call, and the C side reuses per-model
 #: scratch buffers across calls (`NNModel.buf_a`/`buf_b` in
-#: `vendor/backgammon-ai-engine/c_inference/nn_eval.c`, allocated once at load
+#: `vendor/puretd/c_inference/nn_eval.c`, allocated once at load
 #: time) rather than allocating fresh ones each time. A search or rollout
 #: loops over `gn_evaluate` many times INSIDE that one C call, entirely
 #: without returning to Python -- so a lock around only the Python-level

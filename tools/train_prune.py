@@ -27,7 +27,7 @@ introduces is below the precision anyone would read off a report.
 ## Export path
 
 The `.bin` is NOT written by a second, home-grown writer: it goes through
-`vendor/backgammon-ai-engine/export_weights.py`, exactly as
+`vendor/puretd/export_weights.py`, exactly as
 `tools/export_model.py` does for the grand network. A second implementation
 of the BGNN writer would be a second thing to keep in step with the C reader.
 
@@ -51,7 +51,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-VENDOR = ROOT / "vendor" / "backgammon-ai-engine"
+VENDOR = ROOT / "vendor" / "puretd"
 sys.path.insert(0, str(VENDOR))
 sys.path.insert(0, str(ROOT / "python"))
 

@@ -39,7 +39,7 @@ faute que `CLAUDE.md` règle n°2 interdit.
 
 ## 3. Ce que l'état de l'art établit — au 2026-08-19
 
-### 3.1 `alexstrehl/backgammon-ai-engine` (« PureTD ») — le videau money appris, mesuré
+### 3.1 `alexstrehl/puretd` (« PureTD ») — le videau money appris, mesuré
 
 Le dépôt de référence du projet. Ce qu'il revendique, textuellement :
 
@@ -530,7 +530,7 @@ qu'on garde de toute façon. C'est la seule fiche que je proposerais d'ouvrir t�
 
 ## 11. Veille amont — l'amont a bougé, et ça nous concerne
 
-Constats du 2026-08-19, sur `alexstrehl/backgammon-ai-engine`. **Ces trois points sont
+Constats du 2026-08-19, sur `alexstrehl/puretd`. **Ces trois points sont
 indépendants de l'étude ci-dessus et plus urgents qu'elle.**
 
 **11.1 Un correctif de générateur de coups, postérieur à notre pin.** Commit `5c9aa87`
@@ -567,7 +567,7 @@ lignes. En attendant, `BRIEF.md` §3.1 doit porter la date de son relevé.
 
 ## 12. Sources
 
-- `alexstrehl/backgammon-ai-engine` (MIT) — <https://github.com/alexstrehl/backgammon-ai-engine>,
+- `alexstrehl/puretd` (MIT) — <https://github.com/alexstrehl/puretd>,
   README et historique consultés le 2026-08-19 (dernier commit `2026-08-14`).
 - Andrew Lin, *Learning Cube Strategy in Backgammon with Neural Networks*, TAAI 2020 —
   <https://doi.org/10.1109/TAAI51410.2020.00014> · <https://ieeexplore.ieee.org/document/9382451/>

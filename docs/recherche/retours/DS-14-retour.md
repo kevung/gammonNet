@@ -63,7 +63,7 @@
 | gnubg (contact/crashed/race) | ~2000+ | 3 réseaux, 250 entrées | bases de bench ~1,2 M contact / 0,6 M crashed / 0,5 M race | non chiffré | — |
 | wildbg | 2023–2024 | contact+race, ~202 entrées | rollouts par lots de 100 000 positions/itération, ~22 itérations | pas de wall-clock publié | — |
 | Backgammon-NN (Whittington) | 2026 | 198→256→128→5 puis 22,5 M labels gnubg | ~150 k parties self-play (~16 h) puis distillation | 22,5 M labels gnubg « en moins d'une heure » | mesuré 2026 |
-| alexstrehl/backgammon-ai-engine | 2024+ | 561–562 k paramètres | 10 M parties d'évaluation | non chiffré | — |
+| alexstrehl/puretd | 2024+ | 561–562 k paramètres | 10 M parties d'évaluation | non chiffré | — |
 
 Remarques : conflit de sources sur TD-Gammon 3.0 (Sutton dit 160 unités cachées ; le tableau Wikipédia dit 80 pour 3.0 et 160 pour 3.1) — à signaler, ne pas trancher. Jellyfish (Fredrik Dahl, ~1994, premier à introduire la réduction de variance), Snowie (Olivier Egger, 1998), eXtreme Gammon/XG (Xavier Dufaure de Citres, 2009, référence mondiale actuelle, multi-cœurs), BGBlitz (Frank Berger, NN, plusieurs titres d'Olympiade) : **aucun coût d'entraînement chiffré publié n'a été trouvé** (voir « Ce que je n'ai pas trouvé »).
 

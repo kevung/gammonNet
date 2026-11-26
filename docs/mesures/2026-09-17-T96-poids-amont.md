@@ -1,7 +1,7 @@
 # T96 — les poids amont du 2026-09-02, mesurés sur nos instruments
 
 *2026-09-17 · smith (2× EPYC 9254, 35 processus) et mochy (28 processus) ·
-`alexstrehl/backgammon-ai-engine` à `7184e2f`, licence MIT vérifiée par relecture du fichier
+`alexstrehl/puretd` à `7184e2f`, licence MIT vérifiée par relecture du fichier
 `LICENSE`, inchangé depuis `b2750df`*
 
 > **Le chiffre amont ne se transporte pas.** Le tableau du dépôt source annonce le passage de
@@ -182,7 +182,7 @@ rien ne dit qu'un dernier étage de 256 au lieu de 128 s'y paie au même prix.
 python tools/export_model.py --model cubeless_prob5_512_512_256_256.pt \
     --out models/cubeless_prob5_512_512_256_256.bin
 
-GN_MODEL_PT=vendor/backgammon-ai-engine/best_models/cubeless_prob5_512_512_256_256.pt \
+GN_MODEL_PT=vendor/puretd/best_models/cubeless_prob5_512_512_256_256.pt \
 GN_MODEL_BIN=models/cubeless_prob5_512_512_256_256.bin \
     python -m pytest tests/test_infer.py -q
 

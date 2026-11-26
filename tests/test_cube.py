@@ -632,8 +632,8 @@ def level_solve_probe() -> dict[str, float]:
     binary = _ROOT / "build" / "level_solve_probe"
     done = subprocess.run(
         ["gcc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror", "-Isrc",
-         "-Ivendor/backgammon-ai-engine/c_engine",
-         "-Ivendor/backgammon-ai-engine/c_inference",
+         "-Ivendor/puretd/c_engine",
+         "-Ivendor/puretd/c_inference",
          "-o", str(binary), "tests/level_solve_probe.c", *objects, "-lm"],
         cwd=_ROOT, capture_output=True, text=True,
     )

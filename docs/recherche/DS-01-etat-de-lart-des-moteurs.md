@@ -33,7 +33,7 @@ qui soutient chaque classement ?**
 ## Les sous-questions, dans l'ordre d'importance
 
 1. **Le classement, et ses preuves.** Recense les moteurs qui comptent — eXtreme Gammon (XG),
-   GNU Backgammon, BGBlitz, Snowie (historique), wildbg, `alexstrehl/backgammon-ai-engine`,
+   GNU Backgammon, BGBlitz, Snowie (historique), wildbg, `alexstrehl/puretd`,
    et tout autre que tu trouves. Pour chacun : qui l'a écrit, dans quel état il est en 2026, ce
    qu'il revendique comme force, **et sur quelle mesure**. Distingue soigneusement une mesure
    publiée avec protocole et intervalle de confiance d'une affirmation de forum.
@@ -61,7 +61,7 @@ qui soutient chaque classement ?**
 
 ## Sources à ne pas manquer
 
-- Les dépôts et sites : `alexstrehl/backgammon-ai-engine` (GitHub), `carsten-wenderdel/wildbg`
+- Les dépôts et sites : `alexstrehl/puretd` (GitHub), `carsten-wenderdel/wildbg`
   (GitHub), le site de BGBlitz, `extremegammon.com`, le
   projet GNU Backgammon (`gnu.org/software/gnubg`) et ses listes de diffusion.
 - Les fichiers de benchmarks publiés, s'il en existe (par exemple des JSON de round-robin servis

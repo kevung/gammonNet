@@ -6,7 +6,7 @@
  * which is what T22 will decide, on measurements rather than on taste -- means
  * rewriting this `.c` and nothing else.
  *
- * The backend is `vendor/backgammon-ai-engine/c_inference/nn_eval.c`
+ * The backend is `vendor/puretd/c_inference/nn_eval.c`
  * (Alexander Strehl, MIT, commit pinned by `tools/fetch_vendor.py`).
  *
  * SPDX-License-Identifier: MIT

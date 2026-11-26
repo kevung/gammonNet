@@ -1,7 +1,7 @@
 /*
  * gn_rules_reference.c -- gn_rules.h implemented on the reference rules engine.
  *
- * The backend is alexstrehl/backgammon-ai-engine's `c_engine/bg_engine.c`
+ * The backend is alexstrehl/puretd's `c_engine/bg_engine.c`
  * (MIT, pinned in tools/fetch_vendor.py, recorded in THIRD-PARTY.md). It is
  * reused rather than rewritten because it is already in agreement with the
  * 196-feature encoding the network expects; writing a second rules engine would

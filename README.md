@@ -3,7 +3,7 @@
 A backgammon position evaluator for the browser and for native code — a neural network, an
 expectiminimax search, a match equity table and exact bearoff tables.
 
-**It is built on [Alexander Strehl's `backgammon-ai-engine`](https://github.com/alexstrehl/backgammon-ai-engine)
+**It is built on [Alexander Strehl's `puretd`](https://github.com/alexstrehl/puretd)
 (MIT): the network weights and the rules engine come from there, trained by self-play.** Written
 here: the position codec, the 0→4-ply search and its move filters, the match equity inside the
 search, the pruning network, the WebAssembly port and the Web Worker pool — and every measurement
@@ -355,7 +355,7 @@ measured from what was estimated. Working documents: [`CLAUDE.md`](CLAUDE.md) (r
 
 ## Credits
 
-- Network and rules engine — [Alexander Strehl](https://github.com/alexstrehl/backgammon-ai-engine), MIT.
+- Network and rules engine — [Alexander Strehl](https://github.com/alexstrehl/puretd), MIT.
 - Kazaross-XG2 match equity table — Neil Kazaross; read from `Kazaross-XG2.xml`, the rendering
   GNU Backgammon ships and loads by default.
 - GNU Backgammon — measurement oracle and match equity reference. Not a source of code or weights.

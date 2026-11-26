@@ -21,7 +21,7 @@
  *
  * They are NESTED, not exclusive: probs[1] counts backgammons too. The order
  * is not taken on trust from a comment. It is forced by the equity formula at
- * `vendor/backgammon-ai-engine/c_inference/nn_eval.c:217`,
+ * `vendor/puretd/c_inference/nn_eval.c:217`,
  *
  *     E = 2*p0 + p1 + p2 - p3 - p4 - 1
  *

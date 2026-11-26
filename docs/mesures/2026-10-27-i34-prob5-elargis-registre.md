@@ -1,7 +1,7 @@
 # 2026-10-27 — Les prob5 élargis de l'amont, sous recherche, sur le registre de T70
 
 *Issue #34, étapes 0 et 2 du protocole. smith (2× EPYC 9254), 35 processus, rien d'autre ne
-tournait. `alexstrehl/backgammon-ai-engine` à `18b0a80`, licence MIT relue (titulaire
+tournait. `alexstrehl/puretd` à `18b0a80`, licence MIT relue (titulaire
 « Alex Strehl »). **L'épingle reste `7184e2f`** : les poids sont lus dans le commit, pas
 installés.*
 
@@ -113,5 +113,5 @@ donnent la forme du gain, pas sa preuve.
 - **Dumps décision par décision** (2 Mo chacun) : archivés hors du dépôt
   (`gammonNet-attic/t34/`).
 - **Poids** : non versionnés. On les régénère par
-  `git -C vendor/backgammon-ai-engine show 18b0a80:<fichier>`, puis l'`export_weights.py` de
+  `git -C vendor/puretd show 18b0a80:<fichier>`, puis l'`export_weights.py` de
   l'épingle.
