@@ -192,14 +192,16 @@ static int evaluate_exact(const GnPosition *pos, float probs[GN_NUM_OUTPUTS])
     return (table != NULL && gn_bearoff_probs(table, pos, probs)) ? 1 : 0;
 }
 
-static int evaluate_cheap(const GnPosition *pos, float probs[GN_NUM_OUTPUTS])
+static int evaluate_cheap(const GnNetwork *net, const GnPosition *pos,
+                          float probs[GN_NUM_OUTPUTS])
 {
     if (evaluate_exact(pos, probs)) {
         return 1;
     }
 
     GnEvalCache *cache = gn_evalcache_shared();
-    if (cache != NULL && gn_evalcache_lookup(cache, pos, probs)) {
+    if (cache != NULL &&
+        gn_evalcache_lookup(cache, gn_network_serial(net), pos, probs)) {
         return 1;
     }
     return 0;
@@ -207,25 +209,26 @@ static int evaluate_cheap(const GnPosition *pos, float probs[GN_NUM_OUTPUTS])
 
 /* The bookkeeping of step 3, shared by the scalar and batched paths: one
  * network evaluation happened for `pos` — count it, remember it. */
-static void evaluated(const GnPosition *pos, const float probs[GN_NUM_OUTPUTS])
+static void evaluated(const GnNetwork *net, const GnPosition *pos,
+                      const float probs[GN_NUM_OUTPUTS])
 {
     g_evaluations++;
     GnEvalCache *cache = gn_evalcache_shared();
     if (cache != NULL) {
-        gn_evalcache_store(cache, pos, probs);
+        gn_evalcache_store(cache, gn_network_serial(net), pos, probs);
     }
 }
 
 static int evaluate_position(const GnNetwork *net, const GnPosition *pos,
                              float probs[GN_NUM_OUTPUTS])
 {
-    if (evaluate_cheap(pos, probs)) {
+    if (evaluate_cheap(net, pos, probs)) {
         return 0;
     }
     if (gn_evaluate(net, pos, probs) != 0) {
         return -1;
     }
-    evaluated(pos, probs);
+    evaluated(net, pos, probs);
     return 0;
 }
 
@@ -714,7 +717,7 @@ static int shallow_fill(const GnNetwork *net, GnCandidate *out, int n,
                 continue;
             }
             if (is_prune ? evaluate_exact(result, out[i].probs)
-                         : evaluate_cheap(result, out[i].probs)) {
+                         : evaluate_cheap(net, result, out[i].probs)) {
                 continue;
             }
             pending[n_pending++] = i;
@@ -742,7 +745,7 @@ static int shallow_fill(const GnNetwork *net, GnCandidate *out, int n,
             if (is_prune) {
                 g_prune_evaluations++;
             } else {
-                evaluated(batch_pos[b], batch_probs[b]);
+                evaluated(net, batch_pos[b], batch_probs[b]);
             }
         }
         n_pending = 0;

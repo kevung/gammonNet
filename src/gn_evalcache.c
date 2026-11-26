@@ -25,8 +25,15 @@ _Static_assert(sizeof(GnPosition) == 29,
 typedef struct {
     GnPosition key;
     float probs[GN_NUM_OUTPUTS];
-    unsigned char occupied;
+    /* The serial of the network that wrote this slot (gn_network_serial), or
+     * 0 while it is empty. It is part of the key: a slot answers only the
+     * network that filled it. Same 56-byte entry as the occupancy byte it
+     * replaces -- the four bytes sat in padding before. */
+    unsigned owner;
 } GnEvalCacheEntry;
+
+_Static_assert(sizeof(GnEvalCacheEntry) == 56,
+               "the cache entry is documented as 56 bytes in gn_evalcache.h");
 
 /*
  * Several search threads may share one table (gn_parallel.h). An entry is
@@ -102,7 +109,7 @@ GnEvalCache *gn_evalcache_create(unsigned log2_entries)
     const unsigned long capacity = 1UL << log2_entries;
     /*
      * calloc, not malloc followed by a manual loop: the zeroed bytes are what
-     * makes every slot start unoccupied (occupied == 0), AND -- see
+     * makes every slot start empty (owner == 0), AND -- see
      * gn_evalcache.h -- what keeps the padding bytes between an entry's key
      * and its probs deterministic from the very first store onward. A store
      * only ever overwrites the key, the probs, and the occupancy byte; it
@@ -136,21 +143,26 @@ void gn_evalcache_free(GnEvalCache *cache)
     free(cache);
 }
 
-static unsigned long bucket_of(const GnEvalCache *cache, const GnPosition *pos)
+static unsigned long bucket_of(const GnEvalCache *cache, unsigned owner,
+                               const GnPosition *pos)
 {
-    const unsigned long long hash =
+    unsigned long long hash =
         fnv1a((const unsigned char *)pos, sizeof(GnPosition));
+    /* Two networks asked about the same position land in different buckets,
+     * rather than evicting each other from one. */
+    hash ^= (unsigned long long)owner * 0x9E3779B97F4A7C15ULL;
+    hash *= FNV_PRIME;
     return (unsigned long)(hash & cache->mask);
 }
 
-int gn_evalcache_lookup(GnEvalCache *cache, const GnPosition *pos,
-                        float probs[GN_NUM_OUTPUTS])
+int gn_evalcache_lookup(GnEvalCache *cache, unsigned owner,
+                        const GnPosition *pos, float probs[GN_NUM_OUTPUTS])
 {
-    if (cache == NULL || pos == NULL || probs == NULL) {
+    if (cache == NULL || owner == 0 || pos == NULL || probs == NULL) {
         return 0;
     }
 
-    const unsigned long bucket = bucket_of(cache, pos);
+    const unsigned long bucket = bucket_of(cache, owner, pos);
     const GnEvalCacheEntry *entry = &cache->entries[bucket];
     stripe_lock(cache, bucket);
 
@@ -161,7 +173,7 @@ int gn_evalcache_lookup(GnEvalCache *cache, const GnPosition *pos,
      * the key is what tells this position apart from whichever one last
      * wrote this slot -- see gn_evalcache.h for why that comparison is safe.
      */
-    if (entry->occupied && memcmp(&entry->key, pos, sizeof(GnPosition)) == 0) {
+    if (entry->owner == owner && memcmp(&entry->key, pos, sizeof(GnPosition)) == 0) {
         memcpy(probs, entry->probs, sizeof(entry->probs));
         stripe_unlock(cache, bucket);
         atomic_fetch_add_explicit(&cache->hits, 1, memory_order_relaxed);
@@ -172,10 +184,10 @@ int gn_evalcache_lookup(GnEvalCache *cache, const GnPosition *pos,
     return 0;
 }
 
-void gn_evalcache_store(GnEvalCache *cache, const GnPosition *pos,
-                        const float probs[GN_NUM_OUTPUTS])
+void gn_evalcache_store(GnEvalCache *cache, unsigned owner,
+                        const GnPosition *pos, const float probs[GN_NUM_OUTPUTS])
 {
-    if (cache == NULL || pos == NULL || probs == NULL) {
+    if (cache == NULL || owner == 0 || pos == NULL || probs == NULL) {
         return;
     }
 
@@ -183,12 +195,12 @@ void gn_evalcache_store(GnEvalCache *cache, const GnPosition *pos,
      * hashed here wins the slot. See gn_evalcache.h for why this is a
      * deliberate simplicity rather than an oversight -- the table is sized
      * to make this rare during one search, not to make it impossible. */
-    const unsigned long bucket = bucket_of(cache, pos);
+    const unsigned long bucket = bucket_of(cache, owner, pos);
     GnEvalCacheEntry *entry = &cache->entries[bucket];
     stripe_lock(cache, bucket);
     memcpy(&entry->key, pos, sizeof(GnPosition));
     memcpy(entry->probs, probs, sizeof(entry->probs));
-    entry->occupied = 1;
+    entry->owner = owner;
     stripe_unlock(cache, bucket);
     atomic_fetch_add_explicit(&cache->stores, 1, memory_order_relaxed);
 }

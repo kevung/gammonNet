@@ -7,14 +7,24 @@
  * five probabilities, per T38) renders the RAW distribution of a leaf --
  * `gn_evaluate`'s five outputs, from `pos->turn`'s point of view. It takes no
  * score and no cube: those enter later, in `value_from_probs`. The key for a
- * cache of this call is therefore the position ALONE, and an entry keyed on
- * the position is valid whether the search is running in money or in match
- * play -- the cache never sees a score to get wrong, because it is never
- * handed one.
+ * cache of this call is therefore the position AND THE NETWORK that answered
+ * -- nothing else. An entry is valid whether the search is running in money
+ * or in match play: the cache never sees a score to get wrong, because it is
+ * never handed one.
  *
- * The network itself is loaded once and is fixed for the life of a process
- * (see `gn_infer.h`): the same `GnNetwork *`, asked about the same position
- * twice, returns the same five floats both times. A cache hit therefore
+ * WHY THE NETWORK IS IN THE KEY (2026-11-26). The key used to be the position
+ * alone, on the belief that one process holds one network. It does not: a
+ * head-to-head between two weight sets (`bench/run_t35.py --theirs-model`)
+ * plays both in every worker, and the WebAssembly module can reload a model
+ * in place. With the position alone, the second network read the first one's
+ * answers -- measured: the 4-layer net's 1-ply equity at the opening moved
+ * from +0.077467 to +0.079391 after the 768x768 had filled the cache, against
+ * +0.079505 for the 768x768 itself. Each network now carries a serial
+ * (`gn_network_serial`), unique per load and never reused, and the cache keys
+ * on it; `tests/test_evalcache.py` holds the two-network case.
+ *
+ * A network is fixed for its life (see `gn_infer.h`): the same network, asked
+ * about the same position twice, returns the same five floats both times. A cache hit therefore
  * returns EXACTLY what `gn_evaluate` would have returned -- checked at the
  * bit by `tests/test_evalcache.py`, not approximated -- so the cache changes
  * only the COST of a search, never its result. A cache that moved a result
@@ -120,20 +130,24 @@ GnEvalCache *gn_evalcache_create(unsigned log2_entries);
 void gn_evalcache_free(GnEvalCache *cache);
 
 /*
- * Look up `pos` in `cache`. Returns 1 and fills `probs` with the EXACT five
- * floats a prior `gn_evalcache_store` wrote for this position -- nothing
- * rounded, blended, or interpolated -- and 0 on a miss, leaving `probs`
- * untouched. Updates the hit/miss counters either way.
+ * Look up `pos`, as evaluated by the network whose serial is `owner`
+ * (`gn_network_serial`). Returns 1 and fills `probs` with the EXACT five
+ * floats a prior `gn_evalcache_store` wrote for this position AND this
+ * network -- nothing rounded, blended, or interpolated -- and 0 on a miss,
+ * leaving `probs` untouched. Another network's entry for the same position is
+ * a miss. `owner == 0` is always a miss. Updates the hit/miss counters
+ * either way.
  */
-int gn_evalcache_lookup(GnEvalCache *cache, const GnPosition *pos,
-                        float probs[GN_NUM_OUTPUTS]);
+int gn_evalcache_lookup(GnEvalCache *cache, unsigned owner,
+                        const GnPosition *pos, float probs[GN_NUM_OUTPUTS]);
 
 /*
- * Record `probs` for `pos`, replacing whatever previously occupied that
- * bucket -- see the collision policy above. Updates the store counter.
+ * Record `probs` for `pos` as evaluated by network `owner`, replacing
+ * whatever previously occupied that bucket -- see the collision policy above.
+ * `owner == 0` stores nothing. Updates the store counter.
  */
-void gn_evalcache_store(GnEvalCache *cache, const GnPosition *pos,
-                        const float probs[GN_NUM_OUTPUTS]);
+void gn_evalcache_store(GnEvalCache *cache, unsigned owner,
+                        const GnPosition *pos, const float probs[GN_NUM_OUTPUTS]);
 
 /* Counters since the cache was created or last reset. NOT LOCKED -- see the
  * note above about this project's parallelism model. */
